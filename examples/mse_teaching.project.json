@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "model",
+  "backend": "pytorch",
+  "nodes": [
+    {
+      "id": "pred",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          3
+        ],
+        "dtype": "float32",
+        "layout": "vector"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "target",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          3
+        ],
+        "dtype": "float32",
+        "layout": "vector"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "diff",
+      "type": "core.sub",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "squared",
+      "type": "core.square",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "total",
+      "type": "core.sum",
+      "version": "1.0.0",
+      "config": {
+        "dims": null,
+        "keepdim": false
+      },
+      "stateRef": null
+    },
+    {
+      "id": "loss",
+      "type": "core.scalar_mul",
+      "version": "1.0.0",
+      "config": {
+        "factor": 0.3333333333333333
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "pred_to_diff_a",
+      "kind": "tensor",
+      "from": {
+        "node": "pred",
+        "port": "value"
+      },
+      "to": {
+        "node": "diff",
+        "port": "a"
+      }
+    },
+    {
+      "id": "target_to_diff_b",
+      "kind": "tensor",
+      "from": {
+        "node": "target",
+        "port": "value"
+      },
+      "to": {
+        "node": "diff",
+        "port": "b"
+      }
+    },
+    {
+      "id": "diff_to_squared",
+      "kind": "tensor",
+      "from": {
+        "node": "diff",
+        "port": "output"
+      },
+      "to": {
+        "node": "squared",
+        "port": "input"
+      }
+    },
+    {
+      "id": "squared_to_total",
+      "kind": "tensor",
+      "from": {
+        "node": "squared",
+        "port": "output"
+      },
+      "to": {
+        "node": "total",
+        "port": "input"
+      }
+    },
+    {
+      "id": "total_to_loss",
+      "kind": "tensor",
+      "from": {
+        "node": "total",
+        "port": "output"
+      },
+      "to": {
+        "node": "loss",
+        "port": "input"
+      }
+    }
+  ]
+}

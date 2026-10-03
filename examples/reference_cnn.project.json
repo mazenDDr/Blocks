@@ -1,0 +1,288 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "model",
+  "backend": "pytorch",
+  "nodes": [
+    {
+      "id": "images",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          "N",
+          3,
+          64,
+          64
+        ],
+        "dtype": "float32",
+        "layout": "NCHW"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "conv_1",
+      "type": "pytorch.nn.conv2d",
+      "version": "1.0.0",
+      "config": {
+        "in_channels": "infer",
+        "out_channels": 32,
+        "kernel_size": [
+          3,
+          3
+        ],
+        "stride": [
+          1,
+          1
+        ],
+        "padding": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "groups": 1,
+        "bias": true,
+        "padding_mode": "zeros"
+      },
+      "stateRef": "model/conv_1"
+    },
+    {
+      "id": "relu_1",
+      "type": "pytorch.nn.relu",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "pool_1",
+      "type": "pytorch.nn.max_pool2d",
+      "version": "1.0.0",
+      "config": {
+        "kernel_size": [
+          2,
+          2
+        ],
+        "stride": [
+          2,
+          2
+        ],
+        "padding": [
+          0,
+          0
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "ceil_mode": false
+      },
+      "stateRef": null
+    },
+    {
+      "id": "conv_2",
+      "type": "pytorch.nn.conv2d",
+      "version": "1.0.0",
+      "config": {
+        "in_channels": "infer",
+        "out_channels": 64,
+        "kernel_size": [
+          3,
+          3
+        ],
+        "stride": [
+          1,
+          1
+        ],
+        "padding": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "groups": 1,
+        "bias": true,
+        "padding_mode": "zeros"
+      },
+      "stateRef": "model/conv_2"
+    },
+    {
+      "id": "relu_2",
+      "type": "pytorch.nn.relu",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "pool_2",
+      "type": "pytorch.nn.max_pool2d",
+      "version": "1.0.0",
+      "config": {
+        "kernel_size": [
+          2,
+          2
+        ],
+        "stride": [
+          2,
+          2
+        ],
+        "padding": [
+          0,
+          0
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "ceil_mode": false
+      },
+      "stateRef": null
+    },
+    {
+      "id": "gap",
+      "type": "pytorch.nn.adaptive_avg_pool2d",
+      "version": "1.0.0",
+      "config": {
+        "output_size": [
+          1,
+          1
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "flatten",
+      "type": "pytorch.nn.flatten",
+      "version": "1.0.0",
+      "config": {
+        "start_dim": 1,
+        "end_dim": -1
+      },
+      "stateRef": null
+    },
+    {
+      "id": "fc",
+      "type": "pytorch.nn.linear",
+      "version": "1.0.0",
+      "config": {
+        "in_features": "infer",
+        "out_features": 10,
+        "bias": true
+      },
+      "stateRef": "model/fc"
+    }
+  ],
+  "edges": [
+    {
+      "id": "images_to_conv_1",
+      "kind": "tensor",
+      "from": {
+        "node": "images",
+        "port": "value"
+      },
+      "to": {
+        "node": "conv_1",
+        "port": "input"
+      }
+    },
+    {
+      "id": "conv_1_to_relu_1",
+      "kind": "tensor",
+      "from": {
+        "node": "conv_1",
+        "port": "output"
+      },
+      "to": {
+        "node": "relu_1",
+        "port": "input"
+      }
+    },
+    {
+      "id": "relu_1_to_pool_1",
+      "kind": "tensor",
+      "from": {
+        "node": "relu_1",
+        "port": "output"
+      },
+      "to": {
+        "node": "pool_1",
+        "port": "input"
+      }
+    },
+    {
+      "id": "pool_1_to_conv_2",
+      "kind": "tensor",
+      "from": {
+        "node": "pool_1",
+        "port": "output"
+      },
+      "to": {
+        "node": "conv_2",
+        "port": "input"
+      }
+    },
+    {
+      "id": "conv_2_to_relu_2",
+      "kind": "tensor",
+      "from": {
+        "node": "conv_2",
+        "port": "output"
+      },
+      "to": {
+        "node": "relu_2",
+        "port": "input"
+      }
+    },
+    {
+      "id": "relu_2_to_pool_2",
+      "kind": "tensor",
+      "from": {
+        "node": "relu_2",
+        "port": "output"
+      },
+      "to": {
+        "node": "pool_2",
+        "port": "input"
+      }
+    },
+    {
+      "id": "pool_2_to_gap",
+      "kind": "tensor",
+      "from": {
+        "node": "pool_2",
+        "port": "output"
+      },
+      "to": {
+        "node": "gap",
+        "port": "input"
+      }
+    },
+    {
+      "id": "gap_to_flatten",
+      "kind": "tensor",
+      "from": {
+        "node": "gap",
+        "port": "output"
+      },
+      "to": {
+        "node": "flatten",
+        "port": "input"
+      }
+    },
+    {
+      "id": "flatten_to_fc",
+      "kind": "tensor",
+      "from": {
+        "node": "flatten",
+        "port": "output"
+      },
+      "to": {
+        "node": "fc",
+        "port": "input"
+      }
+    }
+  ]
+}

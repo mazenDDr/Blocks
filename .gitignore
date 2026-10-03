@@ -1,0 +1,8 @@
+.venv/
+.workbench/
+examples/data/
+node_modules/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+apps/editor/dist/

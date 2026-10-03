@@ -1,0 +1,173 @@
+{
+  "$defs": {
+    "Edge": {
+      "additionalProperties": true,
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/Endpoint"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "tensor",
+          "title": "Kind",
+          "type": "string"
+        },
+        "to": {
+          "$ref": "#/$defs/Endpoint"
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "to"
+      ],
+      "title": "Edge",
+      "type": "object"
+    },
+    "Endpoint": {
+      "additionalProperties": true,
+      "properties": {
+        "node": {
+          "title": "Node",
+          "type": "string"
+        },
+        "port": {
+          "title": "Port",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node",
+        "port"
+      ],
+      "title": "Endpoint",
+      "type": "object"
+    },
+    "Graph": {
+      "additionalProperties": true,
+      "properties": {
+        "backend": {
+          "default": "pytorch",
+          "title": "Backend",
+          "type": "string"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/Edge"
+          },
+          "title": "Edges",
+          "type": "array"
+        },
+        "graphKind": {
+          "default": "model",
+          "title": "Graphkind",
+          "type": "string"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/Node"
+          },
+          "title": "Nodes",
+          "type": "array"
+        },
+        "schemaVersion": {
+          "default": "1.0.0",
+          "title": "Schemaversion",
+          "type": "string"
+        }
+      },
+      "title": "Graph",
+      "type": "object"
+    },
+    "Node": {
+      "additionalProperties": true,
+      "properties": {
+        "config": {
+          "additionalProperties": true,
+          "title": "Config",
+          "type": "object"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "stateRef": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stateref"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "version": {
+          "default": "1.0.0",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "Node",
+      "type": "object"
+    },
+    "UiDoc": {
+      "additionalProperties": true,
+      "description": "Layout only. Never part of the semantic hash.",
+      "properties": {
+        "positions": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object"
+          },
+          "title": "Positions",
+          "type": "object"
+        },
+        "schemaVersion": {
+          "default": "1.0.0",
+          "title": "Schemaversion",
+          "type": "string"
+        }
+      },
+      "title": "UiDoc",
+      "type": "object"
+    }
+  },
+  "additionalProperties": true,
+  "description": "A saved project: the semantic graph plus the separate UI document (the API/file contract).",
+  "properties": {
+    "graph": {
+      "$ref": "#/$defs/Graph"
+    },
+    "ui": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UiDoc"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "graph"
+  ],
+  "title": "ProjectDocument",
+  "type": "object"
+}
