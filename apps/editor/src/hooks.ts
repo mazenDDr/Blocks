@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, errorText } from "./api";
-import type { EpochEnd, Graph, RunEvent, RunSummary, Validation } from "./types";
+import type { AnyRun, EpochEnd, Graph, RunEvent, Validation } from "./types";
 
 /** Debounced validation of the draft graph. Stale responses are aborted, so shapes always match the latest edit. */
 export function useValidation(graph: Graph, delay = 250) {
@@ -35,7 +35,7 @@ export function usePolling<T>(url: string | null, intervalMs: number, deps: unkn
 }
 
 export function useRuns(projectId: string | null) {
-  const { data, error, reload } = usePolling<{ runs: RunSummary[] }>(projectId ? `/api/runs?project=${encodeURIComponent(projectId)}` : "/api/runs", 2000);
+  const { data, error, reload } = usePolling<{ runs: AnyRun[] }>(projectId ? `/api/runs?project=${encodeURIComponent(projectId)}` : "/api/runs", 2000);
   return { runs: data?.runs ?? [], error, reload };
 }
 

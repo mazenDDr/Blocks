@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "enzyme": {
+      "x": 0,
+      "y": 0
+    },
+    "profile": {
+      "x": 290,
+      "y": 0
+    },
+    "compare": {
+      "x": 580,
+      "y": 0
+    }
+  },
+  "description": "VISION 11.4 on SYNTHETIC enzyme-activity measurements (examples/fixtures/synthetic_enzyme_two_group.csv): control vs inhibitor-treated tubes, Welch t-test, one measurement per independent tube.",
+  "synthetic": true
+}

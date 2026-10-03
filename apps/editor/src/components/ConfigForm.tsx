@@ -26,10 +26,43 @@ function ListInput({ value, onChange, label }: { value: unknown[]; onChange: (v:
   return <input aria-label={label} value={text} placeholder="comma separated" onChange={(e) => { setText(e.target.value); onChange(parseList(e.target.value)); }} />;
 }
 
+function StringListInput({ value, onChange, label, multiline }: { value: string[]; onChange: (v: string[]) => void; label: string; multiline?: boolean }) {
+  const join = (v: string[]) => v.join(multiline ? "\n" : ", ");
+  const split = (t: string) => t.split(multiline ? "\n" : ",").map((x) => x.trim()).filter(Boolean);
+  const [text, setText] = useState(join(value));
+  useEffect(() => { setText((t) => (JSON.stringify(split(t)) === JSON.stringify(value) ? t : join(value))); }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  return multiline
+    ? <textarea aria-label={label} rows={3} value={text} placeholder="one per line" onChange={(e) => { setText(e.target.value); onChange(split(e.target.value)); }} />
+    : <input aria-label={label} value={text} placeholder="comma separated (empty = default)" onChange={(e) => { setText(e.target.value); onChange(split(e.target.value)); }} />;
+}
+
+interface ColSpec { name: string; dtype: string }
+/** Typed column selection: one row per selected column with its declared type. */
+function ColumnSpecEditor({ value, onChange, dtypes }: { value: ColSpec[]; onChange: (v: ColSpec[]) => void; dtypes: string[] }) {
+  return (
+    <div className="colspec">
+      {value.map((c, i) => (
+        <div key={i} className="colrow">
+          <input aria-label={`column ${i + 1} name`} value={c.name} onChange={(e) => onChange(value.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
+          <select aria-label={`column ${i + 1} type`} value={c.dtype} onChange={(e) => onChange(value.map((x, j) => (j === i ? { ...x, dtype: e.target.value } : x)))}>{dtypes.map((d) => <option key={d}>{d}</option>)}</select>
+          <button className="danger" aria-label={`remove column ${i + 1}`} onClick={() => onChange(value.filter((_, j) => j !== i))}>×</button>
+        </div>
+      ))}
+      <button onClick={() => onChange([...value, { name: "", dtype: dtypes[0] }])}>Add column</button>
+    </div>
+  );
+}
+
 const isInferInt = (s: JSchema) => !!s.anyOf && s.anyOf.some((a) => a.const === "infer") && s.anyOf.some((a) => a.type === "integer");
 const literals = (a: JSchema): string[] => (a.const !== undefined ? [String(a.const)] : a.enum ? a.enum.map(String) : []);
 
-function Field({ name, schema, value, resolved, onChange }: { name: string; schema: JSchema; value: unknown; resolved: unknown; onChange: (v: unknown) => void }) {
+function Field({ name, schema, value, resolved, onChange, defs }: { name: string; schema: JSchema; value: unknown; resolved: unknown; onChange: (v: unknown) => void; defs?: Record<string, JSchema> }) {
+  if (schema.type === "array" && schema.items?.$ref) {
+    const def = defs?.[schema.items.$ref.split("/").pop()!];
+    const dt = def?.properties?.dtype?.enum?.map(String);
+    if (def?.properties?.name && dt) return <ColumnSpecEditor value={(Array.isArray(value) ? value : []) as ColSpec[]} dtypes={dt} onChange={onChange} />;
+  }
+  if (schema.type === "array" && schema.items?.type === "string") return <StringListInput label={name} multiline={name === "assumptions"} value={(Array.isArray(value) ? value : []) as string[]} onChange={onChange} />;
   if (isInferInt(schema)) {
     const locked = value !== "infer";
     return (
@@ -106,7 +139,7 @@ export function ConfigForm({ op, node, resolved, onChange }: { op: OpInfo; node:
         return (
           <div className="row" key={k}>
             <label className="lbl">{s.title ?? k}{!(k in node.config) && <small> (default)</small>}</label>
-            <Field name={k} schema={s} value={v} resolved={resolved?.[k]} onChange={(nv) => onChange({ [k]: nv })} />
+            <Field name={k} schema={s} value={v} resolved={resolved?.[k]} defs={op.configSchema.$defs} onChange={(nv) => onChange({ [k]: nv })} />
           </div>
         );
       })}

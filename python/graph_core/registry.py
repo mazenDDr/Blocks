@@ -20,6 +20,7 @@ class Operation:
     type: ClassVar[str]
     version: ClassVar[str] = "1.0.0"
     backend: ClassVar[str] = "pytorch"
+    graph_kind: ClassVar[str] = "model"  # which graph kind may contain this op (graphs keep their semantics explicit)
     inputs: ClassVar[tuple[str, ...]] = ("input",)
     outputs: ClassVar[tuple[str, ...]] = ("output",)
     Config: ClassVar[type[BaseModel]]

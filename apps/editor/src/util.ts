@@ -1,9 +1,17 @@
-import type { Dim, GNode, OpInfo, RunSummary, TensorType } from "./types";
+import { isTensorType, type AnyRun, type Dim, type GNode, type OpInfo, type WireType } from "./types";
 
 export const fmtDim = (d: Dim) => String(d);
-export const fmtShape = (t?: TensorType | null) => (t ? t.shape.map(fmtDim).join(" × ") : "unknown");
+export function fmtShape(t?: WireType | null): string {
+  if (!t) return "unknown";
+  if (isTensorType(t)) return t.shape.map(fmtDim).join(" × ");
+  if (t.kind === "table") return `${t.rows == null ? "? rows" : `${fmtInt(t.rows)} rows`} × ${t.columns?.length ?? 0}${t.columnsComplete === false ? "+" : ""} cols`;
+  return t.kind;
+}
+export const dtypeOf = (t?: WireType | null) => (t && isTensorType(t) ? t.dtype : "");
 export const fmtInt = (n: number) => n.toLocaleString("en-US");
 export const fmtNum = (v: number, digits = 4) => (Number.isFinite(v) ? Number(v.toPrecision(digits)).toString() : String(v));
+/** p-values: fixed decimals when moderate (0.0404276820), exponent when tiny. */
+export const fmtP = (p: number | null | undefined) => (p == null || !Number.isFinite(p) ? "n/a" : p >= 0.001 ? p.toFixed(10) : p.toExponential(6));
 export const shortHash = (h?: string | null) => (h ? h.slice(0, 8) : "n/a");
 
 export const pair = (v: unknown): [number, number] => (Array.isArray(v) ? [Number(v[0]), Number(v[1])] : [Number(v), Number(v)]);
@@ -23,6 +31,17 @@ export function summarize(node: GNode, resolved?: Record<string, unknown>): stri
     case "pytorch.nn.flatten": return `dims ${c.start_dim ?? 1}..${c.end_dim ?? -1}`;
     case "pytorch.loss.cross_entropy": return `reduction ${c.reduction ?? "mean"}`;
     case "core.tensor_input": return `${(c.shape as Dim[] | undefined)?.map(fmtDim).join("×") ?? "?"} ${c.dtype ?? ""}`;
+    case "tabular.csv_source": return String(c.path ?? "").split("/").pop() || "no file chosen";
+    case "tabular.select_columns": return `${(c.columns as unknown[] | undefined)?.length ?? 0} typed columns`;
+    case "tabular.train_validation_split": return `validation ${c.validation_fraction ?? 0.25} · seed ${c.seed ?? 0}${c.stratify_by ? ` · stratified by ${c.stratify_by}` : ""}${c.group_by ? ` · grouped by ${c.group_by}` : ""}`;
+    case "tabular.fit_standardize": case "tabular.fit_onehot": return `fit on train · ${(c.columns as string[] | undefined)?.length ? (c.columns as string[]).join(", ") : "all matching columns"}`;
+    case "tabular.fit_impute": return `${c.strategy ?? "median"} · fit on train · ${(c.columns as string[] | undefined)?.length ? (c.columns as string[]).join(", ") : "all numeric"}`;
+    case "tabular.apply_transform": return "apply fitted state (no refit)";
+    case "sklearn.linear_regression": case "sklearn.logistic_regression": return `target ${c.target || "(not set)"}${c.C !== undefined ? ` · C ${c.C}` : ""}`;
+    case "scipy.gamma_distribution": return c.parametrization === "shape_rate" ? `shape ${c.shape} · rate ${c.rate} · loc ${c.loc}` : `shape ${c.shape} · scale ${c.scale} · loc ${c.loc}`;
+    case "scipy.tail_probability": return `${c.tail ?? "upper"} tail at ${c.observed}`;
+    case "scipy.hypothesis_test": return `alpha ${c.alpha ?? 0.05}${c.teaching_fixture ? " · teaching fixture" : ""}`;
+    case "scipy.two_group_comparison": return `${c.method ?? "welch"} · ${c.value_column || "?"} by ${c.group_column || "?"} (${c.group_a || "?"} vs ${c.group_b || "?"})`;
     default: {
       const e = Object.entries(node.config).slice(0, 3).map(([a, b]) => `${a}=${JSON.stringify(b)}`);
       return e.join(" · ");
@@ -40,7 +59,8 @@ export function nextId(base: string, taken: Set<string>): string {
   return `${base}_${i}`;
 }
 
-export function runLabel(r: RunSummary): string {
+export function runLabel(r: AnyRun): string {
+  if (r.kind === "tabular") return `${r.id} · ${r.status} · ${r.progress.nodesDone}/${r.progress.nodes} nodes`;
   return `${r.id} · ${r.status}${r.final ? ` · val acc ${(r.final.val_acc * 100).toFixed(0)}%` : ""}`;
 }
 

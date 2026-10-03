@@ -67,7 +67,7 @@ def trained(client, shapes_dir):
 
 # ------------------------------------------------------------------------------------------ registry / validate
 def test_registry_exposes_config_schema_and_defaults(client):
-    ops = {o["type"]: o for o in client.get("/api/registry").json()["ops"]}
+    ops = {o["type"]: o for o in client.get("/api/registry").json()["ops"] if o["graphKind"] == "model"}  # tabular ops: test_tabular_api.py
     assert len(ops) == 14
     conv = ops["pytorch.nn.conv2d"]
     assert conv["inputs"] == ["input"] and conv["outputs"] == ["output"] and conv["backend"] == "pytorch"

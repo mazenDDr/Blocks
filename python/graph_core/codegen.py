@@ -15,6 +15,11 @@ _NODE_RE = re.compile(r"#\s*node:\s*([A-Za-z0-9_]+)")
 
 
 def generate_pytorch(graph: Graph) -> str:
+    if graph.graphKind != "model":
+        from .types import Diagnostic
+        from .validate import ExecutionBlocked
+
+        raise ExecutionBlocked([Diagnostic("E_UNSUPPORTED_GRAPH_KIND", f"Graph kind '{graph.graphKind}' has no PyTorch export.", path="/graphKind")])
     report = require_executable(graph)
     types = {n.id: n.type for n in graph.nodes}
     src_of = {(e.to.node, e.to.port): e.from_.node for e in graph.edges}

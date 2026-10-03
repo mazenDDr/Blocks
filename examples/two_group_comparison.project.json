@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "tabular",
+  "backend": "python",
+  "nodes": [
+    {
+      "id": "enzyme",
+      "type": "tabular.csv_source",
+      "version": "1.0.0",
+      "config": {
+        "path": "examples/fixtures/synthetic_enzyme_two_group.csv"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "profile",
+      "type": "tabular.profile",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "compare",
+      "type": "scipy.two_group_comparison",
+      "version": "1.0.0",
+      "config": {
+        "value_column": "activity_u_per_mg",
+        "group_column": "condition",
+        "group_a": "control",
+        "group_b": "inhibitor",
+        "method": "welch",
+        "alternative": "two-sided",
+        "alpha": 0.05,
+        "confidence_level": 0.95,
+        "sample_unit": "one independent assay tube",
+        "unit_column": "tube_id",
+        "missing": "drop"
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "enzyme_table__profile_table",
+      "kind": "table",
+      "from": {
+        "node": "enzyme",
+        "port": "table"
+      },
+      "to": {
+        "node": "profile",
+        "port": "table"
+      }
+    },
+    {
+      "id": "profile_table__compare_table",
+      "kind": "table",
+      "from": {
+        "node": "profile",
+        "port": "table"
+      },
+      "to": {
+        "node": "compare",
+        "port": "table"
+      }
+    }
+  ]
+}

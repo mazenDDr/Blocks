@@ -214,7 +214,7 @@ def test_every_op_declares_explain_and_param_formula(cnn_graph):
 
 
 def test_registry_has_planned_ops():
-    assert {o.type for o in registry.all_ops()} == {
+    assert {o.type for o in registry.all_ops() if o.graph_kind == "model"} == {  # tabular ops are listed separately (test_tabular_*)
         "core.tensor_input", "pytorch.nn.conv2d", "pytorch.nn.relu", "pytorch.nn.max_pool2d", "pytorch.nn.adaptive_avg_pool2d",
         "pytorch.nn.flatten", "pytorch.nn.linear", "pytorch.loss.cross_entropy", "core.sub", "core.square", "core.mean", "core.sum",
         "core.scalar_mul", "core.add"}

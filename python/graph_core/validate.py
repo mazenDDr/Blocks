@@ -61,6 +61,10 @@ def _config_message(err: ValidationError) -> str:
 
 
 def validate(graph: Graph) -> Report:
+    if graph.graphKind == "tabular":
+        from tabular.validate import validate_tabular
+
+        return validate_tabular(graph)
     r = Report()
     diag = r.diagnostics
 
@@ -70,7 +74,7 @@ def validate(graph: Graph) -> Report:
     if graph.backend != "pytorch":
         add("E_UNSUPPORTED_BACKEND", f"Backend '{graph.backend}' is not implemented; only 'pytorch' is.", path="/backend")
     if graph.graphKind != "model":
-        add("E_UNSUPPORTED_GRAPH_KIND", f"Graph kind '{graph.graphKind}' is not implemented; only 'model' is.", path="/graphKind")
+        add("E_UNSUPPORTED_GRAPH_KIND", f"Graph kind '{graph.graphKind}' is not implemented; only 'model' and 'tabular' are.", path="/graphKind")
     if graph.schemaVersion.split(".")[0] != SCHEMA_VERSION.split(".")[0]:
         add("E_UNSUPPORTED_SCHEMA", f"Schema version {graph.schemaVersion} is not supported (supported major: {SCHEMA_VERSION}).", path="/schemaVersion")
 
@@ -92,6 +96,9 @@ def validate(graph: Graph) -> Report:
         if op is None:
             add("E_UNKNOWN_OP", f"Operation '{n.type}' is not available. The node is preserved but cannot execute until it is resolved.",
                 n.id, path=npath, fixes=[Fix("Install the plugin that provides this operation"), Fix("Replace the node with a supported operation")])
+            continue
+        if op.graph_kind != "model":
+            add("E_OP_GRAPH_KIND", f"'{n.type}' belongs to a '{op.graph_kind}' graph and cannot appear in a 'model' graph.", n.id, path=npath)
             continue
         if n.version != op.version:
             add("E_UNSUPPORTED_VERSION", f"'{n.type}' version {n.version} is not available (have {op.version}). No silent upgrade is performed.",

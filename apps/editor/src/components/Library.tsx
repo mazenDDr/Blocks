@@ -8,12 +8,12 @@ export function Library({ ops, onAdd }: { ops: OpInfo[]; onAdd: (op: OpInfo) => 
     const s = q.trim().toLowerCase();
     return ops.filter((o) => !s || `${o.displayName} ${o.type} ${o.purpose} ${o.category}`.toLowerCase().includes(s));
   }, [ops, q]);
-  const ORDER = ["Layers", "Loss", "Core", "Tensor ops"];
+  const ORDER = ["Layers", "Loss", "Core", "Tensor ops", "Data", "Partition", "Preprocessing", "Models", "Evaluation", "Statistics"];
   const cats = [...new Set(hits.map((o) => o.category))].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
   return (
     <div className="library" aria-label="Block library">
       <h3>Library</h3>
-      <input value={q} placeholder="Search blocks (e.g. Conv2d)" aria-label="Search blocks"
+      <input value={q} placeholder="Search blocks (e.g. Conv2d, standardization)" aria-label="Search blocks"
         onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && hits[0]) onAdd(hits[0]); }} />
       {cats.map((c) => (
         <div key={c}>

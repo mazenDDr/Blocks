@@ -14,6 +14,7 @@ from graph_core.hashing import semantic_hash
 from graph_core.schema import Graph
 from graph_core.validate import require_executable
 
+from .tabular_run import TabularRunConfig, run_tabular
 from .train import RunConfig, run_training
 
 
@@ -23,7 +24,11 @@ def _child(graph_json: dict, cfg_json: dict, root: str, run_id: str, cancel_even
     def should_cancel() -> bool:  # in-process event, or a cancel recorded in the DB by any process (e.g. after a control restart)
         return cancel_event.is_set() or store.get_run(run_id)["status"] == "cancelling"
 
-    run_training(Graph.model_validate(graph_json), RunConfig.model_validate(cfg_json), store, run_id, should_cancel)
+    graph = Graph.model_validate(graph_json)
+    if graph.graphKind == "tabular":
+        run_tabular(graph, TabularRunConfig.model_validate(cfg_json), store, run_id, should_cancel)
+    else:
+        run_training(graph, RunConfig.model_validate(cfg_json), store, run_id, should_cancel)
 
 
 class RunHandle:
@@ -46,7 +51,7 @@ class RunHandle:
         return self.process.is_alive()
 
 
-def submit_run(graph: Graph, cfg: RunConfig, workbench: str | Path = ".workbench", run_id: str | None = None) -> RunHandle:
+def submit_run(graph: Graph, cfg: RunConfig | TabularRunConfig, workbench: str | Path = ".workbench", run_id: str | None = None) -> RunHandle:
     """Validate (raises ExecutionBlocked), record the run and its exact graph, and start the worker process."""
     require_executable(graph)
     store = ArtifactStore(workbench)

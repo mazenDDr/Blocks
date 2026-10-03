@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Background, Controls, MarkerType, ReactFlow, ReactFlowProvider, applyEdgeChanges, applyNodeChanges,
+  Background, Controls, MarkerType, ReactFlow, ReactFlowProvider, applyEdgeChanges, applyNodeChanges, useReactFlow,
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from "@xyflow/react";
 import { api, errorText } from "./api";
@@ -10,11 +10,14 @@ import type { Ctx } from "./components/InspectorTabs";
 import { Library } from "./components/Library";
 import { OpNodeCard, type CardNode } from "./components/OpNode";
 import { RunPanel } from "./components/RunPanel";
+import { TabularRunBar, TabularRunPanel, TabularWireInspector, tabularTabs } from "./components/TabularPanels";
 import { useRuns, useValidation } from "./hooks";
-import type { GNode, Graph, OpInfo, UiDoc } from "./types";
+import { isTabularRun, type GNode, type Graph, type OpInfo, type RunSummary, type UiDoc } from "./types";
 import { fmtInt, fmtShape, nextId, shortName } from "./util";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
+const EMPTY_TABULAR: Graph = { schemaVersion: "1.0.0", graphKind: "tabular", backend: "python", nodes: [], edges: [] };
+interface ProjectInfo { id: string; graphKind: string; description: string | null; synthetic: boolean }
 const EMPTY_UI: UiDoc = { schemaVersion: "1.0.0", positions: {} };
 const LAST_KEY = "void.lastProject";
 const nodeTypes = { card: OpNodeCard };
@@ -32,33 +35,40 @@ function Workbench() {
   const [ui, setUi] = useState<UiDoc>(EMPTY_UI);
   const [projectId, setProjectId] = useState("reference_cnn");
   const [saved, setSaved] = useState<string>("");
-  const [projects, setProjects] = useState<string[]>([]);
-  const [examples, setExamples] = useState<string[]>([]);
+  const [projects, setProjects] = useState<ProjectInfo[]>([]);
+  const [examples, setExamples] = useState<ProjectInfo[]>([]);
   const [selNodes, setSelNodes] = useState<string[]>([]);
   const [selEdges, setSelEdges] = useState<string[]>([]);
   const [ctx, setCtx] = useState<Ctx>({ runId: null, step: null, sample: null });
   const [message, setMessage] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
   const [booted, setBooted] = useState(false);
+  const [loadToken, setLoadToken] = useState(0);
+  const { fitView } = useReactFlow();
 
   const opsByType = useMemo(() => Object.fromEntries(ops.map((o) => [o.type, o])), [ops]);
   const validation = useValidation(graph);
   const v = validation.data;
-  const { runs, reload: reloadRuns } = useRuns(projectId);
-  const insData = useInspectionData(ctx.runId);
+  const { runs: allRuns, reload: reloadRuns } = useRuns(projectId);
+  const tabular = graph.graphKind === "tabular";
+  const runs = useMemo(() => allRuns.filter((r): r is RunSummary => !isTabularRun(r)), [allRuns]);
+  const tabRuns = useMemo(() => allRuns.filter(isTabularRun), [allRuns]);
+  const insData = useInspectionData(tabular ? null : ctx.runId);
+  const tabRun = tabular ? tabRuns.find((r) => r.id === ctx.runId) : undefined;
 
   const sig = useMemo(() => JSON.stringify([graph, ui]), [graph, ui]);
   const dirty = booted && sig !== saved;
 
   const refreshLists = useCallback(() => {
-    api.get<{ projects: string[] }>("/api/projects").then((r) => setProjects(r.projects)).catch(() => {});
-    api.get<{ examples: string[] }>("/api/examples").then((r) => setExamples(r.examples)).catch(() => {});
+    api.get<{ details: ProjectInfo[] }>("/api/projects").then((r) => setProjects(r.details)).catch(() => {});
+    api.get<{ details: ProjectInfo[] }>("/api/examples").then((r) => setExamples(r.details)).catch(() => {});
   }, []);
 
   const adopt = useCallback((id: string, g: Graph, u: UiDoc | null, savedState: boolean) => {
     const uu = u ?? EMPTY_UI;
     setProjectId(id); setGraph(g); setUi(uu); setSelNodes([]); setSelEdges([]);
     setSaved(savedState ? JSON.stringify([g, uu]) : "");
+    setLoadToken((n) => n + 1);
     setCtx({ runId: null, step: null, sample: null });
   }, []);
 
@@ -80,8 +90,14 @@ function Workbench() {
     })();
   }, [adopt, refreshLists]);
 
+  // show the whole graph after a project is opened (React Flow only fits on its first render)
+  useEffect(() => { const t = setTimeout(() => fitView({ padding: 0.12, maxZoom: 1 }), 150); return () => clearTimeout(t); }, [loadToken, fitView]);
+
   // default inspection context: newest run, first validation sample
-  useEffect(() => { if (!ctx.runId && runs.length) setCtx((c) => ({ ...c, runId: runs[runs.length - 1].id })); }, [runs, ctx.runId]);
+  useEffect(() => {
+    const list = tabular ? tabRuns : runs;
+    if (!ctx.runId && list.length) setCtx((c) => ({ ...c, runId: list[list.length - 1].id }));
+  }, [runs, tabRuns, tabular, ctx.runId]);
   useEffect(() => { if (ctx.runId && ctx.sample == null && insData.samples.length) setCtx((c) => ({ ...c, sample: 0 })); }, [ctx.runId, ctx.sample, insData.samples.length]);
 
   // ---------------------------------------------------------------- graph edits (the spec is the single source)
@@ -89,10 +105,15 @@ function Workbench() {
   const setConfig = (id: string, patch: Record<string, unknown>) =>
     edit((g) => ({ ...g, nodes: g.nodes.map((n) => (n.id === id ? { ...n, config: Object.fromEntries(Object.entries({ ...n.config, ...patch }).filter(([, x]) => x !== undefined)) } : n)) }));
 
+  /** A wire carries the kind its producing port declares (tensor / table / fit_state / ...). */
+  const wireKind = (g: Graph, node: string, port: string) => {
+    const n = g.nodes.find((x) => x.id === node);
+    return (n && opsByType[n.type]?.outputKinds?.[port]) || "tensor";
+  };
   const connect = (toNode: string, toPort: string, from: { node: string; port: string } | null) =>
     edit((g) => {
       const edges = g.edges.filter((e) => !(e.to.node === toNode && e.to.port === toPort));
-      if (from) edges.push({ id: `${from.node}_${from.port}__${toNode}_${toPort}`, kind: "tensor", from, to: { node: toNode, port: toPort } });
+      if (from) edges.push({ id: `${from.node}_${from.port}__${toNode}_${toPort}`, kind: wireKind(g, from.node, from.port), from, to: { node: toNode, port: toPort } });
       return { ...g, edges };
     });
 
@@ -128,8 +149,12 @@ function Workbench() {
       const edges = [...g.edges];
       const aop = anchor ? opsByType[anchor.type] : undefined;
       if (anchor && aop && aop.outputs.length && op.inputs.length) {
-        const from = { node: anchor.id, port: aop.outputs[0] }, to = { node: id, port: op.inputs[0] };
-        edges.push({ id: `${from.node}_${from.port}__${to.node}_${to.port}`, kind: "tensor", from, to });
+        // first free input port that accepts one of the anchor's outputs (same wire kind)
+        const pair = aop.outputs.flatMap((po) => op.inputs.filter((pi) => op.inputKinds?.[pi] === aop.outputKinds?.[po]).map((pi) => [po, pi] as const))[0];
+        if (pair) {
+          const from = { node: anchor.id, port: pair[0] }, to = { node: id, port: pair[1] };
+          edges.push({ id: `${from.node}_${from.port}__${to.node}_${to.port}`, kind: aop.outputKinds?.[pair[0]] ?? "tensor", from, to });
+        }
       }
       return { ...g, nodes: [...g.nodes, node], edges };
     });
@@ -161,8 +186,8 @@ function Workbench() {
   const posOf = (id: string, i: number) => ui.positions[id] ?? { x: 60 + i * 260, y: 120 };
   const rfNodes: CardNode[] = useMemo(() => graph.nodes.map((n, i) => ({
     id: n.id, type: "card" as const, position: posOf(n.id, i), selected: selNodes.includes(n.id),
-    data: { gnode: n, op: opsByType[n.type], view: v?.nodes[n.id], pending: validation.pending },
-  })), [graph.nodes, ui.positions, selNodes, opsByType, v, validation.pending]); // eslint-disable-line react-hooks/exhaustive-deps
+    data: { gnode: n, op: opsByType[n.type], view: v?.nodes[n.id], pending: validation.pending, runStatus: tabRun?.nodes.find((x) => x.node === n.id) },
+  })), [graph.nodes, ui.positions, selNodes, opsByType, v, validation.pending, tabRun]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rfEdges: Edge[] = useMemo(() => graph.edges.map((e) => {
     const t = v?.nodes[e.from.node]?.outputShapes?.[e.from.port];
@@ -196,22 +221,26 @@ function Workbench() {
         <b className="brand">Project Void</b>
         <label>Project <input value={projectId} onChange={(e) => setProjectId(e.target.value)} aria-label="project id" size={16} /></label>
         <button onClick={() => save().catch(() => {})}>Save{dirty ? " *" : ""}</button>
-        <label>Load <select value="" onChange={(e) => { const [k, ...r] = e.target.value.split(":"); if (k) load(k as "project" | "example", r.join(":")); }} aria-label="load project">
+        <label>Open <select value="" onChange={(e) => { const [k, ...r] = e.target.value.split(":"); if (k) load(k as "project" | "example", r.join(":")); }} aria-label="open project">
           <option value="">choose…</option>
-          {projects.length > 0 && <optgroup label="Saved projects">{projects.map((p) => <option key={p} value={`project:${p}`}>{p}</option>)}</optgroup>}
-          <optgroup label="Examples">{examples.map((p) => <option key={p} value={`example:${p}`}>{p}</option>)}</optgroup>
+          {projects.length > 0 && <optgroup label="Saved projects">{projects.map((p) => <option key={p.id} value={`project:${p.id}`}>{p.id} [{p.graphKind}]</option>)}</optgroup>}
+          <optgroup label="Examples — model graphs">{examples.filter((p) => p.graphKind === "model").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}</option>)}</optgroup>
+          <optgroup label="Examples — tabular / statistics graphs">{examples.filter((p) => p.graphKind === "tabular").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}{p.synthetic ? " (synthetic data)" : ""}</option>)}</optgroup>
         </select></label>
-        <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled", EMPTY, null, false); }}>New</button>
-        <button onClick={() => setShowCode(true)} disabled={!v?.ok} title={v?.ok ? "Show generated PyTorch" : "Fix the graph errors to export"}>Export PyTorch</button>
+        <span className="badge kind" title="Graph kind: wires of different kinds never mean the same thing">{graph.graphKind} graph</span>
+        <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled", EMPTY, null, false); }}>New model graph</button>
+        <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled_tabular", EMPTY_TABULAR, null, false); }}>New tabular graph</button>
+        {!tabular && <button onClick={() => setShowCode(true)} disabled={!v?.ok} title={v?.ok ? "Show generated PyTorch" : "Fix the graph errors to export"}>Export PyTorch</button>}
         <span className="spacer" />
         <span className={`vsum ${errCount ? "bad" : "good"}`} aria-live="polite">
-          {validation.error ? `validation unavailable: ${validation.error}` : validation.pending ? "validating…" : v ? (errCount ? `${errCount} error${errCount > 1 ? "s" : ""}` : `valid · ${fmtInt(v.totalParams)} parameters`) : ""}
+          {validation.error ? `validation unavailable: ${validation.error}` : validation.pending ? "validating…" : v ? (errCount ? `${errCount} error${errCount > 1 ? "s" : ""}` : (tabular ? `valid · ${graph.nodes.length} nodes` : `valid · ${fmtInt(v.totalParams)} parameters`)) : ""}
           {v && <small> · graph {v.graphHash.slice(0, 8)}</small>}
         </span>
       </header>
+      {ui.description && <div className={`notice ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic / teaching data. </b>}{ui.description}</div>}
       {message && <div className="toast" role="status" onClick={() => setMessage(null)}>{message} <small>(click to dismiss)</small></div>}
 
-      <aside className="left"><Library ops={ops} onAdd={addBlock} /></aside>
+      <aside className="left"><Library ops={ops.filter((o) => o.graphKind === graph.graphKind)} onAdd={addBlock} /></aside>
 
       <main className="center">
         <ReactFlow<CardNode, Edge> nodes={rfNodes} edges={rfEdges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
@@ -220,24 +249,32 @@ function Workbench() {
           <Background gap={20} />
           <Controls showInteractive={false} />
         </ReactFlow>
-        {graph.nodes.length === 0 && <div className="canvas-empty">Empty graph. Add blocks from the library, or Load the reference_cnn example.</div>}
+        {graph.nodes.length === 0 && <div className="canvas-empty">{tabular ? "Empty tabular graph. Add a CSV table source from the library, or open an example." : "Empty graph. Add blocks from the library, or open the reference_cnn example."}</div>}
       </main>
 
       <aside className="right">
-        <InspectionBar runs={runs} ctx={ctx} setCtx={setCtx} currentHash={v?.graphHash} checkpoints={insData.checkpoints} samples={insData.samples} />
+        {tabular ? <TabularRunBar runs={tabRuns} runId={ctx.runId} setRunId={(id) => setCtx({ runId: id, step: null, sample: null })} currentHash={v?.graphHash} />
+          : <InspectionBar runs={runs} ctx={ctx} setCtx={setCtx} currentHash={v?.graphHash} checkpoints={insData.checkpoints} samples={insData.samples} />}
         {selNode ? (
           <NodeInspector key={selNode.id} node={selNode} op={opsByType[selNode.type]} ops={opsByType} view={v?.nodes[selNode.id]} graph={graph} ctx={ctx}
+            tabSet={tabular ? tabularTabs(opsByType[selNode.type], selNode, v?.nodes[selNode.id], ctx.runId) : undefined}
             onConfig={(patch) => setConfig(selNode.id, patch)} onConnect={connect} onDelete={() => removeNodes([selNode.id])} onRename={(nid) => rename(selNode.id, nid)} />
         ) : selEdge ? (
-          <WireInspector edge={selEdge} graph={graph} validation={v} ctx={ctx} ops={opsByType} />
+          tabular ? <TabularWireInspector edge={selEdge} graph={graph} validation={v} runId={ctx.runId} ops={opsByType} />
+            : <WireInspector edge={selEdge} graph={graph} validation={v} ctx={ctx} ops={opsByType} />
         ) : (
           <div className="empty pad">Select a node to edit it, or click a wire to inspect the value crossing it.</div>
         )}
       </aside>
 
       <section className="bottom">
-        <RunPanel projectId={projectId} graph={graph} validation={v} runs={runs} reloadRuns={reloadRuns} ctx={ctx} setCtx={setCtx}
-          baseline={ui.pinnedBaseline ?? null} setBaseline={(id) => setUi((u) => ({ ...u, pinnedBaseline: id }))} ensureSaved={ensureSaved} />
+        {tabular ? (
+          <TabularRunPanel projectId={projectId} graph={graph} validation={v} runs={tabRuns} reloadRuns={reloadRuns} runId={ctx.runId}
+            setRunId={(id) => setCtx({ runId: id, step: null, sample: null })} ensureSaved={ensureSaved} onSelectNode={(id) => { setSelNodes([id]); setSelEdges([]); }} />
+        ) : (
+          <RunPanel projectId={projectId} graph={graph} validation={v} runs={runs} reloadRuns={reloadRuns} ctx={ctx} setCtx={setCtx}
+            baseline={ui.pinnedBaseline ?? null} setBaseline={(id) => setUi((u) => ({ ...u, pinnedBaseline: id }))} ensureSaved={ensureSaved} />
+        )}
       </section>
 
       {showCode && <ExportView projectId={projectId} ensureSaved={ensureSaved} onClose={() => setShowCode(false)} />}

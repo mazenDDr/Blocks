@@ -9,7 +9,7 @@ import torch.nn as nn
 
 from . import registry
 from .schema import Graph
-from .validate import Report, require_executable
+from .validate import ExecutionBlocked, Report, require_executable
 
 
 class GraphModule(nn.Module):
@@ -44,6 +44,10 @@ class GraphModule(nn.Module):
 
 def lower_graph(graph: Graph, report: Report | None = None) -> GraphModule:
     """Raises ExecutionBlocked if the graph is not executable (unknown op, mismatch, ...)."""
+    if graph.graphKind != "model":
+        from .types import Diagnostic
+
+        raise ExecutionBlocked([Diagnostic("E_UNSUPPORTED_GRAPH_KIND", f"Graph kind '{graph.graphKind}' is not lowered to PyTorch.", path="/graphKind")])
     if report is None or not report.ok:
         report = require_executable(graph)
     return GraphModule(graph, report)

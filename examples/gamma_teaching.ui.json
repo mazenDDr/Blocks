@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "null_distribution": {
+      "x": 0,
+      "y": 0
+    },
+    "upper_tail": {
+      "x": 290,
+      "y": 0
+    },
+    "test": {
+      "x": 580,
+      "y": 0
+    }
+  },
+  "description": "TEACHING FIXTURE (VISION 11.3): T ~ Gamma(shape=2, scale=1, loc=0), observed T = 5, alpha = 0.05, larger values count against the null. The statistic is specified, not measured.",
+  "synthetic": true
+}

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePolling, useInspect } from "../hooks";
-import type { ActivationsResult, Checkpoint, Diagnostic, GEdge, GNode, Graph, NodeView, OpInfo, RunSummary, Sample, Unavailable, Validation } from "../types";
-import { fmtNum, fmtShape, runLabel, shortHash } from "../util";
+import type { ActivationsResult, Checkpoint, Diagnostic, GEdge, GNode, Graph, NodeView, OpInfo, AnyRun, Sample, Unavailable, Validation } from "../types";
+import { dtypeOf, fmtNum, fmtShape, runLabel, shortHash } from "../util";
 import { ConfigForm } from "./ConfigForm";
 import { ActivationsTab, ArchitectureTab, type Ctx, ExplainTab, FeatureMaps, WeightsTab } from "./InspectorTabs";
 import { NotRecorded, ProvLine } from "./Provenance";
@@ -17,7 +17,7 @@ export function useInspectionData(runId: string | null) {
 }
 
 export function InspectionBar({ runs, ctx, setCtx, currentHash, checkpoints, samples }: {
-  runs: RunSummary[]; ctx: Ctx; setCtx: (c: Ctx) => void; currentHash?: string; checkpoints: Checkpoint[]; samples: Sample[];
+  runs: AnyRun[]; ctx: Ctx; setCtx: (c: Ctx) => void; currentHash?: string; checkpoints: Checkpoint[]; samples: Sample[];
 }) {
   const run = runs.find((r) => r.id === ctx.runId);
   return (
@@ -64,7 +64,7 @@ export function WireInspector({ edge, graph, validation, ctx, ops }: { edge: GEd
       <table><tbody>
         <tr><td>Producer</td><td>{src ? `${ops[src.type]?.displayName ?? src.type} ${src.id}` : edge.from.node}.{edge.from.port}</td></tr>
         <tr><td>Consumer</td><td>{dst ? `${ops[dst.type]?.displayName ?? dst.type} ${dst.id}` : edge.to.node}.{edge.to.port}</td></tr>
-        <tr><td>Shape</td><td>{t ? `${fmtShape(t)} ${t.dtype}` : "unknown (producer has errors)"}</td></tr>
+        <tr><td>Shape</td><td>{t ? `${fmtShape(t)} ${dtypeOf(t)}` : "unknown (producer has errors)"}</td></tr>
         <tr><td>Draft graph</td><td>{shortHash(validation?.graphHash)}</td></tr>
       </tbody></table>
       {dstDiag.map((d, i) => <div key={i} className="errbadge"><b>{d.code}</b> {d.message}</div>)}
@@ -91,15 +91,16 @@ export function WireInspector({ edge, graph, validation, ctx, ops }: { edge: GEd
 
 // ---------------------------------------------------------------------------------------- shell
 const TABS = ["Config", "Architecture", "Weights", "Activations", "Explain"] as const;
-type Tab = (typeof TABS)[number];
 
-export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onConnect, onDelete, onRename }: {
+export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onConnect, onDelete, onRename, tabSet }: {
   node: GNode; op?: OpInfo; ops: Record<string, OpInfo>; view?: NodeView; graph: Graph; ctx: Ctx;
+  /** Replaces the model-graph tabs (Architecture, Weights, ...) with graph-kind specific ones; "Config" is always first. */
+  tabSet?: { names: string[]; render: (tab: string) => ReactNode };
   onConfig: (patch: Record<string, unknown>) => void;
   onConnect: (toNode: string, toPort: string, from: { node: string; port: string } | null) => void;
   onDelete: () => void; onRename: (newId: string) => string | null;
 }) {
-  const [tab, setTab] = useState<Tab>("Config");
+  const [tab, setTab] = useState<string>("Config");
   const [name, setName] = useState(node.id);
   const [nameErr, setNameErr] = useState<string | null>(null);
   useEffect(() => { setName(node.id); setNameErr(null); }, [node.id]);
@@ -124,7 +125,7 @@ export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onCon
         </div>
       ))}
       <div className="tabs" role="tablist">
-        {TABS.map((t) => <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t}</button>)}
+        {(tabSet ? ["Config", ...tabSet.names] : [...TABS]).map((t) => <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t}</button>)}
       </div>
       <div className="tabbody">
         {tab === "Config" && op && (
@@ -138,13 +139,13 @@ export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onCon
                   const val = cur ? `${cur.from.node}.${cur.from.port}` : "";
                   return (
                     <div className="row" key={p}>
-                      <label className="lbl">input {p}</label>
+                      <label className="lbl">input {p}{op.inputKinds?.[p] && op.inputKinds[p] !== "tensor" ? <small> ({op.inputKinds[p]})</small> : null}</label>
                       <select aria-label={`source for ${p}`} value={val} onChange={(e) => {
                         if (!e.target.value) return onConnect(node.id, p, null);
                         const [n, ...rest] = e.target.value.split("."); onConnect(node.id, p, { node: n, port: rest.join(".") });
                       }}>
                         <option value="">(not connected)</option>
-                        {graph.nodes.filter((n) => n.id !== node.id).flatMap((n) => (ops[n.type]?.outputs ?? []).map((p) => `${n.id}.${p}`)).map((o) => <option key={o} value={o}>{o}</option>)}
+                        {graph.nodes.filter((n) => n.id !== node.id).flatMap((n) => (ops[n.type]?.outputs ?? []).filter((po) => ops[n.type]?.outputKinds?.[po] === op.inputKinds?.[p]).map((po) => `${n.id}.${po}`)).map((o) => <option key={o} value={o}>{o}</option>)}
                       </select>
                     </div>
                   );
@@ -153,10 +154,11 @@ export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onCon
             )}
           </>
         )}
-        {tab === "Architecture" && <ArchitectureTab node={node} view={view} />}
-        {tab === "Weights" && <WeightsTab ctx={ctx} node={node} view={view} />}
-        {tab === "Activations" && <ActivationsTab ctx={ctx} node={node} />}
-        {tab === "Explain" && op && <ExplainTab op={op} view={view} />}
+        {tab !== "Config" && tabSet && tabSet.render(tab)}
+        {!tabSet && tab === "Architecture" && <ArchitectureTab node={node} view={view} />}
+        {!tabSet && tab === "Weights" && <WeightsTab ctx={ctx} node={node} view={view} />}
+        {!tabSet && tab === "Activations" && <ActivationsTab ctx={ctx} node={node} />}
+        {!tabSet && tab === "Explain" && op && <ExplainTab op={op} view={view} />}
       </div>
     </div>
   );

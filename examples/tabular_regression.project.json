@@ -1,0 +1,468 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "tabular",
+  "backend": "python",
+  "nodes": [
+    {
+      "id": "housing",
+      "type": "tabular.csv_source",
+      "version": "1.0.0",
+      "config": {
+        "path": "examples/fixtures/synthetic_housing.csv"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "profile",
+      "type": "tabular.profile",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "dedupe",
+      "type": "tabular.duplicates",
+      "version": "1.0.0",
+      "config": {
+        "key_columns": [],
+        "keep": "first"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "select",
+      "type": "tabular.select_columns",
+      "version": "1.0.0",
+      "config": {
+        "columns": [
+          {
+            "name": "area_m2",
+            "dtype": "float"
+          },
+          {
+            "name": "rooms",
+            "dtype": "int"
+          },
+          {
+            "name": "age_years",
+            "dtype": "float"
+          },
+          {
+            "name": "neighborhood",
+            "dtype": "string"
+          },
+          {
+            "name": "price_k",
+            "dtype": "float"
+          }
+        ],
+        "on_cast_failure": "error"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "split",
+      "type": "tabular.train_validation_split",
+      "version": "1.0.0",
+      "config": {
+        "seed": 42,
+        "validation_fraction": 0.25
+      },
+      "stateRef": null
+    },
+    {
+      "id": "imp_fit",
+      "type": "tabular.fit_impute",
+      "version": "1.0.0",
+      "config": {
+        "columns": [
+          "area_m2",
+          "age_years"
+        ],
+        "strategy": "median"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "imp_train",
+      "type": "tabular.apply_transform",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "imp_val",
+      "type": "tabular.apply_transform",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "oh_fit",
+      "type": "tabular.fit_onehot",
+      "version": "1.0.0",
+      "config": {
+        "columns": [
+          "neighborhood"
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "oh_train",
+      "type": "tabular.apply_transform",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "oh_val",
+      "type": "tabular.apply_transform",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "sc_fit",
+      "type": "tabular.fit_standardize",
+      "version": "1.0.0",
+      "config": {
+        "columns": [
+          "area_m2",
+          "rooms",
+          "age_years"
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "sc_train",
+      "type": "tabular.apply_transform",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "sc_val",
+      "type": "tabular.apply_transform",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "ols",
+      "type": "sklearn.linear_regression",
+      "version": "1.0.0",
+      "config": {
+        "target": "price_k",
+        "features": [],
+        "fit_intercept": true
+      },
+      "stateRef": null
+    },
+    {
+      "id": "metrics",
+      "type": "sklearn.metrics",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "predictions",
+      "type": "tabular.predictions_export",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "housing_table__profile_table",
+      "kind": "table",
+      "from": {
+        "node": "housing",
+        "port": "table"
+      },
+      "to": {
+        "node": "profile",
+        "port": "table"
+      }
+    },
+    {
+      "id": "profile_table__dedupe_table",
+      "kind": "table",
+      "from": {
+        "node": "profile",
+        "port": "table"
+      },
+      "to": {
+        "node": "dedupe",
+        "port": "table"
+      }
+    },
+    {
+      "id": "dedupe_table__select_table",
+      "kind": "table",
+      "from": {
+        "node": "dedupe",
+        "port": "table"
+      },
+      "to": {
+        "node": "select",
+        "port": "table"
+      }
+    },
+    {
+      "id": "select_table__split_table",
+      "kind": "table",
+      "from": {
+        "node": "select",
+        "port": "table"
+      },
+      "to": {
+        "node": "split",
+        "port": "table"
+      }
+    },
+    {
+      "id": "split_train__imp_fit_train",
+      "kind": "table",
+      "from": {
+        "node": "split",
+        "port": "train"
+      },
+      "to": {
+        "node": "imp_fit",
+        "port": "train"
+      }
+    },
+    {
+      "id": "split_train__imp_train_table",
+      "kind": "table",
+      "from": {
+        "node": "split",
+        "port": "train"
+      },
+      "to": {
+        "node": "imp_train",
+        "port": "table"
+      }
+    },
+    {
+      "id": "imp_fit_fit__imp_train_fit",
+      "kind": "fit_state",
+      "from": {
+        "node": "imp_fit",
+        "port": "fit"
+      },
+      "to": {
+        "node": "imp_train",
+        "port": "fit"
+      }
+    },
+    {
+      "id": "split_validation__imp_val_table",
+      "kind": "table",
+      "from": {
+        "node": "split",
+        "port": "validation"
+      },
+      "to": {
+        "node": "imp_val",
+        "port": "table"
+      }
+    },
+    {
+      "id": "imp_fit_fit__imp_val_fit",
+      "kind": "fit_state",
+      "from": {
+        "node": "imp_fit",
+        "port": "fit"
+      },
+      "to": {
+        "node": "imp_val",
+        "port": "fit"
+      }
+    },
+    {
+      "id": "imp_train_table__oh_fit_train",
+      "kind": "table",
+      "from": {
+        "node": "imp_train",
+        "port": "table"
+      },
+      "to": {
+        "node": "oh_fit",
+        "port": "train"
+      }
+    },
+    {
+      "id": "imp_train_table__oh_train_table",
+      "kind": "table",
+      "from": {
+        "node": "imp_train",
+        "port": "table"
+      },
+      "to": {
+        "node": "oh_train",
+        "port": "table"
+      }
+    },
+    {
+      "id": "oh_fit_fit__oh_train_fit",
+      "kind": "fit_state",
+      "from": {
+        "node": "oh_fit",
+        "port": "fit"
+      },
+      "to": {
+        "node": "oh_train",
+        "port": "fit"
+      }
+    },
+    {
+      "id": "imp_val_table__oh_val_table",
+      "kind": "table",
+      "from": {
+        "node": "imp_val",
+        "port": "table"
+      },
+      "to": {
+        "node": "oh_val",
+        "port": "table"
+      }
+    },
+    {
+      "id": "oh_fit_fit__oh_val_fit",
+      "kind": "fit_state",
+      "from": {
+        "node": "oh_fit",
+        "port": "fit"
+      },
+      "to": {
+        "node": "oh_val",
+        "port": "fit"
+      }
+    },
+    {
+      "id": "oh_train_table__sc_fit_train",
+      "kind": "table",
+      "from": {
+        "node": "oh_train",
+        "port": "table"
+      },
+      "to": {
+        "node": "sc_fit",
+        "port": "train"
+      }
+    },
+    {
+      "id": "oh_train_table__sc_train_table",
+      "kind": "table",
+      "from": {
+        "node": "oh_train",
+        "port": "table"
+      },
+      "to": {
+        "node": "sc_train",
+        "port": "table"
+      }
+    },
+    {
+      "id": "sc_fit_fit__sc_train_fit",
+      "kind": "fit_state",
+      "from": {
+        "node": "sc_fit",
+        "port": "fit"
+      },
+      "to": {
+        "node": "sc_train",
+        "port": "fit"
+      }
+    },
+    {
+      "id": "oh_val_table__sc_val_table",
+      "kind": "table",
+      "from": {
+        "node": "oh_val",
+        "port": "table"
+      },
+      "to": {
+        "node": "sc_val",
+        "port": "table"
+      }
+    },
+    {
+      "id": "sc_fit_fit__sc_val_fit",
+      "kind": "fit_state",
+      "from": {
+        "node": "sc_fit",
+        "port": "fit"
+      },
+      "to": {
+        "node": "sc_val",
+        "port": "fit"
+      }
+    },
+    {
+      "id": "sc_train_table__ols_train",
+      "kind": "table",
+      "from": {
+        "node": "sc_train",
+        "port": "table"
+      },
+      "to": {
+        "node": "ols",
+        "port": "train"
+      }
+    },
+    {
+      "id": "ols_model__metrics_model",
+      "kind": "model",
+      "from": {
+        "node": "ols",
+        "port": "model"
+      },
+      "to": {
+        "node": "metrics",
+        "port": "model"
+      }
+    },
+    {
+      "id": "sc_val_table__metrics_table",
+      "kind": "table",
+      "from": {
+        "node": "sc_val",
+        "port": "table"
+      },
+      "to": {
+        "node": "metrics",
+        "port": "table"
+      }
+    },
+    {
+      "id": "ols_model__predictions_model",
+      "kind": "model",
+      "from": {
+        "node": "ols",
+        "port": "model"
+      },
+      "to": {
+        "node": "predictions",
+        "port": "model"
+      }
+    },
+    {
+      "id": "sc_val_table__predictions_table",
+      "kind": "table",
+      "from": {
+        "node": "sc_val",
+        "port": "table"
+      },
+      "to": {
+        "node": "predictions",
+        "port": "table"
+      }
+    }
+  ]
+}

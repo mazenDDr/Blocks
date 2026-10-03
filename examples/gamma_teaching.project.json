@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "tabular",
+  "backend": "python",
+  "nodes": [
+    {
+      "id": "null_distribution",
+      "type": "scipy.gamma_distribution",
+      "version": "1.0.0",
+      "config": {
+        "parametrization": "shape_scale",
+        "shape": 2.0,
+        "scale": 1.0,
+        "loc": 0.0
+      },
+      "stateRef": null
+    },
+    {
+      "id": "upper_tail",
+      "type": "scipy.tail_probability",
+      "version": "1.0.0",
+      "config": {
+        "observed": 5.0,
+        "tail": "upper"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "test",
+      "type": "scipy.hypothesis_test",
+      "version": "1.0.0",
+      "config": {
+        "statistic_name": "T",
+        "alpha": 0.05,
+        "teaching_fixture": true,
+        "assumptions": [
+          "Teaching fixture (VISION 11.3): the null distribution T ~ Gamma(shape=2, scale=1, location=0) and the observed T = 5 are specified by the example."
+        ]
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "null_distribution_distribution__upper_tail_distribution",
+      "kind": "distribution",
+      "from": {
+        "node": "null_distribution",
+        "port": "distribution"
+      },
+      "to": {
+        "node": "upper_tail",
+        "port": "distribution"
+      }
+    },
+    {
+      "id": "upper_tail_tail__test_tail",
+      "kind": "tail",
+      "from": {
+        "node": "upper_tail",
+        "port": "tail"
+      },
+      "to": {
+        "node": "test",
+        "port": "tail"
+      }
+    }
+  ]
+}

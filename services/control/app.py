@@ -19,7 +19,7 @@ from typing import Any, Literal
 from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from artifact_store import ArtifactStore, IllegalTransition
 from graph_core import registry
@@ -30,9 +30,11 @@ from graph_core.project_io import Project, load_project, save_project, ui_path_f
 from graph_core.schema import Graph, ProjectDocument
 from graph_core.validate import ExecutionBlocked, validate
 from worker.process import RunHandle, submit_run
+from worker.tabular_run import TabularRunConfig
 from worker.train import RunConfig, UnsupportedGraph, _io_contract
 
 from . import inspection as insp
+from . import tabular_inspection as tinsp
 from .registry_meta import META
 
 REPO = Path(__file__).resolve().parents[2]
@@ -46,7 +48,9 @@ class ValidateRequest(BaseModel):
 
 
 class InspectRequest(BaseModel):
-    kind: Literal["weights", "activations", "sample_loss", "confusion"]
+    kind: Literal["weights", "activations", "sample_loss", "confusion",
+                  "table", "profile", "fit_state", "coefficients", "metrics", "test_result", "distribution", "tail", "number", "summary"]
+    port: str | None = None
     runId: str | None = None
     node: str | None = None
     checkpointStep: int | None = None
@@ -66,7 +70,7 @@ class InferRequest(BaseModel):
 class SubmitRequest(BaseModel):
     projectId: str | None = None
     graph: Graph | None = None
-    config: RunConfig
+    config: dict[str, Any] = Field(default_factory=dict)  # RunConfig for model graphs, TabularRunConfig for tabular graphs
 
 
 # ---------------------------------------------------------------------------------------- helpers
@@ -101,6 +105,7 @@ def validation_json(graph: Graph) -> dict[str, Any]:
     report = validate(graph)
     j = report.to_json()
     j["graphHash"] = semantic_hash(graph)
+    j["graphKind"] = graph.graphKind
     j["nodes"] = node_view(graph, report)
     j["order"] = report.order
     return j
@@ -133,8 +138,37 @@ class Services:
         except insp.InspectError as e:
             raise HTTPException(e.status, {"code": "not_found", "message": e.message})
 
+    def tabular_summary(self, row: dict[str, Any]) -> dict[str, Any]:
+        rid = row["id"]
+        evs = self.store.events(rid, -1, ("run_started", "node_started", "node_finished", "node_failed", "source_recorded", "split_recorded", "validation_error"))
+        order, status, failure, sources, splits, libs = [], {}, None, [], [], None
+        for e in evs:
+            d, t = e["data"], e["type"]
+            if t == "run_started":
+                order, libs = d["order"], d.get("libraries")
+            elif t == "node_started":
+                status[e["node_id"]] = {"node": e["node_id"], "type": d["type"], "status": "running"}
+            elif t == "node_finished":
+                status[e["node_id"]] = {"node": e["node_id"], "type": d["type"], "status": "finished", "rows": d.get("rows", {})}
+            elif t == "node_failed":
+                status[e["node_id"]] = {**status.get(e["node_id"], {"node": e["node_id"]}), "status": "failed"}
+                failure = {"node": e["node_id"], "code": d["code"], "message": d["message"]}
+            elif t == "source_recorded":
+                sources.append({"node": e["node_id"], **d})
+            elif t == "split_recorded":
+                splits.append({"node": e["node_id"], **d})
+            elif t == "validation_error":
+                failure = failure or {"node": e["node_id"], "code": d["code"], "message": d["message"]}
+        nodes = [status.get(n, {"node": n, "status": "pending"}) for n in order]
+        return {"kind": "tabular", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": row["config"],
+                "createdAt": row["created_at"], "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "nodes": nodes,
+                "progress": {"nodesDone": sum(1 for n in nodes if n["status"] == "finished"), "nodes": len(order)},
+                "sources": sources, "splits": splits, "failure": failure, "libraries": libs}
+
     def run_summary(self, row: dict[str, Any]) -> dict[str, Any]:
         rid = row["id"]
+        if row["config"].get("kind") == "tabular":
+            return self.tabular_summary(row)
         started = self.store.last_event(rid, "run_started")
         last_step = self.store.last_event(rid, "train_step")
         epochs = [e["data"] for e in self.store.events(rid, -1, ("epoch_end",))]
@@ -142,12 +176,12 @@ class Services:
         spe = math.ceil(started["data"]["n_train"] / cfg["batch_size"]) if started else None
         sd = started["data"] if started else None
         return {
-            "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": cfg,
+            "kind": "model", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": cfg,
             "createdAt": row["created_at"], "updatedAt": row["updated_at"],
             "classes": sd["classes"] if sd else None,
             "totalParams": sd["total_params"] if sd else None,
-            "split": ({"seed": sd["split_seed"], "valFraction": sd["val_fraction"], "nTrain": sd["n_train"], "nVal": sd["n_val"],
-                       "datasetSha256": sd["dataset_sha256"]} if sd else None),
+            "split": ({"seed": sd.get("split_seed"), "valFraction": sd.get("val_fraction"), "nTrain": sd["n_train"], "nVal": sd["n_val"],
+                       "datasetSha256": sd.get("dataset_sha256")} if sd else None),
             "progress": {"step": last_step["data"]["step"] if last_step else 0, "epochsDone": len(epochs), "epochs": cfg["epochs"],
                          "stepsPerEpoch": spe},
             "final": epochs[-1] if epochs else None,
@@ -172,7 +206,9 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
         ops = []
         for op in registry.all_ops():
             name, cat, purpose = META.get(op.type, (op.type, "Other", ""))
-            ops.append({"type": op.type, "version": op.version, "backend": op.backend, "displayName": name, "category": cat, "purpose": purpose,
+            ops.append({"type": op.type, "version": op.version, "backend": op.backend, "graphKind": op.graph_kind, "summaryKind": getattr(op, "summary_kind", None), "displayName": name, "category": cat, "purpose": purpose,
+                        "inputKinds": getattr(op, "in_kinds", None) or {p: "tensor" for p in op.inputs},
+                        "outputKinds": getattr(op, "out_kinds", None) or {p: "tensor" for p in op.outputs},
                         "inputs": list(op.inputs), "outputs": list(op.outputs), "configSchema": op.Config.model_json_schema(),
                         "defaults": op.Config().model_dump(mode="json")})
         return {"ops": ops}
@@ -182,9 +218,19 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
         return validation_json(req.graph)
 
     # ------------------------------------------------------------------ projects
+    def describe(path: Path, pid: str) -> dict[str, Any]:
+        try:
+            g = json.loads(path.read_text())
+            ui_p = ui_path_for(path)
+            ui = json.loads(ui_p.read_text()) if ui_p.exists() else {}
+            return {"id": pid, "graphKind": g.get("graphKind", "model"), "description": ui.get("description"), "synthetic": bool(ui.get("synthetic"))}
+        except (OSError, ValueError):
+            return {"id": pid, "graphKind": "unknown", "description": None, "synthetic": False}
+
     @app.get("/api/projects")
     def list_projects():
-        return {"projects": sorted(p.name[: -len(".project.json")] for p in sv.projects.glob("*.project.json"))}
+        names = sorted(p.name[: -len(".project.json")] for p in sv.projects.glob("*.project.json"))
+        return {"projects": names, "details": [describe(sv.projects / f"{n}.project.json", n) for n in names]}
 
     @app.get("/api/projects/{pid}")
     def get_project(pid: str):
@@ -204,7 +250,8 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
 
     @app.get("/api/examples")
     def list_examples():
-        return {"examples": sorted(p.name[: -len(".project.json")] for p in sv.examples.glob("*.project.json"))}
+        names = sorted(p.name[: -len(".project.json")] for p in sv.examples.glob("*.project.json"))
+        return {"examples": names, "details": [describe(sv.examples / f"{n}.project.json", n) for n in names]}
 
     @app.get("/api/examples/{name}")
     def get_example(name: str):
@@ -220,6 +267,8 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
         if not path.exists():
             raise HTTPException(404, {"code": "not_found", "message": f"no project '{pid}'"})
         graph = load_project(path).graph
+        if graph.graphKind != "model":
+            raise _err(422, f"'{graph.graphKind}' graphs have no PyTorch export", code="export_unsupported")
         try:
             code = generate_pytorch(graph)
         except ExecutionBlocked as e:
@@ -240,8 +289,15 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
             graph = load_project(path).graph
         else:
             graph = req.graph
-        cfg = req.config.model_copy(update={"data": str(Path(req.config.data).expanduser().resolve()),
-                                            "project_id": req.projectId or req.config.project_id})
+        tabular = graph.graphKind == "tabular"
+        try:
+            if tabular:
+                cfg = TabularRunConfig.model_validate({**req.config, "project_id": req.projectId or req.config.get("project_id")})
+            else:
+                base = RunConfig.model_validate(req.config)
+                cfg = base.model_copy(update={"data": str(Path(base.data).expanduser().resolve()), "project_id": req.projectId or base.project_id})
+        except ValidationError as e:
+            raise _err(422, "invalid run config: " + "; ".join(f"{'.'.join(str(x) for x in err['loc'])}: {err['msg']}" for err in e.errors()))
         req_hash = hashlib.sha256(json.dumps({"graph": semantic_hash(graph), "config": cfg.model_dump()}, sort_keys=True).encode()).hexdigest()
         with sv.lock:
             prior = sv.store.get_idempotent(idempotency_key)
@@ -249,6 +305,14 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
                 if prior["request_hash"] != req_hash:
                     raise _err(409, "this Idempotency-Key was already used with a different request", code="idempotency_key_reused")
                 return JSONResponse({"runId": prior["run_id"], "idempotentReplay": True, "status": sv.store.get_run(prior["run_id"])["status"]})
+            if tabular:
+                report = validate(graph)
+                if not report.ok:
+                    raise _err(422, "the graph has errors and cannot run", [d.to_json() for d in report.errors], "execution_blocked")
+                handle = submit_run(graph, cfg, sv.workbench)
+                sv.handles[handle.run_id] = handle
+                sv.store.put_idempotent(idempotency_key, req_hash, handle.run_id)
+                return JSONResponse({"runId": handle.run_id, "idempotentReplay": False, "status": "queued", "graphHash": semantic_hash(graph)}, status_code=201)
             if not Path(cfg.data).is_dir():
                 raise _err(422, f"dataset directory '{cfg.data}' does not exist", code="dataset_missing")
             n_dirs = sum(1 for d in Path(cfg.data).iterdir() if d.is_dir())
@@ -297,6 +361,12 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
         if h:
             h._cancel.set()
         return {"runId": rid, "status": "cancelling"}
+
+    @app.get("/api/runs/{rid}/tables/{node}/{port}.csv")
+    def table_csv(rid: str, node: str, port: str):
+        """Download a recorded table (e.g. exported predictions) exactly as stored."""
+        path = tinsp.table_artifact_path(sv.store, rid, node, port)
+        return FileResponse(path, media_type="text/csv", filename=f"{rid}_{node}_{port}.csv")
 
     @app.get("/api/runs/{rid}/metrics")
     def run_metrics(rid: str):
@@ -361,6 +431,11 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
         if rid is None:
             return {"available": False, "kind": req.kind, "reason": "no_run", "message": "No run exists yet; nothing is recorded.",
                     "provenance": {"runId": None, "nodeId": req.node}}
+        row = sv.store.get_run(rid)
+        if row is not None and row["config"].get("kind") == "tabular":
+            return tinsp.inspect_tabular(sv.store, rid, req)
+        if req.kind not in ("weights", "activations", "sample_loss", "confusion"):
+            raise _err(422, f"'{req.kind}' inspection applies to tabular runs only")
         rd = sv.run_data(rid)
         if req.kind in ("weights", "activations") and not req.node:
             raise _err(422, "'node' is required for weights and activations")
