@@ -1,0 +1,5 @@
+# Isolated from the training venv (native tracker dependencies require protobuf 6).
+mlflow-skinny==3.16.1
+wandb==0.30.0
+sqlalchemy==2.0.48
+alembic==1.18.4

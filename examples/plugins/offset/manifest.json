@@ -1,0 +1,302 @@
+{
+  "schemaVersion": "1.0.0",
+  "name": "table-offset",
+  "version": "1.0.0",
+  "operation": "community.table_offset",
+  "implementation": "operation.py",
+  "className": "Offset",
+  "sha256": "6cb3c37510039bb6e56f062718a7c95bf1fd4e56ea189e687cc8276de31a8b3e",
+  "inputs": {
+    "table": "table"
+  },
+  "outputs": {
+    "table": "table"
+  },
+  "settingsSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "column": {
+        "default": "signal",
+        "title": "Column",
+        "type": "string"
+      },
+      "offset": {
+        "default": 1.0,
+        "title": "Offset",
+        "type": "number"
+      }
+    },
+    "title": "Settings",
+    "type": "object"
+  },
+  "state": "none",
+  "effects": [],
+  "inspector": {
+    "displayName": "Declared offset",
+    "category": "Preprocessing",
+    "summaryKind": "step"
+  },
+  "documentation": "Adds a declared constant to one numeric column. Pure pandas operation; never fits on validation data. Explicitly trusted native Python.",
+  "exampleGraph": {
+    "schemaVersion": "1.0.0",
+    "graphKind": "tabular",
+    "backend": "python",
+    "nodes": [
+      {
+        "id": "sensors",
+        "type": "tabular.csv_source",
+        "version": "1.0.0",
+        "config": {
+          "path": "examples/fixtures/synthetic_serving_sensors.csv"
+        },
+        "stateRef": null
+      },
+      {
+        "id": "split",
+        "type": "tabular.train_validation_split",
+        "version": "1.0.0",
+        "config": {
+          "seed": 71,
+          "validation_fraction": 0.25
+        },
+        "stateRef": null
+      },
+      {
+        "id": "scale",
+        "type": "tabular.fit_standardize",
+        "version": "1.0.0",
+        "config": {
+          "columns": [
+            "signal",
+            "background"
+          ]
+        },
+        "stateRef": null
+      },
+      {
+        "id": "train_scaled",
+        "type": "tabular.apply_transform",
+        "version": "1.0.0",
+        "config": {},
+        "stateRef": null
+      },
+      {
+        "id": "val_scaled",
+        "type": "tabular.apply_transform",
+        "version": "1.0.0",
+        "config": {},
+        "stateRef": null
+      },
+      {
+        "id": "classifier",
+        "type": "sklearn.logistic_regression",
+        "version": "1.0.0",
+        "config": {
+          "target": "label",
+          "features": [
+            "signal",
+            "background"
+          ],
+          "C": 1.0,
+          "max_iter": 200
+        },
+        "stateRef": null
+      },
+      {
+        "id": "metrics",
+        "type": "sklearn.metrics",
+        "version": "1.0.0",
+        "config": {},
+        "stateRef": null
+      },
+      {
+        "id": "offset",
+        "type": "community.table_offset",
+        "version": "1.0.0",
+        "config": {
+          "column": "signal",
+          "offset": 1.0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "sensors_table_split_table",
+        "kind": "table",
+        "from": {
+          "node": "sensors",
+          "port": "table"
+        },
+        "to": {
+          "node": "split",
+          "port": "table"
+        }
+      },
+      {
+        "id": "split_train_scale_train",
+        "kind": "table",
+        "from": {
+          "node": "split",
+          "port": "train"
+        },
+        "to": {
+          "node": "scale",
+          "port": "train"
+        }
+      },
+      {
+        "id": "split_train_train_scaled_table",
+        "kind": "table",
+        "from": {
+          "node": "split",
+          "port": "train"
+        },
+        "to": {
+          "node": "train_scaled",
+          "port": "table"
+        }
+      },
+      {
+        "id": "scale_fit_train_scaled_fit",
+        "kind": "fit_state",
+        "from": {
+          "node": "scale",
+          "port": "fit"
+        },
+        "to": {
+          "node": "train_scaled",
+          "port": "fit"
+        }
+      },
+      {
+        "id": "split_validation_val_scaled_table",
+        "kind": "table",
+        "from": {
+          "node": "split",
+          "port": "validation"
+        },
+        "to": {
+          "node": "val_scaled",
+          "port": "table"
+        }
+      },
+      {
+        "id": "scale_fit_val_scaled_fit",
+        "kind": "fit_state",
+        "from": {
+          "node": "scale",
+          "port": "fit"
+        },
+        "to": {
+          "node": "val_scaled",
+          "port": "fit"
+        }
+      },
+      {
+        "id": "train_scaled_table_classifier_train",
+        "kind": "table",
+        "from": {
+          "node": "train_scaled",
+          "port": "table"
+        },
+        "to": {
+          "node": "classifier",
+          "port": "train"
+        }
+      },
+      {
+        "id": "classifier_model_metrics_model",
+        "kind": "model",
+        "from": {
+          "node": "classifier",
+          "port": "model"
+        },
+        "to": {
+          "node": "metrics",
+          "port": "model"
+        }
+      },
+      {
+        "id": "val_scaled_table_metrics_table",
+        "kind": "table",
+        "from": {
+          "node": "val_scaled",
+          "port": "table"
+        },
+        "to": {
+          "node": "metrics",
+          "port": "table"
+        }
+      },
+      {
+        "id": "source_offset",
+        "kind": "table",
+        "from": {
+          "node": "sensors",
+          "port": "table"
+        },
+        "to": {
+          "node": "offset",
+          "port": "table"
+        }
+      }
+    ]
+  },
+  "nativeDependencies": {
+    "pandas": "3.0.6"
+  },
+  "cases": [
+    {
+      "name": "positive-negative-offset",
+      "config": {
+        "column": "signal",
+        "offset": 0.5
+      },
+      "inputs": {
+        "table": [
+          {
+            "signal": -1.0,
+            "label": 0
+          },
+          {
+            "signal": 2.0,
+            "label": 1
+          }
+        ]
+      },
+      "expected": {
+        "table": [
+          {
+            "signal": -0.5,
+            "label": 0
+          },
+          {
+            "signal": 2.5,
+            "label": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "zero-offset-and-empty",
+      "config": {
+        "column": "signal",
+        "offset": 0.0
+      },
+      "inputs": {
+        "table": [
+          {
+            "signal": 3.0
+          }
+        ]
+      },
+      "expected": {
+        "table": [
+          {
+            "signal": 3.0
+          }
+        ]
+      }
+    }
+  ]
+}

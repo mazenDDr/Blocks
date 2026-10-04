@@ -147,4 +147,8 @@ TensorFlow/Keras 3 and JAX portable subsets, compatibility reports, native expor
 
 ## Milestone 7 status
 
-Native tabular fitted-pipeline registry, explicit local/staging releases, traceable serving, bounded measured HTTP traffic, session counter isolation, monitoring and rollout/rollback are implemented (ADR 0012). Remote deployment and unsupported model families remain absent. Next planned scope is Milestone 8, as recorded in HANDOFF §5/§8.
+Native tabular fitted-pipeline registry, explicit local/staging releases, traceable serving, bounded measured HTTP traffic, session counter isolation, monitoring and rollout/rollback are implemented (ADR 0012). Remote deployment and unsupported model families remain absent.
+
+## Milestone 8 status
+
+Authenticated loopback CPU worker protocol, native local MLflow/W&B offline recovery, inert project packages, a trusted pure-tabular operation SDK, recorded comparisons/conclusions, keyboard graph controls and the complete bounded A01–A64 acceptance checklist are implemented (ADR 0013). Cross-host TLS/GPU/distributed execution, online trackers, team permissions and external-user onboarding remain unimplemented. The product vision has remaining gaps: ACCEPTANCE/CAPABILITIES state them explicitly; HANDOFF §9 contains verification and continuation priorities.

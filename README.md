@@ -2,7 +2,7 @@
 
 Phase 0 (semantic and execution foundation), Phase 1 (visual CNN workbench: control API + editor), Milestone 2a (tabular graph kind:
 data preparation, classical ML, statistics), Milestone 2b (connected data sources, versioned extraction, studies and sweeps), Milestone 3 (research-level composition) and
-Milestone 4 (language-model and agent workflows on native LangGraph), Milestone 5 (reinforcement learning, unsupervised workflows), Milestone 6a (TensorFlow/Keras 3 and JAX backends for a portable model-graph subset, compatibility reports, native exports, coverage ledger, benchmarks), Milestone 6b (typed vision, NLP and speech workflows with recorded inspection), and Milestone 7 (registry and production investigation through a bounded native tabular serving adapter) are implemented.
+Milestone 4 (language-model and agent workflows on native LangGraph), Milestone 5 (reinforcement learning, unsupervised workflows), Milestone 6a (TensorFlow/Keras 3 and JAX backends for a portable model-graph subset, compatibility reports, native exports, coverage ledger, benchmarks), Milestone 6b (typed vision, NLP and speech workflows with recorded inspection), Milestone 7 (registry and production investigation through a bounded native tabular serving adapter), and bounded Milestone 8 integrations/community tooling are implemented.
 See `docs/PLAN.md`, `docs/CAPABILITIES.md` and `docs/adr/` (ADR 0003: tabular graph kind; ADR 0004: connectors, snapshots, studies; ADR 0008: agent graph kind, memory, context recording; ADR 0010: additional backends, compatibility, coverage).
 
 ## Setup
@@ -232,3 +232,35 @@ Open **production_sensors** under the tabular examples, then **Run graph**. This
 5. **Monitoring:** inspect an observed request window. Input/prediction drift is separate from task quality measured only on explicitly aligned labels. Missing labels or uncaptured inputs show unavailable evidence. No automatic rollback or retraining occurs.
 
 Serving currently supports native tabular LinearRegression/LogisticRegression with typed selection and fitted imputation/one-hot/scaling. Models and fitted state are captured during the run; old runs need a supported rerun. Remote deployment, domain/CNN serving, streaming, autoscaling and authenticated multi-user service are not implemented. Use one owning control process. User/session IDs are caller-declared isolation keys; the optional stateful application is a request counter and does not mutate the estimator. See ADR 0012 and the capabilities ledger for precise limits.
+
+## Scale integrations and community tooling (bounded Milestone 8)
+
+**Integrations** exposes actual worker submission/reconnect/cancel, explicit tracker export selections, inert project package export/inspection/import, native SDK conformance, recorded comparisons/conclusions and the A01–A64 acceptance checklist. Choose completed runs for sharing; numeric metrics and evaluation-summary artifacts are opt-in. Local MLflow writes native SQLite/artifacts under the workbench. W&B creates native **offline** run records and never uploads them.
+
+The tracker environment is separate so its protobuf dependency cannot change the training backends. Commands actually run:
+
+```bash
+.venv/bin/python -m venv .venv-trackers
+.venv-trackers/bin/pip install mlflow-skinny==3.16.1 wandb==0.30.0 sqlalchemy==2.0.48 alembic==1.18.4
+.venv-trackers/bin/pip freeze > python/tracking/lock.txt
+# Temporary verification services: fixture-only token; use your own environment reference for a new worker.
+VOID_WORKER_TOKEN=void-m8-local-smoke-token-123456 VOID_WORKBENCH=/private/tmp/void-m8-smoke .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8768
+VOID_API=http://127.0.0.1:8768 pnpm -C apps/editor dev --host 127.0.0.1 --port 5293
+VOID_WORKER_TOKEN=void-m8-local-smoke-token-123456 .venv/bin/python -m scale.worker_server --workbench /private/tmp/void-m8-worker --port 8778
+.venv/bin/python examples/scale_journey.py --base http://127.0.0.1:8768 --worker http://127.0.0.1:8778 --output benchmarks/results/m8_local_worker.json
+.venv/bin/python examples/connected_production_journey.py --base http://127.0.0.1:8768
+.venv/bin/python -m extensions.sdk examples/plugins/offset/manifest.json
+.venv/bin/pytest -q tests/test_scale.py --tb=short -o faulthandler_timeout=240
+.venv/bin/python -m backends.coverage --write
+.venv/bin/python -m backends.coverage --check
+.venv/bin/pytest -q -o faulthandler_timeout=240
+.venv/bin/pytest -q -m live
+pnpm -C apps/editor build
+pnpm -C apps/editor exec tsc --noEmit
+```
+
+The worker supports a native tabular CSV/preprocessing/linear/logistic/metrics subset. CSV bytes are transferred explicitly and source paths are materialized privately. The shipped adapter is **another local CPU process over authenticated loopback HTTP**; cross-host TLS, GPU and distributed execution are unavailable. Inspect retrieved values in the existing research workspace; imported model pickles remain untrusted for local serving. The three measured worker comparisons include HTTP/polling/startup/transfer and make no hardware speed claim.
+
+Reusable packages carry graph/UI and exact operation requirements, plus optional explicitly selected CSV bytes. **Import and open package** preserves unknown operations and blocks execution for missing/different dependencies; it never installs or runs Python. Credentials and run artifacts are omitted; external sources still require configuration. For an SDK package, read its manifest/docs/source, run conformance on trusted code, then explicitly configure `VOID_PLUGIN_MANIFESTS` when starting the control service and workers. Conformance checks the declared numerical fixtures and contracts; it is not a security sandbox. The shipped `offset` package demonstrates a pure declared pandas transformation.
+
+On **Graph**, expand **Keyboard graph tools** to select nodes/wires and connect ports using Tab and native selects. Settings forms, Run and inspection tabs use ordinary focusable controls, with visible focus. The reference journey and integration flows are recorded in HANDOFF; broad screen-reader certification is not claimed. See ADR 0013, CAPABILITIES and ACCEPTANCE for all remaining vision gaps.

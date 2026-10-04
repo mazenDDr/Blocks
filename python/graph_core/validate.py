@@ -64,6 +64,24 @@ def _config_message(err: ValidationError) -> str:
 
 
 def validate(graph: Graph) -> Report:
+    r = _validate_graph(graph)
+    from extensions.sdk import LOADED
+    deps = (graph.__pydantic_extra__ or {}).get("packageDependencies", [])
+    if not isinstance(deps, list):
+        r.diagnostics.append(Diagnostic("E_PACKAGE_DEPENDENCY", "Package dependencies must be an explicit list of operation/version identities.", "error"))
+        return r
+    for dep in deps:
+        if not isinstance(dep, dict) or not isinstance(dep.get("operation"), str):
+            r.diagnostics.append(Diagnostic("E_PACKAGE_DEPENDENCY", "Invalid package dependency identity; preserve the project and resolve it explicitly.", "error"))
+            continue
+        op = registry.get_op(dep["operation"])
+        impl = dep.get("implementation")
+        if op is None or op.version != dep.get("version") or (isinstance(impl, dict) and LOADED.get(dep["operation"], {}).get("sha256") != impl.get("sha256")):
+            r.diagnostics.append(Diagnostic("E_PACKAGE_DEPENDENCY", f"Required package operation {dep['operation']} is unavailable or differs; install the exact trusted dependency explicitly.", "error"))
+    return r
+
+
+def _validate_graph(graph: Graph) -> Report:
     if graph.graphKind == "tabular":
         from tabular.validate import validate_tabular
 

@@ -77,6 +77,8 @@ def _ensure_builtins() -> None:
     if not _loaded:
         _loaded = True
         import operations  # noqa: F401  (registers built-in ops)
+        from extensions.sdk import activate_environment
+        activate_environment()  # Only explicit startup configuration trusts third-party Python.
 
 
 def get_op(type_id: str) -> Operation | None:

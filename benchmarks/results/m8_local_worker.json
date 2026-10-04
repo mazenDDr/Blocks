@@ -1,0 +1,125 @@
+{
+  "scope": "labelled SYNTHETIC sensors, 160 rows; same macOS CPU; separate authenticated loopback process, not another machine or GPU",
+  "timingScope": "observed wall time including HTTP, polling, worker startup and transfer; cache/host contention uncontrolled, no speed claim",
+  "records": [
+    {
+      "seed": 71,
+      "localRunId": "89dd58bc84c5",
+      "workerJobId": "394a780c53524dad9ad4c01aafbab1708e4b677af78178f23ce08307fec28aee",
+      "retrievedRunId": "remote-394a780c53524dad9ad4c01a",
+      "localSubmitToCompleteSeconds": 1.8607745000044815,
+      "httpWorkerSubmitToImportedSeconds": 3.2647819590056315,
+      "metrics": {
+        "accuracy": 1.0,
+        "log_loss": 0.14975932453323396,
+        "roc_auc": 1.0
+      },
+      "evaluationRowsSha256": "7828f962f3be11f3a99a52c956a6ce2bd107f7bf159d43cf40bafec5c333bdc0",
+      "nativeAgreement": "exact recorded evaluation values",
+      "workerLocation": "separate local process over authenticated loopback HTTP; CPU"
+    },
+    {
+      "seed": 72,
+      "localRunId": "adcf7dcb624d",
+      "workerJobId": "41aebf59fe3f60e93473d9159b6816ed4eeaffbe64fc9faf97601dab06723cc1",
+      "retrievedRunId": "remote-41aebf59fe3f60e93473d915",
+      "localSubmitToCompleteSeconds": 1.9031347910058685,
+      "httpWorkerSubmitToImportedSeconds": 1.9552458329999354,
+      "metrics": {
+        "accuracy": 1.0,
+        "log_loss": 0.1573663833522899,
+        "roc_auc": 1.0
+      },
+      "evaluationRowsSha256": "e0f26a9414ee4d22998240e574aea09930306c6c30df7f41a2d6a1d7885a892f",
+      "nativeAgreement": "exact recorded evaluation values",
+      "workerLocation": "separate local process over authenticated loopback HTTP; CPU"
+    },
+    {
+      "seed": 73,
+      "localRunId": "b5c56daaad9e",
+      "workerJobId": "6af7b80d4fef3c3a27fba3ae95392c5a9538bf03c28f8de1563b0695cd4bca6c",
+      "retrievedRunId": "remote-6af7b80d4fef3c3a27fba3ae",
+      "localSubmitToCompleteSeconds": 1.8874048329889774,
+      "httpWorkerSubmitToImportedSeconds": 1.9764055409905268,
+      "metrics": {
+        "accuracy": 0.975,
+        "log_loss": 0.18159192029564192,
+        "roc_auc": 1.0
+      },
+      "evaluationRowsSha256": "0636f46f2f0a2da7af531fda8955d866073073cc1d191277a00982d637be6059",
+      "nativeAgreement": "exact recorded evaluation values",
+      "workerLocation": "separate local process over authenticated loopback HTTP; CPU"
+    }
+  ],
+  "exports": [
+    {
+      "adapter": "mlflow",
+      "error": null,
+      "external": {
+        "nativeRunId": "c484a5948f9e4230856ca1ca13f67f0a",
+        "experimentId": "1",
+        "artifacts": [
+          {
+            "sha256": "21e2f7bde49516a683b0ec6ced97e2ce148b05eba4c9960a1623499ab9f9c0b3",
+            "externalPath": "cas/21e2f7bde49516a683b0ec6ced97e2ce148b05eba4c9960a1623499ab9f9c0b3"
+          }
+        ],
+        "mode": "native local MLflow SQLite"
+      },
+      "id": "fe5cad994b709c8dfa15432c9701f18d88e42b1ceb2a20414ace51996912a407",
+      "payloadSha256": "8f46ab5f13c6b691f7a30c6f0ce6368a3c1aedaca3121636824f74dce7441c04",
+      "project": "void-local",
+      "runId": "b5c56daaad9e",
+      "sharing": {
+        "artifactSha256": [
+          "21e2f7bde49516a683b0ec6ced97e2ce148b05eba4c9960a1623499ab9f9c0b3"
+        ],
+        "metrics": true
+      },
+      "status": "confirmed"
+    },
+    {
+      "adapter": "wandb",
+      "error": null,
+      "external": {
+        "nativeRunId": "fa977b9f48efc2a2f5ded1bf88a0c563",
+        "artifacts": [
+          {
+            "sha256": "21e2f7bde49516a683b0ec6ced97e2ce148b05eba4c9960a1623499ab9f9c0b3",
+            "externalPath": "offline-artifact:21e2f7bde49516a683b0ec6ced97e2ce148b05eba4c9960a1623499ab9f9c0b3"
+          }
+        ],
+        "mode": "native W&B offline; not uploaded",
+        "directory": "/private/tmp/void-m8-smoke/trackers/wandb/fa977b9f48efc2a2f5ded1bf88a0c563a9788bb1af44186fbc4230c8381de0f9"
+      },
+      "id": "fa977b9f48efc2a2f5ded1bf88a0c563a9788bb1af44186fbc4230c8381de0f9",
+      "payloadSha256": "4e1ac086662f6cc8faa896b4b84c2820b695d052024ad177b723ba6bc940d79a",
+      "project": "void-local",
+      "runId": "b5c56daaad9e",
+      "sharing": {
+        "artifactSha256": [
+          "21e2f7bde49516a683b0ec6ced97e2ce148b05eba4c9960a1623499ab9f9c0b3"
+        ],
+        "metrics": true
+      },
+      "status": "confirmed"
+    }
+  ],
+  "nativeConformance": {
+    "operation": "community.table_offset",
+    "version": "1.0.0",
+    "sha256": "6cb3c37510039bb6e56f062718a7c95bf1fd4e56ea189e687cc8276de31a8b3e",
+    "cases": [
+      {
+        "name": "positive-negative-offset",
+        "passed": true
+      },
+      {
+        "name": "zero-offset-and-empty",
+        "passed": true
+      }
+    ],
+    "passed": true,
+    "scope": "declared numerical fixtures, schema, input immutability and example graph; native code is trusted"
+  }
+}

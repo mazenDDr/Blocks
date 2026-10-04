@@ -336,7 +336,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `domain.vision_source` | domain | python | yes | vision_data | 1 |
 | `domain.vision_transform` | domain | python | yes | vision_transform | 1 |
 | `dvc.csv_source` | tabular | dvc | yes | connector_source | 1 |
-| `postgres.query` | tabular | postgresql | yes | connector_source | 2 |
+| `postgres.query` | tabular | postgresql | yes | connector_source | 3 |
 | `rl.dqn_learner` | rl | gymnasium | yes | rl_learner | 1 |
 | `rl.environment` | rl | gymnasium | yes | rl_environment | 1 |
 | `rl.evaluation` | rl | gymnasium | yes | rl_evaluation | 1 |

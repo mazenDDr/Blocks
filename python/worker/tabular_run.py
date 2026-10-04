@@ -80,6 +80,7 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
                 em.emit("validation_error", d.nodeId, **d.to_json())
             return finish("failed", str(e))
         import numpy, pandas, scipy, sklearn  # noqa: E401
+        from extensions.sdk import LOADED
 
         _advance(store, run_id, "running")
         libraries = {"pandas": pandas.__version__, "scikit-learn": sklearn.__version__, "scipy": scipy.__version__, "numpy": numpy.__version__}
@@ -89,7 +90,8 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
             from importlib.metadata import version
             libraries.update({name: version(name) for name in ("torch", "torchvision", "torchaudio", "tokenizers", "seqeval", "torchmetrics", "pycocotools")})
         em.emit("run_started", kind=graph.graphKind, order=report.order, libraries=libraries,
-                seed=cfg.seed, seedApplied=seed_applied, sourcePins=cfg.source_pins, trial=cfg.trial)
+                seed=cfg.seed, seedApplied=seed_applied, sourcePins=cfg.source_pins, trial=cfg.trial,
+                plugins={k: {f: v[f] for f in ("name", "version", "sha256")} for k, v in LOADED.items() if any(n.type == k for n in graph.nodes)})
 
         def on_start(nid: str, typ: str) -> None:
             em.emit("node_started", nid, type=typ)

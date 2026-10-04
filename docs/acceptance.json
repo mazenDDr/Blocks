@@ -1,0 +1,678 @@
+{
+  "schemaVersion": "1.0.0",
+  "source": "docs/VISION.md \u00a724",
+  "note": "Evidence refers to bounded implementations, not certification of every product-vision behavior. Verification record is in HANDOFF.",
+  "rows": [
+    {
+      "id": "A01",
+      "scenario": "Build the reference CNN",
+      "status": "bounded evidence",
+      "scope": "Native PyTorch reference CNN, shapes/hashes, recorded captures and save/reopen; CPU fixture scope.",
+      "evidence": [
+        "tests/test_graph_foundation.py",
+        "tests/test_numerics.py",
+        "tests/test_api.py",
+        "tests/test_worker.py"
+      ]
+    },
+    {
+      "id": "A02",
+      "scenario": "Change the first filter count",
+      "status": "bounded evidence",
+      "scope": "Native PyTorch reference CNN, shapes/hashes, recorded captures and save/reopen; CPU fixture scope.",
+      "evidence": [
+        "tests/test_graph_foundation.py",
+        "tests/test_numerics.py",
+        "tests/test_api.py",
+        "tests/test_worker.py"
+      ]
+    },
+    {
+      "id": "A03",
+      "scenario": "Connect incompatible channels",
+      "status": "bounded evidence",
+      "scope": "Native PyTorch reference CNN, shapes/hashes, recorded captures and save/reopen; CPU fixture scope.",
+      "evidence": [
+        "tests/test_graph_foundation.py",
+        "tests/test_numerics.py",
+        "tests/test_api.py",
+        "tests/test_worker.py"
+      ]
+    },
+    {
+      "id": "A04",
+      "scenario": "Inspect feature maps",
+      "status": "bounded evidence",
+      "scope": "Native PyTorch reference CNN, shapes/hashes, recorded captures and save/reopen; CPU fixture scope.",
+      "evidence": [
+        "tests/test_graph_foundation.py",
+        "tests/test_numerics.py",
+        "tests/test_api.py",
+        "tests/test_worker.py"
+      ]
+    },
+    {
+      "id": "A05",
+      "scenario": "Fit preprocessing on held-out data",
+      "status": "bounded evidence",
+      "scope": "Native tabular train/validation partition ownership rejects fitting preprocessing on held-out data, with stable leakage path and fix; fitted transforms apply without refit.",
+      "evidence": [
+        "tests/test_tabular_ops.py",
+        "tests/test_tabular_api.py"
+      ]
+    },
+    {
+      "id": "A06",
+      "scenario": "Compare graph and native execution",
+      "status": "bounded evidence",
+      "scope": "Native PyTorch reference CNN, shapes/hashes, recorded captures and save/reopen; CPU fixture scope.",
+      "evidence": [
+        "tests/test_graph_foundation.py",
+        "tests/test_numerics.py",
+        "tests/test_api.py",
+        "tests/test_worker.py"
+      ]
+    },
+    {
+      "id": "A07",
+      "scenario": "Save, close, and reopen",
+      "status": "bounded evidence",
+      "scope": "Native PyTorch reference CNN, shapes/hashes, recorded captures and save/reopen; CPU fixture scope.",
+      "evidence": [
+        "tests/test_graph_foundation.py",
+        "tests/test_numerics.py",
+        "tests/test_api.py",
+        "tests/test_worker.py"
+      ]
+    },
+    {
+      "id": "A08",
+      "scenario": "Move nodes without semantic edits",
+      "status": "bounded evidence",
+      "scope": "Native PyTorch reference CNN, shapes/hashes, recorded captures and save/reopen; CPU fixture scope.",
+      "evidence": [
+        "tests/test_graph_foundation.py",
+        "tests/test_numerics.py",
+        "tests/test_api.py",
+        "tests/test_worker.py"
+      ]
+    },
+    {
+      "id": "A09",
+      "scenario": "Edit a dependency",
+      "status": "not implemented",
+      "scope": "Dependency-scoped numerical cache invalidation is not implemented. Current execution reruns supported graphs; UI moves preserve the semantic hash.",
+      "evidence": [
+        "docs/CAPABILITIES.md"
+      ]
+    },
+    {
+      "id": "A10",
+      "scenario": "Disconnect and reconnect the UI",
+      "status": "bounded evidence",
+      "scope": "Process/event lifecycle, cancellation at declared boundaries and supported training checkpoint resume.",
+      "evidence": [
+        "tests/test_worker.py",
+        "tests/test_api.py",
+        "tests/test_debugger.py"
+      ]
+    },
+    {
+      "id": "A11",
+      "scenario": "Cancel a long run",
+      "status": "bounded evidence",
+      "scope": "Process/event lifecycle, cancellation at declared boundaries and supported training checkpoint resume.",
+      "evidence": [
+        "tests/test_worker.py",
+        "tests/test_api.py",
+        "tests/test_debugger.py"
+      ]
+    },
+    {
+      "id": "A12",
+      "scenario": "Resume supported training",
+      "status": "bounded evidence",
+      "scope": "Process/event lifecycle, cancellation at declared boundaries and supported training checkpoint resume.",
+      "evidence": [
+        "tests/test_worker.py",
+        "tests/test_api.py",
+        "tests/test_debugger.py"
+      ]
+    },
+    {
+      "id": "A13",
+      "scenario": "Share an encoder twice",
+      "status": "bounded evidence",
+      "scope": "Shared native parameter identity through graph lowering.",
+      "evidence": [
+        "tests/test_composites.py"
+      ]
+    },
+    {
+      "id": "A14",
+      "scenario": "Execute a bounded agent cycle",
+      "status": "bounded evidence",
+      "scope": "Bounded native LangGraph routing and SQLite checkpoint/effect recovery.",
+      "evidence": [
+        "tests/test_agent_graph.py",
+        "tests/test_agent_persistence.py"
+      ]
+    },
+    {
+      "id": "A15",
+      "scenario": "Interrupt and restart an agent",
+      "status": "bounded evidence",
+      "scope": "Bounded native LangGraph routing and SQLite checkpoint/effect recovery.",
+      "evidence": [
+        "tests/test_agent_graph.py",
+        "tests/test_agent_persistence.py"
+      ]
+    },
+    {
+      "id": "A16",
+      "scenario": "Load an unavailable plugin",
+      "status": "bounded evidence",
+      "scope": "Unknown operations preserved; exact package dependencies block execution. Inert graph/UI and optional CSV package; structured credential fields refused, no credentials/run artifacts or automatic installs.",
+      "evidence": [
+        "tests/test_scale.py",
+        "tests/test_api.py"
+      ]
+    },
+    {
+      "id": "A17",
+      "scenario": "Export a project",
+      "status": "bounded evidence",
+      "scope": "Unknown operations preserved; exact package dependencies block execution. Inert graph/UI and optional CSV package; structured credential fields refused, no credentials/run artifacts or automatic installs.",
+      "evidence": [
+        "tests/test_scale.py",
+        "tests/test_api.py"
+      ]
+    },
+    {
+      "id": "A18",
+      "scenario": "Select an unsupported backend feature",
+      "status": "bounded evidence",
+      "scope": "Per-node backend refusal and native portable-subset benchmarks; Keras/JAX full training unsupported.",
+      "evidence": [
+        "tests/test_backend_conformance.py",
+        "tests/test_backend_api.py",
+        "benchmarks/results/m6a_summary.md"
+      ]
+    },
+    {
+      "id": "A19",
+      "scenario": "Benchmark the workbench",
+      "status": "bounded evidence",
+      "scope": "Per-node backend refusal and native portable-subset benchmarks; Keras/JAX full training unsupported.",
+      "evidence": [
+        "tests/test_backend_conformance.py",
+        "tests/test_backend_api.py",
+        "benchmarks/results/m6a_summary.md"
+      ]
+    },
+    {
+      "id": "A20",
+      "scenario": "Complete the reference journey by keyboard",
+      "status": "bounded evidence",
+      "scope": "Installed Chrome keyboard reference CNN creation/configuration/port connection/run/inspection; broad assistive-technology certification is not claimed.",
+      "evidence": [
+        "docs/HANDOFF.md",
+        "apps/editor/src/components/KeyboardGraphTools.tsx"
+      ]
+    },
+    {
+      "id": "A21",
+      "scenario": "Open an implemented block",
+      "status": "bounded evidence",
+      "scope": "Native supported block explanations, teaching loss, visual composite and weighted loss numerical/gradient tests.",
+      "evidence": [
+        "tests/test_numerics.py",
+        "tests/test_custom_loss.py",
+        "tests/test_composites.py",
+        "tests/test_tensor_ops.py"
+      ]
+    },
+    {
+      "id": "A22",
+      "scenario": "Inspect the MSE teaching fixture",
+      "status": "bounded evidence",
+      "scope": "Native supported block explanations, teaching loss, visual composite and weighted loss numerical/gradient tests.",
+      "evidence": [
+        "tests/test_numerics.py",
+        "tests/test_custom_loss.py",
+        "tests/test_composites.py",
+        "tests/test_tensor_ops.py"
+      ]
+    },
+    {
+      "id": "A23",
+      "scenario": "Create a masked, weighted loss",
+      "status": "bounded evidence",
+      "scope": "Native supported block explanations, teaching loss, visual composite and weighted loss numerical/gradient tests.",
+      "evidence": [
+        "tests/test_numerics.py",
+        "tests/test_custom_loss.py",
+        "tests/test_composites.py",
+        "tests/test_tensor_ops.py"
+      ]
+    },
+    {
+      "id": "A24",
+      "scenario": "Modify a composite's internal operation",
+      "status": "bounded evidence",
+      "scope": "Native supported block explanations, teaching loss, visual composite and weighted loss numerical/gradient tests.",
+      "evidence": [
+        "tests/test_numerics.py",
+        "tests/test_custom_loss.py",
+        "tests/test_composites.py",
+        "tests/test_tensor_ops.py"
+      ]
+    },
+    {
+      "id": "A25",
+      "scenario": "Inspect the Gamma teaching test",
+      "status": "bounded evidence",
+      "scope": "Native SciPy Gamma/tail and supported two-group tests; declared assumptions and units.",
+      "evidence": [
+        "tests/test_statistics.py",
+        "tests/test_tabular_ops.py"
+      ]
+    },
+    {
+      "id": "A26",
+      "scenario": "Change alpha in the Gamma example",
+      "status": "bounded evidence",
+      "scope": "Native SciPy Gamma/tail and supported two-group tests; declared assumptions and units.",
+      "evidence": [
+        "tests/test_statistics.py",
+        "tests/test_tabular_ops.py"
+      ]
+    },
+    {
+      "id": "A27",
+      "scenario": "Compare two measurement groups",
+      "status": "bounded evidence",
+      "scope": "Native SciPy Gamma/tail and supported two-group tests; declared assumptions and units.",
+      "evidence": [
+        "tests/test_statistics.py",
+        "tests/test_tabular_ops.py"
+      ]
+    },
+    {
+      "id": "A28",
+      "scenario": "Follow a selected intermediate",
+      "status": "bounded evidence",
+      "scope": "Recorded wire/step values, explicit not-recorded results and capture/rerun.",
+      "evidence": [
+        "tests/test_debugger.py",
+        "tests/test_api.py"
+      ]
+    },
+    {
+      "id": "A29",
+      "scenario": "Scrub to an uncaptured intermediate",
+      "status": "bounded evidence",
+      "scope": "Recorded wire/step values, explicit not-recorded results and capture/rerun.",
+      "evidence": [
+        "tests/test_debugger.py",
+        "tests/test_api.py"
+      ]
+    },
+    {
+      "id": "A30",
+      "scenario": "Trace an omitted memory record",
+      "status": "bounded evidence",
+      "scope": "Recorded exclusions, included-source context and isolated memory policy preview.",
+      "evidence": [
+        "tests/test_agent_memory.py",
+        "tests/test_agent_blocks.py",
+        "tests/test_agent_journey.py"
+      ]
+    },
+    {
+      "id": "A31",
+      "scenario": "Inspect one model call",
+      "status": "bounded evidence",
+      "scope": "Recorded exclusions, included-source context and isolated memory policy preview.",
+      "evidence": [
+        "tests/test_agent_memory.py",
+        "tests/test_agent_blocks.py",
+        "tests/test_agent_journey.py"
+      ]
+    },
+    {
+      "id": "A32",
+      "scenario": "Edit a memory policy",
+      "status": "bounded evidence",
+      "scope": "Recorded exclusions, included-source context and isolated memory policy preview.",
+      "evidence": [
+        "tests/test_agent_memory.py",
+        "tests/test_agent_blocks.py",
+        "tests/test_agent_journey.py"
+      ]
+    },
+    {
+      "id": "A33",
+      "scenario": "Inspect an instrumented attention head",
+      "status": "bounded evidence",
+      "scope": "Instrumented native attention projections/masks/weights/output, available subset only.",
+      "evidence": [
+        "tests/test_transformer.py"
+      ]
+    },
+    {
+      "id": "A34",
+      "scenario": "Inspect a plain SGD teaching step",
+      "status": "bounded evidence",
+      "scope": "Native SGD and procedure/probe/control-flow/debug interventions; teaching values labelled separately.",
+      "evidence": [
+        "tests/test_training_procedure.py",
+        "tests/test_debugger.py",
+        "tests/test_composites.py",
+        "tests/test_diagnostics.py"
+      ]
+    },
+    {
+      "id": "A35",
+      "scenario": "Enable a runtime probe",
+      "status": "bounded evidence",
+      "scope": "Native SGD and procedure/probe/control-flow/debug interventions; teaching values labelled separately.",
+      "evidence": [
+        "tests/test_training_procedure.py",
+        "tests/test_debugger.py",
+        "tests/test_composites.py",
+        "tests/test_diagnostics.py"
+      ]
+    },
+    {
+      "id": "A36",
+      "scenario": "Branch a debugging intervention",
+      "status": "bounded evidence",
+      "scope": "Native SGD and procedure/probe/control-flow/debug interventions; teaching values labelled separately.",
+      "evidence": [
+        "tests/test_training_procedure.py",
+        "tests/test_debugger.py",
+        "tests/test_composites.py",
+        "tests/test_diagnostics.py"
+      ]
+    },
+    {
+      "id": "A37",
+      "scenario": "Use visual functions and control flow",
+      "status": "bounded evidence",
+      "scope": "Native SGD and procedure/probe/control-flow/debug interventions; teaching values labelled separately.",
+      "evidence": [
+        "tests/test_training_procedure.py",
+        "tests/test_debugger.py",
+        "tests/test_composites.py",
+        "tests/test_diagnostics.py"
+      ]
+    },
+    {
+      "id": "A38",
+      "scenario": "Switch between lesson and run inspection",
+      "status": "bounded evidence",
+      "scope": "Native SGD and procedure/probe/control-flow/debug interventions; teaching values labelled separately.",
+      "evidence": [
+        "tests/test_training_procedure.py",
+        "tests/test_debugger.py",
+        "tests/test_composites.py",
+        "tests/test_diagnostics.py"
+      ]
+    },
+    {
+      "id": "A39",
+      "scenario": "Build a PostgreSQL query visually",
+      "status": "bounded evidence",
+      "scope": "Real local PostgreSQL, DVC and local moto S3 API; tested query/snapshot/join limits, moto is not AWS IAM.",
+      "evidence": [
+        "tests/test_connectors.py",
+        "tests/test_snapshots_and_joins.py"
+      ]
+    },
+    {
+      "id": "A40",
+      "scenario": "Preview connected data or encounter a source failure",
+      "status": "bounded evidence",
+      "scope": "Real local PostgreSQL, DVC and local moto S3 API; tested query/snapshot/join limits, moto is not AWS IAM.",
+      "evidence": [
+        "tests/test_connectors.py",
+        "tests/test_snapshots_and_joins.py"
+      ]
+    },
+    {
+      "id": "A41",
+      "scenario": "Reuse a mutable database/S3 source",
+      "status": "bounded evidence",
+      "scope": "Real local PostgreSQL, DVC and local moto S3 API; tested query/snapshot/join limits, moto is not AWS IAM.",
+      "evidence": [
+        "tests/test_connectors.py",
+        "tests/test_snapshots_and_joins.py"
+      ]
+    },
+    {
+      "id": "A42",
+      "scenario": "Load a DVC dataset revision",
+      "status": "bounded evidence",
+      "scope": "Real local PostgreSQL, DVC and local moto S3 API; tested query/snapshot/join limits, moto is not AWS IAM.",
+      "evidence": [
+        "tests/test_connectors.py",
+        "tests/test_snapshots_and_joins.py"
+      ]
+    },
+    {
+      "id": "A43",
+      "scenario": "Join database records and object-store assets",
+      "status": "bounded evidence",
+      "scope": "Real local PostgreSQL, DVC and local moto S3 API; tested query/snapshot/join limits, moto is not AWS IAM.",
+      "evidence": [
+        "tests/test_connectors.py",
+        "tests/test_snapshots_and_joins.py"
+      ]
+    },
+    {
+      "id": "A44",
+      "scenario": "Import repository code",
+      "status": "not implemented",
+      "scope": "Repository source-code browsing/import with commit/dependency execution boundaries is not implemented. DVC dataset resolution is a different supported contract.",
+      "evidence": [
+        "docs/CAPABILITIES.md"
+      ]
+    },
+    {
+      "id": "A45",
+      "scenario": "Edit and debug a Python block",
+      "status": "bounded evidence",
+      "scope": "Typed Python sandbox block revisions/errors and nested capture identities; not a full IDE.",
+      "evidence": [
+        "tests/test_codeblocks.py",
+        "tests/test_debugger.py"
+      ]
+    },
+    {
+      "id": "A46",
+      "scenario": "Insert diagnostic blocks inside a module",
+      "status": "bounded evidence",
+      "scope": "Typed Python sandbox block revisions/errors and nested capture identities; not a full IDE.",
+      "evidence": [
+        "tests/test_codeblocks.py",
+        "tests/test_debugger.py"
+      ]
+    },
+    {
+      "id": "A47",
+      "scenario": "Compare repeated or retried trials",
+      "status": "bounded evidence",
+      "scope": "Bounded sequential grid/random studies, distinct seeds/folds/attempts and native objective comparisons.",
+      "evidence": [
+        "tests/test_studies.py"
+      ]
+    },
+    {
+      "id": "A48",
+      "scenario": "Run a sweep or ablation",
+      "status": "bounded evidence",
+      "scope": "Bounded sequential grid/random studies, distinct seeds/folds/attempts and native objective comparisons.",
+      "evidence": [
+        "tests/test_studies.py"
+      ]
+    },
+    {
+      "id": "A49",
+      "scenario": "Reconnect an external tracker",
+      "status": "bounded evidence",
+      "scope": "Native local MLflow reconciliation after lost acknowledgement; one confirmed native W&B offline immutable export, no cloud upload/live offline resume.",
+      "evidence": [
+        "tests/test_scale.py"
+      ]
+    },
+    {
+      "id": "A50",
+      "scenario": "Register and serve a pipeline",
+      "status": "bounded evidence",
+      "scope": "Exact native tabular LinearRegression/LogisticRegression pipeline; domain/CNN/agent serving unsupported.",
+      "evidence": [
+        "tests/test_production.py"
+      ]
+    },
+    {
+      "id": "A51",
+      "scenario": "Debug an RL episode",
+      "status": "bounded evidence",
+      "scope": "Native CPU DQN, Gymnasium CartPole/grid-world and tested autoreset contract; no multi-agent or distributed RL.",
+      "evidence": [
+        "tests/test_rl_core.py",
+        "tests/test_rl_train.py",
+        "tests/test_rl_api.py"
+      ]
+    },
+    {
+      "id": "A52",
+      "scenario": "Evaluate the RL bootstrap fixture",
+      "status": "bounded evidence",
+      "scope": "Native CPU DQN, Gymnasium CartPole/grid-world and tested autoreset contract; no multi-agent or distributed RL.",
+      "evidence": [
+        "tests/test_rl_core.py",
+        "tests/test_rl_train.py",
+        "tests/test_rl_api.py"
+      ]
+    },
+    {
+      "id": "A53",
+      "scenario": "Step a vector environment with autoreset",
+      "status": "bounded evidence",
+      "scope": "Native CPU DQN, Gymnasium CartPole/grid-world and tested autoreset contract; no multi-agent or distributed RL.",
+      "evidence": [
+        "tests/test_rl_core.py",
+        "tests/test_rl_train.py",
+        "tests/test_rl_api.py"
+      ]
+    },
+    {
+      "id": "A54",
+      "scenario": "Compare reward or policy variants",
+      "status": "bounded evidence",
+      "scope": "Native CPU DQN, Gymnasium CartPole/grid-world and tested autoreset contract; no multi-agent or distributed RL.",
+      "evidence": [
+        "tests/test_rl_core.py",
+        "tests/test_rl_train.py",
+        "tests/test_rl_api.py"
+      ]
+    },
+    {
+      "id": "A55",
+      "scenario": "Evaluate an unsupervised model",
+      "status": "bounded evidence",
+      "scope": "Native scikit clustering/decomposition and method-specific diagnostics, no universal accuracy claim.",
+      "evidence": [
+        "tests/test_unsup.py"
+      ]
+    },
+    {
+      "id": "A56",
+      "scenario": "Transform a labeled vision sample",
+      "status": "bounded evidence",
+      "scope": "Native torchvision typed joint transforms and synthetic segmentation/derived detection metrics; general COCO importer/pretrained detector unsupported.",
+      "evidence": [
+        "tests/test_domain_vision.py",
+        "tests/test_domain_api.py"
+      ]
+    },
+    {
+      "id": "A57",
+      "scenario": "Inspect an audio workflow",
+      "status": "bounded evidence",
+      "scope": "Exact teaching signal, native torchaudio features, synthetic tone CTC/greedy decoding and edit alignment; no real speech benchmark.",
+      "evidence": [
+        "tests/test_domain_speech.py",
+        "tests/test_domain_api.py"
+      ]
+    },
+    {
+      "id": "A58",
+      "scenario": "Inspect an NLP token-label workflow",
+      "status": "bounded evidence",
+      "scope": "Native offline WordPiece, spans/masks/BIO alignment and seqeval-compatible synthetic token classification.",
+      "evidence": [
+        "tests/test_domain_nlp.py",
+        "tests/test_domain_api.py"
+      ]
+    },
+    {
+      "id": "A59",
+      "scenario": "Run a production load test",
+      "status": "bounded evidence",
+      "scope": "Real local CPU native-tabular serving, bounded loopback HTTP load, counter session isolation, rollout/rollback, drift/quality separation and exact lineage.",
+      "evidence": [
+        "tests/test_production.py"
+      ]
+    },
+    {
+      "id": "A60",
+      "scenario": "Serve concurrent stateful requests",
+      "status": "bounded evidence",
+      "scope": "Real local CPU native-tabular serving, bounded loopback HTTP load, counter session isolation, rollout/rollback, drift/quality separation and exact lineage.",
+      "evidence": [
+        "tests/test_production.py"
+      ]
+    },
+    {
+      "id": "A61",
+      "scenario": "Roll out and roll back a release",
+      "status": "bounded evidence",
+      "scope": "Real local CPU native-tabular serving, bounded loopback HTTP load, counter session isolation, rollout/rollback, drift/quality separation and exact lineage.",
+      "evidence": [
+        "tests/test_production.py"
+      ]
+    },
+    {
+      "id": "A62",
+      "scenario": "Investigate production drift",
+      "status": "bounded evidence",
+      "scope": "Real local CPU native-tabular serving, bounded loopback HTTP load, counter session isolation, rollout/rollback, drift/quality separation and exact lineage.",
+      "evidence": [
+        "tests/test_production.py"
+      ]
+    },
+    {
+      "id": "A63",
+      "scenario": "Promote an experiment into production",
+      "status": "bounded evidence",
+      "scope": "Real local CPU native-tabular serving, bounded loopback HTTP load, counter session isolation, rollout/rollback, drift/quality separation and exact lineage.",
+      "evidence": [
+        "tests/test_production.py"
+      ]
+    },
+    {
+      "id": "A64",
+      "scenario": "Complete the connected researcher journey",
+      "status": "bounded evidence",
+      "scope": "Connected local PostgreSQL SYNTHETIC sensors -> controlled C variant -> intermediate inspection -> immutable conclusion -> native tabular registration -> measured HTTP. Editor supports all stages; no debugger intervention for tabular/native sklearn internals, external-user onboarding unverified.",
+      "evidence": [
+        "tests/test_scale.py",
+        "examples/connected_production_journey.py",
+        "docs/HANDOFF.md"
+      ]
+    }
+  ]
+}

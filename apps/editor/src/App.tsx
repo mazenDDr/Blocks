@@ -7,6 +7,8 @@ import { api, errorText } from "./api";
 import { AgentWorkspace } from "./components/agent/AgentWorkspace";
 import { DomainWorkspace } from "./components/DomainWorkspace";
 import { ProductionWorkspace } from "./components/ProductionWorkspace";
+import { ScaleWorkspace } from "./components/ScaleWorkspace";
+import { KeyboardGraphTools } from "./components/KeyboardGraphTools";
 import { RLWorkspace } from "./components/rl/RLWorkspace";
 import { GraphContext } from "./components/UnsupViews";
 import { AttentionWorkspace } from "./components/Attention";
@@ -44,7 +46,7 @@ const EMPTY_UI: UiDoc = { schemaVersion: "1.0.0", positions: {} };
 const LAST_KEY = "void.lastProject";
 const nodeTypes = { card: OpNodeCard, group: GroupCard };
 type AnyNode = CardNode | GroupNode;
-type View = "graph" | "data" | "experiments" | "training" | "debug" | "attention" | "backends" | "coverage" | "domain" | "production";
+type View = "graph" | "data" | "experiments" | "training" | "debug" | "attention" | "backends" | "coverage" | "domain" | "production" | "scale";
 interface Scope { module: string; version: string; via: string }
 
 const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -485,7 +487,7 @@ function Workbench() {
 
   return (
     <GraphContext.Provider value={graph}>
-    <div className="app">
+    <div className={`app${view === "graph" && !agent && !rl ? " keyboard-layout" : ""}`}>
       <header className="topbar">
         <b className="brand">Project Void</b>
         <label>Project <input value={projectId} onChange={(e) => setProjectId(e.target.value)} aria-label="project id" size={16} /></label>
@@ -510,6 +512,7 @@ function Workbench() {
           </label>
         )}
         <span className="viewtabs" role="tablist" aria-label="workspace">
+          <button role="tab" aria-selected={view === "scale"} className={view === "scale" ? "on" : ""} onClick={() => setView("scale")}>Integrations</button>
           <button role="tab" aria-selected={view === "production"} className={view === "production" ? "on" : ""} onClick={() => setView("production")}>Production</button>
           {(domain ? [["domain", "Domain workspace"], ["graph", "Graph"], ["coverage", "Coverage"]] as [View, string][] : rl ? [["graph", "RL lab"]] as [View, string][] : agent ? [["graph", "Agent"], ["data", "Data"]] as [View, string][] : [["graph", "Graph"], ["data", "Data"], ["experiments", "Experiments"], ...(tabular ? [] : [["training", "Training"], ["debug", "Debug"], ["attention", "Attention"], ["backends", "Backend"]]), ["coverage", "Coverage"]] as [View, string][]).map(([k, label]) => (
             <button key={k} role="tab" aria-selected={view === k} className={view === k ? "on" : ""} onClick={() => setView(k)}>{label}</button>))}
@@ -530,6 +533,7 @@ function Workbench() {
       {message && <div className="toast" role="status" onClick={() => setMessage(null)}>{message} <small>(click to dismiss)</small></div>}
 
       {view === "production" && <ProductionWorkspace onOpenRun={openRun} />}
+      {view === "scale" && <ScaleWorkspace graph={graph} ui={ui} projectId={projectId} onImport={(p) => { adopt(p.projectId, p.graph, p.ui, true); refreshLists(); }} onOpenRun={openRun} />}
 
       {view === "domain" && domain && <DomainWorkspace key={projectId} projectId={projectId} graph={graph} validation={rv ?? null} ops={opsByType} runs={tabRuns} runId={ctx.runId}
         setRunId={(id) => setCtx({ runId: id, step: null, sample: null })} reloadRuns={reloadRuns} ensureSaved={ensureSaved} onConfig={setConfig} />}
@@ -554,6 +558,7 @@ function Workbench() {
       )}
       {view === "attention" && !tabular && <div className="fullws"><AttentionWorkspace graph={graph} runs={procRuns} setMessage={setMessage} /></div>}
       {view === "graph" && !agent && !rl && <>
+      <KeyboardGraphTools graph={cur} ops={opsByType} selectedNode={selNodes[0] ?? ""} selectedWire={selEdges[0] ?? ""} onNode={(id) => { setSelNodes(id ? [id] : []); setSelEdges([]); }} onWire={(id) => { setSelEdges(id ? [id] : []); setSelNodes([]); }} onConnect={connect} />
       <aside className="left">
         {!tabular && (
           <div className="tabs" role="tablist" style={{ marginTop: 0 }}>

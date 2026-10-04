@@ -350,6 +350,12 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
         ops = []
         for op in registry.all_ops():
             name, cat, purpose = META.get(op.type, (op.type, "Other", ""))
+            from extensions.sdk import LOADED
+            package = LOADED.get(op.type)
+            if package:
+                name = package["inspector"].get("displayName", name)
+                cat = package["inspector"].get("category", "Community")
+                purpose = package["documentation"]
             ops.append({"type": op.type, "version": op.version, "backend": op.backend, "graphKind": op.graph_kind, "summaryKind": getattr(op, "summary_kind", None), "displayName": name, "category": cat, "purpose": purpose,
                         "inputKinds": getattr(op, "in_kinds", None) or {p: "tensor" for p in op.inputs},
                         "outputKinds": getattr(op, "out_kinds", None) or {p: "tensor" for p in op.outputs},
@@ -689,7 +695,7 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     def infer(req: InferRequest):
         return insp.infer(sv.run_data(req.runId), req.checkpointStep, req.sample, req.imageBase64)
 
-    from . import agent_api, connections_api, m3_api, production_api, rl_api, studies_api, unsup_api
+    from . import agent_api, connections_api, m3_api, production_api, rl_api, scale_api, studies_api, unsup_api
 
     agent_api.register(app, sv)
     connections_api.register(app, sv)
@@ -698,4 +704,5 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     rl_api.register(app, sv)
     unsup_api.register(app, sv)
     production_api.register(app, sv)
+    scale_api.register(app, sv)
     return app
