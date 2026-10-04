@@ -129,6 +129,8 @@ class Graph(_Open):
     codeBlocks: list[CodeBlockDef] = Field(default_factory=list)
     # The declared training procedure of this model graph (a training.spec.ProcedureSpec as JSON): an ordered stage list plus the configuration of each stage.
     training: dict[str, Any] | None = None
+    # `agent` graphs: typed state schema, routes, joins, limits, indexes, memory policies (an agent.spec.AgentSpec as JSON)
+    agent: dict[str, Any] | None = None
 
     def node(self, node_id: str) -> Node:
         for n in self.nodes:
@@ -139,7 +141,7 @@ class Graph(_Open):
     def to_json(self) -> dict[str, Any]:
         d = self.model_dump(mode="json", by_alias=True)
         # absent features stay absent, so graphs that do not use them keep their existing JSON (and semantic hash)
-        for k in ("modules", "codeBlocks", "training"):
+        for k in ("modules", "codeBlocks", "training", "agent"):
             if not d.get(k):
                 d.pop(k, None)
         for n in d["nodes"]:

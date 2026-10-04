@@ -1,0 +1,178 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "branch_a",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "scores",
+            "kind": "append_item",
+            "value": 1
+          },
+          {
+            "field": "total",
+            "kind": "increment",
+            "by": 10
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "branch_b",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "scores",
+            "kind": "append_item",
+            "value": 2
+          },
+          {
+            "field": "total",
+            "kind": "increment",
+            "by": 5
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "join",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "summary",
+            "kind": "template",
+            "template": "total={total} scores={scores}"
+          }
+        ]
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "START__branch_a",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "branch_a",
+        "port": "in"
+      }
+    },
+    {
+      "id": "START__branch_b",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "branch_b",
+        "port": "in"
+      }
+    },
+    {
+      "id": "branch_a__join",
+      "kind": "control",
+      "from": {
+        "node": "branch_a",
+        "port": "out"
+      },
+      "to": {
+        "node": "join",
+        "port": "in"
+      }
+    },
+    {
+      "id": "branch_b__join",
+      "kind": "control",
+      "from": {
+        "node": "branch_b",
+        "port": "out"
+      },
+      "to": {
+        "node": "join",
+        "port": "in"
+      }
+    },
+    {
+      "id": "join__END",
+      "kind": "control",
+      "from": {
+        "node": "join",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "scores",
+        "type": "list",
+        "reducer": {
+          "kind": "append"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": []
+      },
+      {
+        "name": "total",
+        "type": "integer",
+        "reducer": {
+          "kind": "add"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": 0
+      },
+      {
+        "name": "tag",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "summary",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      }
+    ],
+    "limits": {
+      "maxSteps": 10
+    },
+    "joins": [
+      {
+        "node": "join",
+        "waitFor": [
+          "branch_a",
+          "branch_b"
+        ]
+      }
+    ]
+  }
+}

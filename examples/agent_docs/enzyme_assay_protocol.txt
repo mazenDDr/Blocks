@@ -1,0 +1,6 @@
+SYNTHETIC teaching document (invented for this project; not a real laboratory protocol).
+
+Enzyme assay protocol for the fictional enzyme Kinase-7.
+Incubate the reaction mixture at 37 degrees Celsius for exactly 20 minutes. Kinase-7 loses activity quickly above 42 degrees Celsius, so the water bath must never be set higher than 40 degrees Celsius.
+Start the reaction by adding ATP to a final concentration of 2 millimolar. Stop the reaction by adding an equal volume of 50 millimolar EDTA.
+Read the absorbance at 340 nanometers within 10 minutes of stopping the reaction.

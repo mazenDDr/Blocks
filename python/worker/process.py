@@ -14,19 +14,22 @@ from graph_core.hashing import semantic_hash
 from graph_core.schema import Graph
 from graph_core.validate import require_executable
 
+from .agent_run import AgentRunConfig, run_agent
 from .procedure_run import ProcedureRunConfig, run_procedure
 from .tabular_run import TabularRunConfig, run_tabular
 from .train import RunConfig, run_training
 
 
-def _child(graph_json: dict, cfg_json: dict, root: str, run_id: str, cancel_event) -> None:
+def _child(graph_json: dict, cfg_json: dict, root: str, run_id: str, cancel_event, resume: dict | None = None) -> None:
     store = ArtifactStore(root)
 
     def should_cancel() -> bool:  # in-process event, or a cancel recorded in the DB by any process (e.g. after a control restart)
         return cancel_event.is_set() or store.get_run(run_id)["status"] == "cancelling"
 
     graph = Graph.model_validate(graph_json)
-    if graph.graphKind == "tabular":
+    if graph.graphKind == "agent":
+        run_agent(graph, AgentRunConfig.model_validate(cfg_json), store, run_id, should_cancel, resume)
+    elif graph.graphKind == "tabular":
         run_tabular(graph, TabularRunConfig.model_validate(cfg_json), store, run_id, should_cancel)
     elif cfg_json.get("kind") == "procedure":
         run_procedure(graph, ProcedureRunConfig.model_validate(cfg_json), store, run_id, should_cancel)
@@ -54,7 +57,7 @@ class RunHandle:
         return self.process.is_alive()
 
 
-def submit_run(graph: Graph, cfg: RunConfig | TabularRunConfig | ProcedureRunConfig, workbench: str | Path = ".workbench", run_id: str | None = None) -> RunHandle:
+def submit_run(graph: Graph, cfg: RunConfig | TabularRunConfig | ProcedureRunConfig | AgentRunConfig, workbench: str | Path = ".workbench", run_id: str | None = None) -> RunHandle:
     """Validate (raises ExecutionBlocked), record the run and its exact graph, and start the worker process."""
     require_executable(graph)
     store = ArtifactStore(workbench)
@@ -64,5 +67,21 @@ def submit_run(graph: Graph, cfg: RunConfig | TabularRunConfig | ProcedureRunCon
     ctx = mp.get_context("spawn")
     cancel = ctx.Event()
     proc = ctx.Process(target=_child, args=(graph.to_json(), cfg.model_dump(), str(workbench), run_id, cancel))
+    proc.start()
+    return RunHandle(run_id, store, proc, cancel)
+
+
+def submit_resume(run_id: str, resume: dict, workbench: str | Path = ".workbench") -> RunHandle:
+    """Resume a paused agent run in a NEW worker process: the thread's state comes from the SQLite checkpoint, not from memory, so this
+    also works after the control service (or machine) restarted. The paused -> running transition is atomic, so a double resume is rejected."""
+    store = ArtifactStore(workbench)
+    row = store.get_run(run_id)
+    if row is None:
+        raise KeyError(run_id)
+    store.set_status(run_id, "running")  # raises IllegalTransition unless the run is paused
+    graph_json = json.loads(store.read_artifact(store.artifacts(run_id, "graph")[0]["sha256"]))
+    ctx = mp.get_context("spawn")
+    cancel = ctx.Event()
+    proc = ctx.Process(target=_child, args=(graph_json, row["config"], str(workbench), run_id, cancel, resume))
     proc.start()
     return RunHandle(run_id, store, proc, cancel)

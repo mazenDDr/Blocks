@@ -1,0 +1,5 @@
+SYNTHETIC teaching document (invented for this project; not a real laboratory protocol).
+
+Cell culture passaging guide for the fictional cell line HX-3.
+Passage HX-3 cells when they reach 80 percent confluence, which usually happens every three days. Wash the cells once with warm phosphate buffered saline, then add trypsin for 4 minutes at 37 degrees Celsius.
+Seed the new flask at a density of 20000 cells per square centimeter. Discard the cells after passage number 25 because their growth rate changes.

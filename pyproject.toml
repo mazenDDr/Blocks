@@ -13,3 +13,5 @@ where = ["python"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["services"]
+markers = ["live: needs a running local Ollama server with the models named in the test (run with: pytest -m live)"]
+addopts = "-m 'not live'"

@@ -4,6 +4,7 @@ import {
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from "@xyflow/react";
 import { api, errorText } from "./api";
+import { AgentWorkspace } from "./components/agent/AgentWorkspace";
 import { AttentionWorkspace } from "./components/Attention";
 import { CodeBlockEditor } from "./components/CodeBlockEditor";
 import { DataWorkspace } from "./components/DataWorkspace";
@@ -30,6 +31,7 @@ import {
 import { fmtInt, fmtShape, nextId, shortName } from "./util";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
+const EMPTY_AGENT: Graph = { schemaVersion: "1.0.0", graphKind: "agent", backend: "langgraph", nodes: [], edges: [], agent: { state: [{ name: "question", type: "text", reducer: { kind: "replace" }, scope: "turn" }], routes: [], joins: [], limits: { maxSteps: 25 }, indexes: [], policies: [] } };
 const EMPTY_TABULAR: Graph = { schemaVersion: "1.0.0", graphKind: "tabular", backend: "python", nodes: [], edges: [] };
 interface ProjectInfo { id: string; graphKind: string; description: string | null; synthetic: boolean }
 const EMPTY_UI: UiDoc = { schemaVersion: "1.0.0", positions: {} };
@@ -87,6 +89,7 @@ function Workbench() {
 
   const opsByType = useMemo(() => Object.fromEntries([...ops, ...PSEUDO_OPS].map((o) => [o.type, o])), [ops]);
   const tabular = graph.graphKind === "tabular";
+  const agent = graph.graphKind === "agent";
 
   // ---- what the canvas shows: the project graph, or the definition of the module being edited
   const def: ModuleDef | undefined = scope.length ? findModule(graph, scope[scope.length - 1].module, scope[scope.length - 1].version) : undefined;
@@ -466,26 +469,31 @@ function Workbench() {
           <option value="">choose…</option>
           {projects.length > 0 && <optgroup label="Saved projects">{projects.map((p) => <option key={p.id} value={`project:${p.id}`}>{p.id} [{p.graphKind}]</option>)}</optgroup>}
           <optgroup label="Examples — model graphs">{examples.filter((p) => p.graphKind === "model").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}{p.synthetic ? " (synthetic data)" : ""}</option>)}</optgroup>
+          <optgroup label="Examples — agent graphs (LangGraph)">{examples.filter((p) => p.graphKind === "agent").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}{p.synthetic ? " (synthetic data)" : ""}</option>)}</optgroup>
           <optgroup label="Examples — tabular / statistics graphs">{examples.filter((p) => p.graphKind === "tabular").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}{p.synthetic ? " (synthetic data)" : ""}</option>)}</optgroup>
         </select></label>
         <span className="viewtabs" role="tablist" aria-label="workspace">
-          {([["graph", "Graph"], ["data", "Data"], ["experiments", "Experiments"], ...(tabular ? [] : [["training", "Training"], ["debug", "Debug"], ["attention", "Attention"]])] as [View, string][]).map(([k, label]) => (
+          {(agent ? [["graph", "Agent"], ["data", "Data"]] as [View, string][] : [["graph", "Graph"], ["data", "Data"], ["experiments", "Experiments"], ...(tabular ? [] : [["training", "Training"], ["debug", "Debug"], ["attention", "Attention"]])] as [View, string][]).map(([k, label]) => (
             <button key={k} role="tab" aria-selected={view === k} className={view === k ? "on" : ""} onClick={() => setView(k)}>{label}</button>))}
         </span>
         <span className="badge kind" title="Graph kind: wires of different kinds never mean the same thing">{graph.graphKind} graph</span>
         <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled", EMPTY, null, false); }}>New model graph</button>
         <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled_tabular", EMPTY_TABULAR, null, false); }}>New tabular graph</button>
-        {!tabular && <button onClick={() => setShowCode(true)} disabled={!rv?.ok} title={rv?.ok ? "Show generated PyTorch" : "Fix the graph errors to export"}>Export PyTorch</button>}
+        <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled_agent", EMPTY_AGENT, null, false); }}>New agent graph</button>
+        {!tabular && !agent && <button onClick={() => setShowCode(true)} disabled={!rv?.ok} title={rv?.ok ? "Show generated PyTorch" : "Fix the graph errors to export"}>Export PyTorch</button>}
         <span className="spacer" />
         <span className={`vsum ${errCount ? "bad" : "good"}`} aria-live="polite">
-          {rootValidation.error ? `validation unavailable: ${rootValidation.error}` : rootValidation.pending ? "validating…" : rv ? (errCount ? `${errCount} error${errCount > 1 ? "s" : ""}` : (tabular ? `valid · ${graph.nodes.length} nodes` : `valid · ${fmtInt(rv.totalParams)} parameters`)) : ""}
+          {rootValidation.error ? `validation unavailable: ${rootValidation.error}` : rootValidation.pending ? "validating…" : rv ? (errCount ? `${errCount} error${errCount > 1 ? "s" : ""}` : ((tabular || agent) ? `valid · ${graph.nodes.length} nodes` : `valid · ${fmtInt(rv.totalParams)} parameters`)) : ""}
           {rv && <small> · graph {rv.graphHash.slice(0, 8)}</small>}
         </span>
       </header>
-      {view === "graph" && ui.description && <div className={`notice ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic / teaching data. </b>}{ui.description}</div>}
+      {view === "graph" && !agent && ui.description && <div className={`notice ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic / teaching data. </b>}{ui.description}</div>}
       {message && <div className="toast" role="status" onClick={() => setMessage(null)}>{message} <small>(click to dismiss)</small></div>}
 
       {view === "data" && <DataWorkspace onAddSource={addSource} tabular={tabular} />}
+      {view === "graph" && agent && (
+        <AgentWorkspace projectId={projectId} graph={graph} setGraph={setGraph} ui={ui} setUi={setUi} validation={rv ?? null} ops={ops} allRuns={allRuns} reloadRuns={reloadRuns} setMessage={setMessage} />
+      )}
       {view === "experiments" && <Experiments graph={graph} validation={rv ?? null} projectId={projectId} ops={opsByType} ensureSaved={ensureSaved} onOpenRun={openRun} />}
       {view === "training" && !tabular && (
         <div className="fullws"><TrainingWorkspace projectId={projectId} graph={graph} setGraph={setGraph} runs={procRuns} reloadRuns={reloadRuns} ensureSaved={ensureSaved} valid={!!rv?.ok}
@@ -495,7 +503,7 @@ function Workbench() {
         <div className="fullws"><DebuggerWorkspace graph={graph} validation={rv ?? null} runs={procRuns} runId={debugRun} setRunId={setDebugRun} setMessage={setMessage} onEditProcedure={() => setView("training")} /></div>
       )}
       {view === "attention" && !tabular && <div className="fullws"><AttentionWorkspace graph={graph} runs={procRuns} setMessage={setMessage} /></div>}
-      {view === "graph" && <>
+      {view === "graph" && !agent && <>
       <aside className="left">
         {!tabular && (
           <div className="tabs" role="tablist" style={{ marginTop: 0 }}>

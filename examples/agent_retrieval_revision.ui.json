@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "START": {
+      "x": 40,
+      "y": 60
+    },
+    "init": {
+      "x": 310,
+      "y": 60
+    },
+    "retrieve": {
+      "x": 580,
+      "y": 60
+    },
+    "draft_prompt": {
+      "x": 850,
+      "y": 60
+    },
+    "draft": {
+      "x": 1120,
+      "y": 60
+    },
+    "cite": {
+      "x": 1390,
+      "y": 60
+    },
+    "grade_prompt": {
+      "x": 1660,
+      "y": 60
+    },
+    "grade": {
+      "x": 1930,
+      "y": 60
+    },
+    "bump": {
+      "x": 2200,
+      "y": 60
+    },
+    "revise_prompt": {
+      "x": 2470,
+      "y": 60
+    },
+    "revise": {
+      "x": 2740,
+      "y": 60
+    },
+    "accept": {
+      "x": 2200,
+      "y": 210
+    },
+    "unresolved": {
+      "x": 2200,
+      "y": 360
+    },
+    "END": {
+      "x": 3010,
+      "y": 60
+    }
+  },
+  "description": "VISION 12.3: retrieve -> draft a cited answer -> grade (structured output) -> revise the query up to max_revisions times -> answer or return unresolved. Uses the local Ollama model qwen3.5:2b and nomic-embed-text embeddings over SYNTHETIC lab documents (examples/agent_docs). Ask a question in the run panel, e.g. 'What is the highest temperature the Kinase-7 water bath may be set to?'",
+  "synthetic": true,
+  "defaultInput": {
+    "question": "What is the highest temperature the Kinase-7 water bath may be set to?"
+  }
+}

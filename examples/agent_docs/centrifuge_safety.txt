@@ -1,0 +1,5 @@
+SYNTHETIC teaching document (invented for this project; not a real laboratory protocol).
+
+Centrifuge safety checklist for the fictional rotor R-12.
+Balance opposite tubes to within 0.1 grams before every run. Never exceed 12000 revolutions per minute with the R-12 rotor.
+Wait until the rotor has come to a complete stop before opening the lid. Inspect the rotor for cracks every month and record the inspection in the equipment log.

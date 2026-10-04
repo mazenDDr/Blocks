@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "START": {
+      "x": 40,
+      "y": 60
+    },
+    "tick": {
+      "x": 310,
+      "y": 60
+    },
+    "done": {
+      "x": 580,
+      "y": 60
+    },
+    "END": {
+      "x": 850,
+      "y": 60
+    }
+  },
+  "description": "A bounded cycle with no model: tick adds 1 to n (reducer: add) until the route predicate n >= limit holds. Lower 'Max steps' or raise 'limit' to see termination at the step limit instead.",
+  "synthetic": false,
+  "defaultInput": {}
+}

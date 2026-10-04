@@ -1,0 +1,6 @@
+SYNTHETIC teaching document (invented for this project; not a real laboratory protocol).
+
+Buffer preparation notes for the fictional Tris-Lab buffer.
+Dissolve 6.05 grams of Tris base in 800 milliliters of distilled water. Adjust the pH to 7.5 with hydrochloric acid while stirring, then add water up to a final volume of 1 liter.
+Filter the buffer through a 0.22 micrometer filter and store it at 4 degrees Celsius for at most two weeks.
+The pH of a Tris buffer drifts with temperature, so always set the pH at the temperature at which the buffer will be used.

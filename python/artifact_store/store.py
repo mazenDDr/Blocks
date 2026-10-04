@@ -16,11 +16,12 @@ from contextlib import closing
 from pathlib import Path
 from typing import Any
 
-RUN_STATES = ("queued", "preparing", "running", "cancelling", "completed", "failed", "cancelled")
+RUN_STATES = ("queued", "preparing", "running", "paused", "cancelling", "completed", "failed", "cancelled")
 _TRANSITIONS = {
     "queued": {"preparing", "failed", "cancelling", "cancelled"},
     "preparing": {"running", "failed", "cancelling", "cancelled"},
-    "running": {"completed", "failed", "cancelling"},
+    "running": {"completed", "failed", "cancelling", "paused"},
+    "paused": {"running", "cancelling", "cancelled", "failed"},  # agent runs waiting on an interrupt; a resume is a new worker process on the same run
     "cancelling": {"cancelled", "failed"},
     "completed": set(),
     "failed": set(),

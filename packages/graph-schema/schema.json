@@ -266,6 +266,19 @@
     "Graph": {
       "additionalProperties": true,
       "properties": {
+        "agent": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agent"
+        },
         "backend": {
           "default": "pytorch",
           "title": "Backend",

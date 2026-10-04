@@ -68,6 +68,10 @@ def validate(graph: Graph) -> Report:
         from tabular.validate import validate_tabular
 
         return validate_tabular(graph)
+    if graph.graphKind == "agent":
+        from agent.validate import validate_agent
+
+        return validate_agent(graph)
     ex = composite.expand(graph)
     graph = ex.graph
     r = Report()

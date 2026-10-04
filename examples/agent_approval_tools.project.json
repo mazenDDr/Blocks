@@ -1,0 +1,238 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "calc",
+      "type": "agent.tool_call",
+      "version": "1.0.0",
+      "config": {
+        "tool": "calculator",
+        "args": {
+          "expression": "{expr}"
+        },
+        "output_field": "calc"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "draft_note",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "note",
+            "kind": "template",
+            "template": "calculation {expr} = {calc.result.value}"
+          },
+          {
+            "field": "trail",
+            "kind": "append_item",
+            "value": "drafted"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "review",
+      "type": "agent.human_interrupt",
+      "version": "1.0.0",
+      "config": {
+        "prompt": "Review the note before it is written to the outbox.",
+        "show_field": "note",
+        "edit_field": "note",
+        "decision_field": "decision",
+        "actions": [
+          "approve",
+          "reject",
+          "edit"
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "write",
+      "type": "agent.tool_call",
+      "version": "1.0.0",
+      "config": {
+        "tool": "write_note",
+        "args": {
+          "path": "notes.txt",
+          "text": "{note}"
+        },
+        "allowed_dir": "",
+        "require_approval": true,
+        "output_field": "write_result"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "skipped",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "trail",
+            "kind": "append_item",
+            "value": "rejected"
+          }
+        ]
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "START__calc",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "calc",
+        "port": "in"
+      }
+    },
+    {
+      "id": "calc__draft_note",
+      "kind": "control",
+      "from": {
+        "node": "calc",
+        "port": "out"
+      },
+      "to": {
+        "node": "draft_note",
+        "port": "in"
+      }
+    },
+    {
+      "id": "draft_note__review",
+      "kind": "control",
+      "from": {
+        "node": "draft_note",
+        "port": "out"
+      },
+      "to": {
+        "node": "review",
+        "port": "in"
+      }
+    },
+    {
+      "id": "write__END",
+      "kind": "control",
+      "from": {
+        "node": "write",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    },
+    {
+      "id": "skipped__END",
+      "kind": "control",
+      "from": {
+        "node": "skipped",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "expr",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": "12 * (3 + 4)"
+      },
+      {
+        "name": "calc",
+        "type": "object",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": {},
+        "properties": {
+          "value": "number"
+        }
+      },
+      {
+        "name": "note",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "decision",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "write_result",
+        "type": "object",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": {}
+      },
+      {
+        "name": "trail",
+        "type": "list",
+        "reducer": {
+          "kind": "append"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": []
+      }
+    ],
+    "limits": {
+      "maxSteps": 20
+    },
+    "routes": [
+      {
+        "id": "after_review",
+        "from": "review",
+        "cases": [
+          {
+            "id": "rejected",
+            "label": "rejected",
+            "when": {
+              "field": "decision",
+              "op": "==",
+              "value": "reject"
+            },
+            "to": "skipped"
+          }
+        ],
+        "default": "write",
+        "defaultLabel": "approved or edited"
+      }
+    ]
+  }
+}

@@ -27,10 +27,12 @@ export interface CodeBlockDef {
 export interface Graph {
   schemaVersion: string; graphKind: string; backend: string; nodes: GNode[]; edges: GEdge[];
   modules?: ModuleDef[]; codeBlocks?: CodeBlockDef[]; training?: Record<string, any> | null;
+  /** agent graphs: state schema, routes, joins, limits, indexes, memory policies (see components/agent/types.ts) */
+  agent?: Record<string, unknown> | null;
 }
 export interface UiDoc {
   schemaVersion: string; positions: Record<string, { x: number; y: number }>; pinnedBaseline?: string | null;
-  description?: string; synthetic?: boolean;
+  description?: string; synthetic?: boolean; defaultInput?: Record<string, unknown>; seedExample?: string;
 }
 
 export interface OpInfo {
@@ -76,6 +78,8 @@ export interface Explain {
 export interface Validation {
   ok: boolean; graphHash: string; graphKind?: string; totalParams: number; diagnostics: Diagnostic[]; nodes: Record<string, NodeView>;
   flat?: Record<string, NodeView>; instances?: Record<string, InstanceInfo>; modules?: ModuleSummary[]; procedure?: ProcedureCheck;
+  /** agent graphs */
+  agent?: import("./components/agent/types").AgentAnalysis; order?: string[];
 }
 
 export interface RunSummary {
@@ -143,11 +147,12 @@ export interface ProcedureRunSummary {
   last: { step: number; loss: number; lr: number; grad_norm: number | null } | null; validation: Record<string, number> | null; stoppedBy: string | null; checkpoints: number; captures: number[];
 }
 export interface SandboxRunSummary { kind: "sandbox"; id: string; status: string; parent: string; step: number; createdAt: number; updatedAt: number; graphHash: string; config: Record<string, any> }
-export type AnyRun = RunSummary | TabularRunSummary | ProcedureRunSummary | SandboxRunSummary;
+export type AnyRun = RunSummary | TabularRunSummary | ProcedureRunSummary | SandboxRunSummary | import("./components/agent/types").AgentRunSummary;
 export const isTabularRun = (r: AnyRun): r is TabularRunSummary => r.kind === "tabular";
 export const isProcedureRun = (r: AnyRun): r is ProcedureRunSummary => r.kind === "procedure";
 export const isSandboxRun = (r: AnyRun): r is SandboxRunSummary => r.kind === "sandbox";
 export const isModelRun = (r: AnyRun): r is RunSummary => r.kind === undefined || r.kind === "model";
+export const isAgentRun = (r: AnyRun): r is import("./components/agent/types").AgentRunSummary => r.kind === "agent";
 
 export interface TabProvenance {
   runId: string | null; graphHash?: string; nodeId?: string | null; port?: string | null; partition?: string; source?: unknown; sourceSha256?: string;

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "START": {
+      "x": 40,
+      "y": 60
+    },
+    "record_question": {
+      "x": 310,
+      "y": 60
+    },
+    "select": {
+      "x": 580,
+      "y": 60
+    },
+    "build_prompt": {
+      "x": 850,
+      "y": 60
+    },
+    "answer": {
+      "x": 1120,
+      "y": 60
+    },
+    "END": {
+      "x": 1390,
+      "y": 60
+    }
+  },
+  "description": "VISION 12.7: a stored lab constraint is missing from the answer. Seed the SYNTHETIC memory records (Memory tab), run, open the model call's context, trace the record to the stage that excluded it, edit the 'lab_memory' policy (rank weights / budget), preview the context without calling the model, then rerun.",
+  "synthetic": true,
+  "defaultInput": {
+    "question": "What temperature should I use to incubate the Kinase-7 assay?",
+    "user_id": "alice"
+  },
+  "seedExample": "memory_debugging"
+}

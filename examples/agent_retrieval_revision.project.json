@@ -1,0 +1,611 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "init",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "query",
+            "kind": "copy",
+            "source": "question"
+          },
+          {
+            "field": "attempts",
+            "kind": "literal",
+            "value": 0
+          },
+          {
+            "field": "status",
+            "kind": "literal",
+            "value": "working"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "retrieve",
+      "type": "agent.retrieve",
+      "version": "1.0.0",
+      "config": {
+        "index": "lab_docs",
+        "query": "{query}",
+        "k": 3,
+        "score_threshold": null,
+        "output_field": "docs"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "draft_prompt",
+      "type": "agent.prompt",
+      "version": "1.0.0",
+      "config": {
+        "output_field": "prompt_messages",
+        "items": [
+          {
+            "kind": "template",
+            "role": "system",
+            "template": "You answer questions using ONLY the context. Cite every fact with the id of the chunk that states it, in square brackets, for example [enzyme_assay_protocol.txt#0]. If the context does not contain the answer, say that it does not."
+          },
+          {
+            "kind": "documents",
+            "role": "system",
+            "field": "docs",
+            "header": "Context:",
+            "template": "[{chunk_id}] {text}"
+          },
+          {
+            "kind": "template",
+            "role": "user",
+            "template": "{question}"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "draft",
+      "type": "agent.chat_model",
+      "version": "1.0.0",
+      "config": {
+        "model": {
+          "provider": "ollama",
+          "model": "qwen3.5:2b",
+          "temperature": 0.0,
+          "max_tokens": 200,
+          "seed": 7,
+          "think": false
+        },
+        "messages_field": "prompt_messages",
+        "output_field": "answer"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "cite",
+      "type": "agent.citations",
+      "version": "1.0.0",
+      "config": {
+        "text_field": "answer",
+        "docs_field": "docs",
+        "output_field": "citation_check"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "grade_prompt",
+      "type": "agent.prompt",
+      "version": "1.0.0",
+      "config": {
+        "output_field": "grade_messages",
+        "items": [
+          {
+            "kind": "template",
+            "role": "system",
+            "template": "You are a strict grader. Decide whether the ANSWER is fully supported by the CONTEXT."
+          },
+          {
+            "kind": "documents",
+            "role": "system",
+            "field": "docs",
+            "header": "CONTEXT:",
+            "template": "[{chunk_id}] {text}"
+          },
+          {
+            "kind": "template",
+            "role": "user",
+            "template": "QUESTION: {question}\nANSWER: {answer}"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "grade",
+      "type": "agent.structured_output",
+      "version": "1.0.0",
+      "config": {
+        "model": {
+          "provider": "ollama",
+          "model": "qwen3.5:2b",
+          "temperature": 0.0,
+          "max_tokens": 120,
+          "seed": 7,
+          "think": false
+        },
+        "messages_field": "grade_messages",
+        "output_field": "grade",
+        "error_field": "grade_error",
+        "schema_fields": [
+          {
+            "name": "supported",
+            "type": "boolean",
+            "description": "true only if every claim in the answer is stated in the context"
+          },
+          {
+            "name": "reason",
+            "type": "text",
+            "description": "one short sentence"
+          }
+        ],
+        "retry": {
+          "maxRetries": 2,
+          "feedback": true
+        },
+        "on_failure": "route"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "bump",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "attempts",
+            "kind": "increment",
+            "by": 1
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "revise_prompt",
+      "type": "agent.prompt",
+      "version": "1.0.0",
+      "config": {
+        "output_field": "revise_messages",
+        "items": [
+          {
+            "kind": "template",
+            "role": "system",
+            "template": "Rewrite the search query so a keyword search over lab documents finds the passage that answers the question. Reply with ONLY the new query."
+          },
+          {
+            "kind": "template",
+            "role": "user",
+            "template": "Question: {question}\nPrevious query: {query}\nWhy the last answer failed: {grade.reason}{grade_error}"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "revise",
+      "type": "agent.chat_model",
+      "version": "1.0.0",
+      "config": {
+        "model": {
+          "provider": "ollama",
+          "model": "qwen3.5:2b",
+          "temperature": 0.0,
+          "max_tokens": 40,
+          "seed": 7,
+          "think": false
+        },
+        "messages_field": "revise_messages",
+        "output_field": "query"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "accept",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "status",
+            "kind": "literal",
+            "value": "answered"
+          },
+          {
+            "field": "result",
+            "kind": "copy",
+            "source": "answer"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "unresolved",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "status",
+            "kind": "literal",
+            "value": "unresolved"
+          },
+          {
+            "field": "result",
+            "kind": "template",
+            "template": "Unresolved after {attempts} revision(s). Last answer (unverified): {answer}"
+          }
+        ]
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "START__init",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "init",
+        "port": "in"
+      }
+    },
+    {
+      "id": "init__retrieve",
+      "kind": "control",
+      "from": {
+        "node": "init",
+        "port": "out"
+      },
+      "to": {
+        "node": "retrieve",
+        "port": "in"
+      }
+    },
+    {
+      "id": "retrieve__draft_prompt",
+      "kind": "control",
+      "from": {
+        "node": "retrieve",
+        "port": "out"
+      },
+      "to": {
+        "node": "draft_prompt",
+        "port": "in"
+      }
+    },
+    {
+      "id": "draft_prompt__draft",
+      "kind": "control",
+      "from": {
+        "node": "draft_prompt",
+        "port": "out"
+      },
+      "to": {
+        "node": "draft",
+        "port": "in"
+      }
+    },
+    {
+      "id": "draft__cite",
+      "kind": "control",
+      "from": {
+        "node": "draft",
+        "port": "out"
+      },
+      "to": {
+        "node": "cite",
+        "port": "in"
+      }
+    },
+    {
+      "id": "cite__grade_prompt",
+      "kind": "control",
+      "from": {
+        "node": "cite",
+        "port": "out"
+      },
+      "to": {
+        "node": "grade_prompt",
+        "port": "in"
+      }
+    },
+    {
+      "id": "grade_prompt__grade",
+      "kind": "control",
+      "from": {
+        "node": "grade_prompt",
+        "port": "out"
+      },
+      "to": {
+        "node": "grade",
+        "port": "in"
+      }
+    },
+    {
+      "id": "bump__revise_prompt",
+      "kind": "control",
+      "from": {
+        "node": "bump",
+        "port": "out"
+      },
+      "to": {
+        "node": "revise_prompt",
+        "port": "in"
+      }
+    },
+    {
+      "id": "revise_prompt__revise",
+      "kind": "control",
+      "from": {
+        "node": "revise_prompt",
+        "port": "out"
+      },
+      "to": {
+        "node": "revise",
+        "port": "in"
+      }
+    },
+    {
+      "id": "revise__retrieve",
+      "kind": "control",
+      "from": {
+        "node": "revise",
+        "port": "out"
+      },
+      "to": {
+        "node": "retrieve",
+        "port": "in"
+      }
+    },
+    {
+      "id": "accept__END",
+      "kind": "control",
+      "from": {
+        "node": "accept",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    },
+    {
+      "id": "unresolved__END",
+      "kind": "control",
+      "from": {
+        "node": "unresolved",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "question",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "query",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "docs",
+        "type": "documents",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "answer",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "max_revisions",
+        "type": "integer",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": 2
+      },
+      {
+        "name": "attempts",
+        "type": "integer",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": 0
+      },
+      {
+        "name": "citation_check",
+        "type": "object",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": {},
+        "properties": {
+          "allValid": "boolean",
+          "count": "integer",
+          "invalid": "integer"
+        }
+      },
+      {
+        "name": "grade",
+        "type": "object",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": {},
+        "properties": {
+          "supported": "boolean",
+          "reason": "text"
+        }
+      },
+      {
+        "name": "grade_error",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "result",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "prompt_messages",
+        "type": "list",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "grade_messages",
+        "type": "list",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "revise_messages",
+        "type": "list",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      }
+    ],
+    "limits": {
+      "maxSteps": 60,
+      "maxModelCalls": 20
+    },
+    "routes": [
+      {
+        "id": "after_grade",
+        "from": "grade",
+        "cases": [
+          {
+            "id": "pass",
+            "label": "supported and citations valid",
+            "when": {
+              "all": [
+                {
+                  "field": "grade.supported",
+                  "op": "is_true"
+                },
+                {
+                  "field": "citation_check.allValid",
+                  "op": "is_true"
+                }
+              ]
+            },
+            "to": "accept"
+          },
+          {
+            "id": "retry",
+            "label": "retry: budget remains",
+            "when": {
+              "field": "attempts",
+              "op": "<",
+              "other": "max_revisions"
+            },
+            "to": "bump"
+          }
+        ],
+        "default": "unresolved",
+        "defaultLabel": "budget exhausted"
+      }
+    ],
+    "indexes": [
+      {
+        "id": "lab_docs",
+        "description": "SYNTHETIC lab documents (examples/agent_docs)",
+        "loader": {
+          "directory": "examples/agent_docs",
+          "glob": "*.txt"
+        },
+        "splitter": {
+          "strategy": "recursive",
+          "chunkSize": 420,
+          "chunkOverlap": 40
+        },
+        "embeddings": {
+          "provider": "ollama",
+          "model": "nomic-embed-text",
+          "dimension": 768,
+          "normalize": true
+        }
+      }
+    ]
+  }
+}

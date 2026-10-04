@@ -30,6 +30,7 @@ from graph_core.project_io import Project, load_project, save_project, ui_path_f
 from graph_core.schema import Graph, ProjectDocument
 from graph_core.validate import ExecutionBlocked, validate
 from worker.process import RunHandle, submit_run
+from worker.agent_run import AgentRunConfig
 from worker.procedure_run import ProcedureRunConfig
 from worker.tabular_run import TabularRunConfig
 from worker.train import RunConfig, UnsupportedGraph, _io_contract
@@ -109,7 +110,11 @@ def validation_json(graph: Graph) -> dict[str, Any]:
     j = report.to_json()
     j["graphHash"] = semantic_hash(graph)
     j["graphKind"] = graph.graphKind
-    if graph.graphKind == "model":
+    if graph.graphKind == "agent":
+        from .agent_api import agent_validation
+
+        j.update(agent_validation(graph, report))
+    elif graph.graphKind == "model":
         v = views(graph, report)
         j["nodes"], j["flat"], j["instances"] = v["nodes"], v["flat"], v["instances"]
         j["modules"] = module_summaries(graph, report)
@@ -137,6 +142,18 @@ def preflight_procedure(graph: Graph, cfg: ProcedureRunConfig) -> None:
         Trainer(graph, spec)
     except ExecutionBlocked as e:
         raise _err(422, "the graph or its training setup has errors and cannot run", [d.to_json() for d in e.diagnostics], "execution_blocked")
+
+
+def agent_preflight(graph: Graph, cfg: AgentRunConfig) -> None:
+    """Checks that need no model call: the graph validates, the local runtime is reachable when a block uses it, the thread has no pending interrupt."""
+    report = validate(graph)
+    if not report.ok:
+        raise _err(422, "the graph has errors and cannot run", [d.to_json() for d in report.errors], "execution_blocked")
+    if any(n.config.get("model", {}).get("provider") == "ollama" for n in graph.nodes):
+        from agent.models import ollama_status
+
+        if not ollama_status()["reachable"]:
+            raise _err(422, "a block uses the local Ollama runtime, which is not reachable at http://localhost:11434", code="model_unavailable")
 
 
 class Services:
@@ -224,6 +241,17 @@ class Services:
                 "progress": {"nodesDone": sum(1 for n in nodes if n["status"] == "finished"), "nodes": len(order)},
                 "sources": sources, "snapshots": snaps, "runSeed": seeded, "splits": splits, "failure": failure, "libraries": libs}
 
+    def agent_summary(self, row: dict[str, Any]) -> dict[str, Any]:
+        rid, cfg = row["id"], row["config"]
+        fin = self.store.last_event(rid, "run_finished")
+        intr = self.store.last_event(rid, "interrupt_raised")
+        calls = self.store.events(rid, -1, ("model_call",))
+        return {"kind": "agent", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": cfg, "createdAt": row["created_at"],
+                "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "threadId": cfg.get("thread_id"), "input": cfg.get("input"), "rerunOf": cfg.get("rerun_of"),
+                "stoppedBy": fin["data"].get("stoppedBy") if fin else None, "pendingInterrupt": ({"node": intr["node_id"], **intr["data"]} if intr and row["status"] == "paused" else None),
+                "modelCalls": len(calls), "fixtureCalls": sum(1 for c in calls if c["data"].get("fixture")),
+                "totalLatencyMs": round(sum(c["data"].get("latencyMs") or 0 for c in calls), 1)}
+
     def procedure_summary(self, row: dict[str, Any]) -> dict[str, Any]:
         rid = row["id"]
         started = self.store.last_event(rid, "run_started")
@@ -247,6 +275,8 @@ class Services:
             return self.tabular_summary(row)
         if row["config"].get("kind") == "procedure":
             return self.procedure_summary(row)
+        if row["config"].get("kind") == "agent":
+            return self.agent_summary(row)
         if row["config"].get("kind") == "sandbox":
             return {"kind": "sandbox", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": row["config"],
                     "createdAt": row["created_at"], "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "parent": row["config"].get("parent"), "step": row["config"].get("step")}
@@ -375,9 +405,13 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
         else:
             graph = req.graph
         tabular = graph.graphKind == "tabular"
+        agent = graph.graphKind == "agent"
         procedure = graph.graphKind == "model" and req.config.get("kind") == "procedure"
         try:
-            if procedure:
+            if agent:
+                cfg = AgentRunConfig.model_validate({**req.config, "kind": "agent", "project_id": req.projectId or req.config.get("project_id"),
+                                                     "thread_id": req.config.get("thread_id") or f"th-{hashlib.sha256(idempotency_key.encode()).hexdigest()[:8]}"})
+            elif procedure:
                 body = {**req.config}
                 body["procedure"] = body.get("procedure") or graph.training or {}
                 cfg = ProcedureRunConfig.model_validate({**body, "project_id": req.projectId or body.get("project_id")})
@@ -395,6 +429,16 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
                 if prior["request_hash"] != req_hash:
                     raise _err(409, "this Idempotency-Key was already used with a different request", code="idempotency_key_reused")
                 return JSONResponse({"runId": prior["run_id"], "idempotentReplay": True, "status": sv.store.get_run(prior["run_id"])["status"]})
+            if agent:
+                agent_preflight(graph, cfg)
+                busy = [r["id"] for r in sv.store.list_runs() if r["config"].get("kind") == "agent" and r["config"].get("thread_id") == cfg.thread_id
+                        and r["status"] in ("queued", "preparing", "running", "paused", "cancelling")]
+                if busy:
+                    raise _err(409, f"thread '{cfg.thread_id}' is busy with run {busy[0]} (a paused run must be resumed or cancelled first)", code="thread_busy")
+                handle = submit_run(graph, cfg, sv.workbench)
+                sv.handles[handle.run_id] = handle
+                sv.store.put_idempotent(idempotency_key, req_hash, handle.run_id)
+                return JSONResponse({"runId": handle.run_id, "idempotentReplay": False, "status": "queued", "graphHash": semantic_hash(graph), "threadId": cfg.thread_id}, status_code=201)
             if procedure:
                 preflight_procedure(graph, cfg)
                 handle = submit_run(graph, cfg, sv.workbench)
@@ -497,7 +541,7 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
                     last = e["seq"]
                     payload = {k: e[k] for k in ("run_id", "seq", "ts", "type", "graph_hash", "node_id", "data")}
                     yield f"id: {e['seq']}\nevent: {e['type']}\ndata: {json.dumps(payload)}\n\n"
-                if not batch and status in TERMINAL:
+                if not batch and (status in TERMINAL or status == "paused"):
                     yield "event: end\ndata: {}\n\n"
                     return
                 if await request.is_disconnected():
@@ -547,8 +591,9 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     def infer(req: InferRequest):
         return insp.infer(sv.run_data(req.runId), req.checkpointStep, req.sample, req.imageBase64)
 
-    from . import connections_api, m3_api, studies_api
+    from . import agent_api, connections_api, m3_api, studies_api
 
+    agent_api.register(app, sv)
     connections_api.register(app, sv)
     studies_api.register(app, sv)
     m3_api.register(app, sv)

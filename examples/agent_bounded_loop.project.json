@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "tick",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "n",
+            "kind": "increment",
+            "by": 1
+          },
+          {
+            "field": "log",
+            "kind": "append_item",
+            "value": "tick"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "done",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "status",
+            "kind": "literal",
+            "value": "finished"
+          }
+        ]
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "START__tick",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "tick",
+        "port": "in"
+      }
+    },
+    {
+      "id": "done__END",
+      "kind": "control",
+      "from": {
+        "node": "done",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "n",
+        "type": "integer",
+        "reducer": {
+          "kind": "add"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": 0
+      },
+      {
+        "name": "log",
+        "type": "list",
+        "reducer": {
+          "kind": "append"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": []
+      },
+      {
+        "name": "limit",
+        "type": "integer",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": 5
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      }
+    ],
+    "limits": {
+      "maxSteps": 25
+    },
+    "routes": [
+      {
+        "id": "loop",
+        "from": "tick",
+        "cases": [
+          {
+            "id": "stop",
+            "label": "n reached the limit",
+            "when": {
+              "field": "n",
+              "op": ">=",
+              "other": "limit"
+            },
+            "to": "done"
+          }
+        ],
+        "default": "tick",
+        "defaultLabel": "keep looping"
+      }
+    ]
+  }
+}

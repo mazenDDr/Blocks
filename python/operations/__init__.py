@@ -5,3 +5,4 @@ from . import connector_ops  # noqa: F401  (connector sources + cross-source joi
 from . import tensor_ops  # noqa: F401  (tensor primitives, Milestone 3)
 from . import diag_ops  # noqa: F401  (diagnostic blocks + structural block catalog)
 from . import code_ops  # noqa: F401  (code blocks, Milestone 3)
+from agent import blocks as agent_blocks  # noqa: F401  (graph kind "agent", Milestone 4; heavy libraries are imported lazily at run time)

@@ -1,0 +1,5 @@
+SYNTHETIC teaching document (invented for this project; not a real laboratory protocol).
+
+Pipette calibration procedure for the fictional pipette set P-Series.
+Calibrate each pipette every six months with distilled water on an analytical balance. Weigh ten consecutive dispenses and compute the mean volume and the relative standard deviation.
+A pipette passes when the mean volume is within 1 percent of the nominal volume and the relative standard deviation is below 0.5 percent. Tag any pipette that fails as out of service.

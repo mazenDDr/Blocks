@@ -85,4 +85,16 @@ META: dict[str, tuple[str, str, str]] = {
     "core.repeat": ("Repeat", "Modules", "Applies a module a fixed number of times with loop-carried state; parameters tied across iterations by default."),
     "core.select": ("Select (branches)", "Modules", "Two module branches with identical signatures; a scalar bool predicate picks the outputs. Both branches are evaluated."),
     "code.block": ("Python code block", "Code", "Optional Python implementation with a typed interface; runs in an isolated subprocess with limits."),
+    # ---- agent graph kind (Milestone 4)
+    "agent.set_state": ("Set state", "State", "Writes state fields from literals, copies, templates, counters or lengths. The field's reducer decides how a write combines with the old value."),
+    "agent.prompt": ("Prompt / messages", "Prompts", "Ordered message templates plus memory selections, retrieved chunks and tool results; every character range links to its source."),
+    "agent.chat_model": ("Chat model", "Models", "Model invocation (not training): provider, model, temperature, max tokens, seed where supported, timeout. Records the exact request and provider-reported usage."),
+    "agent.structured_output": ("Structured output", "Models", "Asks for a JSON object matching a visually declared schema, validates it, retries per the retry policy and routes on failure."),
+    "agent.embed_text": ("Embed text", "Retrieval", "Embeds one text field; records the embedding identity, dimension and norm."),
+    "agent.retrieve": ("Retriever", "Retrieval", "Top-k similarity search over a persisted index with a score threshold; scores and the cut-off chunks are recorded."),
+    "agent.citations": ("Citation check", "Retrieval", "Checks [chunk_id] markers in generated text against the chunks actually retrieved; invalid markers are flagged, never invented."),
+    "agent.tool_call": ("Tool", "Tools", "Calls a tool with declared effects and bounded capabilities. External effects require an approval interrupt and run once."),
+    "agent.human_interrupt": ("Human input", "Control", "Pauses the thread with a pending-input form (approve / reject / edit); resumes from the checkpoint."),
+    "agent.memory_select": ("Memory selection", "Memory", "Applies a visual memory policy (retrieve, filter, rank, deduplicate, token budget, summarize) and records every record's decision."),
+    "agent.memory_write": ("Memory write", "Memory", "Writes to the thread's conversation or the long-term store with validation, scope, evidence and an audit entry; optionally behind an accept/reject stage."),
 }

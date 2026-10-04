@@ -20,3 +20,15 @@ dvc==3.67.1
 fasteners==0.20
 platformdirs==4.12.2
 psutil==7.2.2
+# ---- Milestone 4: language model and agent workflows (native LangGraph + selected LangChain components) ----
+langgraph==1.2.12
+langgraph-checkpoint==4.2.0
+langgraph-checkpoint-sqlite==3.1.1
+langgraph-prebuilt==1.1.0
+langchain-core==1.6.6
+langchain-text-splitters==1.1.3
+langchain-ollama==1.1.0
+langchain-anthropic==1.7.5
+ollama==0.6.3
+anthropic==1.11.0
+faiss-cpu==1.15.1

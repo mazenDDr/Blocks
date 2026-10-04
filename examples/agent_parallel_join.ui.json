@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "START": {
+      "x": 40,
+      "y": 60
+    },
+    "branch_a": {
+      "x": 310,
+      "y": 60
+    },
+    "branch_b": {
+      "x": 310,
+      "y": 210
+    },
+    "join": {
+      "x": 580,
+      "y": 60
+    },
+    "END": {
+      "x": 850,
+      "y": 60
+    }
+  },
+  "description": "Parallel branches and a join: two branches write the same list (append reducer) and a counter (add reducer) in one step; the join waits for both. Change a reducer to 'replace' on a shared field to see the concurrent-write validation error.",
+  "synthetic": false,
+  "defaultInput": {}
+}
