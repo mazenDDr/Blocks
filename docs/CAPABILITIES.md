@@ -289,7 +289,7 @@ See ADR 0013 and the complete [A01–A64 acceptance checklist](ACCEPTANCE.md). T
 
 Bounds: one owning control/worker process, loopback IPv4 HTTP only, 64 graph nodes/8 MiB CSV inputs/two worker jobs/12 MiB worker body/32 MiB imported artifacts. Per-export at most 32 explicitly selected numeric evaluation-summary artifacts; bridge subprocess timeout 90 s. Project packages at most 64 resources/8 MiB CSV bytes. Conformance checks declared pure-tabular fixtures in a 15 s subprocess; native Python is explicitly trusted, not sandboxed. Imported native pickles cannot be registered for serving as trusted local worker artifacts. Optional tracker dependencies use their own venv/lock. A package declares external data/native requirements and never installs them; freeform text is not automatically sanitized for arbitrary secrets.
 
-Not implemented: cross-host encrypted/authenticated worker transport, remote GPU/cloud provisioning, distributed training/scheduling, broader worker/serving/source adapter families, multi-agent RL, online MLflow/W&B account destinations or credential configuration, streaming/live offline export resume, full third-party SDK families/visualizer plugins, team collaboration/security, external-user onboarding, or complete assistive-technology certification. **A44 pinned repository source-code browse/import** remains unavailable. A09 is now covered for tabular graphs by the opt-in node cache (see the section below); other graph kinds rerun every node. No product-finished claim follows from bounded acceptance evidence.
+Not implemented: cross-host encrypted/authenticated worker transport, remote GPU/cloud provisioning, distributed training/scheduling, broader worker/serving/source adapter families, multi-agent RL, online MLflow/W&B account destinations or credential configuration, streaming/live offline export resume, full third-party SDK families/visualizer plugins, team collaboration/security, external-user onboarding, or complete assistive-technology certification. A44 is now covered by bounded pinned repository browse/import (see its section below). A09 is now covered for tabular graphs by the opt-in node cache (see the section below); other graph kinds rerun every node. No product-finished claim follows from bounded acceptance evidence.
 
 ## Domain checkpoints and local inference (follow-on release)
 
@@ -315,3 +315,15 @@ Limits: CPU and completed-epoch continuation only, local owning control process,
 | Recorded decision per node (`hit`/`miss`/`bypass`, reason, what changed, source run) in events, run summary and the editor Run record's node-cache table | `services/control/app.py`, `apps/editor/src/components/TabularPanels.tsx` | `test_node_cache.py` (API) |
 
 Not implemented: caching for model/procedure/agent/RL/domain graphs, connector sources, joins, code blocks or plugin operations (they always run); entry retention/garbage collection; sharing entries across workbenches; any import/upload path for entries. Cache-off (default) runs are unchanged.
+
+## Pinned repository browse and code import (A44, ADR 0016)
+
+| Capability | Where | Tests |
+|---|---|---|
+| Fetch a Git remote (local path, file, https, ssh) into a bare mirror with hooks disabled, a protocol allowlist and no checkout; resolve branch/tag/HEAD/SHA to a commit; refuse credential-bearing URLs and transport helpers | `repos/core.py`, `services/control/repos_api.py` | `test_repos.py` |
+| Browse a pinned tree with content classification (installation scripts, dependency manifests, license, datasets, weights, configuration, notebooks, LFS pointers, submodules, symlinks); raw blob reads without filters | same | `test_repos.py` |
+| Static dependency parsing (requirements, pyproject, setup.cfg; setup.py reported as not run) and license SPDX guess | same | `test_repos.py` |
+| ast-only Python inspection; wrap one top-level function of a single-file module as a code block; immutable, integrity-checked import record; block `origin` part of the semantic hash; chosen pins verified by the sandbox | same, `apps/editor/src/components/RepoImport.tsx` | `test_repos.py` |
+| Local-modification status and commit comparison for the imported file; editor import dialog and origin banner | `CodeBlockEditor.tsx`, `RepoImport.tsx` | `test_repos.py` (HTTP) |
+
+Not implemented: multi-file packages/notebooks as entry points, wrapping repository data/config/model files as typed sources, LFS download, submodule fetch, dependency installation, hosted-provider APIs/credential UI, history/blame, mirror garbage collection. The code-block sandbox guard is best-effort, not a hostile-code boundary.

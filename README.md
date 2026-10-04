@@ -296,3 +296,15 @@ python3.13 -m venv .venv-trackers && .venv-trackers/bin/pip install -r python/tr
 VOID_WORKBENCH=<scratch dir> .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8770
 VOID_API=http://127.0.0.1:8770 pnpm -C apps/editor dev --host 127.0.0.1 --port 5295
 ```
+
+## Import code from a Git repository (A44)
+
+On **Graph ▸ Modules & code**, use **Import from repository…**. Give an absolute repository path or a `file://`, `https://` or `ssh://` URL (no credentials in the URL) and a revision, then **Resolve and browse**. The revision resolves to a commit, and the content is read from a bare mirror: nothing is checked out, installed or executed. Setup scripts, hooks, LFS pointers and submodules are labelled and never run or fetched. Dependencies and the license are read statically. Open a single-file Python module, pick a function and the role of each parameter, optionally tick pinned dependencies, and **Import pinned function**. The resulting code block records its URL, commit, path and blob as its origin, runs only in the code-block sandbox, and shows whether you have modified it since import. **Compare** shows how the file changed at another revision; re-import to update deliberately. See ADR 0016.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_repos.py -o faulthandler_timeout=240
+VOID_WORKBENCH=<scratch dir> .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8771
+VOID_API=http://127.0.0.1:8771 pnpm -C apps/editor dev --host 127.0.0.1 --port 5296
+```

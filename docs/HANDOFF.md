@@ -347,3 +347,27 @@ The user asked Claude to continue Codex's work using this handoff. Starting poin
 ### Next
 
 A44 (pinned repository code import) is the last unimplemented acceptance row. Other gaps: cache retention/GC, caching for other graph kinds, and the §5/§9/§10 limits. Keep using a separate branch per session if the harness requires it; `master` was not changed by this session.
+
+## 12. A44 pinned repository code import — Claude, 2026-10-04
+
+Continuation in the same Linux x86_64 cloud session as §11, on branch `claude/laughing-bell-la46nd` (starting from `ddf2606`). This closes the last `not implemented` acceptance row. **All A01–A64 rows are now bounded evidence**; read each row's scope before claiming more than it states.
+
+### Implementation
+
+- `python/repos/core.py` (new package): `Repos` fetches a remote (absolute path, file, https, ssh or scp-style; credential-bearing URLs, `ext::`, other schemes, relative paths and leading-dash arguments are refused) into a bare mirror `repos/<sha256(url)[:24]>.git`. It uses hooks off, a protocol allowlist, `GIT_CONFIG_NOSYSTEM`, no prompts and no submodule recursion. `resolve` maps branch/tag/HEAD/SHA to a commit; `tree` classifies entries; `read` returns raw blobs (no filters, capped at 256 KiB). `dependencies` parses requirements/pyproject/setup.cfg statically; setup.py is reported, not run. `license` gives an SPDX keyword guess; `inspect_python` is ast-only (functions, params, imports, local imports, wrappability). `compare` uses `--no-ext-diff --no-textconv`. `import_function` wraps one top-level function of a single-file module into a code-block definition. It writes the immutable, hash-verified `repos/imports/<sha256>.json` record and sets the block's `origin`, which is part of the semantic hash. `origin_status` reports local modifications.
+- `services/control/repos_api.py` (registered in `app.py`): `/api/repos/resolve`, `/{id}/tree`, `/{id}/file`, `/{id}/python`, `/{id}/compare`, `/{id}/import`, `/imports`, `/imports/{id}`, `/origin-status`.
+- Editor: `RepoImport.tsx` (Modules & code ▸ **Import from repository…**: resolve, classified tree with filter, license, dependency pins, file view, compare-with-revision patch, function/parameter-role/output selection, import). The `CodeBlockEditor` origin banner shows the pin and **unmodified pinned import** / **locally modified since import**. `ModuleLibrary` lists the origin.
+- ADR **0016**; ACCEPTANCE (A44 → bounded evidence), CAPABILITIES, README updated; COVERAGE regenerated. The `test_scale.py` checklist assertion now requires A09 and A44 to be bounded evidence citing their tests.
+- `tests/test_repos.py` (16 cases): a real local Git fixture whose `setup.py`, `conftest.py`, `pkg/__init__.py`, `install.sh`, source-side `post-checkout` hook and `.gitattributes` diff/filter drivers would each write a marker file. Resolve/browse/read/inspect/compare/import never create it. It also covers: rev resolution, unsafe URLs, classification incl. LFS pointer and submodule gitlink, static dependency/license parsing, local-import refusal, interface mismatch refusals, tamper-detected import records, sandbox execution agreeing with a native torch reference, semantic hash changing with the pinned commit, local-modification status, and the HTTP journey.
+
+### Verification (this container)
+
+- `.venv/bin/pytest -q -o faulthandler_timeout=240`: **956 passed, 1 skipped, 6 deselected, 0 failed** (1071 s). This includes the §11 debugger fix; the skip is Anthropic without a key. `pytest -m live` was **not run** (no Ollama here).
+- `pnpm -C apps/editor build` and `exec tsc --noEmit`: exit 0. `backends.coverage --check`: current. `git diff --check`: clean.
+- Curl smoke on temporary backend 127.0.0.1:8771 against the trap fixture: resolve v2 → commit and subject; tree counts with 3 installation scripts and MIT license; import list shows the pinned `stats_utils.py@d7f58797ab1f standardize`. No marker file.
+- Headless Chromium (Playwright; script in scratchpad, outside the repo) against editor 5296: Modules & code → Import from repository → resolve v1 → license/“setup.py … NOT run” shown → open setup.py (ast only) → open stats_utils.py → choose `standardize`, `eps` as node setting → compare with v2 (patch shows `unbiased=True`) → import → origin banner “unmodified pinned import” → Test with fixtures → **all fixtures pass**. Zero runtime/API errors; marker absent. Screenshots inspected.
+- Temporary backend/editor stopped and confirmed absent.
+
+### Next
+
+No acceptance row is `not implemented`, but every row is bounded. The largest remaining gaps are in CAPABILITIES: multi-file repository packages, LFS/submodules, dependency installation, cache retention, domain/agent production adapters, cross-host/GPU, and team features. The Mac-specific evidence (live Ollama tests, port 8000 service) should be re-run on the user's machine when convenient.

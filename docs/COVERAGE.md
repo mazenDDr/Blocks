@@ -203,7 +203,7 @@ Activation capture on Keras/JAX returns every node's value in graph layout (NCHW
 | `tensor.softmax` | - | - | - | 1 |
 | `tensor.sqrt` | - | - | - | 1 |
 | `tensor.sub` | - | - | - | 2 |
-| `tensor.tanh` | - | - | - | 4 |
+| `tensor.tanh` | - | - | - | 5 |
 | `tensor.where` | - | - | - | 1 |
 
 ## Known restrictions (refused before execution)

@@ -23,6 +23,7 @@ export interface CodeBlockDef {
   id: string; version: string; description: string; inputs: CodeIO[]; outputs: CodeIO[]; config: { name: string; type: string; default: unknown; description?: string }[];
   state: { name: string; shape: number[]; dtype: string; init: number }[]; effects: string[]; randomness: string; differentiable: boolean; dependencies: string[];
   source: string; fixtures: Record<string, any>[]; limits: Record<string, number>;
+  origin?: { importId: string; url: string; commit: string; path: string; blob: string; function: string; importedSourceSha256: string };
 }
 export interface Graph {
   schemaVersion: string; graphKind: string; backend: string; nodes: GNode[]; edges: GEdge[];

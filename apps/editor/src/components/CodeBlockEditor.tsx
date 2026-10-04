@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api, errorText } from "../api";
 import { bumpVersion } from "../modules";
 import type { CodeBlockDef, CodeIO } from "../types";
@@ -33,6 +33,20 @@ function IORows({ rows, set, kind }: { rows: CodeIO[]; set: (r: CodeIO[]) => voi
       ))}
       <button onClick={() => set([...rows, { name: `${kind === "input" ? "in" : "out"}${rows.length + 1}`, dtype: "float32", shape: kind === "input" ? ["N", 4] : null }])}>Add {kind}</button>
     </>
+  );
+}
+
+/** Where an imported block came from, and whether its source still equals the pinned import (checked by the backend). */
+function OriginBanner({ def }: { def: CodeBlockDef }) {
+  const [st, setSt] = useState<{ locallyModified: boolean } | null>(null);
+  useEffect(() => { api.post<{ origin: { locallyModified: boolean } | null }>("/api/repos/origin-status", { block: def }).then((r) => setSt(r.origin)).catch(() => setSt(null)); }, [def.source, def.origin]);
+  const o = def.origin!;
+  return (
+    <div className="small repoorigin">
+      <b>Imported</b> {o.function} from <code>{o.path}</code> at commit <code>{o.commit.slice(0, 12)}</code> of <code>{o.url}</code> · import <code>{o.importId.slice(0, 12)}</code>
+      {st && (st.locallyModified ? <span className="badge old">locally modified since import</span> : <span className="badge ok">unmodified pinned import</span>)}
+      <span className="muted"> · runs only in the isolated sandbox. To update deliberately, re-import from another revision (Import from repository… ▸ Compare).</span>
+    </div>
   );
 }
 
@@ -78,6 +92,7 @@ export function CodeBlockEditor({ def, onChange, onClose, setMessage, usedBy }: 
           <button onClick={publish}>Save as version…</button>
           <button onClick={onClose}>Close</button>
         </div>
+        {def.origin && <OriginBanner def={def} />}
         <div className="codegrid">
           <div className="cbside">
             <h4>Interface (kept when you edit the code)</h4>

@@ -474,10 +474,11 @@
     {
       "id": "A44",
       "scenario": "Import repository code",
-      "status": "not implemented",
-      "scope": "Repository source-code browsing/import with commit/dependency execution boundaries is not implemented. DVC dataset resolution is a different supported contract.",
+      "status": "bounded evidence",
+      "scope": "Git remotes fetched into a bare mirror (hooks off, protocol allowlist, no checkout/filters/textconv); revisions resolve to commits; trees classified (installation scripts, LFS pointers, submodules, manifests, license) and dependencies parsed statically; one single-file function wrapped as a code block with an immutable import record (URL, commit, tree, path, blob, sha256, license, dependencies, pins) carried in the semantic hash; local modifications and commit comparison shown. Booby-trapped setup/conftest/hooks/drivers never execute. Multi-file packages, LFS download, submodule fetch and dependency installation are not implemented.",
       "evidence": [
-        "docs/CAPABILITIES.md"
+        "tests/test_repos.py",
+        "docs/adr/0016-pinned-repository-code-import.md"
       ]
     },
     {
