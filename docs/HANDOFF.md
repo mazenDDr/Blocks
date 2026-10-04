@@ -7,7 +7,7 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0011`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0012`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -24,7 +24,7 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | `python/operations` | block definitions |
 | `python/worker` | runs in a separate process |
 | `python/artifact_store` | SQLite metadata and content-addressed artifacts |
-| `python/tabular`, `connectors`, `studies`, `training`, `debugger`, `codeblocks`, `agent`, `rl`, `unsup`, `domain`, `vision`, `nlp`, `speech` | one package per milestone area |
+| `python/tabular`, `connectors`, `studies`, `training`, `debugger`, `codeblocks`, `agent`, `rl`, `unsup`, `domain`, `vision`, `nlp`, `speech`, `production` | one package per milestone area |
 | `services/control` | FastAPI app (`control.app:create_app`) |
 | `examples/` | example projects and fixture generators |
 | `tests/` | pytest suite |
@@ -41,12 +41,14 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | 5 RL (DQN/CartPole, grid world), unsupervised | done, verified | 5674566 |
 | 6a Keras/TensorFlow and JAX backends, compatibility reports, coverage ledger, benchmarks | done, verified | 503ff9c |
 | 6b Vision detection/segmentation, NLP, speech workflows | done, verified (bounded scope; see §7) | 927e9c3 |
-| 7 Registry and production investigation | not started | none |
+| 7 Registry and production investigation | done, verified (bounded local tabular adapter; see §8) | this milestone commit; see git log |
 | 8 Scale, integrations, community | not started | none |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
 After 6b: `pytest -q -o faulthandler_timeout=240` → **864 passed, 1 skipped, 6 deselected**; `pytest -q -m live` → **6 passed**. Editor build/type check, curl and real Chrome domain journeys passed. The skip is the existing Anthropic test without an API key. See §7 for commands, results, scope and Git details.
+
+After 7: full suite → **894 passed, 1 skipped, 6 deselected**; live → **6 passed, 895 deselected**. Editor build/TypeScript, real HTTP CLI, curl readiness and installed Chrome train/register/serve/replay/labels/load/monitor/rollout/rollback journeys passed. See §8.
 
 ### Check for in-progress work first
 Run `git status`. If there are uncommitted files, a previous session was cut off mid-milestone: inspect them with `git diff`, do **not** discard them, finish that milestone, verify (§4), then commit.
@@ -97,7 +99,9 @@ Implemented and verified; §7 records the actual scope and limits. Retained here
   - Use torchaudio, or numpy/scipy if torchaudio is unavailable.
 - Each domain needs a runnable example, a real inspection journey, tests, and editor views.
 
-### 7 — Registry and production (VISION §17.5–17.8, §19.5, A50, A59–A63)
+### 7 — completed bounded registry/production scope (VISION §17.5–17.8, §19.5, A50, A59–A63)
+
+Implemented and verified through the native tabular local adapter; §8 records scope/limits. Retained as acceptance reference, not an instruction to rebuild. Remote deployment remains unavailable without actual infrastructure.
 
 - **Registry and serving:**
   - Model registry versions.
@@ -165,7 +169,7 @@ Corrections made during continuation: exclude a word whose final subword is repl
 
 Source blocks support the declared synthetic fixture formats; general COCO/audio/text importers are not implemented. Domain models train per run: recorded summaries/predictions persist, but model/optimizer checkpoint/resume/export/serving do not. Cancellation is checked between nodes. There is no pretrained/dedicated detector, language generation, real speech recognizer, streaming/beam decoding, audio playback, forced alignment or multimodal fusion. Greedy token onsets and synthetic gold regions are labelled honestly. Native tokenizers can break vocabulary ties differently across library/platform versions; the persisted tokenizer JSON is authoritative.
 
-Next planned milestone is **7**, with scope in §5. Build on these typed contracts and immutable recorded identities when adding pinned inference pipelines, registry and release traces; do not advertise domain serving until weights/tokenizer/transforms/environment are actually persisted and tested. Milestone 8 remains untouched.
+Milestone **7** followed this release and is recorded in §8. Build on these typed contracts and immutable recorded identities when extending serving; do not advertise domain serving until weights/tokenizer/transforms/environment are actually persisted and tested. Milestone 8 remains untouched.
 
 ### Git / continuation
 
@@ -173,4 +177,42 @@ The verified milestone is **927e9c3**, committed on `master` as **Milestone 6b: 
 
 The initial automatic push failed because global Git config rewrites `https://github.com/` to SSH, whose identity lacks access to this account. Only this repo's remote was changed to `https://mazenDDr@github.com/mazenDDr/project-void.git`, which bypasses that rewrite and uses the existing `gh auth git-credential` helper. No token is stored in the URL and no global config was changed. Active GitHub account is `mazenDDr`; `mazenkhaledZC` is also authenticated. `git push -u origin master` succeeded. This handoff update is committed and pushed separately after the milestone.
 
-Next agent: read this handoff, inspect `git status` / `git log -1` / `git remote -v`, preserve any new user work, and continue Milestone 7 when requested. Do not rerun completed verification unless code or environment changes require it. Keep the user's port 8000 process intact and stop every temporary server you start. Continue committing verified milestones and pushing their handoffs to `origin` as the user requested.
+Next agent: read this handoff, inspect `git status` / `git log -1` / `git remote -v`, preserve any new user work, and follow the latest status in §8. Do not rerun completed verification unless code or environment changes require it. Keep the user's port 8000 process intact and stop every temporary server you start. Continue committing verified milestones and pushing their handoffs to `origin` as the user requested.
+
+## 8. Milestone 7 — Codex continuation, 2026-10-04
+
+The user requested continued work after the private GitHub push. Continue without subagents. Starting point: clean `master`, `233ee72`, synchronized with `origin/master`.
+
+### Implementation and invariants
+
+`python/production/{models,pipeline,store,runtime,monitor,traffic}.py`, `services/control/production_api.py`, control app registration, and tabular worker fitted-pipeline capture implement this milestone. Native scikit-learn estimators + fitted imputer/one-hot/scaler objects are captured during the real run, with raw-input schema, ordered transforms/features, labels, source/graph/evaluation identities and the declared native environment. Adapter/shared transform code hashes are pinned and checked even when objects are cached. Only internal hash-verified worker pickle artifacts load; no pickle-upload API. Unsupported paths get an explicit refusal artifact. Local/staging are distinct real routes in the same single CPU FastAPI process; there is no remote infrastructure.
+
+Registry versions and release candidates are immutable CAS records. Deployment/rollback uses compare-and-swap on the prior route; lifecycle events persist. Requests pin their route/version at admission, have bounded queues/timeouts/batches, idempotency and recorded traces. Optional application state is a durable counter isolated by release/user/session with serialized updates; cancellation prevents commit even if the native forward pass finishes. Caller-declared user IDs are not authentication. Monitoring separates native input/prediction drift from label-based quality. Traffic uses bounded real loopback HTTP and records generator drops, observed latency/errors and combined server/generator resource use.
+
+`apps/editor/src/components/ProductionWorkspace.tsx` adds Registry, Release, Requests, Traffic and Monitoring views, exposed by App's Production tab. Working controls register exact completed runs, move aliases, edit supported serving settings, preview/explicitly deploy/rollback, load recorded input batches, send and cancel requests, inspect lineage, isolate replay, submit ground truth, generate/cancel measured HTTP load and inspect drift/quality. Traffic and monitoring show readable observed metric tables with full evidence in expandable records. Shared schema errors are displayed with field locations. No unsupported cloud/streaming control is presented. `onOpenRun` opens the existing research inspector.
+
+`examples/make_production_example.py` generates 160 deterministic labelled SYNTHETIC sensor rows, `production_sensors.project.json` and `.ui.json`. It is a train-only fitted scaler plus real LogisticRegression, with held-out native validation metrics. `examples/production_journey.py` performs the entire workflow via real HTTP against a running loopback workbench. `tests/test_production.py` has **30 passing cases**, covering native classifier/regressor agreement, imputation/one-hot/scaling order, raw schema errors, artifact/environment integrity, source independence, readonly fitted artifacts, actual different-weight rollout with in-flight pinning, alias/staging isolation, idempotency, 20 concurrent stateful requests, active native-call cancellation, queue/deadline behavior, single-owner restart, label/drift references, and all four real HTTP traffic patterns including saturation, cancel/drain and persisted history. No existing tests were weakened.
+
+Reference data is limited to the first 2,000 rows in the recorded training order, with count/truncation policy; the aligned training labels have their own CAS identity. Loaded reference labels are clearly labelled in-sample evidence, not held-out production accuracy. Monitoring's observed window is the newest 1,000 requests for the selected release/time. Capture defaults off; uncaptured inputs cannot be replayed or used for input drift. Counter identity includes the release, user and session; rollback recovers the prior release's counter namespace. On a single-owner restart, requests with no committed trace become failed (503) and never resume state updates. Native calls are not forcibly interrupted; cancellation/timeouts discard their result before state commit.
+
+### Commands and final evidence
+
+- `.venv/bin/python examples/make_production_example.py`: **generated 160 labelled SYNTHETIC rows and project**.
+- `.venv/bin/pytest -q tests/test_tabular_api.py tests/test_tabular_ops.py -o faulthandler_timeout=240`: **40 passed**, 14.66 s after fitted artifact capture.
+- `.venv/bin/pytest -q tests/test_production.py --tb=short -o faulthandler_timeout=240`: **30 passed**, 6.93 s; final pre-commit rerun **30 passed**, 7.16 s after normalizing generated CSV line endings to LF. Fixture values are unchanged; prior source hashes identify the original recorded bytes.
+- `.venv/bin/python -m backends.coverage --write`, then `--check`: **current**. The first full run found only two stale-ledger assertions (892 other tests passed); regenerated and reran the full suite successfully. Do not weaken the ledger-current tests.
+- `.venv/bin/pytest -q -o faulthandler_timeout=240`: final **894 passed, 1 skipped, 6 deselected, 1833 warnings**, **279.85 s**, exit 0. Skip/warnings remain the existing Anthropic-without-key / native Torch and TensorFlow-gast cases.
+- `.venv/bin/pytest -q -m live`: **6 passed, 895 deselected**, **16.09 s**, exit 0.
+- `pnpm -C apps/editor build`: **245 modules**, exit 0 after final UI changes; `pnpm -C apps/editor exec tsc --noEmit`: exit 0. Existing Vite large-chunk warning remains. `git diff --check`: passed.
+- Temporary backend command: `VOID_WORKBENCH=/private/tmp/void-m7-smoke .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8767`. Temporary editor: `VOID_API=http://127.0.0.1:8767 pnpm -C apps/editor dev --host 127.0.0.1 --port 5292`.
+- `.venv/bin/python examples/production_journey.py --base http://127.0.0.1:8767 --namespace m7-cli`: **exit 0**. Real worker run **ba715ec85cad**; version **646bdec3bc227c3aa37429b29410fe0937704e5d5019b32d6bc612c4abf51be5**; release **1df1625afe0df168f3f260df66a0537afda90e7f83f33df67d94f4789b3b81dc**; request trace **ca75da9ac6f794ce3440aa3ad4c45bf926c670c98765dc0f5dce680e3fc23f33**; traffic result **4d37ac5f9b24ecd2c23372c5869bdd4fc9c4d45e9bb2caad57300f6bef22642f**. Test offered/sent 10 requests, **10 succeeded / 0 errors / 0 generator drops**, achieved **9.99265 successful requests/s**, p50 **8.71175 ms**, p95 **9.92723 ms**, p99 **9.97121 ms**. Warmup, isolated replay, explicit labels and known-release rollback verified. Quality 1.0 on 3 recorded training-reference rows is **in-sample SYNTHETIC evidence**, not a production benchmark.
+- Required curl smoke: `curl -fsS http://127.0.0.1:8767/api/serve/local/m7-cli/health`: **ready true**, exact release/version above, one CPU replica and pinned serving limits.
+- Installed Chrome using `/private/tmp/void-m7-browser.mjs` (temporary Puppeteer script outside repo): **passed** picker → actual train → register → alias → release preview/deploy → real request/counter → source/fitted/evaluation lineage → explicit labels → isolated replay → observed monitoring → measured HTTP → rollout/rollback → restored counter continuity. **No browser runtime errors**. Final screenshots `/private/tmp/void-m7-{requests,monitor,traffic}.png` inspected. Browser test had temporary text-case/input-replacement issues; corrected the test script and completed the full journey. Screenshots/scripts are temporary local evidence, not required for a fresh clone.
+- All native dependencies were already installed/pinned; **no new libraries installed**. Adapter records Python 3.13.12, scikit-learn 1.9.1, NumPy 2.5.3, pandas 3.0.6. Monitoring uses existing SciPy 1.18.1; resource measurements use existing psutil 7.2.2. Existing FastAPI/httpx/uvicorn serve and generate the real traffic.
+- Temporary backend **PID 50602 / port 8767** and editor **PID 50617 / port 5292** were stopped. Browser closed; test-created ephemeral servers close in fixture cleanup. Workbench evidence remains isolated under `/private/tmp/void-m7-smoke`. The user's port 8000 service was never stopped.
+
+### Scope, limitations and next agent
+
+Read ADR **0012**, CAPABILITIES, README and regenerated COVERAGE for the detailed contract. This completes A50/A59–A63 through a bounded native tabular representative. There is **no** PyTorch CNN/domain/agent/RL/unsupervised/Keras/JAX registry-serving adapter, remote deployment, authenticated multi-user boundary, multi-process replicas, autoscaling, canary/shadow allocation, dynamic batching, streaming, asynchronous batch jobs, online learning, automatic retraining/rollback or retention/garbage collection. Optional state is a durable application request counter, not LLM memory. Use one owning control process; declared user names are isolation keys, not authentication. Admission bounds cover the adapter; traffic resource scope includes both local server/generator and warmup/drain, with sampled RSS and no cost estimate.
+
+The milestone, ADR, docs and this handoff are committed together on `master` with the §4 style / Codex co-author and pushed to private `origin`; use `git log -1` / `git status` for the exact commit. **Next planned milestone is 8**, with §5's scope. Preserve the current implementation. Begin with the remote-worker and tracker integration contracts, honest local-vs-remote labels, idempotent external-ID mapping, extension conformance and an A01–A64 acceptance checklist. No work on 8 was started in this release. Continue without subagents unless the user changes that preference; keep the handoff current and push each verified milestone.

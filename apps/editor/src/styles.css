@@ -183,6 +183,18 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0 2px;
 /* ---------------------------------------------------------------- Milestone 3 */
 .viewtabs { display: inline-flex; gap: 2px; margin: 0 6px; }
 .fullws { grid-column: 1 / -1; grid-row: 2 / -1; overflow: auto; background: var(--bg); min-height: 0; }
+.production-workspace { padding: 14px 20px; max-width: 1800px; margin: auto; }
+.prod-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.prod-header h2 { margin: 0; } .prod-header p { margin: 4px 0 10px; color: var(--muted); }
+.prod-grid { display: grid; grid-template-columns: minmax(300px, 0.8fr) minmax(450px, 1.2fr); gap: 14px; }
+.prod-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; min-width: 0; }
+.prod-card h3 { margin: 0 0 12px; } .prod-card label { display: block; margin: 8px 0; }
+.prod-card label > input:not([type=checkbox]), .prod-card label > select, .prod-card textarea { display: block; width: 100%; max-width: 700px; }
+.prod-card textarea { min-height: 64px; } .prod-card .prod-json { min-height: 180px; font-family: monospace; }
+.prod-recorded { max-height: 540px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); padding: 10px; border-radius: 6px; font-size: 12px; }
+.prod-card .provenance { overflow-wrap: anywhere; } .prod-list { display: flex; flex-direction: column; gap: 3px; max-height: 280px; overflow: auto; }
+.prod-history { display: block; margin: 4px 0; } .prod-card table { width: 100%; }
+@media(max-width:900px) { .prod-grid { grid-template-columns: 1fr; } }
 .notice.shared, .card.shared { border-color: #7c3aed; }
 .card.structural { border-color: #0f766e; background: #f0fbf9; border-width: 2px; }
 .card.inner { width: 238px; background: #fbfcfe; }

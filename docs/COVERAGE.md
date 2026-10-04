@@ -359,7 +359,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `sklearn.metrics` | tabular | scikit-learn | yes | metrics | 2 |
 | `sklearn.pca` | tabular | scikit-learn | yes | pca | 0 |
 | `sklearn.projection` | tabular | scikit-learn | yes | projection | 0 |
-| `tabular.apply_transform` | tabular | scikit-learn | yes | step | 2 |
+| `tabular.apply_transform` | tabular | scikit-learn | yes | step | 3 |
 | `tabular.csv_source` | tabular | pandas | yes | source | 4 |
 | `tabular.drop_missing` | tabular | pandas | yes | step | 2 |
 | `tabular.duplicates` | tabular | pandas | yes | step | 2 |

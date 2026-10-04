@@ -2,7 +2,7 @@
 
 Phase 0 (semantic and execution foundation), Phase 1 (visual CNN workbench: control API + editor), Milestone 2a (tabular graph kind:
 data preparation, classical ML, statistics), Milestone 2b (connected data sources, versioned extraction, studies and sweeps), Milestone 3 (research-level composition) and
-Milestone 4 (language-model and agent workflows on native LangGraph), Milestone 5 (reinforcement learning, unsupervised workflows) and Milestone 6a (TensorFlow/Keras 3 and JAX backends for a portable model-graph subset, compatibility reports, native exports, coverage ledger, benchmarks) and Milestone 6b (typed vision, NLP and speech workflows with recorded inspection) are implemented.
+Milestone 4 (language-model and agent workflows on native LangGraph), Milestone 5 (reinforcement learning, unsupervised workflows), Milestone 6a (TensorFlow/Keras 3 and JAX backends for a portable model-graph subset, compatibility reports, native exports, coverage ledger, benchmarks), Milestone 6b (typed vision, NLP and speech workflows with recorded inspection), and Milestone 7 (registry and production investigation through a bounded native tabular serving adapter) are implemented.
 See `docs/PLAN.md`, `docs/CAPABILITIES.md` and `docs/adr/` (ADR 0003: tabular graph kind; ADR 0004: connectors, snapshots, studies; ADR 0008: agent graph kind, memory, context recording; ADR 0010: additional backends, compatibility, coverage).
 
 ## Setup
@@ -205,3 +205,30 @@ In **Open → Examples — vision / NLP / speech**, select `vision_segmentation_
 - Speech: **Audio and teaching signal → STFT and mel features → Train CTC recognizer**. The labelled teaching signal has 32,000 samples/channel. Inspect waveform, actual frame-count formula, batch lengths/masks, mel spectrogram, selected frame time, greedy output alignment and CER/WER substitutions/deletions/insertions. The training fixture is generated tones, not recorded speech.
 
 Use **Graph** to edit connections and inspect typed wires, or edit a stage's settings directly in the workspace. Structured transform/policy JSON is applied explicitly and validated. Old runs retain their original graph/artifact identity after edits; all values are recorded from the selected run. Models run on CPU. Native torchvision/torchaudio/tokenizers/seqeval/torchmetrics/pycocotools/jiwer versions are pinned in `python/requirements.txt` (already installed here). Domain checkpoint/resume and general dataset import are not implemented; see ADR 0011 and `docs/CAPABILITIES.md`.
+
+## Registry and production investigation (Milestone 7)
+
+Commands run for this milestone:
+
+```bash
+.venv/bin/python examples/make_production_example.py
+VOID_WORKBENCH=/private/tmp/void-m7-smoke .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8767
+VOID_API=http://127.0.0.1:8767 pnpm -C apps/editor dev --host 127.0.0.1 --port 5292
+.venv/bin/python examples/production_journey.py --base http://127.0.0.1:8767 --namespace m7-cli
+.venv/bin/pytest -q tests/test_production.py --tb=short -o faulthandler_timeout=240
+.venv/bin/python -m backends.coverage --write
+.venv/bin/pytest -q -o faulthandler_timeout=240
+.venv/bin/pytest -q -m live
+pnpm -C apps/editor build
+pnpm -C apps/editor exec tsc --noEmit
+```
+
+Open **production_sensors** under the tabular examples, then **Run graph**. This is a labelled SYNTHETIC classifier trained for real. Open **Production**:
+
+1. **Registry:** select the completed run/estimator, specify owner/intended use/limitations and register. Inspect pinned source, fitted scaler, model artifact, raw schema, feature order, labels, native environment and evaluation. An alias is a movable reference; registered versions and existing releases stay immutable.
+2. **Release:** choose that version and configure a local or staging namespace, concurrency/queue/deadline/batch limits, optional session counter and explicit input capture. **Preview release candidate** performs real compatibility/warmup; **Deploy selected release** changes that exact route. Selecting a previously deployed candidate enables rollback. Staging is a separate route in this local process.
+3. **Requests:** load recorded training-reference rows or enter schema-valid JSON, then send. Inspect real timings/results and prediction → release → version → run → source → fitted state/evaluation lineage. Captured-input replay uses the pinned native version in isolation. Explicit ground-truth labels enable measured quality; loaded reference labels are in-sample evidence, not a held-out benchmark.
+4. **Traffic:** configure representative batch payloads, steady/ramp/burst/response-driven arrivals, rate, generator concurrency, duration and expected statuses. Run a bounded real HTTP test. Results distinguish offered/sent/achieved rates and dropped generator arrivals, and report latency/errors/queue time, payload/release versions, CPU and sampled RSS. Stop cancels new arrivals and drains bounded outstanding requests.
+5. **Monitoring:** inspect an observed request window. Input/prediction drift is separate from task quality measured only on explicitly aligned labels. Missing labels or uncaptured inputs show unavailable evidence. No automatic rollback or retraining occurs.
+
+Serving currently supports native tabular LinearRegression/LogisticRegression with typed selection and fitted imputation/one-hot/scaling. Models and fitted state are captured during the run; old runs need a supported rerun. Remote deployment, domain/CNN serving, streaming, autoscaling and authenticated multi-user service are not implemented. Use one owning control process. User/session IDs are caller-declared isolation keys; the optional stateful application is a request counter and does not mutate the estimator. See ADR 0012 and the capabilities ledger for precise limits.

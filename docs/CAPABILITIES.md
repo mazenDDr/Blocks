@@ -168,13 +168,13 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
 - Experiment board: tags, notes, search/filter of runs, smoothing, x-axes other than step (model graphs keep the pin + two-run compare; tabular/model sweeps have the Experiments board above).
 - Auth, multi-user; image-folder datasets are server-side folders (tabular graphs can read connected sources).
 - Dependency lock, data manifest, project bundle export (only graph + UI files are saved).
-- Milestones 7-8 (serving, registry), A09, A17-A20, A25-A27, A34, A38+ not listed above (Milestone 3 and 4 rows are above).
+- Milestone 8 and acceptance scenarios not listed as implemented; Milestone 7's bounded local adapter is documented below.
 - Broadcasting, ops beyond the 14 listed, dtype casts, multi-input/output training graphs, losses other than
   CrossEntropy in the worker, schedulers, gradient clipping/accumulation, mixed precision, GPU.
 - Model/parameter policies (initialization, freezing, sharing, regularization), conv data type/device placement.
 - Data: image folders and (tabular graphs) local CSV files only.
 - Loss and optimizer inspectors, response curves; optimizer state beyond checkpoints.
-- Serving and registry; Keras/JAX worker training runs (see Milestone 6a: only forward, loss, gradients and one SGD step exist there).
+- Serving/registry beyond the bounded native tabular adapter below; Keras/JAX worker training runs (see Milestone 6a: only forward, loss, gradients and one SGD step exist there).
 
 ## Milestone 5: reinforcement and unsupervised research (A51-A55)
 
@@ -249,3 +249,24 @@ Native libraries available here: torchvision 0.29.1, torchaudio 2.11.0, tokenize
 | Editor domain workspaces linked from project picker; vision overlays before/after and prediction/GT, selectable source spans/subwords/labels, waveform/spectrogram/frame selection and CTC/error alignment; editable settings and typed graph canvas | `DomainWorkspace.tsx`, `DomainViews.tsx` | editor build/type check; browser verification recorded in HANDOFF |
 
 Not implemented: domain model/optimizer checkpoints, exact resume, general dataset importers beyond fixture formats, pretrained models, dedicated detector training, speech playback/streaming/beam search/forced alignment, language-model generation and multimodal fusion. Cancellation is between domain nodes. Affine boxes enclose transformed corners unless the explicit mask-refit policy is selected; they are not claimed to be tight masks. Native tokenizer vocabulary tie-breaking is not claimed deterministic across versions.
+
+## Milestone 7: registry and local production investigation (A50, A59–A63)
+
+See ADR 0012. This is a **real native scikit-learn tabular adapter in one local CPU FastAPI process**. Local and staging are independent local routes. No remote deployment or simulated performance is claimed.
+
+| Capability | Where | Verification |
+|---|---|---|
+| A50: immutable registered versions with owner/use/limitations; actual fitted estimator, imputer/one-hot/scaler, typed selection, ordered raw schema/features/classes, source/graph/evaluation/environment/code identities | `production/pipeline.py`, tabular worker | `test_pipeline_matches_native_training_state_and_pins_all_identities`, native regression imputation/one-hot/scaling comparison |
+| Hash/trust/environment checks before loading internal native artifacts; serving does not reread source or refit; unsupported paths refused and old runs need a supported rerun | `pipeline.py`, `runtime.py` | integrity/environment refusals, source deletion and artifact immutability tests |
+| Movable aliases resolve to immutable versions; real compatibility warmup; pinned local/staging release candidates and health/readiness | `store.py`, `runtime.py`, control API | registration/release API validation, local/staging route independence |
+| A59: real loopback HTTP traffic builder, rotating representative batches, steady/ramp/burst/response-driven patterns, warmup, concurrency/rate/duration/request caps, measured throughput/latency/queue/errors/timeouts/payload sizes and sampled resource scope | `production/traffic.py` | real HTTP tests for all four patterns, generator saturation/drop accounting, cancellation/drain and persisted result recovery |
+| A60: isolated durable per-release/user/session request counter, serialized updates, idempotent requests, bounded admission queues/timeouts; cancellation refuses state commit | `runtime.py`, `store.py` | 20 concurrent requests with separate users/sessions, active native-pass cancellation, overflow/deadline tests; restart marks uncommitted requests failed |
+| A61: explicit deploy/rollback, compare-and-swap routing, append-only lifecycle; in-flight requests pin their original version | `store.py`, `runtime.py` | actual different-weight rollout/rollback, stale-route refusal, undeployed rollback refusal, alias independence |
+| A62: observed numeric/categorical/prediction drift and missing/schema errors; label-based accuracy/MSE/MAE is separate/unavailable without aligned labels, with delay/window/evidence | `production/monitor.py` | SciPy/hand-calculation reference tests, changed-input evidence without quality claims, immutable aligned ground truth |
+| A63: request → release → registry version → training run → source artifact → preprocessing/fitted state → evaluation is recorded; explicit captured-input replay does not update research/session state | control production API, CAS | lineage/replay/readiness/restart integration tests |
+| Production workspace: registry, candidate/config review/deploy/rollback, input/trace/replay/label controls, real traffic builder/results/history and monitoring | `ProductionWorkspace.tsx` | editor build/type check and installed Chrome journey; see HANDOFF |
+| Deterministic labelled SYNTHETIC sensor project and real HTTP train/register/serve/load/rollback CLI | `examples/make_production_example.py`, `production_journey.py` | native fixture tests, CLI and real-browser runs recorded in HANDOFF |
+
+Bounds: 128 rows/256 KB per request, at most 16 active requests/64 queued per release, deadlines up to 30 s; load generation 30 s/500 arrivals/16 threads plus at most 10 warmup requests. Reference drift data uses up to 2,000 recorded training rows and reports truncation; monitoring inspects the latest 1,000 requests for a release/time window. Resources are sampled process CPU/RSS for the combined server/generator, including warmup/drain; cost is not measured. Capture defaults off; replay/input drift requires captured values. Training-reference labels are explicitly in-sample fixture evidence, not held-out production accuracy.
+
+Not implemented: PyTorch CNN/domain/agent/RL/unsupervised/Keras/JAX registry-serving adapters, authenticated multi-user security, remote deployment, multiple control-process replicas, autoscaling, dynamic batching, streaming, asynchronous batch jobs, canary/shadow traffic splitting, online learning, automatic retraining/rollback, and retention/garbage collection. Session state is an application request counter, not an LLM memory service. Use one owning control process for this adapter; caller-declared users are isolation keys, not authenticated principals.

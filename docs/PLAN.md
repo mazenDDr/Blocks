@@ -1,8 +1,9 @@
 # Implementation Plan — Visual AI Workbench
 
 Source spec: `docs/VISION.md` (the product README). This plan turns its §22, §23, §24 and §26 into
-bounded, verifiable phases. Only Phases 0 and 1 are in scope right now. Later milestones stay in
-the vision and are NOT to be stubbed with fake UI.
+bounded, verifiable phases. The early sections record the original Phase 0/1 scope; later implemented
+milestones and current scope are tracked in `docs/HANDOFF.md` and `docs/CAPABILITIES.md`. Unbuilt work
+must not be stubbed with fake UI.
 
 ## Ground rules (from VISION §26)
 
@@ -129,9 +130,9 @@ changes filter count and sees shape propagation, compares two runs, reloads, run
 checkpoint. Backend lifecycle tests (cancel, reconnect/resume events, idempotent submit, inspect)
 pass. `pnpm build` and `pnpm tsc --noEmit` pass.
 
-## Explicitly out of scope now
-Milestones 2–8 (connectors, statistics, LangGraph, RL, other backends, serving, code-block editor).
-Do not add placeholder buttons for them. Record them in `docs/CAPABILITIES.md` as "not implemented".
+## Original Phase 0/1 exclusions
+Milestones 2–8 were outside the initial phase. The current handoff/capabilities ledger records subsequent
+implemented releases and remaining gaps. Do not add placeholder buttons for unbuilt features.
 
 
 ## Milestone 2b status
@@ -142,4 +143,8 @@ parallel trials with quotas, early stopping with consumed-budget display, and a 
 
 ## Milestone 6a status
 
-TensorFlow/Keras 3 and JAX portable subsets, compatibility reports, native exports, the generated coverage ledger and the A19 benchmark are implemented (ADR 0010). Next bounded step: Milestone 6b (vision, NLP and speech domain workflows), then worker training runs for a second backend if they are wanted.
+TensorFlow/Keras 3 and JAX portable subsets, compatibility reports, native exports, the generated coverage ledger and the A19 benchmark are implemented (ADR 0010). Domain workflows followed in 6b (ADR 0011).
+
+## Milestone 7 status
+
+Native tabular fitted-pipeline registry, explicit local/staging releases, traceable serving, bounded measured HTTP traffic, session counter isolation, monitoring and rollout/rollback are implemented (ADR 0012). Remote deployment and unsupported model families remain absent. Next planned scope is Milestone 8, as recorded in HANDOFF §5/§8.

@@ -689,7 +689,7 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     def infer(req: InferRequest):
         return insp.infer(sv.run_data(req.runId), req.checkpointStep, req.sample, req.imageBase64)
 
-    from . import agent_api, connections_api, m3_api, rl_api, studies_api, unsup_api
+    from . import agent_api, connections_api, m3_api, production_api, rl_api, studies_api, unsup_api
 
     agent_api.register(app, sv)
     connections_api.register(app, sv)
@@ -697,4 +697,5 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     m3_api.register(app, sv)
     rl_api.register(app, sv)
     unsup_api.register(app, sv)
+    production_api.register(app, sv)
     return app

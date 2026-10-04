@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "sensors": {
+      "x": 0,
+      "y": 0
+    },
+    "split": {
+      "x": 260,
+      "y": 0
+    },
+    "scale": {
+      "x": 520,
+      "y": 0
+    },
+    "train_scaled": {
+      "x": 780,
+      "y": 0
+    },
+    "val_scaled": {
+      "x": 0,
+      "y": 190
+    },
+    "classifier": {
+      "x": 260,
+      "y": 190
+    },
+    "metrics": {
+      "x": 520,
+      "y": 190
+    }
+  },
+  "synthetic": true,
+  "description": "Labelled SYNTHETIC sensors. Train, then open Production to register the native classifier and fitted scaler, preview a local/staging release, send requests and measure HTTP traffic."
+}

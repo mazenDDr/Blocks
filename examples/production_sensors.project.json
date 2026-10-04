@@ -1,0 +1,184 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "tabular",
+  "backend": "python",
+  "nodes": [
+    {
+      "id": "sensors",
+      "type": "tabular.csv_source",
+      "version": "1.0.0",
+      "config": {
+        "path": "examples/fixtures/synthetic_serving_sensors.csv"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "split",
+      "type": "tabular.train_validation_split",
+      "version": "1.0.0",
+      "config": {
+        "seed": 71,
+        "validation_fraction": 0.25
+      },
+      "stateRef": null
+    },
+    {
+      "id": "scale",
+      "type": "tabular.fit_standardize",
+      "version": "1.0.0",
+      "config": {
+        "columns": [
+          "signal",
+          "background"
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "train_scaled",
+      "type": "tabular.apply_transform",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "val_scaled",
+      "type": "tabular.apply_transform",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "classifier",
+      "type": "sklearn.logistic_regression",
+      "version": "1.0.0",
+      "config": {
+        "target": "label",
+        "features": [
+          "signal",
+          "background"
+        ],
+        "C": 1.0,
+        "max_iter": 200
+      },
+      "stateRef": null
+    },
+    {
+      "id": "metrics",
+      "type": "sklearn.metrics",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "sensors_table_split_table",
+      "kind": "table",
+      "from": {
+        "node": "sensors",
+        "port": "table"
+      },
+      "to": {
+        "node": "split",
+        "port": "table"
+      }
+    },
+    {
+      "id": "split_train_scale_train",
+      "kind": "table",
+      "from": {
+        "node": "split",
+        "port": "train"
+      },
+      "to": {
+        "node": "scale",
+        "port": "train"
+      }
+    },
+    {
+      "id": "split_train_train_scaled_table",
+      "kind": "table",
+      "from": {
+        "node": "split",
+        "port": "train"
+      },
+      "to": {
+        "node": "train_scaled",
+        "port": "table"
+      }
+    },
+    {
+      "id": "scale_fit_train_scaled_fit",
+      "kind": "fit_state",
+      "from": {
+        "node": "scale",
+        "port": "fit"
+      },
+      "to": {
+        "node": "train_scaled",
+        "port": "fit"
+      }
+    },
+    {
+      "id": "split_validation_val_scaled_table",
+      "kind": "table",
+      "from": {
+        "node": "split",
+        "port": "validation"
+      },
+      "to": {
+        "node": "val_scaled",
+        "port": "table"
+      }
+    },
+    {
+      "id": "scale_fit_val_scaled_fit",
+      "kind": "fit_state",
+      "from": {
+        "node": "scale",
+        "port": "fit"
+      },
+      "to": {
+        "node": "val_scaled",
+        "port": "fit"
+      }
+    },
+    {
+      "id": "train_scaled_table_classifier_train",
+      "kind": "table",
+      "from": {
+        "node": "train_scaled",
+        "port": "table"
+      },
+      "to": {
+        "node": "classifier",
+        "port": "train"
+      }
+    },
+    {
+      "id": "classifier_model_metrics_model",
+      "kind": "model",
+      "from": {
+        "node": "classifier",
+        "port": "model"
+      },
+      "to": {
+        "node": "metrics",
+        "port": "model"
+      }
+    },
+    {
+      "id": "val_scaled_table_metrics_table",
+      "kind": "table",
+      "from": {
+        "node": "val_scaled",
+        "port": "table"
+      },
+      "to": {
+        "node": "metrics",
+        "port": "table"
+      }
+    }
+  ]
+}

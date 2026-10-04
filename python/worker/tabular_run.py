@@ -116,8 +116,11 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
                                                                               "trainRowIdsSha256", "validationRowIdsSha256")})
 
         try:
-            run_graph(exec_graph, report, run_id=run_id, graph_hash=graph_hash, on_start=on_start, on_finish=on_finish, should_cancel=should_cancel,
-                      store=store, pins=cfg.source_pins)
+            outcomes = run_graph(exec_graph, report, run_id=run_id, graph_hash=graph_hash, on_start=on_start, on_finish=on_finish, should_cancel=should_cancel,
+                                 store=store, pins=cfg.source_pins)
+            if graph.graphKind == "tabular":
+                from production.pipeline import capture_pipelines
+                capture_pipelines(store, exec_graph, report, outcomes, run_id)
         except Cancelled:
             if store.get_run(run_id)["status"] != "cancelling":
                 store.set_status(run_id, "cancelling")
