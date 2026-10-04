@@ -329,6 +329,8 @@ Unsupervised k-means, Gaussian mixture and PCA nodes (for example in `unsupervis
 
 ## Optional access token
 
+Mac verification of the merged cache, repository imports, production adapters and token proxy is recorded in `docs/HANDOFF.md` §18. Acceptance evidence describes the supported bounds; it does not establish broad production readiness.
+
 Set the same `VOID_API_TOKEN` (16+ characters) for the backend and the editor dev server. The editor's proxy adds the header, so the token is not shipped to the browser. Every request without it gets 401. Scripts in `examples/` read the variable too. This is one shared secret, not user accounts, and not encryption: use a TLS proxy before exposing the service. See ADR 0021.
 
 ```bash

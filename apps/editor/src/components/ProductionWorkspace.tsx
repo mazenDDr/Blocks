@@ -176,7 +176,7 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
         <Metrics rows={[["Observed requests", monitor.data.health.requests], ["Errors", monitor.data.health.errors], ["Schema errors", monitor.data.health.schemaErrors],
           ["p95 request handling (ms, excludes persistence/HTTP encoding)", monitor.data.health.p95Ms], ["Rows / records with supplied labels", monitor.data.labelBasedQuality.labelledRows ?? monitor.data.labelBasedQuality.labelledRecords],
           ["Mean label delay (seconds)", monitor.data.labelBasedQuality.meanLabelDelaySeconds]]} />
-        <h4>Input changes against the recorded {monitor.data.family ? "held-out example (descriptive input measures)" : "training reference"}</h4><table><thead><tr><th>Field</th><th>KS statistic / total variation</th><th>Current missing fraction</th><th>Evidence</th></tr></thead><tbody>
+        <h4>Input changes against the recorded reference</h4><table><thead><tr><th>Field</th><th>KS statistic / total variation</th><th>Current missing fraction</th><th>Evidence</th></tr></thead><tbody>
           {Object.entries(monitor.data.inputDrift).map(([field, d]: [string, any]) => <tr key={field}><td>{field}</td><td>{d.ksStatistic ?? d.totalVariation ?? "not recorded"}</td><td>{d.currentMissingFraction ?? "not recorded"}</td><td>{d.available ? `${d.referenceN} reference / ${d.currentN} current observations` : d.reason}</td></tr>)}</tbody></table>
         <h4>Prediction distribution change</h4><Recorded value={monitor.data.predictionDrift} /><h4>Quality measured only from supplied labels</h4>
         {monitor.data.labelBasedQuality.available ? <Metrics rows={Object.entries(monitor.data.labelBasedQuality.values)} /> : <p>{monitor.data.labelBasedQuality.reason}</p>}

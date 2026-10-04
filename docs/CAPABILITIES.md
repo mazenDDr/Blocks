@@ -165,7 +165,7 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
   resource estimates, "resume compatible checkpoint". Automated browser tests.
 - General pause/heartbeats/leases and orphaned-worker recovery; supported model checkpoint resume and domain completed-epoch child continuation exist. Cancellation cannot forcibly terminate a native call stuck inside a batch.
 - Experiment board: tags, notes, search/filter of runs, smoothing, x-axes other than step (model graphs keep the pin + two-run compare; tabular/model sweeps have the Experiments board above).
-- Auth, multi-user; image-folder datasets are server-side folders (tabular graphs can read connected sources).
+- User accounts, roles and multi-user audit; an optional shared bearer token exists (ADR 0021). Image-folder datasets are server-side folders (tabular graphs can read connected sources).
 - Automatic installation/migration of exported environments and portable trained-artifact import. Inert graph/UI packages with exact operation requirements and optional CSV snapshots are implemented in Milestone 8; native domain checkpoint and manifest downloads are documented below.
 - Behaviors outside the documented bounds in the A01–A64 acceptance checklist; later Milestone 7/8 and domain checkpoint sections are authoritative for their implemented scope.
 - Broader multi-input/output training, optimizer/scheduler/precision/device workflows outside the supported PyTorch training procedure. Native tensor broadcasting/casts and composed custom losses exist; GPU and mixed precision remain unavailable.
@@ -303,7 +303,7 @@ See ADR 0014. New completed TinyFCN/BiGRU/CTC runs persist actual native weights
 | Typed RGB post-geometry image / original text / normalized audio requests, pinned tokenizer/features/normalization/labels/decoding and prediction provenance | domain API | contract/rate/batch/input refusals and real HTTP CLI |
 | Working domain workspace download/manifest/continuation/input/prediction controls and readable outputs | `DomainModels.tsx` | editor build/TypeScript and installed Chrome three-domain journey in HANDOFF |
 
-Limits: CPU and completed-epoch continuation only, local owning control process, two active inference requests and batches up to four within 1.5 MB decoded JSON. Vision expects the already geometrically prepared RGB size (max 512 each dimension); speech accepts 1–4 normalized PCM channels, exact pinned rate, ≤32,000 samples/channel and ≤4096 feature frames. These native prediction endpoints are separate from the tabular production registry/release system. Domain registry rollout/monitoring, general datasets, portable checkpoint upload/import, mid-node recovery/cancellation and GPU/cross-version exact resume remain unavailable. Historical 6b checkpoint exclusions are superseded by this section only within these bounds.
+Limits: CPU and completed-epoch continuation only, local owning control process, two active inference requests and batches up to four within 1.5 MB decoded JSON. Vision expects the already geometrically prepared RGB size (max 512 each dimension); speech accepts 1–4 normalized PCM channels, exact pinned rate, ≤32,000 samples/channel and ≤4096 feature frames. These standalone native prediction endpoints also feed the domain production adapter added later (ADR 0017, documented below). General datasets, portable checkpoint upload/import, mid-node recovery/cancellation and GPU/cross-version exact resume remain unavailable. Historical 6b checkpoint exclusions are superseded by this section only within these bounds.
 
 ## Dependency-scoped node cache for tabular graphs (A09, ADR 0015)
 
@@ -324,7 +324,7 @@ Not implemented: caching for model/procedure/agent/RL/domain graphs, connector s
 | Fetch a Git remote (local path, file, https, ssh) into a bare mirror with hooks disabled, a protocol allowlist and no checkout; resolve branch/tag/HEAD/SHA to a commit; refuse credential-bearing URLs and transport helpers | `repos/core.py`, `services/control/repos_api.py` | `test_repos.py` |
 | Browse a pinned tree with content classification (installation scripts, dependency manifests, license, datasets, weights, configuration, notebooks, LFS pointers, submodules, symlinks); raw blob reads without filters | same | `test_repos.py` |
 | Static dependency parsing (requirements, pyproject, setup.cfg; setup.py reported as not run) and license SPDX guess | same | `test_repos.py` |
-| ast-only Python inspection; wrap one top-level function of a single-file module as a code block; immutable, integrity-checked import record; block `origin` part of the semantic hash; chosen pins verified by the sandbox | same, `apps/editor/src/components/RepoImport.tsx` | `test_repos.py` |
+| ast-only Python inspection; wrap one top-level function with its pinned pure-Python package closure as a code block; immutable, integrity-checked import record; block `origin` part of the semantic hash; chosen pins verified by the sandbox | same, `apps/editor/src/components/RepoImport.tsx` | `test_repos.py` |
 | Local-modification status and commit comparison for the imported file; editor import dialog and origin banner | `CodeBlockEditor.tsx`, `RepoImport.tsx` | `test_repos.py` (HTTP) |
 
 Not implemented: notebooks or compiled extensions as entry points (pure-Python multi-file packages are bundled from pinned texts; ADR 0016 addendum), wrapping repository data/config/model files as typed sources, LFS download, submodule fetch, dependency installation, hosted-provider APIs/credential UI, history/blame, automatic mirror retention (explicit listing/removal via `/api/repos/mirrors` and `DELETE /api/repos/{id}` exists). The code-block sandbox guard is best-effort, not a hostile-code boundary.
@@ -338,7 +338,7 @@ Not implemented: notebooks or compiled extensions as entry points (pure-Python m
 | Per-family ground truth and native quality (NLP word accuracy + seqeval span F1, undefined without spans; speech corpus CER/WER; vision pixel accuracy/IoU/Dice); descriptive input and prediction drift against the held-out example | `production/monitor.py`, `production/domain_adapter.py` | `test_production_domain.py` |
 | Editor Production workspace: domain candidates, pinned-model panel, maxBatch cap, held-out example loading, label formats, family metrics | `ProductionWorkspace.tsx` | browser journey (HANDOFF §14) |
 
-Not implemented: agent, RL, unsupervised and Keras/JAX serving; a larger domain monitoring reference than the single recorded example. (Model-graph image classifiers: see the next section.)
+Not implemented: agent and Keras/JAX serving; a larger domain monitoring reference than the single recorded example. Model-graph image classifiers, greedy DQN and k-means/GMM/PCA serving were added in ADR 0018–0020, documented below. Monitoring calls the common input comparison a recorded reference, since fitted rows and replay-buffer observations are not held-out examples.
 
 ## Model-graph image classifiers in the production registry (ADR 0018)
 

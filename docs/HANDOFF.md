@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Codex on the user's Mac: start at §17.** It lists what changed since your last session, the compatibility effects on the existing local workbench, the verification to run first, and the remaining work in priority order. §11–§16 are the detailed records behind it.
+> **Latest Mac continuation: §18.** Codex pulled the cloud merges and verified them on macOS arm64. Read §17 for compatibility effects and priorities, then §18 for the actual Mac evidence and broader remaining-work assessment. §11–§16 record the cloud implementation.
 
 ## 1. What this project is
 
@@ -46,10 +46,10 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | 7 Registry and production investigation | done, verified (bounded local tabular adapter; see §8) | 302cc50 |
 | 8 Scale, integrations, community | done, verified (bounded local CPU/offline scope; see §9) | cc8b4d0 |
 | Domain checkpoint/inference continuation | done, verified (native CPU completed-epoch continuation/local inference; see §10) | 90d6721 |
-| A09 node cache, A44 repository import, inspection refresh, cache retention (Claude, cloud) | done, verified on Linux x86 (see §11–§13) | PR #1 → 0d25b02 |
-| Production serving for domain, CNN, RL, unsupervised; run-status race fix | done, verified on Linux x86 (see §14) | PR #2 → 6c39878 |
-| Multi-file repository imports | done, verified on Linux x86 (see §15) | PR #3 → 14b7b27 |
-| Optional bearer token | done, verified on Linux x86 (see §16) | PR #4 → 1f5d026 |
+| A09 node cache, A44 repository import, inspection refresh, cache retention (Claude, cloud) | done, verified on Linux x86 and Mac arm64 (see §11–§13, §18) | PR #1 → 0d25b02 |
+| Production serving for domain, CNN, RL, unsupervised; run-status race fix | done, verified on Linux x86 and Mac arm64 (see §14, §18) | PR #2 → 6c39878 |
+| Multi-file repository imports | done, verified on Linux x86 and Mac arm64 (see §15, §18) | PR #3 → 14b7b27 |
+| Optional bearer token | done, verified on Linux x86 and Mac arm64 (see §16, §18) | PR #4 → 1f5d026 |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -62,6 +62,8 @@ After 8: full suite → **919 passed, 1 skipped, 6 deselected**; live → **6 pa
 After domain checkpoints/inference: full suite → **931 passed, 1 skipped, 6 deselected**; live → **6 passed, 932 deselected**. Editor build/TypeScript, native HTTP CLI, curl and installed Chrome all-three-domain inference/continuation journeys passed. See §10.
 
 After the Claude cloud sessions (§11–§16, Linux x86_64 container, not the Mac): full suite → **1000 passed, 1 skipped, 6 deselected** on `1f5d026`. Live tests were **not run** (no Ollama there). Re-verify on the Mac per §17.
+
+After pulling the cloud merges to Mac `37368c5`: full suite → **1000 passed, 1 skipped, 6 deselected**, **438.09 s**; live Ollama → **6 passed, 1001 deselected**, **16.96 s**. Final editor/curl/Chrome evidence and scope are in §18.
 
 ### Check for in-progress work first
 Run `git status`. If there are uncommitted files, a previous session was cut off mid-milestone: inspect them with `git diff`, do **not** discard them, finish that milestone, verify (§4), then commit.
@@ -504,3 +506,52 @@ Everything in ACCEPTANCE is bounded evidence (no `not implemented` rows). These 
 - Identity hashes are deliberate. Editing files covered by an implementation hash (domain ADR 0014, tabular adapter ADR 0012, node cache ADR 0015, serving adapters ADR 0018–0020) invalidates saved artifacts that depend on them. Say so in HANDOFF whenever you do it.
 - Production adapters share one interface: `manifest`, `validate_records(records, max_batch)`, `predict(records) -> (result, timings)`, plus `reference_records()` for warmup and monitoring. They re-verify environment and implementation on every use, and all labels/quality are measured only from supplied ground truth.
 - Keep the user's port 8000 service running, stop every server and browser you start, and keep the HANDOFF current so the next agent can resume from Git alone.
+
+## 18. Cloud merges verified on the Mac — Codex, 2026-10-04
+
+The user supplied Claude's cloud handoff and asked for an assessment of remaining work. Started clean at `90d6721`; `git pull --ff-only origin master` brought this Mac to PR #5 merge `37368c5`. Worked alone, without subagents. No dependencies changed or were installed. Compatibility statements in §17.2 were checked against the actual Git diff: tabular adapter identities and dependency manifests are unchanged; the cloud domain inference refactor invalidates earlier domain models by the deliberate implementation pin. The user was told. All verification runs below use an isolated workbench, not the user's saved models or registered versions. No historical artifact was rewritten and no compatibility checks were weakened.
+
+### Mac verification
+
+- `.venv/bin/pytest -q -o faulthandler_timeout=240`: **1000 passed, 1 skipped, 6 deselected, 1833 warnings**, **438.09 s (7:18)**, exit 0. Includes both arm64 watch cases in §17.3: the execution-changing MSE conditional breakpoint and atomic cross-store status transitions. No test changes. Existing Anthropic-without-key skip and native TensorFlow/gast/Torch warnings remain. Temporary log `/private/tmp/void-cloud-mac-pytest.log`.
+- `.venv/bin/pytest -q -m live`: **6 passed, 1001 deselected**, **16.96 s**, exit 0, actual local Ollama. Temporary log `/private/tmp/void-cloud-mac-live.log`. No Anthropic key or tracker account credentials supplied.
+- `pnpm -C apps/editor build` and `pnpm -C apps/editor exec tsc --noEmit`: exit 0 after the final monitoring label correction, **249 modules**; existing Vite large-chunk warning. `.venv/bin/python -m backends.coverage --check`: current. `git diff --check`: clean.
+- `VOID_API_TOKEN="$(cat /private/tmp/void-cloud-mac-token)" .venv/bin/python examples/domain_checkpoint_journey.py --base http://127.0.0.1:8775`: exit 0, all three freshly trained native families, actual epoch 2→4 continuation, checkpoint export SHA verification and immutable parent predictions. Tiny labelled SYNTHETIC fixtures verify mechanics, not useful model quality. No additional domain implementation files changed during this Mac continuation, so this session does not introduce another domain identity invalidation.
+- Curl against isolated backend **8775** and editor **5298**: unauthenticated `/api/registry` **401**, authenticated backend **200**, editor's authenticated proxy **200**. The test token was generated locally only for these servers and is never committed. Native HTTP training, checkpoint inference and production are exercised through that same token boundary.
+
+Fresh checkpoint parents/children: vision `b5f7bdac6e3b` → `d1ae2296baba`, NLP `85ed499734be` → `08ccd9774825`, speech `18d4fafe7f39` → `7fb0963a2998`. Temporary native CLI evidence `/private/tmp/void-cloud-mac-domain-cli.json`.
+
+Installed Chrome / temporary Puppeteer scripts (outside the repo, per §4):
+- Token-authenticated editor loaded and API calls succeeded; token absent from the DOM and loaded browser scripts.
+- Tabular regression: cache enabled → first run `ddc7a009e1cc` **0 reused**, identical rerun `b6ed0315e021` **16 reused**, change `ols.fit_intercept` in the actual editor form → `93d6f5dcc054` **13 reused / 3 executed**, with settings/dependency reasons; explicit keep-latest preview/confirmation removed **3 entries**. Recorded runs retained. Evidence `/private/tmp/void-cloud-mac-browser.log` and cache screenshot.
+- Real local Git fixture with setup/conftest/hook/filter traps: resolve v1 → static license/dependencies → import `uses_lib.py:scaled` with three pinned `lib/` modules → compare v2 → unmodified-origin banner → **all native sandbox fixtures pass**. No trap marker created. Temporary repository fixture commit `e44ff0e9eaee4873efa2e25cf2f3464180a86ae1` is test data, not a project source commit. Evidence `/private/tmp/void-cloud-mac-browser-final.log` and repository screenshot.
+- CNN in the editor: open `conv_1` Weights before Run, observe the unavailable inspection response, then real filter heatmaps appear **without reopening the tab**. Native training run **`a5a8b528dcdb`** completed. No fake checkpoint or direct API training shortcut for this journey.
+- All four new production surfaces completed **register → release → deploy → load recorded reference → native request → supply labels → replay → monitoring** in Chrome. Final run `/private/tmp/void-cloud-mac-production-browser.mjs` exited 0 with **zero runtime errors and zero API errors**; log/evidence JSON/screenshots are under `/private/tmp/void-cloud-mac-*`. Final screenshots of NLP and k-means monitoring were visually inspected, including the corrected reference heading.
+
+| Family | Training run | Release (prefix) | Native labelled result on the tiny recorded request |
+|---|---|---|---|
+| CNN | a5a8b528dcdb | 913ecee6dadd | accuracy 0 (three actual held-out image labels) |
+| NLP | 85ed499734be | 4059b6800035 | word accuracy 0, span F1 0 (actual source character-span labels aligned to returned original words) |
+| DQN | 09a257b6295b | cc4fe00ad074 | action agreement 0 against an explicitly supplied constant-action reference (all 0); not ground truth from behaviour actions or environment return |
+| k-means | fcbbdde601c6 | 036591c86535 | ARI 1, NMI 1 on three fitted rows with `true_group` labels from the actual SYNTHETIC CSV; in-sample, not a benchmark |
+
+These low-quality/very-small-request results are reported as measured, not replaced by optimistic values. The domain reference-input endpoint intentionally supplies input only; its NLP ground truth was recovered from the exact labelled fixture, not inferred from predictions. Initial temporary browser scripts required fixes for text entry, CSS-transformed text, initial project loading, asynchronous response/DOM waits and supplying those labels. They did not require weakening tests or bypassing app controls. The accepted evidence is the successful native journeys above, not the failed temporary-script attempts.
+
+Cleanup completed: backend **PID 61792 / port 8775** and editor **PID 61811 / port 5298** stopped with SIGTERM and confirmed absent with `ps`; all Chrome processes started by these scripts closed in `finally`. Generated test-token/config files deleted. The user's port 8000 service was untouched and remains a separate old-code service until the user authorizes its restart. Workbench `/private/tmp/void-cloud-mac-smoke` and logs/screenshots are temporary evidence and need not survive cleanup. This verified correction/assessment is committed and pushed with the handoff; use `git log -1` for its exact commit.
+
+### Documentation and small UI correction
+
+Production monitoring's shared heading called every non-tabular reference a “held-out example.” RL reference observations actually come from the replay buffer, and unsupervised references are fitted rows. Changed only that heading to **“Input changes against the recorded reference”**; native reference records, quality definitions and identities are unchanged. CAPABILITIES now removes contradictory historical exclusions for domain/RL/unsupervised serving and shared-token authentication, and states that package imports include pinned pure-Python closures. README links this verification record. No new architecture decision is needed for these label/documentation corrections; **0022 remains the next ADR**.
+
+### Remaining work assessment (supplements §17.4)
+
+All A01–A64 rows have **bounded evidence**. That means the documented scenarios work; it does not mean the entire VISION or a generally deployable product is finished. Read the scope of each row and the full CAPABILITIES ledger rather than treating the acceptance count as feature completeness.
+
+§17.4's priorities remain useful, with these additional product gaps already recorded elsewhere in CAPABILITIES:
+- Tabular/research: broader estimator families (trees/forests/boosting/SVM/kNN), sample weights, richer split/held-out final-test workflows, Parquet/JSON and larger-data profiling; broader statistics, bootstrap/permutation/power/multiple-comparison methods; richer connectors and study/experiment management.
+- Editor/inspection: undo/redo, copy/paste, grouping/outline/layout and richer large-graph navigation, teaching/saliency/training-distribution views, wider multi-input training and device/precision/optimizer workflows. Check earlier milestone sections before implementing a named gap, because some narrower variants already exist.
+- Operational readiness: browser checks currently live in temporary scripts, not repository-owned end-to-end tests; no GitHub CI workflow exists. A reproducible test runner/CI, measured workloads beyond fixtures, backup-and-restore drills, versioned migrations preserving old runs, and broader disconnect/crash/disk-pressure recovery are proposed next work, not implemented claims. Current strict domain code identity is safe but forces retraining after refactors; a deliberate compatibility/migration contract would improve everyday use without removing integrity checks.
+- Security/team readiness: the shared token does not provide accounts/roles/audit or transport encryption. The imported-code guard is best-effort, not hostile-code isolation. Production beyond loopback needs an explicit tested deployment and execution boundary. Artifact/trace/checkpoint retention and dependency-aware deletion remain broader gaps despite explicit node-cache and mirror cleanup.
+- Serving: **Keras/JAX also remain unserved**, along with agents and the narrower model/procedure/RL/preprocessing gaps in §17.4. Do not describe agent serving as the only remaining model backend.
+
+Recommended next scope after this Mac verification: real user dataset import with explicit source/provenance and the checkpoint-compatibility decision from §17.4, then bounded agent serving with real Ollama and ADR 0022. A CI/browser smoke baseline and restore/upgrade tests should accompany work toward everyday use. Do not require credentials for unrelated work or fabricate remote/GPU/online evidence. The user's current message asks for this assessment, not automatic implementation of every gap. Keep working alone and keep verified changes and the handoff pushed.
