@@ -269,7 +269,7 @@ An intention without a recorded worker run requires investigation/new identity r
 
 ### Remaining work for Claude
 
-Read ADR 0013/0014 and ACCEPTANCE before extending this milestone. Domain state persistence, completed-epoch child continuation and separate local native inference/export subsequently shipped in §10. Native tabular debugger interventions, broad external-user onboarding/accessibility, cross-host/GPU operation, online tracker sharing, A09 numerical dependency caches and A44 repository source-code import remain gaps. General production registry/release adapters for domain/CNN/agent/RL/Keras/JAX remain unavailable. Model inspection opened before its checkpoint appears can retain “not recorded” until the tab/context is reopened; do not fabricate values to cover that existing refresh limitation.
+Read ADR 0013/0014 and ACCEPTANCE before extending this milestone. Domain state persistence, completed-epoch child continuation and separate local native inference/export subsequently shipped in §10. Native tabular debugger interventions, broad external-user onboarding/accessibility, cross-host/GPU operation, online tracker sharing, A09 numerical dependency caches and A44 repository source-code import remain gaps. General production registry/release adapters for domain/CNN/agent/RL/Keras/JAX remain unavailable. Model inspection opened before its checkpoint appears used to retain “not recorded” until the tab/context was reopened; fixed in §13 (it re-asks while the run is active).
 
 Next agent: inspect `git status`, `git log -1` and `git remote -v`; preserve new user work. Select any next scope from the actual acceptance gaps and latest user direction rather than rebuilding completed milestones. Continue alone, keep this handoff current, run §4 verification for substantive changes, commit verified work and push to the private origin. Never stop the user's port 8000 service; close every temporary server/browser you start.
 
@@ -314,3 +314,70 @@ This release is committed on `master` and pushed to the existing private origin 
 Next scope: integrate supported domain models into real registry/release/trace/monitoring contracts, expand dataset importers, or improve editor/inspection/worker recovery per user direction. This release is **not** domain registry rollout/production monitoring, intermediate checkpoint cadence, mid-node pause/cancel/recovery, portable checkpoint upload/import/migration, raw-image geometry inference, GPU/cross-version exactness, or cloud/team deployment. Models pin the implementation/environment; editing those files can intentionally make earlier manifests unavailable until migration/rerun. No cost, model-quality or security guarantee follows from the small local fixture proof. A09/A44 and the other ACCEPTANCE/CAPABILITIES gaps remain.
 
 Continue without subagents. Read ADR 0014 before extending checkpoint semantics; inspect Git/status/remote and preserve user work. Update handoff/capabilities, verify §4, commit and push to the existing private origin. Never stop port 8000, and stop every temporary server/browser you start.
+
+## 11. A09 dependency-scoped node cache — Claude, 2026-10-04
+
+The user asked Claude to continue Codex's work using this handoff. Starting point: clean `90d6721`. This session ran in a **Linux x86_64 cloud container** (not the macOS machine in §3), on branch `claude/laughing-bell-la46nd`, which was pushed to the private origin. Port 8000 / Ollama do not exist here. Scope chosen from the remaining ACCEPTANCE gaps: **A09**. A44 remains not implemented.
+
+### Implementation
+
+- `python/tabular/cache.py` (new): per-node cache keys over operation type/version, node id, resolved config (after run seed override), SHA of every tabular implementation file, Python/native library versions, and input identities. Cacheable producers pass their key downstream. Sources pass a content hash of what they actually read, so editing a node invalidates it and its dependents only. Explicit allowlist of deterministic tabular/sklearn/scipy/unsupervised ops. CSV/connector sources, joins, code blocks, plugins and `domain` nodes always run (`bypass`). Miss explanations name `settings`, `implementation`, `environment` or `input <port> (from <node>)` against the node's latest entry in the same project.
+- `artifact_store/store.py`: `node_cache` SQLite index (written only by the local worker; no import/upload path). Entries are pickles in the CAS store, SHA-, format- and key-verified before loading; failures become a miss and the node runs. 64 MiB entry cap.
+- `tabular/engine.py`, `worker/tabular_run.py`: `TabularRunConfig.cache: "off" | "reuse"` (default off: unchanged behavior, nothing recorded). `run_started.cache` records the mode and hashes; `node_finished.cache` records the decision. Hits still record ordinary node_output/summary artifacts in the new run.
+- `services/control/app.py` run summary exposes `cache` per run and node. Editor `TabularPanels.tsx`: **Reuse unchanged node results (cache)** checkbox, reused/ran badges, and a **Node cache** explanation table in the Run record.
+- ADR **0015**; CAPABILITIES, ACCEPTANCE (A09 → bounded evidence), README updated; COVERAGE regenerated.
+- `tests/test_node_cache.py` (9 cases): first-run misses, identical-rerun hits, byte-identical outputs vs original and vs uncached execution, single-node edit invalidates exactly dependents, late edits, revert reuse, changed source bytes, run seed override, implementation/environment change, corrupted entry, cache-off unchanged, non-cacheable/domain bypass, HTTP API summary and 422 for an invalid mode.
+- `tests/test_scale.py` acceptance assertion: A44 must still be `not implemented`; A09 must now be `bounded evidence` citing `tests/test_node_cache.py` (strengthened, not weakened).
+
+### Portability fixes found on Linux
+
+- `connectors/install_pgserver.py`: the compound manylinux tag was passed as one `--platform` value, which pip rejects. It now passes one `--platform` per tag part. Installed and verified here.
+- `tests/test_debugger.py` conditional-breakpoint test: on Linux x86 the CE/`seq_model` fixture at lr=1e30 never produced a non-finite loss (losses ~1e29, bounded by tanh and stable log-softmax). It also failed on the base commit. Replaced the fixture with a dense→tanh→dense MSE regression model, where one step leaves weights finite and the next squared prediction overflows float32 by ~20 orders of magnitude. All original assertions are kept, plus `step == 2`. Debugger file: 19 passed; repeated 3× stable.
+
+### Verification (this container)
+
+- Environment set up from scratch: `.venv` (CPython 3.13.x, `pip install --extra-index-url https://download.pytorch.org/whl/cpu -r python/requirements.txt`, `pip install -e . --no-deps`), `.venv-trackers` from `python/tracking/requirements.txt`, `python -m connectors.install_pgserver`.
+- `.venv/bin/pytest -q -o faulthandler_timeout=240`: **939 passed, 1 skipped, 6 deselected, 1 failed** (961 s). The single failure was the debugger test fixed afterwards (not rerun in a whole-suite pass after the fix; `tests/test_debugger.py` alone: 19 passed). The skip is Anthropic without a key. An earlier full run before the trackers venv/pgserver existed had environment-only failures; that run is not accepted evidence.
+- `pytest -m live`: **not run**: no Ollama in this container.
+- `pnpm -C apps/editor build` and `exec tsc --noEmit`: exit 0 (existing large-chunk warning). `backends.coverage --write`/`--check`: current.
+- Curl smoke on a temporary backend at 127.0.0.1:8770: the tabular_regression example ran with `cache: reuse`. Then `sc_fit` was edited: 10 upstream nodes reused, `sc_fit` + 6 dependents executed with exact `changed` reasons, `housing` bypassed.
+- Real headless Chromium (Playwright, `/opt/pw-browsers`; script in scratchpad, outside the repo) against editor 5295 on a fresh workbench: open example → tick cache → Run (0 reused / 16 executed / 1 always run) → untick `fit_intercept` on `ols` in the form → Run (**13 reused / 3 executed / 1 always run**), explanation table rendered. The only console error was the browser's automatic `/favicon.ico` 404, which predates this change (no API errors).
+- Temporary backend/editor were stopped and confirmed absent.
+
+### Next
+
+A44 (pinned repository code import) is the last unimplemented acceptance row. Other gaps: cache retention/GC, caching for other graph kinds, and the §5/§9/§10 limits. Keep using a separate branch per session if the harness requires it; `master` was not changed by this session.
+
+## 12. A44 pinned repository code import — Claude, 2026-10-04
+
+Continuation in the same Linux x86_64 cloud session as §11, on branch `claude/laughing-bell-la46nd` (starting from `ddf2606`). This closes the last `not implemented` acceptance row. **All A01–A64 rows are now bounded evidence**; read each row's scope before claiming more than it states.
+
+### Implementation
+
+- `python/repos/core.py` (new package): `Repos` fetches a remote (absolute path, file, https, ssh or scp-style; credential-bearing URLs, `ext::`, other schemes, relative paths and leading-dash arguments are refused) into a bare mirror `repos/<sha256(url)[:24]>.git`. It uses hooks off, a protocol allowlist, `GIT_CONFIG_NOSYSTEM`, no prompts and no submodule recursion. `resolve` maps branch/tag/HEAD/SHA to a commit; `tree` classifies entries; `read` returns raw blobs (no filters, capped at 256 KiB). `dependencies` parses requirements/pyproject/setup.cfg statically; setup.py is reported, not run. `license` gives an SPDX keyword guess; `inspect_python` is ast-only (functions, params, imports, local imports, wrappability). `compare` uses `--no-ext-diff --no-textconv`. `import_function` wraps one top-level function of a single-file module into a code-block definition. It writes the immutable, hash-verified `repos/imports/<sha256>.json` record and sets the block's `origin`, which is part of the semantic hash. `origin_status` reports local modifications.
+- `services/control/repos_api.py` (registered in `app.py`): `/api/repos/resolve`, `/{id}/tree`, `/{id}/file`, `/{id}/python`, `/{id}/compare`, `/{id}/import`, `/imports`, `/imports/{id}`, `/origin-status`.
+- Editor: `RepoImport.tsx` (Modules & code ▸ **Import from repository…**: resolve, classified tree with filter, license, dependency pins, file view, compare-with-revision patch, function/parameter-role/output selection, import). The `CodeBlockEditor` origin banner shows the pin and **unmodified pinned import** / **locally modified since import**. `ModuleLibrary` lists the origin.
+- ADR **0016**; ACCEPTANCE (A44 → bounded evidence), CAPABILITIES, README updated; COVERAGE regenerated. The `test_scale.py` checklist assertion now requires A09 and A44 to be bounded evidence citing their tests.
+- `tests/test_repos.py` (16 cases): a real local Git fixture whose `setup.py`, `conftest.py`, `pkg/__init__.py`, `install.sh`, source-side `post-checkout` hook and `.gitattributes` diff/filter drivers would each write a marker file. Resolve/browse/read/inspect/compare/import never create it. It also covers: rev resolution, unsafe URLs, classification incl. LFS pointer and submodule gitlink, static dependency/license parsing, local-import refusal, interface mismatch refusals, tamper-detected import records, sandbox execution agreeing with a native torch reference, semantic hash changing with the pinned commit, local-modification status, and the HTTP journey.
+
+### Verification (this container)
+
+- `.venv/bin/pytest -q -o faulthandler_timeout=240`: **956 passed, 1 skipped, 6 deselected, 0 failed** (1071 s). This includes the §11 debugger fix; the skip is Anthropic without a key. `pytest -m live` was **not run** (no Ollama here).
+- `pnpm -C apps/editor build` and `exec tsc --noEmit`: exit 0. `backends.coverage --check`: current. `git diff --check`: clean.
+- Curl smoke on temporary backend 127.0.0.1:8771 against the trap fixture: resolve v2 → commit and subject; tree counts with 3 installation scripts and MIT license; import list shows the pinned `stats_utils.py@d7f58797ab1f standardize`. No marker file.
+- Headless Chromium (Playwright; script in scratchpad, outside the repo) against editor 5296: Modules & code → Import from repository → resolve v1 → license/“setup.py … NOT run” shown → open setup.py (ast only) → open stats_utils.py → choose `standardize`, `eps` as node setting → compare with v2 (patch shows `unbiased=True`) → import → origin banner “unmodified pinned import” → Test with fixtures → **all fixtures pass**. Zero runtime/API errors; marker absent. Screenshots inspected.
+- Temporary backend/editor stopped and confirmed absent.
+
+### Next
+
+No acceptance row is `not implemented`, but every row is bounded. The largest remaining gaps are in CAPABILITIES: multi-file repository packages, LFS/submodules, dependency installation, cache retention, domain/agent production adapters, cross-host/GPU, and team features. The Mac-specific evidence (live Ollama tests, port 8000 service) should be re-run on the user's machine when convenient.
+
+## 13. Inspection refresh fix and continuation — Claude, 2026-10-04
+
+PR [mazenDDr/project-void#1](https://github.com/mazenDDr/project-void/pull/1) was opened from `claude/laughing-bell-la46nd` for §11–§12. It is mergeable, has no review comments and no CI checks (the repository has no workflows).
+
+**Fixed: inspection stuck on “not recorded”.** `useInspect` (apps/editor/src/hooks.ts) asked once per request key. With “latest checkpoint” selected, the key does not change when the first checkpoint appears, so the Weights/Activations/wire views kept showing “not recorded” until reopened. Unavailable inspection answers now carry `runStatus` (`services/control/inspection.py`). While an answer is `not_recorded` for a queued/preparing/running/paused/cancelling run, the hook re-asks every 3 s. The retry count is tied to the request key, so a new selection starts fresh and terminal runs are not polled. `tests/test_api.py` asserts `runStatus`. Real Chromium (reference CNN, conv_1 ▸ Weights, then Run): “not recorded” at 1.6 s, real filters rendered at 8.1 s without reopening, zero errors. The same journey with the previous hook stayed “not recorded” for the full 60 s window, which confirms the root cause.
+
+**Added: node-cache retention.** `tabular/cache.py` `cache_summary`/`prune`, `ArtifactStore.node_cache_entries`/`delete_node_cache`, `services/control/cache_api.py` (`GET /api/cache/nodes`, `POST /api/cache/nodes/prune`), and editor controls in the tabular Run panel. Pruning needs an explicit project or `allProjects` and is dry-run by default. It frees only entry bytes no index row or run artifact references; run artifacts are never touched, and pruned results are recomputed on the next miss. ADR 0015, CAPABILITIES and README are updated. `tests/test_node_cache.py` grew to 14 cases (dry run, keep-latest with identical recomputation, older-than, project scope, shared-bytes protection, API). The browser check (two cached runs, then "keep only the latest per node" previews and removes 3 entries) found a real refresh bug: the size only updated when a run started, not when it finished. Fixed by refreshing on run status changes; the rerun passed with zero errors.
+
+**Fixed: repository credential helpers.** `repos/core.py` overrode `HOME`, which hid the user's `~/.gitconfig` credential helpers despite ADR 0016 promising the environment's own Git configuration. HOME is now preserved. `test_user_git_config_cannot_reenable_hooks_or_external_diff` shows a user-level hooksPath/diff.external still cannot execute anything; a mutation check removing the hooksPath override makes it fail.

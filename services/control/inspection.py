@@ -99,7 +99,8 @@ def checkpoint_list(rd: RunData) -> list[dict[str, Any]]:
 
 
 def _unavailable(rd: RunData | None, kind: str, reason: str, message: str, **prov) -> dict[str, Any]:
-    return {"available": False, "kind": kind, "reason": reason, "message": message,
+    # runStatus lets a client ask again while an active run may still record the value (e.g. its first checkpoint)
+    return {"available": False, "kind": kind, "reason": reason, "message": message, "runStatus": rd.row["status"] if rd else None,
             "provenance": rd.prov(None, **prov) if rd else {"runId": None, **prov}}
 
 

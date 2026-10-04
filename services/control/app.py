@@ -231,15 +231,16 @@ class Services:
     def tabular_summary(self, row: dict[str, Any]) -> dict[str, Any]:
         rid = row["id"]
         evs = self.store.events(rid, -1, ("run_started", "node_started", "node_finished", "node_failed", "source_recorded", "source_snapshot_recorded", "split_recorded", "validation_error"))
-        order, status, failure, sources, splits, libs, snaps, seeded = [], {}, None, [], [], None, [], None
+        order, status, failure, sources, splits, libs, snaps, seeded, cache = [], {}, None, [], [], None, [], None, None
         for e in evs:
             d, t = e["data"], e["type"]
             if t == "run_started":
                 order, libs, seeded = d["order"], d.get("libraries"), {"seed": d.get("seed"), "applied": d.get("seedApplied"), "pins": d.get("sourcePins")}
+                cache = d.get("cache")
             elif t == "node_started":
                 status[e["node_id"]] = {"node": e["node_id"], "type": d["type"], "status": "running"}
             elif t == "node_finished":
-                status[e["node_id"]] = {"node": e["node_id"], "type": d["type"], "status": "finished", "rows": d.get("rows", {})}
+                status[e["node_id"]] = {"node": e["node_id"], "type": d["type"], "status": "finished", "rows": d.get("rows", {}), **({"cache": d["cache"]} if "cache" in d else {})}
             elif t == "node_failed":
                 status[e["node_id"]] = {**status.get(e["node_id"], {"node": e["node_id"]}), "status": "failed"}
                 failure = {"node": e["node_id"], "code": d["code"], "message": d["message"]}
@@ -255,7 +256,8 @@ class Services:
         return {"kind": row["config"].get("kind", "tabular"), "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": row["config"],
                 "createdAt": row["created_at"], "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "nodes": nodes,
                 "progress": {"nodesDone": sum(1 for n in nodes if n["status"] == "finished"), "nodes": len(order)},
-                "sources": sources, "snapshots": snaps, "runSeed": seeded, "splits": splits, "failure": failure, "libraries": libs}
+                "sources": sources, "snapshots": snaps, "runSeed": seeded, "splits": splits, "failure": failure, "libraries": libs,
+                "cache": cache}
 
     def rl_summary(self, row: dict[str, Any]) -> dict[str, Any]:
         rid, cfg = row["id"], row["config"]
@@ -695,7 +697,7 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     def infer(req: InferRequest):
         return insp.infer(sv.run_data(req.runId), req.checkpointStep, req.sample, req.imageBase64)
 
-    from . import agent_api, connections_api, domain_api, m3_api, production_api, rl_api, scale_api, studies_api, unsup_api
+    from . import agent_api, cache_api, connections_api, domain_api, m3_api, production_api, repos_api, rl_api, scale_api, studies_api, unsup_api
 
     agent_api.register(app, sv)
     connections_api.register(app, sv)
@@ -706,4 +708,6 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     production_api.register(app, sv)
     scale_api.register(app, sv)
     domain_api.register(app, sv)
+    repos_api.register(app, sv)
+    cache_api.register(app, sv)
     return app

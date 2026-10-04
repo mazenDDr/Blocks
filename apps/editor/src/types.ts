@@ -23,6 +23,7 @@ export interface CodeBlockDef {
   id: string; version: string; description: string; inputs: CodeIO[]; outputs: CodeIO[]; config: { name: string; type: string; default: unknown; description?: string }[];
   state: { name: string; shape: number[]; dtype: string; init: number }[]; effects: string[]; randomness: string; differentiable: boolean; dependencies: string[];
   source: string; fixtures: Record<string, any>[]; limits: Record<string, number>;
+  origin?: { importId: string; url: string; commit: string; path: string; blob: string; function: string; importedSourceSha256: string };
 }
 export interface Graph {
   schemaVersion: string; graphKind: string; backend: string; nodes: GNode[]; edges: GEdge[];
@@ -108,7 +109,7 @@ export interface Provenance {
   nodeId?: string; sampleIndex?: number | null; sampleId?: string; source?: string; normalization?: string; epoch?: number;
   preprocessing?: string; trueLabel?: string | null;
 }
-export interface Unavailable { available: false; kind: string; reason: string; message: string; provenance: Provenance }
+export interface Unavailable { available: false; kind: string; reason: string; message: string; runStatus?: string | null; provenance: Provenance }
 export interface Stats { min: number; max: number; mean: number; std: number; count: number }
 export interface Slice { offset: number; limit: number; of: number; truncated: boolean }
 export interface WeightsResult {
@@ -131,11 +132,13 @@ export interface InferResult {
 export interface RunEvent { run_id: string; seq: number; ts: number; type: string; graph_hash: string; node_id: string | null; data: any }
 
 // ---- tabular graph kind -------------------------------------------------------------------------------
-export interface TabularNodeStatus { node: string; type?: string; status: "pending" | "running" | "finished" | "failed"; rows?: Record<string, number> }
+export interface NodeCacheDecision { status: "hit" | "miss" | "bypass"; key: string | null; reason: string; changed: string[]; fromRun?: string; fromNode?: string; entrySha256?: string; stored?: string }
+export interface TabularNodeStatus { node: string; type?: string; status: "pending" | "running" | "finished" | "failed"; rows?: Record<string, number>; cache?: NodeCacheDecision }
 export type TabularRunSummary = (NodeRunSummary & { kind: "tabular" }) | (NodeRunSummary & { kind: "domain" });
 interface NodeRunSummary {
   id: string; status: string; error: string | null; graphHash: string; createdAt: number; updatedAt: number; maxSeq: number;
-  config: { kind: string; project_id: string | null; seed?: number | null; source_pins?: Record<string, string>; trial?: Record<string, unknown> | null };
+  config: { kind: string; project_id: string | null; seed?: number | null; source_pins?: Record<string, string>; trial?: Record<string, unknown> | null; cache?: "off" | "reuse" };
+  cache?: { mode: "off" } | { mode: "reuse"; implementationSha256: string; environmentSha256: string; format: string } | null;
   snapshots?: { node: string; connector: string; mode: string; snapshotId: string; kind: string; contentSha256: string | null; rows: number; reproducibility: { level: string; limited: boolean } }[];
   nodes: TabularNodeStatus[]; progress: { nodesDone: number; nodes: number };
   sources: { node: string; path: string; sha256: string; bytes: number; rows: number }[];

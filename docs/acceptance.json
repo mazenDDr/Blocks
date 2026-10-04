@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "source": "docs/VISION.md \u00a724",
+  "source": "docs/VISION.md §24",
   "note": "Evidence refers to bounded implementations, not certification of every product-vision behavior. Verification record is in HANDOFF.",
   "rows": [
     {
@@ -100,10 +100,11 @@
     {
       "id": "A09",
       "scenario": "Edit a dependency",
-      "status": "not implemented",
-      "scope": "Dependency-scoped numerical cache invalidation is not implemented. Current execution reruns supported graphs; UI moves preserve the semantic hash.",
+      "status": "bounded evidence",
+      "scope": "Opt-in dependency-scoped node cache for tabular graphs: keys cover operation, node, resolved settings, implementation, environment and input identities; editing one node re-executes it and its dependents only, sources always re-read, reused results are byte-identical to fresh execution. Model/agent/RL/domain graphs are not cached.",
       "evidence": [
-        "docs/CAPABILITIES.md"
+        "tests/test_node_cache.py",
+        "docs/adr/0015-dependency-scoped-node-cache.md"
       ]
     },
     {
@@ -473,10 +474,11 @@
     {
       "id": "A44",
       "scenario": "Import repository code",
-      "status": "not implemented",
-      "scope": "Repository source-code browsing/import with commit/dependency execution boundaries is not implemented. DVC dataset resolution is a different supported contract.",
+      "status": "bounded evidence",
+      "scope": "Git remotes fetched into a bare mirror (hooks off, protocol allowlist, no checkout/filters/textconv); revisions resolve to commits; trees classified (installation scripts, LFS pointers, submodules, manifests, license) and dependencies parsed statically; one single-file function wrapped as a code block with an immutable import record (URL, commit, tree, path, blob, sha256, license, dependencies, pins) carried in the semantic hash; local modifications and commit comparison shown. Booby-trapped setup/conftest/hooks/drivers never execute. Multi-file packages, LFS download, submodule fetch and dependency installation are not implemented.",
       "evidence": [
-        "docs/CAPABILITIES.md"
+        "tests/test_repos.py",
+        "docs/adr/0016-pinned-repository-code-import.md"
       ]
     },
     {

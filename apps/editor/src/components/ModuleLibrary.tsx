@@ -5,7 +5,7 @@ import type { CodeBlockDef, Graph, ModuleDef } from "../types";
 interface Props {
   graph: Graph; inModule: boolean;
   onAddInstance: (m: ModuleDef) => void; onOpen: (m: ModuleDef) => void; onNew: () => void; onImport: (m: ModuleDef) => void; onRemove: (m: ModuleDef) => void;
-  onAddCodeNode: (d: CodeBlockDef) => void; onEditCode: (d: CodeBlockDef) => void; onNewCode: () => void; onImportCode: (d: CodeBlockDef) => void;
+  onAddCodeNode: (d: CodeBlockDef) => void; onEditCode: (d: CodeBlockDef) => void; onNewCode: () => void; onImportCode: (d: CodeBlockDef) => void; onRepoImport: () => void;
   usedModules: Set<string>; setMessage: (m: string) => void;
 }
 const sig = (m: ModuleDef) => `${m.inputs.map((p) => p.name).join(", ") || "-"} → ${m.outputs.map((o) => o.name).join(", ") || "-"}`;
@@ -59,10 +59,10 @@ export function ModuleLibrary(p: Props) {
       ))}
       <h3>Python code blocks <small className="muted">optional</small></h3>
       <div className="hint">Typed interface, tested against fixtures, run in an isolated subprocess. Prefer visual blocks when they exist.</div>
-      <button onClick={p.onNewCode}>New code block…</button>
+      <button onClick={p.onNewCode}>New code block…</button> <button onClick={p.onRepoImport} title="Browse a Git repository at a pinned commit and wrap one function; nothing is installed or executed while browsing">Import from repository…</button>
       {(p.graph.codeBlocks ?? []).map((d) => (
         <div className="lib-item static" key={`${d.id}@${d.version}`}>
-          <b>{d.id}</b><span className="badge">v{d.version}</span><small>{d.inputs.map((i) => i.name).join(", ")} → {d.outputs.map((o) => o.name).join(", ")} · {d.differentiable ? "differentiable" : "gradient boundary"}</small>
+          <b>{d.id}</b><span className="badge">v{d.version}</span><small>{d.inputs.map((i) => i.name).join(", ")} → {d.outputs.map((o) => o.name).join(", ")} · {d.differentiable ? "differentiable" : "gradient boundary"}{d.origin ? ` · from ${d.origin.path}@${d.origin.commit.slice(0, 7)}` : ""}</small>
           <div className="actions"><button disabled={p.inModule} title={p.inModule ? "Go back to the project to add a node" : ""} onClick={() => p.onAddCodeNode(d)}>Add node</button><button onClick={() => p.onEditCode(d)}>Edit code</button></div>
         </div>
       ))}

@@ -40,6 +40,10 @@ CREATE TABLE IF NOT EXISTS artifacts (
   status TEXT NOT NULL, step INTEGER, size INTEGER NOT NULL, meta TEXT NOT NULL, created_at REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS idempotency (
   key TEXT PRIMARY KEY, request_hash TEXT NOT NULL, run_id TEXT NOT NULL, created_at REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS node_cache (
+  key TEXT PRIMARY KEY, sha256 TEXT NOT NULL, size INTEGER NOT NULL, run_id TEXT NOT NULL, node_id TEXT NOT NULL, op_type TEXT NOT NULL,
+  project_id TEXT, node_part TEXT NOT NULL, implementation TEXT NOT NULL, environment TEXT NOT NULL, inputs TEXT NOT NULL, created_at REAL NOT NULL);
+CREATE INDEX IF NOT EXISTS node_cache_node ON node_cache (node_id, op_type, created_at);
 """
 
 
@@ -119,6 +123,42 @@ class ArtifactStore:
 
     def put_idempotent(self, key: str, request_hash: str, run_id: str) -> None:
         self._exec("INSERT INTO idempotency VALUES (?,?,?,?)", (key, request_hash, run_id, time.time()))
+
+    # ------------------------------------------------------------ node result cache index (tabular.cache; written only by the local worker)
+    def get_node_cache(self, key: str) -> dict[str, Any] | None:
+        rows = self._exec("SELECT * FROM node_cache WHERE key=?", (key,))
+        return dict(rows[0]) if rows else None
+
+    def latest_node_cache(self, node_id: str, op_type: str, project_id: str | None) -> dict[str, Any] | None:
+        rows = self._exec("SELECT * FROM node_cache WHERE node_id=? AND op_type=? AND project_id IS ? ORDER BY created_at DESC, rowid DESC LIMIT 1",
+                          (node_id, op_type, project_id))
+        return dict(rows[0]) if rows else None
+
+    def put_node_cache(self, key: str, sha256: str, size: int, run_id: str, node_id: str, op_type: str, project_id: str | None,
+                       node_part: str, implementation: str, environment: str, inputs: str) -> None:
+        self._exec("INSERT OR IGNORE INTO node_cache VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                   (key, sha256, size, run_id, node_id, op_type, project_id, node_part, implementation, environment, inputs, time.time()))
+
+    def node_cache_entries(self, project_id: str | None = None, any_project: bool = True) -> list[dict[str, Any]]:
+        sql, args = "SELECT key, sha256, size, run_id, node_id, op_type, project_id, created_at FROM node_cache", ()
+        if not any_project:
+            sql, args = sql + " WHERE project_id IS ?", (project_id,)
+        return [dict(r) for r in self._exec(sql + " ORDER BY created_at, rowid", args)]
+
+    def delete_node_cache(self, keys: list[str]) -> int:
+        """Remove index rows, then each entry file that no remaining index row or artifact record refers to. Returns bytes freed."""
+        freed = 0
+        with self._lock, closing(self._db()) as db:
+            with db:
+                shas = {r["sha256"] for k in keys for r in db.execute("SELECT sha256 FROM node_cache WHERE key=?", (k,))}
+                db.executemany("DELETE FROM node_cache WHERE key=?", [(k,) for k in keys])
+                for sha in shas:
+                    used = db.execute("SELECT 1 FROM node_cache WHERE sha256=? UNION ALL SELECT 1 FROM artifacts WHERE sha256=? LIMIT 1", (sha, sha)).fetchone()
+                    p = self.path_of(sha)
+                    if used is None and p.exists():
+                        freed += p.stat().st_size
+                        p.unlink()
+        return freed
 
     def set_status(self, run_id: str, new: str, error: str | None = None) -> None:
         run = self.get_run(run_id)

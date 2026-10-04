@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, errorText } from "../api";
 import { isTensorType, type Diagnostic, type GEdge, GNode, Graph, NodeView, OpInfo, TabularRunSummary, Validation } from "../types";
 import { fmtShape, shortHash, uid } from "../util";
@@ -81,6 +81,55 @@ export function TabularRunBar({ runs, runId, setRunId, currentHash }: { runs: Ta
   );
 }
 
+// ---------------------------------------------------------------------------------------- node cache retention
+interface CacheSummary { entries: number; bytes: number; projects: { projectId: string | null; entries: number; bytes: number; nodes: number }[] }
+const fmtBytes = (n: number) => (n >= 1 << 20 ? `${(n / (1 << 20)).toFixed(1)} MB` : `${Math.ceil(n / 1024)} KB`);
+
+function CacheControls({ projectId, refresh }: { projectId: string; refresh: string }) {
+  const [sum, setSum] = useState<CacheSummary | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const load = () => api.get<CacheSummary>("/api/cache/nodes").then(setSum).catch(() => setSum(null));
+  useEffect(() => { load(); }, [projectId, refresh]);
+  const mine = sum?.projects.find((p) => p.projectId === projectId);
+  if (!mine) return null;
+  const prune = async (keepLatestPerNode: number | null) => {
+    try {
+      const preview = await api.post<{ removed: number; indexBytes: number }>("/api/cache/nodes/prune", { projectId, keepLatestPerNode, dryRun: true });
+      if (!preview.removed) { setMsg("Nothing to remove."); return; }
+      if (!window.confirm(`Remove ${preview.removed} cached node results (${fmtBytes(preview.indexBytes)}) for ${projectId}? Recorded runs are not affected; removed results are recomputed when next needed.`)) return;
+      const r = await api.post<{ removed: number; bytesFreed: number }>("/api/cache/nodes/prune", { projectId, keepLatestPerNode, dryRun: false });
+      setMsg(`Removed ${r.removed} entries, freed ${fmtBytes(r.bytesFreed)}.`); load();
+    } catch (e) { setMsg(errorText(e)); }
+  };
+  return (
+    <div className="small cachectl">
+      Cached results for this project: {mine.entries} ({fmtBytes(mine.bytes)}, {mine.nodes} nodes){" "}
+      <button className="link" onClick={() => prune(1)}>keep only the latest per node</button> · <button className="link" onClick={() => prune(null)}>clear</button>
+      {msg && <span className="muted"> {msg}</span>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------------------- node cache explanation
+function CacheTable({ run, onSelectNode }: { run: TabularRunSummary; onSelectNode: (id: string) => void }) {
+  const done = run.nodes.filter((n) => n.cache);
+  const count = (s: string) => done.filter((n) => n.cache!.status === s).length;
+  return (
+    <details className="cachetable">
+      <summary>Node cache: {count("hit")} reused · {count("miss")} executed and recorded · {count("bypass")} always run</summary>
+      <table><thead><tr><th>Node</th><th>Result</th><th>Why</th></tr></thead><tbody>
+        {done.map((n) => (
+          <tr key={n.node}>
+            <td><button className="link" onClick={() => onSelectNode(n.node)}>{n.node}</button></td>
+            <td>{n.cache!.status === "hit" ? <>reused from run <code>{n.cache!.fromRun}</code></> : n.cache!.status === "miss" ? "executed" : "always runs"}</td>
+            <td className="small">{n.cache!.reason}{n.cache!.stored ? ` (${n.cache!.stored})` : ""}</td>
+          </tr>
+        ))}
+      </tbody></table>
+    </details>
+  );
+}
+
 // ---------------------------------------------------------------------------------------- bottom panel
 export function TabularRunPanel({ projectId, graph, validation, runs, reloadRuns, runId, setRunId, ensureSaved, onSelectNode }: {
   projectId: string; graph: Graph; validation: Validation | null; runs: TabularRunSummary[]; reloadRuns: () => void;
@@ -88,6 +137,7 @@ export function TabularRunPanel({ projectId, graph, validation, runs, reloadRuns
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [reuse, setReuse] = useState(false);
   const key = useRef<{ sig: string; id: string }>({ sig: "", id: "" });
   const run = runs.find((r) => r.id === runId) ?? null;
   const active = !!run && ACTIVE.includes(run.status);
@@ -98,7 +148,7 @@ export function TabularRunPanel({ projectId, graph, validation, runs, reloadRuns
     setBusy(true); setErr(null);
     try {
       await ensureSaved();
-      const body = { projectId, config: {} };
+      const body = { projectId, config: reuse && graph.graphKind === "tabular" ? { cache: "reuse" } : {} };
       const sig = JSON.stringify(body) + validation?.graphHash;
       if (key.current.sig !== sig) key.current = { sig, id: uid() };
       const r = await api.post<{ runId: string }>("/api/runs", body, { "Idempotency-Key": key.current.id });
@@ -121,6 +171,12 @@ export function TabularRunPanel({ projectId, graph, validation, runs, reloadRuns
             <button className="primary" disabled={busy || blocked} onClick={start} title={blocked ? "Fix the graph errors first" : "Save the project and execute the graph in a worker process"}>Run graph</button>
             <button disabled={!active || run?.status === "cancelling"} onClick={cancel}>Cancel</button>
           </div>
+          {graph.graphKind === "tabular" && (
+            <label className="small" title="Reuse a recorded node result when its operation, settings, inputs, implementation and environment are unchanged. Sources are always re-read.">
+              <input type="checkbox" checked={reuse} onChange={(e) => setReuse(e.target.checked)} /> Reuse unchanged node results (cache)
+            </label>
+          )}
+          {graph.graphKind === "tabular" && <CacheControls projectId={projectId} refresh={runs.map((r) => r.id + r.status).join(",")} />}
           {err && <div className="error pre">{err}</div>}
           <h4>Problems ({diags.filter((d) => d.severity === "error").length} errors, {diags.filter((d) => d.severity === "warning").length} warnings)</h4>
           {diags.length === 0 && <div className="muted small">{graph.graphKind === "domain" ? "No contract violations. Training and evaluation use separate fixture partitions." : "No problems. Fit nodes read only the training partition."}</div>}
@@ -156,7 +212,8 @@ export function TabularRunPanel({ projectId, graph, validation, runs, reloadRuns
               {run.config.seed != null && <div className="small"><b>run seed</b> {run.config.seed} (replaces the seed of every node that has one)</div>}
               {run.config.trial && <div className="small"><b>study trial</b> {String((run.config.trial as any).studyId)} / {String((run.config.trial as any).trialId)} · attempt {String((run.config.trial as any).attempt)} · seed {String((run.config.trial as any).seed ?? "—")} · fold {String((run.config.trial as any).fold ?? "—")}</div>}
               {run.splits.map((s) => <div key={s.node} className="small"><b>split</b> {s.node}: seed {s.seed}, validation fraction {s.validationFraction}, {s.nTrain} train / {s.nValidation} validation{s.stratifyBy ? `, stratified by ${s.stratifyBy}` : ""}{s.groupBy ? `, grouped by ${s.groupBy}` : ""}</div>)}
-              <div className="nodes small">{run.nodes.map((n) => <span key={n.node} className={`runmark ${n.status}`} onClick={() => onSelectNode(n.node)} title={n.status}>{n.node}</span>)}</div>
+              <div className="nodes small">{run.nodes.map((n) => <span key={n.node} className={`runmark ${n.status}`} onClick={() => onSelectNode(n.node)} title={n.cache ? `${n.status} · cache ${n.cache.status}: ${n.cache.reason}` : n.status}>{n.node}{n.cache && n.cache.status !== "bypass" ? <span className={`badge cache-${n.cache.status}`}>{n.cache.status === "hit" ? "reused" : "ran"}</span> : null}</span>)}</div>
+              {run.cache?.mode === "reuse" && <CacheTable run={run} onSelectNode={onSelectNode} />}
               {run.status === "completed" && exports.map((n) => (
                 <div key={n.id}><a href={`/api/runs/${run.id}/tables/${n.id}/predictions.csv`} download>Download predictions CSV ({n.id})</a></div>
               ))}

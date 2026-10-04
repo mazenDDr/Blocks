@@ -13,6 +13,7 @@ import { RLWorkspace } from "./components/rl/RLWorkspace";
 import { GraphContext } from "./components/UnsupViews";
 import { AttentionWorkspace } from "./components/Attention";
 import { CodeBlockEditor } from "./components/CodeBlockEditor";
+import { RepoImport } from "./components/RepoImport";
 import { DataWorkspace } from "./components/DataWorkspace";
 import { DebuggerWorkspace } from "./components/Debugger";
 import { Experiments } from "./components/Experiments";
@@ -92,6 +93,7 @@ function Workbench() {
   const [expanded, setExpanded] = useState<string[]>([]);
   const [leftTab, setLeftTab] = useState<"Blocks" | "Modules">("Blocks");
   const [codeEdit, setCodeEdit] = useState<{ id: string; version: string } | null>(null);
+  const [repoImport, setRepoImport] = useState(false);
   const [debugRun, setDebugRun] = useState<string | null>(null);
   const { fitView } = useReactFlow();
 
@@ -567,7 +569,7 @@ function Workbench() {
         )}
         {(tabular || leftTab === "Blocks") ? <Library ops={ops.filter((o) => o.graphKind === graph.graphKind)} onAdd={addBlock} />
           : <ModuleLibrary graph={graph} inModule={!!def} onAddInstance={addInstance} onOpen={(m) => openModule(m, "")} onNew={createModule} onImport={importModule} onRemove={removeModule}
-            onAddCodeNode={addCodeNode} onEditCode={(d) => setCodeEdit({ id: d.id, version: d.version })} onNewCode={createCode} onImportCode={importCode} usedModules={usedModules(graph)} setMessage={setMessage} />}
+            onAddCodeNode={addCodeNode} onEditCode={(d) => setCodeEdit({ id: d.id, version: d.version })} onNewCode={createCode} onImportCode={importCode} onRepoImport={() => setRepoImport(true)} usedModules={usedModules(graph)} setMessage={setMessage} />}
       </aside>
 
       <main className="center">
@@ -632,6 +634,7 @@ function Workbench() {
             if (d.id !== codeEdit.id || d.version !== codeEdit.version) setCodeEdit({ id: d.id, version: d.version });
           }} />
       )}
+      {repoImport && <RepoImport setMessage={setMessage} onClose={() => setRepoImport(false)} onImport={(d) => { importCode(d); setCodeEdit({ id: d.id, version: d.version }); }} />}
       {showCode && <ExportView projectId={projectId} graph={graph} initialBackend={graph.backend} onClose={() => setShowCode(false)} />}
     </div>
     </GraphContext.Provider>

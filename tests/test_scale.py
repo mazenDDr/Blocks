@@ -279,7 +279,10 @@ def test_acceptance_checklist_covers_all_scenarios_and_has_real_references():
         assert re.search(r'\| '+r['id']+r' \| '+re.escape(r['scenario'])+r' \|',spec)
         assert r['status'] in ('bounded evidence','not implemented') and r['scope'] and r['evidence']
         for path in r['evidence']:assert (ROOT/path).exists(),path
-    assert all(r['status']=='not implemented' for r in data['rows'] if r['id'] in ('A09','A44'))
+    a09=next(r for r in data['rows'] if r['id']=='A09')  # implemented for tabular graphs by the node cache (ADR 0015)
+    assert a09['status']=='bounded evidence' and 'tests/test_node_cache.py' in a09['evidence']
+    a44=next(r for r in data['rows'] if r['id']=='A44')  # pinned repository browse/import (ADR 0016)
+    assert a44['status']=='bounded evidence' and 'tests/test_repos.py' in a44['evidence'] and 'not implemented' in a44['scope']
 
 def test_a64_connected_postgres_comparison_inspection_conclusion_and_real_serving(tmp_path):
     import importlib.util

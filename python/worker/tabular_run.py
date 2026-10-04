@@ -6,7 +6,7 @@ value kind, graph hash and, for tables, partition and split lineage; the graph i
 from __future__ import annotations
 
 import traceback
-from typing import Callable
+from typing import Callable, Literal
 
 from pydantic import BaseModel
 
@@ -30,6 +30,8 @@ class TabularRunConfig(BaseModel):
     source_pins: dict[str, str] = {}
     # Study identity (study, trial, attempt, seed, fold) when the run is a sweep trial; informational, never changes computation.
     trial: dict | None = None
+    # "reuse": look up and record dependency-scoped node results (tabular.cache, A09). "off" (default): every node executes, nothing is recorded.
+    cache: Literal["off", "reuse"] = "off"
 
 
 def apply_run_seed(graph: Graph, seed: int | None) -> tuple[Graph, list[dict]]:
@@ -89,7 +91,11 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
             torch.set_num_threads(1)  # these tiny CPU examples are bounded to one intra-op thread
             from importlib.metadata import version
             libraries.update({name: version(name) for name in ("torch", "torchvision", "torchaudio", "tokenizers", "seqeval", "torchmetrics", "pycocotools")})
-        em.emit("run_started", kind=graph.graphKind, order=report.order, libraries=libraries,
+        node_cache = None
+        if cfg.cache == "reuse":
+            from tabular.cache import NodeCache
+            node_cache = NodeCache(store, cfg.project_id, libraries, graph.graphKind)
+        em.emit("run_started", kind=graph.graphKind, order=report.order, libraries=libraries, cache=node_cache.describe() if node_cache else {"mode": "off"},
                 seed=cfg.seed, seedApplied=seed_applied, sourcePins=cfg.source_pins, trial=cfg.trial,
                 plugins={k: {f: v[f] for f in ("name", "version", "sha256")} for k, v in LOADED.items() if any(n.type == k for n in graph.nodes)})
 
@@ -106,7 +112,8 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
                 arts.append({"port": port, "sha256": a["sha256"], "size": a["size"], **{k: meta[k] for k in ("valueKind",)}})
             # the summary (profile, fitted state, metrics, ...) is its own artifact so large ones stay out of the event stream
             s = store.add_artifact(run_id, "node_summary", dumps(o.summary).encode(), "complete", None, {"node": o.node, "type": o.type, "graph_hash": graph_hash})
-            em.emit("node_finished", o.node, type=o.type, outputs=arts, summarySha256=s["sha256"], rows={p: len(v.df) for p, v in o.outs.items() if isinstance(v, Table)})
+            extra = {"cache": o.cache} if o.cache is not None else {}
+            em.emit("node_finished", o.node, type=o.type, outputs=arts, summarySha256=s["sha256"], rows={p: len(v.df) for p, v in o.outs.items() if isinstance(v, Table)}, **extra)
             if o.summary.get("snapshotId"):
                 sn = o.summary["snapshot"]
                 em.emit("source_snapshot_recorded", o.node, connector=o.summary["connector"], mode=o.summary["mode"], snapshotId=o.summary["snapshotId"],
@@ -119,7 +126,7 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
 
         try:
             outcomes = run_graph(exec_graph, report, run_id=run_id, graph_hash=graph_hash, on_start=on_start, on_finish=on_finish, should_cancel=should_cancel,
-                                 store=store, pins=cfg.source_pins)
+                                 store=store, pins=cfg.source_pins, cache=node_cache)
             if graph.graphKind == "tabular":
                 from production.pipeline import capture_pipelines
                 capture_pipelines(store, exec_graph, report, outcomes, run_id)

@@ -31,7 +31,8 @@ def main() -> None:
     pip = [sys.executable, "-m", "pip"]
     subprocess.run([*pip, "install", "fasteners>=0.19", "platformdirs>=4.0.0", "psutil>=5.9.0"], check=True)
     with tempfile.TemporaryDirectory() as d:
-        subprocess.run([*pip, "download", f"pgserver=={VERSION}", "--no-deps", "--only-binary=:all:", "--python-version", "3.12", "--platform", tag, "-d", d], check=True)
+        subprocess.run([*pip, "download", f"pgserver=={VERSION}", "--no-deps", "--only-binary=:all:", "--python-version", "3.12",
+                        *[a for t in tag.split(".") for a in ("--platform", t)], "-d", d], check=True)  # a compound wheel tag is one --platform per part
         whl = next(Path(d).glob("pgserver-*.whl"))
         retagged = whl.with_name(whl.name.replace("cp312-cp312", "py3-none"))
         shutil.move(whl, retagged)
