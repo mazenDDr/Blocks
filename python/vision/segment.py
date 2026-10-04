@@ -5,6 +5,8 @@ torchmetrics in the tests. Detection metrics (mAP) come from torchmetrics' MeanA
 (CONNECTIVITY) with the mean class probability over the component as its score: the model is a segmenter, so these are derived detections and are labelled so."""
 from __future__ import annotations
 
+from domain.checkpoints import restore, training_state
+
 import time
 from typing import Any
 
@@ -110,7 +112,7 @@ def stack(samples: list[VisionSample]) -> tuple[torch.Tensor, torch.Tensor]:
 
 
 def train_and_eval(samples: list[VisionSample], spec: VisionSpec, *, epochs: int, lr: float, width: int, batch_size: int, seed: int, val_fraction: float,
-                   n_inspect: int) -> dict[str, Any]:
+                   n_inspect: int, resume_state: dict | None = None) -> dict[str, Any]:
     h, w = samples[0].size
     if any(s.size != (h, w) for s in samples):
         raise ValueError(f"all images must share one size to batch; got {sorted({s.size for s in samples})}")
@@ -123,9 +125,9 @@ def train_and_eval(samples: list[VisionSample], spec: VisionSpec, *, epochs: int
     xva, yva = stack([samples[i] for i in va])
     opt = torch.optim.Adam(model.parameters(), lr=lr)
     g = torch.Generator().manual_seed(seed)
-    curve = []
+    start, curve = restore(model, opt, g, resume_state, epochs)
     t0 = time.time()
-    for ep in range(epochs):
+    for ep in range(start, epochs):
         model.train()
         perm = torch.randperm(len(tr), generator=g)
         tot = 0.0
@@ -167,4 +169,4 @@ def train_and_eval(samples: list[VisionSample], spec: VisionSpec, *, epochs: int
                      "gtKeypoints": None if s.keypoints is None else [[[float(x), float(y), int(v)] for (x, y), v in zip(k, vv)] for k, vv in zip(s.keypoints, s.visibility)],
                      "iou": sm["iou"], "pixelAccuracy": sm["pixelAccuracy"], "uncertainPixels": int(((prob[j].max(0).values < 0.6)).sum())})
     return {"nParams": n_params, "trainIdx": tr, "valIdx": va, "curve": curve, "seg": seg, "det": det, "records": recs, "seconds": time.time() - t0,
-            "model": model, "nTrain": len(tr), "nVal": len(va)}
+            "model": model, "nTrain": len(tr), "nVal": len(va), "trainingState": training_state(model, opt, g, epochs, curve)}

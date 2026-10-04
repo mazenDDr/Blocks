@@ -264,3 +264,20 @@ The worker supports a native tabular CSV/preprocessing/linear/logistic/metrics s
 Reusable packages carry graph/UI and exact operation requirements, plus optional explicitly selected CSV bytes. **Import and open package** preserves unknown operations and blocks execution for missing/different dependencies; it never installs or runs Python. Credentials and run artifacts are omitted; external sources still require configuration. For an SDK package, read its manifest/docs/source, run conformance on trusted code, then explicitly configure `VOID_PLUGIN_MANIFESTS` when starting the control service and workers. Conformance checks the declared numerical fixtures and contracts; it is not a security sandbox. The shipped `offset` package demonstrates a pure declared pandas transformation.
 
 On **Graph**, expand **Keyboard graph tools** to select nodes/wires and connect ports using Tab and native selects. Settings forms, Run and inspection tabs use ordinary focusable controls, with visible focus. The reference journey and integration flows are recorded in HANDOFF; broad screen-reader certification is not claimed. See ADR 0013, CAPABILITIES and ACCEPTANCE for all remaining vision gaps.
+
+## Saved domain models and local inference
+
+New completed vision, NLP and speech runs save native model/Adam/RNG state and pinned preprocessing. In **Domain workspace**, **Saved model and local inference** downloads the checkpoint and manifest, loads a labelled SYNTHETIC held-out input and predicts with the saved model. Prediction does not train or read the original dataset.
+
+**Prepare checkpoint continuation** edits the draft to reference the selected model and a higher total epoch count. Use **Run graph** to create a child run. The prepared data, split, fitted tokenizer, model/optimizer settings and CPU thread count must match; incompatible changes are refused. The parent run/model remains immutable. NLP continuation reloads the exact saved tokenizer rather than retraining its vocabulary.
+
+Commands actually run for the three-domain HTTP example:
+
+```bash
+VOID_WORKBENCH=/private/tmp/void-domain-checkpoint-smoke .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8769
+VOID_API=http://127.0.0.1:8769 pnpm -C apps/editor dev --host 127.0.0.1 --port 5294
+.venv/bin/python examples/domain_checkpoint_journey.py --base http://127.0.0.1:8769
+.venv/bin/pytest -q tests/test_domain_checkpoints.py --tb=short -o faulthandler_timeout=240
+```
+
+Vision inference expects base64 RGB PNG **after explicit geometry** at the pinned size; NLP expects original text; speech expects finite normalized PCM channels with the pinned sample rate. These are bounded local CPU inference endpoints, independent of the tabular production release/monitoring adapter. Existing older domain runs have no checkpoint and require a new training run. See ADR 0014 and HANDOFF for verification and remaining limits.

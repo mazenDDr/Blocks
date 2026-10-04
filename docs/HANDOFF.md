@@ -7,7 +7,7 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0013`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0014`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -42,7 +42,8 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | 6a Keras/TensorFlow and JAX backends, compatibility reports, coverage ledger, benchmarks | done, verified | 503ff9c |
 | 6b Vision detection/segmentation, NLP, speech workflows | done, verified (bounded scope; see §7) | 927e9c3 |
 | 7 Registry and production investigation | done, verified (bounded local tabular adapter; see §8) | 302cc50 |
-| 8 Scale, integrations, community | done, verified (bounded local CPU/offline scope; see §9) | this release; `git log -1` |
+| 8 Scale, integrations, community | done, verified (bounded local CPU/offline scope; see §9) | cc8b4d0 |
+| Domain checkpoint/inference continuation | done, verified (native CPU completed-epoch continuation/local inference; see §10) | this release; `git log -1` |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -51,6 +52,8 @@ After 6b: `pytest -q -o faulthandler_timeout=240` → **864 passed, 1 skipped, 6
 After 7: full suite → **894 passed, 1 skipped, 6 deselected**; live → **6 passed, 895 deselected**. Editor build/TypeScript, real HTTP CLI, curl readiness and installed Chrome train/register/serve/replay/labels/load/monitor/rollout/rollback journeys passed. See §8.
 
 After 8: full suite → **919 passed, 1 skipped, 6 deselected**; live → **6 passed, 920 deselected**. Editor build/TypeScript, curl readiness, real native worker/tracker/connected CLI journeys, and keyboard-only installed Chrome inspection/integration journeys passed. See §9.
+
+After domain checkpoints/inference: full suite → **931 passed, 1 skipped, 6 deselected**; live → **6 passed, 932 deselected**. Editor build/TypeScript, native HTTP CLI, curl and installed Chrome all-three-domain inference/continuation journeys passed. See §10.
 
 ### Check for in-progress work first
 Run `git status`. If there are uncommitted files, a previous session was cut off mid-milestone: inspect them with `git diff`, do **not** discard them, finish that milestone, verify (§4), then commit.
@@ -65,7 +68,7 @@ Run `git status`. If there are uncommitted files, a previous session was cut off
   - DVC: the `dvc` package
 - **Ollama:** running at `localhost:11434` with `qwen3.5:0.8b/2b/4b`, `gemma4:12b` and `nomic-embed-text`. Live tests are marked `@pytest.mark.live` and deselected by default.
 - **API keys:** none. The Anthropic adapter exists, but its live test skips.
-- **Full suite:** about 4–5 minutes with domain workflows. In Codex's filesystem/network sandbox, local service tests may fail or skip and worker tests may hang: run the required suite with local service access, not inside that restricted sandbox.
+- **Full suite:** about 6 minutes with domain/checkpoint workflows. In Codex's filesystem/network sandbox, local service tests may fail or skip and worker tests may hang: run the required suite with local service access, not inside that restricted sandbox.
 
 ## 4. Working rules (non-negotiable, from VISION §26)
 
@@ -266,6 +269,48 @@ An intention without a recorded worker run requires investigation/new identity r
 
 ### Remaining work for Claude
 
-Read ADR 0013 and ACCEPTANCE before extending this milestone. Native tabular debugger interventions inside fitted sklearn operations are absent; the connected researcher evidence chain is bounded, and broad external-user onboarding/screen-reader certification remains untested. Additional registry-serving families require actually persisted model/tokenizer/transforms/optimizer/environment artifacts first (see §7/§8), not an adapter label alone. Domain checkpoints/exact resume/export, cross-host/GPU operation and online tracker sharing remain explicit future work. A09 numerical dependency caches and A44 repository source-code import remain gaps. Model inspection opened before its checkpoint appears can retain “not recorded” until the tab/context is reopened; the final keyboard proof waits for terminal training before inspecting real weights. Do not fabricate values to cover that existing refresh limitation.
+Read ADR 0013/0014 and ACCEPTANCE before extending this milestone. Domain state persistence, completed-epoch child continuation and separate local native inference/export subsequently shipped in §10. Native tabular debugger interventions, broad external-user onboarding/accessibility, cross-host/GPU operation, online tracker sharing, A09 numerical dependency caches and A44 repository source-code import remain gaps. General production registry/release adapters for domain/CNN/agent/RL/Keras/JAX remain unavailable. Model inspection opened before its checkpoint appears can retain “not recorded” until the tab/context is reopened; do not fabricate values to cover that existing refresh limitation.
 
 Next agent: inspect `git status`, `git log -1` and `git remote -v`; preserve new user work. Select any next scope from the actual acceptance gaps and latest user direction rather than rebuilding completed milestones. Continue alone, keep this handoff current, run §4 verification for substantive changes, commit verified work and push to the private origin. Never stop the user's port 8000 service; close every temporary server/browser you start.
+
+## 10. Domain checkpoints and local inference — Codex, 2026-10-04
+
+The user requested continuation after the remaining-gap review. Starting point clean, pushed `cc8b4d0`. Worked **without subagents**; keep that preference, preserve port 8000, and continue committing/pushing verified implementation and handoff updates. This completes a bounded follow-on release: persistent native domain models, exact completed-epoch CPU child continuation, checkpoint/manifest export and source-independent local inference. It does not complete domain production registry/releases or the entire VISION.
+
+### Implementation and invariants
+
+- `python/domain/checkpoints.py`: actual native model/Adam/shuffle-generator/PyTorch-RNG/curve/epoch state dictionaries. Speech includes train-only per-mel mean/std. Manifests pin original source, prepared-data/training signature, architecture/preprocessing/tokenizer/labels, native Python/library versions, implementation file hashes, model/run/graph/node/parent identities and a recorded held-out input reference. Max checkpoint 32 MiB. SHA, completed source run and internal run/node artifact membership checks precede loading; explicit `torch.load(..., weights_only=True, map_location="cpu")`, no whole-module pickle, uploads or arbitrary paths. Nonfinite weights are refused.
+- `python/vision/segment.py`, `nlp/model.py`, `speech/ctc.py` extend the existing trainers, preserving native algorithms. Restoring optimizer, shuffle/RNG and prior curve starts at the completed epoch; epochs is the **total target**, not additional epochs. `domain/{vision_ops,nlp_ops,speech_ops}.py` records checkpoints during real worker execution. `resume_model_id` references the parent manifest. Prepared tensors/labels/source/transforms, model/optimizer/split settings and CPU thread count must match. Parents remain immutable; continuation creates a new run with recorded parent. Failure/cancel/mid-batch resume is not offered.
+- NLP tokenizer node adds `fitted_model_id` for explicit reuse of authoritative tokenizer JSON. Native vocabulary tie-breaking can differ on refit, so continuation reloads the parent's fitted tokenizer and verifies corpus and tokenizer/split settings. Tagger checks actual prepared IDs/labels/words and vocabulary identity. No fitted vocabulary is reconstructed from validation text.
+- `python/domain/inference.py`, `services/control/domain_api.py` and app registration: `/api/domain/models`, `/models/{id}`, `/checkpoint`, `/example`, `/predict`. Only recorded completed internal models can run. Inference never rereads source files, fits, trains or appends run events/artifacts; unavailable model identities stay visible with specific errors. Native architecture is reconstructed locally from the pinned manifest and strict state dict. Original run/source/graph/node/checkpoint/epoch provenance accompanies predictions.
+- Vision requests are RGB PNG **at the pinned post-geometry size**, max 512 per dimension, with native saved numerical normalization; geometry is explicit, never implicitly resized/cropped/random-flipped. Outputs are class masks and honestly labelled derived-component detections. NLP requests are original nonempty text ≤4000 characters; saved tokenizer/truncation/attention/label/readout semantics retain character spans and report invalid predicted IOB2 transitions. Speech requests are finite normalized PCM in [-1,1], 1–4 equal-length channels, exact pinned rate, ≤32,000 samples/channel and ≤4096 feature frames; mean-to-mono/pinned framing/mel/saved train-only normalization/greedy decoding remain explicit. Onsets are not forced alignment. Request batches 1–4 within 1.5 MB decoded JSON; max two concurrent native requests. These are input/admission bounds, not wall-time or security guarantees.
+- `apps/editor/src/components/DomainModels.tsx`, `DomainWorkspace.tsx` and scoped styles: real checkpoint/manifest links, additional-epoch draft preparation, loaded recorded SYNTHETIC held-out input, editable inference JSON and native prediction. Continuation changes the draft; Run creates the child. Vision mask, NLP original-word/span/label table and speech text/onsets are readable; full records/provenance are expandable with bounded display height. NLP text is labelled input, not generated text.
+- `examples/domain_checkpoint_journey.py`: actual three-family HTTP training/export/predict/continuation/parent-immutability workflow. `tests/test_domain_checkpoints.py`: 12 parameterized cases across all three families, native recorded prediction/forward agreement, batch agreement, restart with absent sources, exact continued vs uninterrupted weights/Adam/RNG/curves, stable input/hash/trust/environment/source/config/epoch refusals and read-only events/artifacts. No existing tests were weakened.
+- ADR **0014**, CAPABILITIES, README, PLAN, ACCEPTANCE JSON/Markdown and this handoff updated. Old contradictory capability exclusions (local trackers/packages, tensor primitives, connected sources, supported checkpoint resume) were consolidated; later bounded milestone sections remain authoritative. A56–A58 now reference native checkpoint evidence. Coverage is current. No new native libraries installed; main and tracker environments remain separate.
+
+### Final verification and concrete evidence
+
+- `.venv/bin/pytest -q tests/test_domain_checkpoints.py --tb=short -o faulthandler_timeout=240`: **12 passed, 60.88 s** after checkpoint/example/trust updates. Initial native run also passed (59.44 s). A subsequent stricter-membership test-fixture error was corrected by providing the correct node metadata, preserving the intended environment-refusal assertion. Full suite below includes final batch assertions.
+- `.venv/bin/pytest -q -o faulthandler_timeout=240`: **931 passed, 1 skipped, 6 deselected, 1833 warnings**, **375.04 s (6:15)**, exit 0. Existing skip is Anthropic without key; native TensorFlow/gast/Torch warnings unchanged. Log `/private/tmp/void-domain-checkpoint-pytest.log` is temporary evidence.
+- `.venv/bin/pytest -q -m live`: **6 passed, 932 deselected**, **16.36 s**, exit 0, actual Ollama. Log `/private/tmp/void-domain-checkpoint-live.log`.
+- `pnpm -C apps/editor build`: **248 modules**, exit 0; `pnpm -C apps/editor exec tsc --noEmit`: exit 0 after final UI changes. Existing Vite large-chunk warning remains. `.venv/bin/python -m backends.coverage --write` and `--check`: current; `git diff --check`: passed.
+- `.venv/bin/python examples/domain_checkpoint_journey.py --base http://127.0.0.1:8769`: **exit 0**, all three real native CPU families, epochs 2→4, exported SHA checks and unchanged parent predictions. These short runs test persistence/continuity on SYNTHETIC fixtures, not useful model quality or real-world performance. Output `/private/tmp/void-domain-checkpoint-cli.json` is temporary. Source files are only needed for training/continuation, not saved-model inference.
+
+| Family | Parent run | Model manifest ID | Child run | Checkpoint export bytes |
+|---|---|---|---|---|
+| Vision | b07770d2d577 | 9ca38791fe3d67efc4a50ac8f5548d6077d1fb5738c68c54fbc2f7a02add5995 | 46745fa45baf | 43,533 |
+| NLP | d1520249e668 | 69a3792f6c7a739d8d20e7dfb7ae647c2f01fd97ff593bb366a911acee404a7c | ac2ed6d9fee6 | 55,257 |
+| Speech | 048b162c8e0d | cb666f6d0303b19e50e766fa04fa463ffbd9f0e6cda0a3d57e16c143d7ff1f98 | 50775f7515a6 | 48,071 |
+
+- Curl `GET http://127.0.0.1:8769/api/domain/models/9ca38791fe3d67efc4a50ac8f5548d6077d1fb5738c68c54fbc2f7a02add5995`: native manifest **void-domain-model/1**, family vision, parent run above, epoch 2, checkpoint **d43f43b8d8f4eb7837126682a2880544792d934d682c58741d81241c124e9eb3**. Unknown identity returns 422. Real prediction HTTP is verified by CLI/Chrome/tests.
+- Installed Chrome through temporary `/private/tmp/void-domain-checkpoint-browser.mjs`: all three saved projects → selected completed parent → load held-out input → predict with saved model → visible mask/span-label table/greedy output with exact provenance → prepare draft continuation → verify parent manifest and total epoch 4 in native settings → Run → completed child checkpoint. **All passed, no browser runtime errors.** Temporary script load timing and JavaScript argument-scoping issues were fixed; no app behavior was bypassed. Final screenshot/log paths `/private/tmp/void-domain-checkpoint-{vision,nlp,speech}.png` and `void-domain-checkpoint-browser.log`; snapshots inspected. These temporary files need not survive machine cleanup.
+
+### Cleanup, commit and next scope
+
+Temporary backend **PID 56926 / port 8769** and editor **PID 56959 / port 5294** were stopped with SIGTERM and confirmed absent with `ps`. Browser closed in `finally`; no separate worker HTTP server was started. Tests finished their spawned native workers. The user's port 8000 was left untouched. Isolated workbench `/private/tmp/void-domain-checkpoint-smoke` contains native evidence. Final Chrome continuation child runs: vision `34387dc3d5b1`, NLP `0f4bfbd22bc0`, speech `6007b9f003f7`. An additional final NLP browser check confirmed the original text is labelled correctly, with zero runtime errors.
+
+This release is committed on `master` and pushed to the existing private origin together with this handoff; find its exact commit using `git log -1`. The final report records the verified pushed commit. Keep subsequent work documented and pushed so another agent can resume from Git rather than temporary local evidence.
+
+Next scope: integrate supported domain models into real registry/release/trace/monitoring contracts, expand dataset importers, or improve editor/inspection/worker recovery per user direction. This release is **not** domain registry rollout/production monitoring, intermediate checkpoint cadence, mid-node pause/cancel/recovery, portable checkpoint upload/import/migration, raw-image geometry inference, GPU/cross-version exactness, or cloud/team deployment. Models pin the implementation/environment; editing those files can intentionally make earlier manifests unavailable until migration/rerun. No cost, model-quality or security guarantee follows from the small local fixture proof. A09/A44 and the other ACCEPTANCE/CAPABILITIES gaps remain.
+
+Continue without subagents. Read ADR 0014 before extending checkpoint semantics; inspect Git/status/remote and preserve user work. Update handoff/capabilities, verify §4, commit and push to the existing private origin. Never stop port 8000, and stop every temporary server/browser you start.

@@ -592,30 +592,33 @@
       "id": "A56",
       "scenario": "Transform a labeled vision sample",
       "status": "bounded evidence",
-      "scope": "Native torchvision typed joint transforms and synthetic segmentation/derived detection metrics; general COCO importer/pretrained detector unsupported.",
+      "scope": "Native torchvision typed joint transforms and synthetic segmentation/derived detection metrics; general COCO importer/pretrained detector unsupported. Native checkpoints, exact pinned CPU epoch continuation and separate local inference are supported; general production releases remain unavailable.",
       "evidence": [
         "tests/test_domain_vision.py",
-        "tests/test_domain_api.py"
+        "tests/test_domain_api.py",
+        "tests/test_domain_checkpoints.py"
       ]
     },
     {
       "id": "A57",
       "scenario": "Inspect an audio workflow",
       "status": "bounded evidence",
-      "scope": "Exact teaching signal, native torchaudio features, synthetic tone CTC/greedy decoding and edit alignment; no real speech benchmark.",
+      "scope": "Exact teaching signal, native torchaudio features, synthetic tone CTC/greedy decoding and edit alignment; no real speech benchmark. Native checkpoints, exact pinned CPU epoch continuation and separate local inference are supported; general production releases remain unavailable.",
       "evidence": [
         "tests/test_domain_speech.py",
-        "tests/test_domain_api.py"
+        "tests/test_domain_api.py",
+        "tests/test_domain_checkpoints.py"
       ]
     },
     {
       "id": "A58",
       "scenario": "Inspect an NLP token-label workflow",
       "status": "bounded evidence",
-      "scope": "Native offline WordPiece, spans/masks/BIO alignment and seqeval-compatible synthetic token classification.",
+      "scope": "Native offline WordPiece, spans/masks/BIO alignment and seqeval-compatible synthetic token classification. Native checkpoints, exact pinned CPU epoch continuation and separate local inference are supported; general production releases remain unavailable.",
       "evidence": [
         "tests/test_domain_nlp.py",
-        "tests/test_domain_api.py"
+        "tests/test_domain_api.py",
+        "tests/test_domain_checkpoints.py"
       ]
     },
     {

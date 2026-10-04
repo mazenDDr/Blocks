@@ -1,6 +1,8 @@
 """A small token tagger: embedding -> bidirectional GRU over the PACKED (unpadded) sequence -> linear. Padding never reaches the recurrent state, so a sentence gets the same logits alone or in a padded batch."""
 from __future__ import annotations
 
+from domain.checkpoints import restore, training_state
+
 import time
 from typing import Any
 
@@ -50,7 +52,7 @@ def predict_words(model: Tagger, exs: list[Example], id2tag: list[str], pad_id: 
 
 
 def train_and_eval(exs: list[Example], tok: Tokenizer, id2tag: list[str], *, epochs: int, lr: float, hidden: int, emb: int, batch_size: int, seed: int, ignore_index: int,
-                   tr: list[int], va: list[int], n_inspect: int, scheme_mode: str) -> dict[str, Any]:
+                   tr: list[int], va: list[int], n_inspect: int, scheme_mode: str, resume_state: dict | None = None) -> dict[str, Any]:
     pad_id = tok.token_to_id("[PAD]")
     torch.manual_seed(seed)
     model = Tagger(tok.get_vocab_size(), len(id2tag), pad_id, emb, hidden)
@@ -60,8 +62,9 @@ def train_and_eval(exs: list[Example], tok: Tokenizer, id2tag: list[str], *, epo
     trx = [exs[i] for i in tr]
     vax = [exs[i] for i in va]
     vids, vmask, vlab = batch_tensors(vax, pad_id, ignore_index)
-    curve, t0 = [], time.time()
-    for ep in range(epochs):
+    start, curve = restore(model, opt, g, resume_state, epochs)
+    t0 = time.time()
+    for ep in range(start, epochs):
         model.train()
         perm = torch.randperm(len(trx), generator=g).tolist()
         tot, cnt = 0.0, 0
@@ -97,4 +100,4 @@ def train_and_eval(exs: list[Example], tok: Tokenizer, id2tag: list[str], *, epo
                      "predTokens": [id2tag[int(logits[j][p].argmax())] for p in range(len(e.ids))],
                      "words": [{**w, "pred": pr} for w, pr in zip(e.words, pred[j])], "trainIndexInCorpus": va[j]})
     return {"nParams": n_params, "curve": curve, "spanMetrics": res, "strictMetrics": strict, "tokenAccuracy": tok_ok / max(tok_n, 1), "tokenCount": tok_n, "invalidPredictedTransitions": invalid_pred,
-            "records": recs, "seconds": time.time() - t0, "model": model, "goldWords": gold, "predWords": pred}
+            "records": recs, "seconds": time.time() - t0, "model": model, "goldWords": gold, "predWords": pred, "trainingState": training_state(model, opt, g, epochs, curve)}

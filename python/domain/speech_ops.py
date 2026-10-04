@@ -16,6 +16,7 @@ from speech import ctc as CT
 from speech import features as FE
 from tabular.core import ExecutionError, VType, resolve_path
 
+from . import checkpoints as CP
 from .core import AUDIO_BATCH, FEATURE_BATCH, SPEECH_REPORT, DomainOperation, fixture_path, peek_spec, r, sha256_file, value
 
 DEFAULT_NPZ = "examples/data/domain/synthetic_tones.npz"
@@ -211,6 +212,7 @@ class AudioFeatures(DomainOperation):
 
 # ================================================================================================ CTC
 class CTCConfig(StrictConfig):
+    resume_model_id: str | None = Field(None, pattern=r"^[0-9a-f]{64}$", description="Internal model manifest identity to resume at a completed epoch; epochs is the total target.")
     epochs: int = Field(60, ge=1, le=400)
     lr: float = Field(5e-3, gt=0)
     hidden: int = Field(48, ge=4, le=256)
@@ -240,9 +242,12 @@ class SpeechCTC(DomainOperation):
     def execute(self, cfg, ins, ctx):
         d = ins["features"]
         o = d.obj
+        signature = CP.fingerprint(cfg.model_dump(exclude={"epochs", "n_inspect", "resume_model_id"}),
+                                   {"data": d.data, "texts": o["texts"], "alphabet": o["alphabet"]}, o["feats"])
+        saved = CP.resume(ctx, cfg.resume_model_id, "speech", signature)
         try:
             res = CT.train_and_eval(o["feats"], o["texts"], o["alphabet"], epochs=cfg.epochs, lr=cfg.lr, hidden=cfg.hidden, batch_size=cfg.batch_size, seed=cfg.seed, val_fraction=cfg.val_fraction,
-                                    n_inspect=cfg.n_inspect, hop_seconds=o["cfg"].hop_length / o["sr"], reduction=cfg.reduction, zero_infinity=cfg.zero_infinity)
+                                    n_inspect=cfg.n_inspect, hop_seconds=o["cfg"].hop_length / o["sr"], reduction=cfg.reduction, zero_infinity=cfg.zero_infinity, resume_state=saved)
         except ValueError as e:
             if str(e).startswith("E_CTC_ALIGNMENT_INFEASIBLE:"):
                 raise ExecutionError("E_CTC_ALIGNMENT_INFEASIBLE", str(e).split(":", 1)[1]) from e
@@ -265,6 +270,12 @@ class SpeechCTC(DomainOperation):
                    "normalization": res["normalization"], "rates": {**rates, "provenance": "corpus-level: total edits / total reference length over the validation clips; CER counts the separator as a character, WER splits on it"},
                    "samples": recs, "split": {"seed": cfg.seed, "nVal": len(res["valIdx"]), "nTrain": len(res["trainIdx"]), "valIndices": res["valIdx"]}, "seconds": res["seconds"], "synthetic": True, "note": SYNTH,
                    "contract": d.data["contract"], "provenance": {"source": d.data.get("source"), "torch": torch.__version__, "model": "Conv1d(stride 2) -> BiGRU (packed) -> Linear; torch.nn.CTCLoss", "decoding": "greedy best path (argmax, collapse repeats, drop blanks)"}}
+        summary["checkpoint"] = CP.persist(ctx, "speech", signature, res["trainingState"],
+            {"architecture": {"n_mels": fc.n_mels, "vocab_with_blank": len(o["alphabet"]) + 1, "hidden": cfg.hidden},
+             "sampleRate": sr, "features": {k: v for k, v in fc.model_dump().items() if k in FE.FeatureConfig.model_fields},
+             "alphabet": o["alphabet"], "channels": d.data["contract"].get("channels", 1), "channelPolicy": "mean to mono", "blank": 0,
+             "normalization": "training-only per-mel mean/std in checkpoint", "decoding": "greedy; onsets are not forced alignment"},
+            d.data.get("source"), cfg.resume_model_id, {"samples": o["clips"][res["valIdx"][0]].wave.tolist(), "sampleRate": sr})
         return {"report": value(SPEECH_REPORT, {"metrics": {"cer": rates["cer"]["rate"], "wer": rates["wer"]["rate"]}, "nParams": res["nParams"]})}, summary
 
     def explain(self, cfg, inputs, outputs):

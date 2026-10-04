@@ -147,14 +147,14 @@ no pricing table, so cost is unknown (0 for local inference); there is no side-b
 document loaders read local UTF-8 text files only; the vector store is FAISS flat (no metadata filter inside the index); the Anthropic adapter has never made a live call here (no key); `local_hash` embeddings are lexical, not semantic; the preview recomputes policy -> prompt for the selected call
 (other nodes between the selection and the prompt are not re-run); forking copies a checkpoint to a new thread and starts the next run from the edited state; thread-level restore of a historical checkpoint into the same thread is not offered; a run on a very large state records previews of large values (hash + first 300 characters).
 
-## Not implemented
+## Remaining gaps (later milestone sections refine these bounds)
 
 - Connectors/studies (2b gaps): other databases, warehouses, GCS/Azure, document/vector stores, scientific formats, repositories and model registries; a private-network connector agent; cost/transfer-size estimates; incremental reads; writes/destinations;
   schema-aware SQL completion, query history, explain/cost; windows in the query builder; DVC private-remote authentication helper; parallel trials, quotas, pruning/early stopping, conditional search spaces, an ablation builder (replace/bypass/freeze/remove),
-  parallel-coordinate and parameter-importance views, smoothing/x-axis choices for metric curves, a research record sheet and report snapshots, tags/notes/search on runs, MLflow/W&B adapters.
-- Tabular: cross-validation (fitting inside each fold), search spaces, held-out test partition and its "final evaluation" designation, sample weights, target/feature roles on the source (done on the estimator),
-  Parquet/JSON sources, near-duplicate detection, stratified/temporal splits beyond stratify/group, feature construction, trees/forests/boosting/SVM/kNN/clustering/dimensionality reduction,
-  baseline-vs-alternative comparison on one partition definition, regression plane / projection views, streaming or sampled profiles for huge tables.
+  parallel-coordinate and parameter-importance views, smoothing/x-axis choices for metric curves, richer research record sheets/report snapshots and tags/notes/search on runs. Native local MLflow/W&B offline exports and linked conclusions now exist; see Milestone 8.
+- Tabular: general estimator-level cross-validation beyond the supported study fold trials, held-out test partition and its "final evaluation" designation, sample weights, target/feature roles on the source (done on the estimator),
+  Parquet/JSON sources, near-duplicate detection, stratified/temporal splits beyond stratify/group, feature construction, trees/forests/boosting/SVM/kNN (native clustering/decomposition is implemented in Milestone 5),
+  broader final-test comparison workflows beyond the supported pinned baseline/variant evidence, regression plane / projection views, streaming or sampled profiles for huge tables.
 - Statistics: descriptive-statistics block, parameter estimation, interval-estimation block, bootstrap/permutation tests, power analysis, multiple-comparison procedures, other distributions,
   special-function curves with singularities, generated samples, a two-sided tail rule on the generic tail block, the interactive "Explore" slider for the observed statistic, visual statistical programming (custom statistics from primitives).
 - Editor: layout is a left-to-right row layout, large graphs are small at the initial fit; no automated browser tests in the repo.
@@ -163,16 +163,14 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
 - Editor: undo/redo, copy/paste, grouping, auto-layout, comments, structured outline view, multi-select move as a unit,
   insertion into an existing connection, interactive convolution teaching mode (8.4), partial-weight transfer (8.5.6),
   resource estimates, "resume compatible checkpoint". Automated browser tests.
-- Pause/resume, exact resume from a checkpoint, heartbeats and leases; a run whose worker died abnormally stays in its
-  last state; cancel cannot terminate a worker that is stuck inside a batch.
+- General pause/heartbeats/leases and orphaned-worker recovery; supported model checkpoint resume and domain completed-epoch child continuation exist. Cancellation cannot forcibly terminate a native call stuck inside a batch.
 - Experiment board: tags, notes, search/filter of runs, smoothing, x-axes other than step (model graphs keep the pin + two-run compare; tabular/model sweeps have the Experiments board above).
 - Auth, multi-user; image-folder datasets are server-side folders (tabular graphs can read connected sources).
-- Dependency lock, data manifest, project bundle export (only graph + UI files are saved).
-- Milestone 8 and acceptance scenarios not listed as implemented; Milestone 7's bounded local adapter is documented below.
-- Broadcasting, ops beyond the 14 listed, dtype casts, multi-input/output training graphs, losses other than
-  CrossEntropy in the worker, schedulers, gradient clipping/accumulation, mixed precision, GPU.
-- Model/parameter policies (initialization, freezing, sharing, regularization), conv data type/device placement.
-- Data: image folders and (tabular graphs) local CSV files only.
+- Automatic installation/migration of exported environments and portable trained-artifact import. Inert graph/UI packages with exact operation requirements and optional CSV snapshots are implemented in Milestone 8; native domain checkpoint and manifest downloads are documented below.
+- Behaviors outside the documented bounds in the A01–A64 acceptance checklist; later Milestone 7/8 and domain checkpoint sections are authoritative for their implemented scope.
+- Broader multi-input/output training, optimizer/scheduler/precision/device workflows outside the supported PyTorch training procedure. Native tensor broadcasting/casts and composed custom losses exist; GPU and mixed precision remain unavailable.
+- Broader parameter initialization/regularization and device-placement policies beyond implemented sharing/freezing/procedure controls.
+- General domain dataset importers beyond the existing labelled fixture formats. Image folders, CSV and connected PostgreSQL/S3/DVC sources are already supported.
 - Loss and optimizer inspectors, response curves; optimizer state beyond checkpoints.
 - Serving/registry beyond the bounded native tabular adapter below; Keras/JAX worker training runs (see Milestone 6a: only forward, loss, gradients and one SGD step exist there).
 
@@ -292,3 +290,17 @@ See ADR 0013 and the complete [A01–A64 acceptance checklist](ACCEPTANCE.md). T
 Bounds: one owning control/worker process, loopback IPv4 HTTP only, 64 graph nodes/8 MiB CSV inputs/two worker jobs/12 MiB worker body/32 MiB imported artifacts. Per-export at most 32 explicitly selected numeric evaluation-summary artifacts; bridge subprocess timeout 90 s. Project packages at most 64 resources/8 MiB CSV bytes. Conformance checks declared pure-tabular fixtures in a 15 s subprocess; native Python is explicitly trusted, not sandboxed. Imported native pickles cannot be registered for serving as trusted local worker artifacts. Optional tracker dependencies use their own venv/lock. A package declares external data/native requirements and never installs them; freeform text is not automatically sanitized for arbitrary secrets.
 
 Not implemented: cross-host encrypted/authenticated worker transport, remote GPU/cloud provisioning, distributed training/scheduling, broader worker/serving/source adapter families, multi-agent RL, online MLflow/W&B account destinations or credential configuration, streaming/live offline export resume, full third-party SDK families/visualizer plugins, team collaboration/security, external-user onboarding, or complete assistive-technology certification. **A09 numerical dependency-cache invalidation** and **A44 pinned repository source-code browse/import** remain unavailable; current graph execution reruns supported graphs. No product-finished claim follows from bounded acceptance evidence.
+
+## Domain checkpoints and local inference (follow-on release)
+
+See ADR 0014. New completed TinyFCN/BiGRU/CTC runs persist actual native weights, Adam state, RNG/shuffle state, epoch and curve; speech persists train-only mel mean/std and NLP pins the fitted tokenizer JSON. Older runs require rerunning training.
+
+| Capability | Where | Verification |
+|---|---|---|
+| Hash-verified internal state dictionaries and pinned model/preprocessing/environment/code manifests; native checkpoint export | `domain/checkpoints.py`, `control/domain_api.py` | `test_domain_checkpoints.py`: native recorded prediction agreement, SHA/membership/environment refusals |
+| Child run continuation at completed epochs with identical prepared data, tokenizer, split/config and CPU threads | native domain trainers/operations | resumed 2→4 vs uninterrupted 4: exact weights, Adam tensors, RNG and learning curves, all three families |
+| Actual local inference without source files, refitting or training; read-only run evidence | `domain/inference.py`, domain API | control-service restart/source absence, native forward comparisons, batch agreement, no event/artifact changes |
+| Typed RGB post-geometry image / original text / normalized audio requests, pinned tokenizer/features/normalization/labels/decoding and prediction provenance | domain API | contract/rate/batch/input refusals and real HTTP CLI |
+| Working domain workspace download/manifest/continuation/input/prediction controls and readable outputs | `DomainModels.tsx` | editor build/TypeScript and installed Chrome three-domain journey in HANDOFF |
+
+Limits: CPU and completed-epoch continuation only, local owning control process, two active inference requests and batches up to four within 1.5 MB decoded JSON. Vision expects the already geometrically prepared RGB size (max 512 each dimension); speech accepts 1–4 normalized PCM channels, exact pinned rate, ≤32,000 samples/channel and ≤4096 feature frames. These native prediction endpoints are separate from the tabular production registry/release system. Domain registry rollout/monitoring, general datasets, portable checkpoint upload/import, mid-node recovery/cancellation and GPU/cross-version exact resume remain unavailable. Historical 6b checkpoint exclusions are superseded by this section only within these bounds.

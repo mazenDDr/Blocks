@@ -15,6 +15,7 @@ from vision import contract as C
 from vision import segment as S
 from vision import transforms as T
 
+from . import checkpoints as CP
 from .core import IMAGE_DATA, VISION_REPORT, DomainOperation, fixture_path, peek_spec, png_b64, r, sha256_file, value
 from .core import Plain
 
@@ -223,6 +224,7 @@ class VisionTransform(DomainOperation):
 
 # ================================================================================================ segmenter
 class SegmenterConfig(StrictConfig):
+    resume_model_id: str | None = Field(None, pattern=r"^[0-9a-f]{64}$", description="Internal model manifest identity to resume at a completed epoch; epochs is the total target.")
     epochs: int = Field(12, ge=1, le=200)
     lr: float = Field(3e-3, gt=0)
     width: int = Field(12, ge=2, le=64, title="base channels")
@@ -255,7 +257,10 @@ class Segmenter(DomainOperation):
     def execute(self, cfg, ins, ctx):
         d = ins["data"]
         samples, spec = d.obj["samples"], d.obj["spec"]
-        res = S.train_and_eval(samples, spec, epochs=cfg.epochs, lr=cfg.lr, width=cfg.width, batch_size=cfg.batch_size, seed=cfg.seed, val_fraction=cfg.val_fraction, n_inspect=cfg.n_inspect)
+        signature = CP.fingerprint(cfg.model_dump(exclude={"epochs", "n_inspect", "resume_model_id"}), d.data,
+                                   [t for s in samples for t in (s.image, S.class_map(s))])
+        saved = CP.resume(ctx, cfg.resume_model_id, "vision", signature)
+        res = S.train_and_eval(samples, spec, epochs=cfg.epochs, lr=cfg.lr, width=cfg.width, batch_size=cfg.batch_size, seed=cfg.seed, val_fraction=cfg.val_fraction, n_inspect=cfg.n_inspect, resume_state=saved)
         names = ["background"] + spec.classes
         seg = res["seg"]
         recs = []
@@ -272,6 +277,11 @@ class Segmenter(DomainOperation):
                    "samples": recs, "palette": PALETTE[:len(names)], "seconds": res["seconds"], "synthetic": True, "note": SYNTH,
                    "contract": d.data["contract"], "transformsApplied": d.data.get("transforms", []), "provenance": {"source": d.data.get("source"), "torch": torch.__version__,
                                                                                                              "model": "TinyFCN (2 encoder levels, bilinear upsample, skip connection)"}}
+        summary["checkpoint"] = CP.persist(ctx, "vision", signature, res["trainingState"],
+            {"architecture": {"n_classes": len(spec.classes) + 1, "width": cfg.width}, "classes": names,
+             "size": list(samples[0].size), "input": "post-geometry RGB uint8 image; no implicit resize/crop/random flip",
+             "normalization": "(uint8 / 255 - 0.5) / 0.25", "trainingGeometry": d.data.get("transforms"), "policy": d.data.get("policy")},
+            d.data.get("source"), cfg.resume_model_id, {"imagePng": recs[0]["image"]})
         data = {"metrics": {"meanIoU": seg["meanIoU"], "meanDice": seg["meanDice"], "pixelAccuracy": seg["pixelAccuracy"], "map": m["map"], "map50": m["map50"]}, "nParams": res["nParams"]}
         return {"report": value(VISION_REPORT, data, None)}, summary
 

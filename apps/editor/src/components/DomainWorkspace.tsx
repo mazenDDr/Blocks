@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Graph, OpInfo, TabularRunSummary, Validation } from "../types";
 import { ConfigForm } from "./ConfigForm";
+import { DomainModels } from "./DomainModels";
 import { DomainResultView } from "./DomainViews";
 import { TabularExplain } from "./Tabular";
 import { TabularRunBar, TabularRunPanel } from "./TabularPanels";
@@ -24,6 +25,7 @@ export function DomainWorkspace({ projectId, graph, validation, ops, runs, runId
       {op && <ConfigForm op={op} node={node} resolved={view?.resolvedConfig} onChange={(patch) => onConfig(node.id, patch)} />}
       <TabularExplain explain={view?.explain} purpose={op?.purpose ?? ""} typed />
     </aside><section><DomainResultView key={`${runId}/${node.id}/${run?.maxSeq}`} runId={runId} node={node.id} /></section></div>}
+    <DomainModels key={runId} runId={runId} graph={graph} onConfig={onConfig} />
     <TabularRunPanel projectId={projectId} graph={graph} validation={validation} runs={runs} reloadRuns={reloadRuns} runId={runId} setRunId={setRunId} ensureSaved={ensureSaved} onSelectNode={setSelected} />
   </div>;
 }

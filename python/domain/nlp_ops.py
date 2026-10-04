@@ -16,6 +16,7 @@ from nlp import iob, model as M, subword as W
 from operations._common import StrictConfig
 from tabular.core import ExecutionError, VType, resolve_path
 
+from . import checkpoints as CP
 from .core import NLP_REPORT, TEXT_CORPUS, TOKEN_BATCH, DomainOperation, fixture_path, r, sha256_file, value
 
 DEFAULT_JSONL = "examples/fixtures/synthetic_ner.jsonl"
@@ -91,6 +92,7 @@ class NlpSource(DomainOperation):
 
 # ================================================================================================ tokenizer
 class TokenizerConfig(StrictConfig):
+    fitted_model_id: str | None = Field(None, pattern=r"^[0-9a-f]{64}$", description="Reuse the exact fitted tokenizer from this internal NLP model, without refitting.")
     vocab_size: int = Field(300, ge=40, le=5000, title="WordPiece vocabulary size (trained on the TRAINING sentences only)")
     lowercase: bool = Field(True, title="normalization: lowercase")
     max_length: int = Field(48, ge=8, le=512, title="maximum subwords per sentence including [CLS]/[SEP] (longer sentences are truncated and counted)")
@@ -125,7 +127,18 @@ class NlpTokenizer(DomainOperation):
         tags = W.tag_list(types)
         t2i = {t: i for i, t in enumerate(tags)}
         tr, va = M.split_indices(len(recs), cfg.val_fraction, cfg.seed)
-        tok = W.train_tokenizer([recs[i]["text"] for i in tr], cfg.vocab_size, cfg.lowercase)
+        if cfg.fitted_model_id:
+            from tokenizers import Tokenizer
+            if ctx.store is None:
+                raise ExecutionError("E_DOMAIN_CHECKPOINT_STORE", "Fitted tokenizer reuse requires the owning workbench.")
+            m = CP.read_manifest(ctx.store, cfg.fitted_model_id)
+            if m["family"] != "nlp" or m["source"] != c.data.get("source"):
+                raise ExecutionError("E_DOMAIN_RESUME_INCOMPATIBLE", "Tokenizer model family or corpus identity differs.")
+            tok = Tokenizer.from_str(m["inference"]["tokenizerJson"])
+            if m["inference"]["tokenizerConfig"] != cfg.model_dump(exclude={"fitted_model_id"}):
+                raise ExecutionError("E_DOMAIN_RESUME_INCOMPATIBLE", "Tokenizer settings or corpus split differs.")
+        else:
+            tok = W.train_tokenizer([recs[i]["text"] for i in tr], cfg.vocab_size, cfg.lowercase)
         try:
             exs = [W.encode_example(tok, x, t2i, cfg.max_length, cfg.label_policy, cfg.ignore_index) for x in recs]
         except W.NlpError as e:
@@ -172,6 +185,7 @@ class NlpTokenizer(DomainOperation):
 
 # ================================================================================================ tagger
 class TaggerConfig(StrictConfig):
+    resume_model_id: str | None = Field(None, pattern=r"^[0-9a-f]{64}$", description="Internal model manifest identity to resume at a completed epoch; epochs is the total target.")
     label_policy: Literal["first_subword", "all_subwords"] = Field("first_subword", title="label policy this tagger's loss and read-out assume (must equal the tokenizer's)")
     loss_ignore_index: int = Field(-100, title="cross-entropy ignore_index (must equal the tokenizer's ignore index)")
     eval_mode: Literal["default", "strict"] = Field("default", title="span evaluation convention (seqeval: default = conlleval, strict = IOB2 only)")
@@ -208,8 +222,11 @@ class NlpTagger(DomainOperation):
         d = ins["tokens"]
         o = d.obj
         exs, tok, tags, tr, va = o["examples"], o["tok"], o["tags"], o["tr"], o["va"]
+        signature = CP.fingerprint(cfg.model_dump(exclude={"epochs", "n_inspect", "resume_model_id"}),
+            {"data": d.data, "tr": tr, "va": va, "examples": [{"ids": e.ids, "labels": e.labels, "words": e.words} for e in exs]})
+        saved = CP.resume(ctx, cfg.resume_model_id, "nlp", signature)
         res = M.train_and_eval(exs, tok, tags, epochs=cfg.epochs, lr=cfg.lr, hidden=cfg.hidden, emb=cfg.embedding, batch_size=cfg.batch_size, seed=cfg.seed, ignore_index=cfg.loss_ignore_index,
-                               tr=tr, va=va, n_inspect=cfg.n_inspect, scheme_mode=cfg.eval_mode)
+                               tr=tr, va=va, n_inspect=cfg.n_inspect, scheme_mode=cfg.eval_mode, resume_state=saved)
         # padding contract: a sentence has the same logits alone and inside a padded batch
         model = res["model"]
         pad_id = tok.token_to_id("[PAD]")
@@ -236,6 +253,11 @@ class NlpTagger(DomainOperation):
                                                                                                            "shortestLen": len(vax[short].ids), "longestLen": len(vax[longest].ids)},
                    "samples": res["records"], "seconds": res["seconds"], "synthetic": True, "note": SYNTH,
                    "provenance": {"source": d.data.get("source"), "vocabSha256": d.data.get("vocabSha256"), "torch": torch.__version__, "model": "Embedding -> BiGRU (packed) -> Linear"}}
+        summary["checkpoint"] = CP.persist(ctx, "nlp", signature, res["trainingState"],
+            {"architecture": {"vocab": tok.get_vocab_size(), "n_labels": len(tags), "pad_id": pad_id, "emb": cfg.embedding, "hidden": cfg.hidden},
+             "tokenizerJson": tok.to_str(), "tokenizerConfig": o["cfg"].model_dump(exclude={"fitted_model_id"}),
+             "labels": tags, "maxLength": d.data["contract"]["maxLength"], "labelPolicy": cfg.label_policy, "ignoreIndex": cfg.loss_ignore_index,
+             "readout": "first subword of complete words, original character offsets", "evalMode": cfg.eval_mode}, d.data.get("source"), cfg.resume_model_id, {"text": res["records"][0]["text"]})
         return {"report": value(NLP_REPORT, {"metrics": {"microF1": sm["micro"]["f1"], "macroF1": sm["macro"]["f1"]}, "nParams": res["nParams"]})}, summary
 
     def explain(self, cfg, inputs, outputs):

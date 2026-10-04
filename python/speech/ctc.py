@@ -1,6 +1,8 @@
 """A tiny CTC recogniser (torch.nn.CTCLoss), greedy decoding with frame timestamps, and error alignment (edit-distance backtrace with S/D/I, CER, WER)."""
 from __future__ import annotations
 
+from domain.checkpoints import restore, training_state
+
 import time
 from typing import Any
 
@@ -94,7 +96,7 @@ def corpus_rates(pairs: list[tuple[str, str]]) -> dict[str, Any]:
 
 
 def train_and_eval(feats: list[torch.Tensor], texts: list[str], alphabet: list[str], *, epochs: int, lr: float, hidden: int, batch_size: int, seed: int, val_fraction: float,
-                   n_inspect: int, hop_seconds: float, blank: int = 0, reduction: str = "mean", zero_infinity: bool = False) -> dict[str, Any]:
+                   n_inspect: int, hop_seconds: float, blank: int = 0, reduction: str = "mean", zero_infinity: bool = False, resume_state: dict | None = None) -> dict[str, Any]:
     from .features import pad_features
 
     sym2id = {c: i + 1 for i, c in enumerate(alphabet)}
@@ -127,8 +129,9 @@ def train_and_eval(feats: list[torch.Tensor], texts: list[str], alphabet: list[s
         tl = torch.tensor([len(targets[i]) for i in ix])
         return ctc(logp.transpose(0, 1), tg, ol, tl), logp, ol
 
-    curve, t0 = [], time.time()
-    for ep in range(epochs):
+    start, curve = restore(model, opt, g, resume_state, epochs)
+    t0 = time.time()
+    for ep in range(start, epochs):
         model.train()
         order = torch.randperm(len(tr), generator=g).tolist()
         tot = 0.0
@@ -160,4 +163,5 @@ def train_and_eval(feats: list[torch.Tensor], texts: list[str], alphabet: list[s
                          "align": cer_wer(texts[i], hyp), "spectrogram": raw[i].numpy()})
     return {"model": model, "curve": curve, "rates": corpus_rates(pairs), "records": recs, "valIdx": va, "trainIdx": tr, "seconds": time.time() - t0,
             "nParams": sum(p.numel() for p in model.parameters()), "outLenFactor": STRIDE, "valPairs": pairs, "alphabet": alphabet,
-            "normalization": {"fittedOn": "training clips", "nTrainFrames": int(cat.shape[0])}, "ctc": {"blank": blank, "reduction": reduction, "zeroInfinity": zero_infinity}}
+            "normalization": {"fittedOn": "training clips", "nTrainFrames": int(cat.shape[0])}, "ctc": {"blank": blank, "reduction": reduction, "zeroInfinity": zero_infinity},
+            "trainingState": training_state(model, opt, g, epochs, curve, mean=mu, std=sd)}

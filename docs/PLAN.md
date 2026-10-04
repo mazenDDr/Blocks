@@ -152,3 +152,7 @@ Native tabular fitted-pipeline registry, explicit local/staging releases, tracea
 ## Milestone 8 status
 
 Authenticated loopback CPU worker protocol, native local MLflow/W&B offline recovery, inert project packages, a trusted pure-tabular operation SDK, recorded comparisons/conclusions, keyboard graph controls and the complete bounded A01–A64 acceptance checklist are implemented (ADR 0013). Cross-host TLS/GPU/distributed execution, online trackers, team permissions and external-user onboarding remain unimplemented. The product vision has remaining gaps: ACCEPTANCE/CAPABILITIES state them explicitly; HANDOFF §9 contains verification and continuation priorities.
+
+## Domain checkpoint/inference follow-on
+
+Extend the verified domain workflows with native state persistence, exact completed-epoch CPU continuation and source-independent local inference/export (ADR 0014). Domain production registry/release integration, general importers, intermediate recovery and GPU execution remain separate future work. HANDOFF §10 records status and verification.
