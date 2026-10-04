@@ -10,7 +10,7 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 - **Design decisions:** `docs/adr/0001…0011`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
-**Repo:** `/Users/mazenkhaled/project-void` (local git, no remote).
+**Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
 
 **Stack:**
 - Python 3.13 in `.venv`, with PyTorch CPU, FastAPI, SQLite, scikit-learn, SciPy, LangGraph, Gymnasium.
@@ -40,13 +40,13 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | 4 LangGraph agents, memory, context inspector | done, verified | 4201da2 |
 | 5 RL (DQN/CartPole, grid world), unsupervised | done, verified | 5674566 |
 | 6a Keras/TensorFlow and JAX backends, compatibility reports, coverage ledger, benchmarks | done, verified | 503ff9c |
-| 6b Vision detection/segmentation, NLP, speech workflows | done, verified (bounded scope; see §7) | this milestone commit; see git log |
+| 6b Vision detection/segmentation, NLP, speech workflows | done, verified (bounded scope; see §7) | 927e9c3 |
 | 7 Registry and production investigation | not started | none |
 | 8 Scale, integrations, community | not started | none |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
-After 6b: `pytest -q -o faulthandler_timeout=240` → **864 passed, 1 skipped, 6 deselected**; `pytest -q -m live` → **6 passed**. Editor build/type check, curl and real Chrome domain journeys passed. The skip is the existing Anthropic test without an API key. See §7 for commands, results, scope and push status.
+After 6b: `pytest -q -o faulthandler_timeout=240` → **864 passed, 1 skipped, 6 deselected**; `pytest -q -m live` → **6 passed**. Editor build/type check, curl and real Chrome domain journeys passed. The skip is the existing Anthropic test without an API key. See §7 for commands, results, scope and Git details.
 
 ### Check for in-progress work first
 Run `git status`. If there are uncommitted files, a previous session was cut off mid-milestone: inspect them with `git diff`, do **not** discard them, finish that milestone, verify (§4), then commit.
@@ -169,6 +169,8 @@ Next planned milestone is **7**, with scope in §5. Build on these typed contrac
 
 ### Git / continuation
 
-The verified milestone is committed on the existing `master` as **Milestone 6b: typed vision, NLP and speech workflows with recorded domain inspection**, using §4's style and a Codex co-author line; use `git log -1` for its hash. No Git remote was configured. GitHub authentication works for active account `mazenDDr` (also `mazenkhaledZC` is available), but neither account has an existing `project-void` repo. The user has been asked for a destination URL or instruction to create a private repo. **Push remains pending that answer; do not invent a destination or claim a push happened.**
+The verified milestone is **927e9c3**, committed on `master` as **Milestone 6b: typed vision, NLP and speech workflows with recorded domain inspection**, with a Codex co-author line. The user then explicitly requested `gh repo create project-void --private --source=. --remote=origin --push`. Created the **private** repository https://github.com/mazenDDr/project-void and pushed the complete committed history; `master` now tracks `origin/master`.
 
-Next agent: read this handoff, inspect `git status` / `git log -1` / `git remote -v`, preserve any new user work, and push the verified milestone to the user's specified destination. Do not rerun completed verification unless code or environment changes require it. Keep the user's port 8000 process intact and stop every temporary server you start.
+The initial automatic push failed because global Git config rewrites `https://github.com/` to SSH, whose identity lacks access to this account. Only this repo's remote was changed to `https://mazenDDr@github.com/mazenDDr/project-void.git`, which bypasses that rewrite and uses the existing `gh auth git-credential` helper. No token is stored in the URL and no global config was changed. Active GitHub account is `mazenDDr`; `mazenkhaledZC` is also authenticated. `git push -u origin master` succeeded. This handoff update is committed and pushed separately after the milestone.
+
+Next agent: read this handoff, inspect `git status` / `git log -1` / `git remote -v`, preserve any new user work, and continue Milestone 7 when requested. Do not rerun completed verification unless code or environment changes require it. Keep the user's port 8000 process intact and stop every temporary server you start. Continue committing verified milestones and pushing their handoffs to `origin` as the user requested.
