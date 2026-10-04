@@ -1,6 +1,7 @@
 """Registry, release preview/actions, real local serving and measured investigation."""
 from __future__ import annotations
 
+import json
 import math
 from typing import Any
 
@@ -47,13 +48,27 @@ def register(app: FastAPI, sv):
         for row in sv.store.list_runs()[-100:]:
             if row["status"] == "completed":
                 for a in sv.store.artifacts(row["id"], "inference_pipeline"):
-                    candidates.append({"runId": row["id"], "node": a["meta"]["node"], "pipelineSha256": a["sha256"], "graphHash": row["graph_hash"]})
+                    candidates.append({"runId": row["id"], "node": a["meta"]["node"], "pipelineSha256": a["sha256"], "graphHash": row["graph_hash"], "adapter": "tabular"})
+                from production.model_adapter import is_candidate
+                out_node = is_candidate(sv.store, row)
+                if out_node:
+                    candidates.append({"runId": row["id"], "node": out_node, "pipelineSha256": None, "graphHash": row["graph_hash"], "adapter": "model", "family": "image_classifier"})
+                for a in sv.store.artifacts(row["id"], "unsup_pipeline"):
+                    candidates.append({"runId": row["id"], "node": a["meta"]["node"], "pipelineSha256": a["sha256"], "graphHash": row["graph_hash"], "adapter": "unsup",
+                                       "family": json.loads(sv.store.read_artifact(a["sha256"]))["method"]})
+                from production import rl_adapter
+                q_node = rl_adapter.is_candidate(sv.store, row)
+                if q_node:
+                    candidates.append({"runId": row["id"], "node": q_node, "pipelineSha256": None, "graphHash": row["graph_hash"], "adapter": "rl", "family": "rl_policy"})
+                for a in sv.store.artifacts(row["id"], "domain_model"):
+                    if a["meta"].get("internalDomainModel"):
+                        candidates.append({"runId": row["id"], "node": a["meta"]["node"], "pipelineSha256": a["sha256"], "graphHash": row["graph_hash"],
+                                           "adapter": "domain", "family": a["meta"].get("family")})
         events = ps.query("SELECT * FROM lifecycle ORDER BY seq DESC LIMIT 100")
-        import json
         return {"candidates": candidates, "versions": ps.list("version"), "releases": ps.list("release"),
                 "routes": ps.query("SELECT * FROM routes"), "aliases": ps.query("SELECT * FROM aliases"),
                 "lifecycle": [{**r, "data": json.loads(r["data"])} for r in events], "traffic": ps.list("traffic"),
-                "capabilities": {"adapter": "native scikit-learn tabular pipeline", "targets": ["local", "staging"], "replicas": 1,
+                "capabilities": {"adapter": "native scikit-learn tabular pipeline; native PyTorch vision/NLP/speech domain models (1-4 records per request); PyTorch model-graph image classifiers (1-32 images); greedy DQN policies (1-256 observations); k-means / Gaussian mixture / PCA (1-128 rows)", "targets": ["local", "staging"], "replicas": 1,
                                  "mode": "real CPU serving in this local FastAPI process; staging is a separate local route",
                                  "remoteDeployment": "not implemented: no infrastructure configured", "batch": "bounded synchronous batch",
                                  "streaming": "not implemented", "session": "optional durable per-release/user/session counter; native estimator is stateless",
@@ -73,6 +88,27 @@ def register(app: FastAPI, sv):
         import io
         import pandas as pd
         p = rt.pipeline(vid)
+        if ps.get("version", vid).get("adapter") == "unsup":
+            return {"records": p.reference_records(3), "observedLabels": None, "family": p.manifest["method"],
+                    "inputContract": f"records: [{{{', '.join(p.manifest['features'])}: finite numbers}}]",
+                    "labelNote": "Rows the estimator was fitted on (in-sample). Clusters have no ground truth; supply external labels only if you have them.",
+                    "provenance": {"versionId": vid, "runId": p.manifest["runId"], "referenceSha256": p.manifest["referenceSha256"], "partition": "fitted rows (in-sample)"}}
+        if ps.get("version", vid).get("adapter") == "rl":
+            return {"records": p.reference_records(3), "observedLabels": None, "family": "rl_policy", "inputContract": p.manifest["inputContract"],
+                    "labelNote": "Replay-buffer observations of the source run. Their recorded actions came from the epsilon-greedy behaviour policy, so they are not offered as ground truth.",
+                    "provenance": {"versionId": vid, "runId": p.manifest["runId"], "referenceSha256": p.manifest["referenceSha256"], "partition": "replay buffer (training experience)",
+                                   "source": p.manifest["source"]}}
+        if ps.get("version", vid).get("adapter") == "model":
+            refs = p.reference()[:3]
+            return {"records": p.reference_records(3), "observedLabels": [r["label"] for r in refs], "family": "image_classifier", "inputContract": p.manifest["inputContract"],
+                    "labelNote": "Held-out validation images of the source run with their recorded labels (frozen at registration).",
+                    "provenance": {"versionId": vid, "runId": p.manifest["runId"], "referenceSha256": p.manifest["referenceSha256"], "files": [r["file"] for r in refs],
+                                   "partition": "held-out validation split", "source": p.manifest["source"]}}
+        if ps.get("version", vid).get("adapter") == "domain":
+            return {"records": p.reference_records(), "observedLabels": None, "family": p.manifest["family"], "inputContract": p.manifest["inputContract"],
+                    "labelNote": "Recorded SYNTHETIC held-out example of the source run; its ground truth is not exposed here.",
+                    "provenance": {"versionId": vid, "runId": p.manifest["runId"], "modelId": p.manifest["modelId"], "exampleSha256": p.manifest["exampleSha256"],
+                                   "partition": "recorded held-out example", "source": p.manifest["source"]}}
         df = pd.read_csv(io.BytesIO(sv.store.read_artifact(p.manifest["referenceSha256"]))).head(3)
         records = df.astype(object).where(df.notna(),None).to_dict("records")
         import json
@@ -111,8 +147,22 @@ def register(app: FastAPI, sv):
         return {"ready": True, "releaseId": r["id"], "versionId": r["versionId"], "replicas": 1, "placement": "local CPU",
                 "limits": r["config"]}
 
+    def first_non_finite(v, path):
+        if isinstance(v, float) and not math.isfinite(v):
+            return path
+        if isinstance(v, dict):
+            return next((p for k, x in v.items() if (p := first_non_finite(x, f"{path}.{k}"))), None)
+        if isinstance(v, list):
+            return next((p for i, x in enumerate(v) if (p := first_non_finite(x, f"{path}[{i}]"))), None)
+        return None
+
     @app.post("/api/serve/{target}/{namespace}/predict")
     def predict(target: str, namespace: str, req: PredictRequest):
+        # Python's JSON parser accepts NaN/Infinity. They are never valid inputs, and a JSON response could not echo them in a trace,
+        # so the HTTP route refuses them before admission (in-process callers still get a recorded E_REQUEST_SCHEMA trace).
+        bad = first_non_finite(req.records, "records")
+        if bad:
+            raise ProductionError("E_REQUEST_SCHEMA", f"Non-finite number at {bad}; NaN and Infinity are not valid inputs.", 422)
         result = rt.predict(target, namespace, req)
         return JSONResponse(result, status_code=result["status"])
 
@@ -135,7 +185,22 @@ def register(app: FastAPI, sv):
             raise ProductionError("E_LABEL_ALIGNMENT", "Only completed predictions can receive labels.")
         p = rt.pipeline(trace["versionId"])
         classes = p.manifest["outputSchema"]["classes"]
-        if classes is not None:
+        if ps.get("version", trace["versionId"]).get("adapter") == "domain":
+            from production.domain_adapter import validate_labels
+            validate_labels(p.manifest["family"], trace["result"]["predictions"], req.labels, classes)
+            ps.add_labels(req.user, id_, req.labels)
+            return {"recorded": True, "requestId": id_, "rows": len(req.labels)}
+        adapter = ps.get("version", trace["versionId"]).get("adapter")
+        if adapter == "unsup":
+            if p.manifest["method"] == "pca":
+                raise ProductionError("E_LABEL_SCHEMA", "PCA has no labels; its label-free reconstruction error is monitored instead.")
+            if not all(isinstance(v, (str, int)) and not isinstance(v, bool) for v in req.labels):
+                raise ProductionError("E_LABEL_SCHEMA", "External labels are strings or integers, one per record.")
+            ps.add_labels(req.user, id_, req.labels)
+            return {"recorded": True, "requestId": id_, "rows": len(req.labels)}
+        if adapter == "rl":
+            valid = all(type(v) is int and v in classes for v in req.labels)  # booleans are not actions
+        elif classes is not None:
             valid = all(v in classes for v in req.labels)
         else:
             valid = all(isinstance(v, (int,float)) and not isinstance(v,bool) and math.isfinite(v) for v in req.labels)

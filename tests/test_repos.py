@@ -257,3 +257,19 @@ def test_user_git_config_cannot_reenable_hooks_or_external_diff(tmp_path, source
     repos.compare(r["repoId"], source["c1"], source["c2"], ["stats_utils.py"])
     repos.resolve(source["path"], "v2")  # a second fetch updates refs again
     assert not marker.exists() and not source["marker"].exists()
+
+
+def test_mirror_listing_and_removal_keep_imports(repos, source):
+    r = repos.resolve(source["path"], "v1")
+    out = repos.import_function(r["repoId"], r["commit"], "stats_utils.py", "standardize", INTERFACE)
+    [m] = repos.mirrors()
+    assert m["repoId"] == r["repoId"] and m["bytes"] > 0 and m["importsFromUrl"] == 1 and m["lastFetched"] is not None
+    gone = repos.remove_mirror(r["repoId"])
+    assert gone["bytesFreed"] == m["bytes"] and gone["importRecordsKept"] == 1 and repos.mirrors() == []
+    assert repos.get_import(out["importId"])["commit"] == source["c1"]               # the pinned record survives
+    with pytest.raises(RepoError) as e:
+        repos.tree(r["repoId"], r["commit"])
+    assert e.value.status == 404
+    assert repos.resolve(source["path"], "v1")["commit"] == source["c1"]             # a fresh resolve restores browsing
+    with pytest.raises(RepoError):
+        repos.remove_mirror("../../etc")

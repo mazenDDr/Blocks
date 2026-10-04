@@ -7,7 +7,8 @@ GET  /api/repos/{id}/python        ?commit=&path=                   ast-only: fu
 POST /api/repos/{id}/compare       {base, head, paths}              changed paths and patch between two pinned commits
 POST /api/repos/{id}/import        {commit, path, function, interface, pins}  immutable import record + code block definition
 GET  /api/repos/imports            list; GET /api/repos/imports/{importId} one record (integrity checked)
-POST /api/repos/origin-status      {block}                          is a block still the unmodified pinned import?"""
+POST /api/repos/origin-status      {block}                          is a block still the unmodified pinned import?
+GET  /api/repos/mirrors            fetched mirrors with size; DELETE /api/repos/{id} removes one (import records and blocks are kept)"""
 from __future__ import annotations
 
 from typing import Any
@@ -56,6 +57,14 @@ def register(app: FastAPI, sv: Any) -> None:
     @app.post("/api/repos/resolve")
     def resolve(req: ResolveReq):
         return call(repos.resolve, req.url, req.rev)
+
+    @app.get("/api/repos/mirrors")
+    def mirrors():
+        return {"mirrors": repos.mirrors()}
+
+    @app.delete("/api/repos/{repo_id}")
+    def remove_mirror(repo_id: str):
+        return call(repos.remove_mirror, repo_id)
 
     @app.get("/api/repos/imports")
     def imports():

@@ -403,6 +403,30 @@ class Repos:
             raise RepoError("E_REPO_IMPORT_INTEGRITY", "The import record does not match its identity.", 409)
         return json.loads(data)
 
+    # ------------------------------------------------------------------ mirror retention
+    def mirrors(self) -> list[dict[str, Any]]:
+        out = []
+        imports = self.list_imports()
+        for m in sorted(self.root.glob("*.git")):
+            meta = m / "void-source.json"
+            if not meta.exists():
+                continue
+            url = json.loads(meta.read_text())["url"]
+            size = sum(f.stat().st_size for f in m.rglob("*") if f.is_file())
+            out.append({"repoId": m.name[:-4], "url": url, "bytes": size, "importsFromUrl": sum(i["url"] == url for i in imports),
+                        "lastFetched": (m / "FETCH_HEAD").stat().st_mtime if (m / "FETCH_HEAD").exists() else None})
+        return out
+
+    def remove_mirror(self, repo_id: str) -> dict[str, Any]:
+        """Delete a bare mirror. Import records and imported blocks keep their pinned identity and source text; browsing, compare and
+        re-import need a fresh resolve() afterwards."""
+        import shutil
+
+        m, url = self._mirror_by_id(repo_id)
+        size = sum(f.stat().st_size for f in m.rglob("*") if f.is_file())
+        shutil.rmtree(m)
+        return {"repoId": repo_id, "url": url, "bytesFreed": size, "importRecordsKept": sum(i["url"] == url for i in self.list_imports())}
+
     def list_imports(self) -> list[dict[str, Any]]:
         out = []
         for p in sorted(self.imports.glob("*.json")):

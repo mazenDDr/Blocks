@@ -308,3 +308,21 @@ Commands actually run:
 VOID_WORKBENCH=<scratch dir> .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8771
 VOID_API=http://127.0.0.1:8771 pnpm -C apps/editor dev --host 127.0.0.1 --port 5296
 ```
+
+## Serve vision, NLP and speech models (Production tab)
+
+Train a domain example (for instance `nlp_token_classification`), then open **Production ▸ Registry**. Pick the run/node listed as an "nlp model (PyTorch)" candidate and **Register version**. Under **Release**, preview (maxBatch is capped at 4) and deploy. Under **Requests**, **Load recorded held-out example**, send it, and inspect the trace (prediction → release → run → checkpoint → source). Recording ground truth enables native quality in **Monitoring**: word accuracy/span F1, CER/WER, or pixel accuracy/IoU. See ADR 0017.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_production_domain.py -o faulthandler_timeout=240
+VOID_WORKBENCH=<scratch dir> .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8774
+VOID_API=http://127.0.0.1:8774 pnpm -C apps/editor dev --host 127.0.0.1 --port 5299
+```
+
+The same Production flow serves **model-graph image classifiers** (for example the reference CNN after a Run on the Graph view). The candidate is listed as "image classifier graph (PyTorch)". Registration requires the training image folder to still match the dataset identity recorded at training, then freezes up to 64 held-out images as the reference; serving never reads the folder again. **Load held-out validation images** fills both the request and its labels. See ADR 0018. `.venv/bin/pytest -q tests/test_production_model.py` was run.
+
+Completed RL runs appear as "greedy DQN policy (PyTorch)" candidates. The served policy is the final Q-network's argmax (no exploration). **Load replay-buffer observations** fills a request. Ground truth, if you have it, is your own reference actions (agreement only); environment return stays in the run's evaluation report. See ADR 0019. `.venv/bin/pytest -q tests/test_production_rl.py` was run.
+
+Unsupervised k-means, Gaussian mixture and PCA nodes (for example in `unsupervised_cells`) are captured for serving as well. DBSCAN and t-SNE are refused because they cannot map new points. Optional external labels give ARI/NMI, never accuracy; PCA shows reconstruction error. See ADR 0020. `.venv/bin/pytest -q tests/test_production_unsup.py` was run.

@@ -267,7 +267,7 @@ See ADR 0012. This is a **real native scikit-learn tabular adapter in one local 
 
 Bounds: 128 rows/256 KB per request, at most 16 active requests/64 queued per release, deadlines up to 30 s; load generation 30 s/500 arrivals/16 threads plus at most 10 warmup requests. Reference drift data uses up to 2,000 recorded training rows and reports truncation; monitoring inspects the latest 1,000 requests for a release/time window. Resources are sampled process CPU/RSS for the combined server/generator, including warmup/drain; cost is not measured. Capture defaults off; replay/input drift requires captured values. Training-reference labels are explicitly in-sample fixture evidence, not held-out production accuracy.
 
-Not implemented: PyTorch CNN/domain/agent/RL/unsupervised/Keras/JAX registry-serving adapters, authenticated multi-user security, remote deployment, multiple control-process replicas, autoscaling, dynamic batching, streaming, asynchronous batch jobs, canary/shadow traffic splitting, online learning, automatic retraining/rollback, and retention/garbage collection. Session state is an application request counter, not an LLM memory service. Use one owning control process for this adapter; caller-declared users are isolation keys, not authenticated principals.
+Not implemented: agent/Keras/JAX and non-image model-graph registry-serving adapters (domain models since ADR 0017, model-graph image classifiers since ADR 0018, greedy DQN policies since ADR 0019, k-means/GMM/PCA since ADR 0020), authenticated multi-user security, remote deployment, multiple control-process replicas, autoscaling, dynamic batching, streaming, asynchronous batch jobs, canary/shadow traffic splitting, online learning, automatic retraining/rollback, and retention/garbage collection. Session state is an application request counter, not an LLM memory service. Use one owning control process for this adapter; caller-declared users are isolation keys, not authenticated principals.
 
 ## Milestone 8: bounded worker/tracker integrations and community tooling
 
@@ -327,4 +327,47 @@ Not implemented: caching for model/procedure/agent/RL/domain graphs, connector s
 | ast-only Python inspection; wrap one top-level function of a single-file module as a code block; immutable, integrity-checked import record; block `origin` part of the semantic hash; chosen pins verified by the sandbox | same, `apps/editor/src/components/RepoImport.tsx` | `test_repos.py` |
 | Local-modification status and commit comparison for the imported file; editor import dialog and origin banner | `CodeBlockEditor.tsx`, `RepoImport.tsx` | `test_repos.py` (HTTP) |
 
-Not implemented: multi-file packages/notebooks as entry points, wrapping repository data/config/model files as typed sources, LFS download, submodule fetch, dependency installation, hosted-provider APIs/credential UI, history/blame, mirror garbage collection. The code-block sandbox guard is best-effort, not a hostile-code boundary.
+Not implemented: multi-file packages/notebooks as entry points, wrapping repository data/config/model files as typed sources, LFS download, submodule fetch, dependency installation, hosted-provider APIs/credential UI, history/blame, automatic mirror retention (explicit listing/removal via `/api/repos/mirrors` and `DELETE /api/repos/{id}` exists). The code-block sandbox guard is best-effort, not a hostile-code boundary.
+
+## Domain models in the production registry (ADR 0017)
+
+| Capability | Where | Tests |
+|---|---|---|
+| Register a recorded vision/NLP/speech model as a production version (pinned checkpoint, preprocessing, tokenizer/labels, environment, implementation); warmup on the recorded held-out example | `production/domain_adapter.py`, `production/runtime.py` | `test_production_domain.py` |
+| Serve 1-4 records per request through the shared local/staging routes with admission, idempotency, traces, capture/replay; predictions equal `/api/domain/models/{id}/predict`; changed implementation refuses serving | same, `services/control/production_api.py` | `test_production_domain.py` |
+| Per-family ground truth and native quality (NLP word accuracy + seqeval span F1, undefined without spans; speech corpus CER/WER; vision pixel accuracy/IoU/Dice); descriptive input and prediction drift against the held-out example | `production/monitor.py`, `production/domain_adapter.py` | `test_production_domain.py` |
+| Editor Production workspace: domain candidates, pinned-model panel, maxBatch cap, held-out example loading, label formats, family metrics | `ProductionWorkspace.tsx` | browser journey (HANDOFF §14) |
+
+Not implemented: agent, RL, unsupervised and Keras/JAX serving; a larger domain monitoring reference than the single recorded example. (Model-graph image classifiers: see the next section.)
+
+## Model-graph image classifiers in the production registry (ADR 0018)
+
+| Capability | Where | Tests |
+|---|---|---|
+| Register a completed model-graph image-classification run: stored graph, latest complete checkpoint, training preprocessing, classes, environment and implementation hashes; held-out reference frozen only when the source folder matches its recorded identity | `production/model_adapter.py`, `production/runtime.py` | `test_production_model.py` |
+| Serve 1-32 PNG/JPEG images through the shared routes; predictions/probabilities equal `/api/infer` on the same checkpoint; never rereads the source folder; changed implementation refuses serving | same, `services/control/production_api.py` | `test_production_model.py` |
+| Accuracy from supplied class labels; image-statistic and predicted-class drift against the frozen reference; reference accuracy reported separately | `production/monitor.py` | `test_production_model.py` |
+| Editor candidate/version/reference views | `ProductionWorkspace.tsx` | browser journey (HANDOFF §14) |
+
+Not implemented: non-image or multi-input model graphs, procedure-trained sequence models, GPU/remote/multi-replica serving.
+
+## Greedy DQN policies in the production registry (ADR 0019)
+
+| Capability | Where | Tests |
+|---|---|---|
+| Register a completed DQN run's final Q-network with network graph, environment spec, full Box bounds, evaluation report, environment and implementation hashes; replay-buffer reference frozen | `production/rl_adapter.py`, `production/runtime.py` | `test_production_rl.py` |
+| Serve observations (1-256) with the greedy action and Q-values, equal to the recorded network; bounds/length/type refusals | same, `services/control/production_api.py` | `test_production_rl.py` |
+| Action agreement only against supplied integer actions (booleans refused); observation and action drift against the frozen reference | `production/monitor.py` | `test_production_rl.py` |
+| HTTP serving refuses NaN/Infinity before admission; validation errors echoing non-finite input stay valid JSON | `services/control/production_api.py`, `services/control/app.py` | `test_production.py` |
+
+Not implemented: continuous-action, image-observation or recurrent policies; online environment rollouts from serving.
+
+## Unsupervised models in the production registry (ADR 0020)
+
+| Capability | Where | Tests |
+|---|---|---|
+| Capture k-means/GMM/PCA servable manifests (native scaler + estimator, frozen fitted rows) or explicit refusals (DBSCAN, t-SNE, fitted preprocessing upstream) without changing the tabular adapter identity | `production/unsup_adapter.py`, `worker/tabular_run.py` | `test_production_unsup.py` |
+| Serve raw feature rows (1-128): clusters/distances, responsibilities/log density, PCA scores/reconstruction error, equal to the fitted objects | same, `production/runtime.py`, `services/control/production_api.py` | `test_production_unsup.py` |
+| External agreement (ARI/NMI, never accuracy) from supplied labels; PCA label-free reconstruction error; feature and assignment drift | `production/monitor.py` | `test_production_unsup.py` |
+
+Not implemented: serving with fitted preprocessing before the estimator; out-of-sample DBSCAN/t-SNE.

@@ -18,6 +18,7 @@ from typing import Any, Literal
 
 from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 
@@ -341,6 +342,20 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     @app.exception_handler(SourceError)
     async def _source_error(_: Request, e: SourceError):
         return JSONResponse({"detail": e.to_json()}, status_code=e.status)
+
+    @app.exception_handler(RequestValidationError)
+    async def _validation_error(_: Request, e: RequestValidationError):
+        # Python's JSON parser accepts NaN/Infinity, and FastAPI echoes the invalid input in the 422 detail; a strict JSON response
+        # cannot encode those values, so report them as strings instead of failing while reporting the validation error.
+        def safe(v):
+            if isinstance(v, float) and not math.isfinite(v):
+                return str(v)
+            if isinstance(v, dict):
+                return {k: safe(x) for k, x in v.items()}
+            if isinstance(v, (list, tuple)):
+                return [safe(x) for x in v]
+            return v
+        return JSONResponse({"detail": safe(jsonable_encoder(e.errors()))}, status_code=422)
 
     @app.exception_handler(insp.InspectError)
     async def _inspect_error(_: Request, e: insp.InspectError):

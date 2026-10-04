@@ -496,3 +496,18 @@ def test_real_loopback_http_load_generator_measures_and_pins(lab):
         thread.join(5)
         sock.close()
     assert not thread.is_alive()
+
+
+def test_non_finite_numbers_are_rejected_before_admission_and_reported_as_json(tmp_path):
+    """Python's JSON parser accepts NaN; such a request must get a clean 422 (with the echoed value made JSON-safe), never a server error."""
+    from fastapi.testclient import TestClient
+
+    from control.app import create_app
+
+    with TestClient(create_app(tmp_path / "wb")) as c:
+        r = c.post("/api/serve/local/lab/predict", content=b'{"requestId": "n1", "records": [{"x": NaN, "y": [1, Infinity]}]}',
+                   headers={"Content-Type": "application/json"})
+        assert r.status_code == 422 and r.json()["detail"]["code"] == "E_REQUEST_SCHEMA" and "records[0].x" in r.json()["detail"]["message"]
+        # a request-model validation error that echoes a non-finite input is still valid JSON
+        bad = c.post("/api/serve/local/lab/predict", content=b'{"requestId": "n2", "records": [], "extra": NaN}', headers={"Content-Type": "application/json"})
+        assert bad.status_code == 422 and isinstance(bad.json()["detail"], list)

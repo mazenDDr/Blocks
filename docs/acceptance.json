@@ -532,9 +532,13 @@
       "id": "A50",
       "scenario": "Register and serve a pipeline",
       "status": "bounded evidence",
-      "scope": "Exact native tabular LinearRegression/LogisticRegression pipeline; domain/CNN/agent serving unsupported.",
+      "scope": "Exact native tabular LinearRegression/LogisticRegression pipelines, native PyTorch vision/NLP/speech domain models, PyTorch model-graph image classifiers greedy DQN policies and k-means/GMM/PCA unsupervised models (pinned graph/checkpoint/preprocessing, labels/tokenizer or spaces, environment, implementation, frozen reference) registered, released and served locally with traces; agent/Keras/JAX serving unsupported.",
       "evidence": [
-        "tests/test_production.py"
+        "tests/test_production.py",
+        "tests/test_production_domain.py",
+        "tests/test_production_model.py",
+        "tests/test_production_rl.py",
+        "tests/test_production_unsup.py"
       ]
     },
     {

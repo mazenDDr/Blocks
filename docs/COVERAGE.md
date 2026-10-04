@@ -353,7 +353,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `sklearn.cluster_diagnostics` | tabular | scikit-learn | yes | cluster_report | 1 |
 | `sklearn.dbscan` | tabular | scikit-learn | yes | clustering | 0 |
 | `sklearn.gaussian_mixture` | tabular | scikit-learn | yes | clustering | 0 |
-| `sklearn.kmeans` | tabular | scikit-learn | yes | clustering | 1 |
+| `sklearn.kmeans` | tabular | scikit-learn | yes | clustering | 2 |
 | `sklearn.linear_regression` | tabular | scikit-learn | yes | coefficients | 1 |
 | `sklearn.logistic_regression` | tabular | scikit-learn | yes | coefficients | 2 |
 | `sklearn.metrics` | tabular | scikit-learn | yes | metrics | 2 |
