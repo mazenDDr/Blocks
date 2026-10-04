@@ -179,7 +179,7 @@ export function TabularRunPanel({ projectId, graph, validation, runs, reloadRuns
           {graph.graphKind === "tabular" && <CacheControls projectId={projectId} refresh={runs.map((r) => r.id + r.status).join(",")} />}
           {err && <div className="error pre">{err}</div>}
           <h4>Problems ({diags.filter((d) => d.severity === "error").length} errors, {diags.filter((d) => d.severity === "warning").length} warnings)</h4>
-          {diags.length === 0 && <div className="muted small">{graph.graphKind === "domain" ? "No contract violations. Training and evaluation use separate fixture partitions." : "No problems. Fit nodes read only the training partition."}</div>}
+          {diags.length === 0 && <div className="muted small">{graph.graphKind === "domain" ? "No contract violations. Training and evaluation use separate recorded partitions." : "No problems. Fit nodes read only the training partition."}</div>}
           {diags.map((d, i) => (
             <div key={i} className={`problem ${d.severity}`} onClick={() => d.nodeId && onSelectNode(d.nodeId)} role="button" tabIndex={0}>
               <b>{d.code}</b> <span className="muted">{d.nodeId}{d.port ? `.${d.port}` : ""}</span> <code className="small">{d.path}</code>

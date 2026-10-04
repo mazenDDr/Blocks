@@ -10,6 +10,7 @@ interface Result { predictions: { maskPng?: string; size?: number[]; text?: stri
 export function DomainModels({ runId, graph, onConfig }: { runId: string | null; graph: Graph; onConfig: (node: string, patch: Record<string, unknown>) => void }) {
   const models = usePolling<{ models: Model[] }>(runId ? `/api/domain/models?runId=${encodeURIComponent(runId)}` : null, 3000);
   const [input, setInput] = useState(""); const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  const [sourceNote, setSourceNote] = useState("");
   const [result, setResult] = useState<Result | null>(null); const [extra, setExtra] = useState(2);
   const model = models.data?.models.find((m) => m.available); const missing = models.data?.models.find((m) => !m.available);
   const resume = () => {
@@ -26,7 +27,7 @@ export function DomainModels({ runId, graph, onConfig }: { runId: string | null;
   const load = async () => {
     if (!model) return;
     setBusy(true); setError("");
-    try { const data = await api.get<{ records: unknown[] }>(`/api/domain/models/${model.modelId}/example`); setInput(JSON.stringify({ records: data.records }, null, 2)); }
+    try { const data = await api.get<{ records: unknown[]; source: { note: string } }>(`/api/domain/models/${model.modelId}/example`); setInput(JSON.stringify({ records: data.records }, null, 2)); setSourceNote(data.source.note); }
     catch (e) { setError(errorText(e)); } finally { setBusy(false); }
   };
   const infer = async () => {
@@ -52,7 +53,8 @@ export function DomainModels({ runId, graph, onConfig }: { runId: string | null;
       <button disabled={busy} onClick={load}>Load recorded validation input</button>
       <label>Inference request JSON <textarea aria-label="domain inference request" rows={6} value={input} onChange={(e) => setInput(e.target.value)} /></label>
       <button disabled={busy || !input.trim()} onClick={infer}>Predict with saved model</button>
-      <p>Input contracts: vision uses base64 RGB PNG after explicit geometry; NLP uses original text and the saved tokenizer; audio uses normalized PCM channels and the saved sample rate. The loaded example is labelled SYNTHETIC held-out data.</p>
+      <p>Input contracts: vision uses base64 RGB PNG after explicit geometry; NLP uses original text and the saved tokenizer; audio uses normalized PCM channels and the saved sample rate. The loaded example is recorded held-out data; its source declaration is shown below.</p>
+      {sourceNote && <p>{sourceNote}</p>}
     </>}
     {result && <div aria-label="saved model predictions">
       {result.predictions.map((p, i) => <article key={i}>

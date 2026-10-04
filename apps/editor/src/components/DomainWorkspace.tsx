@@ -1,14 +1,16 @@
 import { useState } from "react";
 import type { Graph, OpInfo, TabularRunSummary, Validation } from "../types";
 import { ConfigForm } from "./ConfigForm";
+import { DomainDatasetImport, type ImportedDataset } from "./DomainDatasetImport";
 import { DomainModels } from "./DomainModels";
 import { DomainResultView } from "./DomainViews";
 import { TabularExplain } from "./Tabular";
 import { TabularRunBar, TabularRunPanel } from "./TabularPanels";
 
-export function DomainWorkspace({ projectId, graph, validation, ops, runs, runId, setRunId, reloadRuns, ensureSaved, onConfig }: {
+export function DomainWorkspace({ projectId, graph, validation, ops, runs, runId, setRunId, reloadRuns, ensureSaved, onConfig, onDataset }: {
   projectId: string; graph: Graph; validation: Validation | null; ops: Record<string, OpInfo>; runs: TabularRunSummary[];
   runId: string | null; setRunId: (id: string | null) => void; reloadRuns: () => void; ensureSaved: () => Promise<void>;
+  onDataset: (d: ImportedDataset) => void;
   onConfig: (node: string, patch: Record<string, unknown>) => void;
 }) {
   const [selected, setSelected] = useState(graph.nodes[0]?.id);
@@ -18,6 +20,7 @@ export function DomainWorkspace({ projectId, graph, validation, ops, runs, runId
   const op = node && ops[node.type], view = node && validation?.nodes[node.id];
   return <div className="domain-workspace">
     <div className="domain-heading"><h2>{area} workspace</h2><p>Run the graph, then follow its recorded data, transforms and learned predictions. Every view belongs to the selected immutable run.</p></div>
+    <DomainDatasetImport area={area} onUse={onDataset} />
     <TabularRunBar runs={runs} runId={runId} setRunId={setRunId} currentHash={validation?.graphHash} />
     <nav className="tabs" aria-label="domain stages">{graph.nodes.map((n) => <button key={n.id} className={n.id === node?.id ? "on" : ""} onClick={() => setSelected(n.id)}>{ops[n.type]?.displayName ?? n.id}</button>)}</nav>
     {node && <div className="domain-layout"><aside><h3>{node.id}</h3><p>{op?.purpose}</p>

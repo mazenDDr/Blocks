@@ -63,7 +63,10 @@ def load_npz(path, n: int | None) -> tuple[list[Clip], dict[str, Any]]:
     clips = []
     for i in range(k):
         L = int(d["lengths"][i])
-        w = torch.from_numpy(d["waveforms"][i, :L].astype(np.float32) / 32767.0).unsqueeze(0)
+        if d["waveforms"].ndim == 3:
+            w = torch.from_numpy(d["waveforms"][i, :, :L].astype(np.float32))
+        else:
+            w = torch.from_numpy(d["waveforms"][i, :L].astype(np.float32) / 32767.0).unsqueeze(0)
         clips.append(Clip(spec["ids"][i], w, int(spec["sampleRate"]), str(d["transcripts"][i]), segs[i]))
     return clips, spec
 

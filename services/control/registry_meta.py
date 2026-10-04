@@ -117,14 +117,14 @@ META: dict[str, tuple[str, str, str]] = {
 
 
 META.update({
-    "domain.vision_source": ("Annotated images", "Vision", "Image, boxes, instance masks and keypoints from a labelled SYNTHETIC fixture."),
+    "domain.vision_source": ("Annotated images", "Vision", "Image, boxes, instance masks and keypoints from canonical data; source status and license are recorded at execution."),
     "domain.vision_box_convert": ("Box format conversion", "Vision", "Explicit box and keypoint coordinate conversion."),
     "domain.vision_transform": ("Geometric transforms", "Vision", "Native torchvision geometry with declared clipping, removal and flip pairs."),
     "domain.vision_segmenter": ("Train segmentation", "Vision", "Tiny PyTorch FCN, validation IoU/Dice and derived detection mAP."),
-    "domain.nlp_source": ("Character-span corpus", "NLP", "Labelled SYNTHETIC text with original source spans."),
+    "domain.nlp_source": ("Character-span corpus", "NLP", "Canonical text with labelled character spans; imported CoNLL preserves its declared reconstruction policy."),
     "domain.nlp_tokenizer": ("WordPiece tokenization", "NLP", "Offline vocabulary fitted on train text; explicit subword labels and masks."),
     "domain.nlp_tagger": ("Train token classifier", "NLP", "Packed BiGRU tagger and seqeval-convention span evaluation."),
-    "domain.audio_source": ("Audio and teaching signal", "Speech", "SYNTHETIC tones with sample/time contract and the 32,000-sample teaching signal."),
+    "domain.audio_source": ("Audio and teaching signal", "Speech", "Canonical audio with rate/channel/length contract and declared source status; separate 32,000-sample teaching signal."),
     "domain.audio_resample": ("Resample audio", "Speech", "Native torchaudio resampling with updated sample and segment coordinates."),
     "domain.audio_features": ("STFT and mel features", "Speech", "Native torchaudio features, frame formula, sequence lengths and masks."),
     "domain.speech_ctc": ("Train CTC recognizer", "Speech", "Native CTCLoss, greedy frame path and CER/WER edit alignment."),

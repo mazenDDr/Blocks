@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest Mac continuation: §18.** Codex pulled the cloud merges and verified them on macOS arm64. Read §17 for compatibility effects and priorities, then §18 for the actual Mac evidence and broader remaining-work assessment. §11–§16 record the cloud implementation.
+> **Latest continuation: §19 — bounded domain dataset imports.** Read §19 for delivered files, final Mac/browser verification, checkpoint compatibility, cleanup and next work. §18 verified the cloud merges; §17 records their earlier compatibility effects/priorities. §11–§16 record the cloud implementation.
 
 ## 1. What this project is
 
@@ -50,6 +50,7 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Production serving for domain, CNN, RL, unsupervised; run-status race fix | done, verified on Linux x86 and Mac arm64 (see §14, §18) | PR #2 → 6c39878 |
 | Multi-file repository imports | done, verified on Linux x86 and Mac arm64 (see §15, §18) | PR #3 → 14b7b27 |
 | Optional bearer token | done, verified on Linux x86 and Mac arm64 (see §16, §18) | PR #4 → 1f5d026 |
+| Bounded local COCO / CoNLL / WAV dataset imports | done, verified on Mac arm64 (see §19, ADR 0022) | this continuation; `git log -1` |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -64,6 +65,8 @@ After domain checkpoints/inference: full suite → **931 passed, 1 skipped, 6 de
 After the Claude cloud sessions (§11–§16, Linux x86_64 container, not the Mac): full suite → **1000 passed, 1 skipped, 6 deselected** on `1f5d026`. Live tests were **not run** (no Ollama there). Re-verify on the Mac per §17.
 
 After pulling the cloud merges to Mac `37368c5`: full suite → **1000 passed, 1 skipped, 6 deselected**, **438.09 s**; live Ollama → **6 passed, 1001 deselected**, **16.96 s**. Final editor/curl/Chrome evidence and scope are in §18.
+
+After bounded domain imports: full suite → **1032 passed, 1 skipped, 6 deselected**, **447.24 s**; live Ollama → **6 passed, 1033 deselected**, **16.33 s**. Final build/curl/installed Chrome evidence is in §19.
 
 ### Check for in-progress work first
 Run `git status`. If there are uncommitted files, a previous session was cut off mid-milestone: inspect them with `git diff`, do **not** discard them, finish that milestone, verify (§4), then commit.
@@ -101,7 +104,7 @@ Run `git status`. If there are uncommitted files, a previous session was cut off
 
 ## 5. Remaining work
 
-> **Superseded: the current remaining-work list is §17.4.** The entries below are the historical milestone acceptance references, all completed.
+> **Superseded: the current remaining-work list is §19, supplemented by §18 and the unfinished items in §17.4.** The entries below are the historical milestone acceptance references, all completed.
 
 ### 6b — completed domain scope (VISION §9.7, §9.8, §23 Milestone 6 "Domain evidence", A56, A57, A58)
 
@@ -467,6 +470,8 @@ Record results in a new HANDOFF section, as previous sessions did.
 
 ### 17.4 Remaining work, in priority order
 
+> Historical priority list: Mac verification and the bounded dataset-import scope are now complete (§18–§19). Use §19 for the latest scope/compatibility and next priorities; do not repeat the completed importer approval request.
+
 Everything in ACCEPTANCE is bounded evidence (no `not implemented` rows). These are the real gaps, from `docs/CAPABILITIES.md` "Not implemented" lines and the ADRs:
 
 1. **Mac verification (§17.3).** Required before anything else.
@@ -555,3 +560,49 @@ All A01–A64 rows have **bounded evidence**. That means the documented scenario
 - Serving: **Keras/JAX also remain unserved**, along with agents and the narrower model/procedure/RL/preprocessing gaps in §17.4. Do not describe agent serving as the only remaining model backend.
 
 Recommended next scope after this Mac verification: real user dataset import with explicit source/provenance and the checkpoint-compatibility decision from §17.4, then bounded agent serving with real Ollama and ADR 0022. A CI/browser smoke baseline and restore/upgrade tests should accompany work toward everyday use. Do not require credentials for unrelated work or fabricate remote/GPU/online evidence. The user's current message asks for this assessment, not automatic implementation of every gap. Keep working alone and keep verified changes and the handoff pushed.
+
+
+## 19. Bounded domain dataset imports — Codex, 2026-10-04 (verified, committed and pushed)
+
+The user said “okay continue work” after §18 recommended domain dataset imports and described their retraining effect. This is authorization to continue that scope. Worked alone, no subagents, from clean pushed `606cc29`. Before implementation the user was told again that changes in pinned domain source/contract files invalidate previously saved vision/NLP/speech models and registered domain versions. No compatibility bypass, historical artifact rewrite or automatic migration. No dependencies installed, no database migration, no user datasets supplied or overwritten. Tabular/CNN/RL/unsupervised identities are unchanged. Tiny local CPU fixtures are §4 acceptance evidence, not GPU training or real-world accuracy evidence.
+
+### Implementation and files
+
+- New `python/connectors/domain_import.py`: bounded server-local COCO segmentation, WAV+transcript-manifest and strict CoNLL IOB2 converters. Native pycocotools/SciPy/IOB2 semantics. Source bytes are read once, hashed and snapshotted into CAS; canonical payload and converter/request/contract/license/source manifest are stored and atomically materialized in `domain-datasets/<manifest-sha>/`. Original files are never modified. Declared license and synthetic flag are required and explicitly user supplied, not independently verified. Integrity errors refuse altered canonical data/manifests; member traversal and escaping symlinks are refused.
+- New `services/control/domain_datasets_api.py`: POST conversion (one concurrent import, stable `E_DATASET_*` failures), GET verified listing; inherits existing optional bearer token. `control/app.py` registers it. No uploads/downloads/dependency installation.
+- Native loaders/provenance: vision preserves separate overlapping masks, raw category mapping, original annotation/image/license IDs, keypoint visibility and flip pairs; speech preserves normalized float32 multichannel PCM and true lengths, with no invented timing labels. NLP retains original CoNLL tokens/tags/line numbers and reconstructed-text character offsets. Source/trainer summaries and saved examples/reference/inference carry actual recorded declarations instead of hard-coded SYNTHETIC. Audio feature output now retains channel count; waveform inspection explicitly identifies channel 0, features declare channel averaging. Separate teaching sine remains labelled teaching data. Corrected the CTC inspector's fixture-only wording to explain transcript characters/space/blank generally.
+- Editor `DomainDatasetImport.tsx`, workspace/App integration: required path/root/license/status, flip-pair or column policies, actual converted contract/hashes, apply to same-family draft source nodes, clear source truncation and same-family resume/fitted-tokenizer choices, update project description/declaration. No training on import; Run trains a fresh model. Old inspected runs stay explicitly tied to their immutable provenance. Registry purpose and partition labels are generic rather than incorrectly calling every imported dataset synthetic.
+- New `examples/make_import_fixtures.py` and `examples/dataset_import_journey.py`: deterministic labelled SYNTHETIC COCO/CoNLL/stereo-tone WAV teaching files and real HTTP imports→native two-epoch training→saved inference. Existing model algorithms and graph primitives are retained.
+- New `tests/test_domain_import.py`: 32 cases with native masks/RLE/overlap/keypoint-flip checks, Unicode entity agreement with seqeval, native unsigned/signed/float/24-bit PCM normalization, length/channel preservation, bounds/path/schema/IOB2/integrity refusals, token enforcement, source snapshots/removal and actual all-three-family worker→checkpoint→inference→production registration/reference provenance. One intentionally false flag on generated test input tests declaration transport only; public fixtures/journeys always declare SYNTHETIC. Existing tests were not weakened.
+- ADR **0022**, README (only commands actually run), CAPABILITIES/ACCEPTANCE and regenerated COVERAGE updated. Source-op coverage includes the new test file. Next ADR is **0023**.
+
+### Verification evidence
+
+- Final `.venv/bin/pytest -q -o faulthandler_timeout=240`: **1032 passed, 1 skipped, 6 deselected, 1941 warnings, 447.24 s (7:27)**, exit 0 (`/private/tmp/void-dataset-full-final-pytest.log`). Verified after the final CTC explanation correction; no source edits afterwards.
+- Final live `.venv/bin/pytest -q -m live`: **6 passed, 1033 deselected, 16.33 s**, actual local Ollama, exit 0 (`/private/tmp/void-dataset-live-final-pytest.log`). Existing Anthropic test lacks a key. No online tracker accounts/credentials supplied.
+- Focused `.venv/bin/pytest -q tests/test_domain_import.py tests/test_domain_api.py tests/test_coverage_ledger.py -o faulthandler_timeout=240`: **50 passed, 108 warnings, 19.02 s**, exit 0 before the final CTC wording correction; the final full suite covers those cases again. Native pycocotools NumPy-copy deprecation warnings remain.
+- Final `pnpm -C apps/editor build` / `exec tsc --noEmit`: exit 0, **250 modules**, existing large-chunk warning. `.venv/bin/python -m backends.coverage --write` / `--check`: current. `git diff --check`: clean.
+- `.venv/bin/python examples/make_import_fixtures.py --out /private/tmp/void-import-fixtures`; `.venv/bin/python examples/dataset_import_journey.py --base http://127.0.0.1:8776 --fixtures /private/tmp/void-import-fixtures`: exit 0. All three final native CPU import/train/checkpoint/predict paths pass with matching dataset/source/license identities. Final CLI runs: vision **9c5b3f08e172**, NLP **493d5a4b40d8**, speech **ae3cc454484e**. Evidence `/private/tmp/void-dataset-import-cli.json`.
+- Curl against backend **8776** `/api/domain/datasets` and editor **5299** `/api/registry`: exit 0/HTTP 200; import listing and actual proxied registry received. New bearer-token route coverage is in native API tests; this temporary browser backend had no token.
+- Installed Chrome/Puppeteer outside the repository: actual picker→import with mandatory license/status→verify manifest/source hashes→apply→check canonical source path and clear continuation→fresh Run→source overlays/Unicode spans/waveform→saved inference with source/license provenance. Final run **all three pass with zero browser runtime and API errors**. Logs `/private/tmp/void-dataset-import-browser-final.log`, evidence JSON and screenshots `/private/tmp/void-dataset-import-*`. Earlier temporary script corrections scoped an ambiguous role=status selector and compared canonical payload hashes (CoNLL requests differ in an unused root declaration); no app controls were bypassed or tests relaxed. Final screenshots were reviewed; two-epoch models have weak actual predictions (background mask, incorrect token labels, empty CTC output), never replaced by fabricated accuracy.
+
+| Domain | Final Chrome training run | Model prefix | Original source snapshots |
+|---|---|---|---|
+| Vision | 5d87104f8e57 | 6d0ee7afc53e | 9 (JSON + 8 PNGs) |
+| NLP | ef818b46051d | 9fb2323db36b | 1 (CoNLL) |
+| Speech | 18580303e91d | 503435a3abb2 | 9 (JSON + 8 stereo WAVs) |
+
+Libraries used, already installed: torch **2.14.1**, torchvision **0.29.1**, torchaudio **2.11.0**, NumPy **2.5.3**, SciPy **1.18.1**, pycocotools **2.0.11**, tokenizers **0.23.2**, seqeval **1.2.2**. WAV decoding uses SciPy for explicit PCM dtype semantics (including 24-bit); torchaudio remains available and performs native mel features. No new requirements/package install.
+
+Cleanup: own backend **PID 65777**, then final backend **PID 67880 / port 8776**, and editor **PID 65750 / port 5299** stopped with SIGTERM. Chrome closes in each script's finally. `ps` confirms only the user's historical **PID 8258 / port 8000** remains; it was never stopped/restarted. Temporary workbench, fixture files/logs/screenshots are not committed and need not survive cleanup. All delivered source/tests/docs are committed and pushed to the existing private master; use `git log -1` for the release commit.
+
+### Bounds and next work (supersedes the completed items in §17.4)
+
+The implemented import bounds are in ADR 0022/CAPABILITIES: 2–256 records, 64 MiB input/decoded, 8 MiB JSON/text; COCO uniform RGB 4–512 dimensions, 1–4 classes, ≤64 instances/image and shared ≤128-keypoint schema, segmentation only/no crowds; CoNLL ≤4,000 reconstructed characters/sentence and ≤32 entity types; WAV uniform 1–96 kHz rate and 1–4 channels, 512–32,000 samples/channel, ≤256 transcript characters and ≤64-character alphabet. No implicit resize/trim/resample, original whitespace reconstruction guarantee, timestamps, larger streaming conversion, upload/URL import, verified license ownership, import deletion/retention or real-world accuracy benchmark. The existing typed transforms/preprocessing stay explicitly configurable. No user source was supplied, so real-data measurement is pending.
+
+1. **Next buildable release: bounded agent serving with real local Ollama**, preserving native graph state/context/turn provenance and isolation; ADR 0023. §17.4/§18 serving gaps still include Keras/JAX and narrower multi-input/procedure/RL/fitted-preprocessing cases.
+2. Test user-supplied datasets within the above bounds when paths/license/status are supplied; expand formats/categories/streaming based on measured needs. Existing older domain models/versions require explicit fresh training/registration. Never modify old manifests to get around identity checks. A durable compatibility/migration design remains a separate future decision.
+3. Repository-owned browser smoke/CI, backup/restore/upgrade/recovery evidence; wider cache/repository/editor/research features from §18; accounts/roles/security/deployment boundary before broader production use.
+4. Anthropic and online MLflow/W&B remain credential-dependent; GPU/cloud/encrypted cross-machine/distributed and other infrastructure scope stays unimplemented until real infrastructure and measured evidence exist. Do not require those credentials for unrelated local work.
+
+Continue alone, preserve user changes, read this handoff and ADR 0022, verify §4, stop only your own servers, commit/push the verified release and keep the handoff current.

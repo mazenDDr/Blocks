@@ -170,7 +170,7 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
 - Behaviors outside the documented bounds in the A01–A64 acceptance checklist; later Milestone 7/8 and domain checkpoint sections are authoritative for their implemented scope.
 - Broader multi-input/output training, optimizer/scheduler/precision/device workflows outside the supported PyTorch training procedure. Native tensor broadcasting/casts and composed custom losses exist; GPU and mixed precision remain unavailable.
 - Broader parameter initialization/regularization and device-placement policies beyond implemented sharing/freezing/procedure controls.
-- General domain dataset importers beyond the existing labelled fixture formats. Image folders, CSV and connected PostgreSQL/S3/DVC sources are already supported.
+- Domain dataset importers outside the bounded COCO segmentation/CoNLL IOB2/WAV+transcript formats in ADR 0022. Image folders, CSV and connected PostgreSQL/S3/DVC sources are already supported.
 - Loss and optimizer inspectors, response curves; optimizer state beyond checkpoints.
 - Serving/registry beyond the bounded native tabular adapter below; Keras/JAX worker training runs (see Milestone 6a: only forward, loss, gradients and one SGD step exist there).
 
@@ -229,7 +229,7 @@ architecture templates and pretrained weights are tracked separately (none provi
 
 ## Milestone 6b: vision, NLP and speech domain workflows (A56–A58)
 
-Native libraries available here: torchvision 0.29.1, torchaudio 2.11.0, tokenizers 0.23.2, seqeval 1.2.2, torchmetrics 1.9.0, pycocotools 2.0.11, jiwer 4.0.0. See ADR 0011. All training data is explicitly labelled SYNTHETIC; tone recognition is not a real-speech benchmark.
+Native libraries available here: torchvision 0.29.1, torchaudio 2.11.0, tokenizers 0.23.2, seqeval 1.2.2, torchmetrics 1.9.0, pycocotools 2.0.11, jiwer 4.0.0. See ADR 0011. Built-in teaching fixtures are explicitly labelled SYNTHETIC; bounded local COCO/CoNLL/WAV imports now carry user-declared source status and license (ADR 0022). Verification uses generated fixtures; no real-speech or user-dataset accuracy benchmark is claimed.
 
 | Capability | Where | Evidence |
 |---|---|---|
@@ -246,7 +246,7 @@ Native libraries available here: torchvision 0.29.1, torchaudio 2.11.0, tokenize
 | Read-only recorded domain inspection with run/graph/node/source/artifact provenance; bounded source/prediction samples | control API and existing CAS worker | `test_actual_domain_worker_inspection_is_recorded_and_read_only` in `test_domain_api.py` |
 | Editor domain workspaces linked from project picker; vision overlays before/after and prediction/GT, selectable source spans/subwords/labels, waveform/spectrogram/frame selection and CTC/error alignment; editable settings and typed graph canvas | `DomainWorkspace.tsx`, `DomainViews.tsx` | editor build/type check; browser verification recorded in HANDOFF |
 
-Not implemented (checkpoints and completed-epoch resume shipped later; see the domain-checkpoint section): general dataset importers beyond fixture formats, pretrained models, dedicated detector training, speech playback/streaming/beam search/forced alignment, language-model generation and multimodal fusion. Cancellation is between domain nodes. Affine boxes enclose transformed corners unless the explicit mask-refit policy is selected; they are not claimed to be tight masks. Native tokenizer vocabulary tie-breaking is not claimed deterministic across versions.
+Not implemented (checkpoints and completed-epoch resume shipped later; see the domain-checkpoint section): dataset imports outside the bounded COCO segmentation/CoNLL IOB2/WAV+transcript formats below, pretrained models, dedicated detector training, speech playback/streaming/beam search/forced alignment, language-model generation and multimodal fusion. Cancellation is between domain nodes. Affine boxes enclose transformed corners unless the explicit mask-refit policy is selected; they are not claimed to be tight masks. Native tokenizer vocabulary tie-breaking is not claimed deterministic across versions.
 
 ## Milestone 7: registry and local production investigation (A50, A59–A63)
 
@@ -379,3 +379,18 @@ Not implemented: serving with fitted preprocessing before the estimator; out-of-
 | `VOID_API_TOKEN` enables a constant-time bearer check on every request (401 + `WWW-Authenticate` otherwise); weak tokens refused at start-up; editor proxy injects the header server-side; traffic generator and example scripts authenticate | `services/control/auth.py`, `services/control/app.py`, `apps/editor/vite.config.ts`, `production/traffic.py` | `test_auth.py` |
 
 Not implemented: user accounts, roles, per-user audit, TLS termination (deploy behind a TLS proxy before exposing the service).
+
+
+## Bounded local domain dataset imports (ADR 0022)
+
+| Capability | Where | Evidence |
+|---|---|---|
+| Explicit user-declared synthetic status and license; original source byte snapshots/hashes, canonical payload and converter/manifest identity; atomic import materialization and integrity refusal | `connectors/domain_import.py`, `control/domain_datasets_api.py` | `tests/test_domain_import.py`: deterministic identities, CAS snapshots, source removal, tampered payload/manifest; token/schema enforcement |
+| COCO segmentation: native polygon/RLE masks, sparse category mapping, exact xywh→xyxy semantics, overlapping instance masks, keypoint visibility/flip pairs and original annotation/license IDs | native loader + pycocotools; existing typed image source | `COCO.annToMask` comparisons, native RLE/flip checks; actual tiny FCN worker training/inference |
+| CoNLL IOB2: selected whitespace columns, reconstructed text/character spans, preserved original tokens/tags/line numbers | native text source, offline WordPiece and BiGRU | Unicode spans agree with seqeval; grammar refusals; actual imported worker training/inference |
+| WAV PCM + JSON transcripts: native SciPy normalization including 24-bit, preserved rate/channels/lengths, no inferred gold timing, explicit mono feature policy | native audio loader, torchaudio features and CTC | native unsigned/signed/float/stereo comparisons; actual imported CTC worker training/inference |
+| Editor import→verify→apply to draft, clear incompatible continuation/tokenizer choices, update project source declaration; inspect/train/predict with recorded imported provenance | `DomainDatasetImport.tsx`, existing workspace/views/models | build/type check and installed Chrome evidence in HANDOFF §19; persisted checkpoint/production-reference provenance tests |
+
+Bounds: 2–256 records, 64 MiB input/decoded payload, 8 MiB JSON/text, one concurrent import. COCO requires uniform RGB PNG/JPEG geometry (4–512 pixels), 1–4 categories, ≤64 instances/image, common ≤128-keypoint schema; no crowds or box-only annotations. CoNLL has ≤4,000 reconstructed characters/sentence and ≤32 entity types. WAV requires uniform 1–96 kHz rate and 1–4 channels, 512–32,000 samples/channel, ≤256 transcript characters/clip and ≤64-character alphabet. Explicit member roots reject traversal/symlink escape. Arbitrary URL downloads, streaming/large datasets, file uploads, other annotation formats, automatic geometry/rate correction, verified license ownership, import deletion/retention and real-world benchmark evidence are **not implemented**. The license/status are user declarations; fixture tests do not certify them.
+
+Compatibility: this continuation changes pinned native domain source code, so **previous vision/NLP/speech models and registered domain versions require fresh training and registration**. Existing runs remain recorded; integrity checks are unchanged. Tabular/CNN/RL/unsupervised identities and dependencies are unchanged. No database migration or dependency reinstall.

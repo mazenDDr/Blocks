@@ -538,7 +538,15 @@ function Workbench() {
       {view === "scale" && <ScaleWorkspace graph={graph} ui={ui} projectId={projectId} onImport={(p) => { adopt(p.projectId, p.graph, p.ui, true); refreshLists(); }} onOpenRun={openRun} />}
 
       {view === "domain" && domain && <DomainWorkspace key={projectId} projectId={projectId} graph={graph} validation={rv ?? null} ops={opsByType} runs={tabRuns} runId={ctx.runId}
-        setRunId={(id) => setCtx({ runId: id, step: null, sample: null })} reloadRuns={reloadRuns} ensureSaved={ensureSaved} onConfig={setConfig} />}
+        setRunId={(id) => setCtx({ runId: id, step: null, sample: null })} reloadRuns={reloadRuns} ensureSaved={ensureSaved} onConfig={setConfig} onDataset={(d) => {
+          const source = { vision: "domain.vision_source", nlp: "domain.nlp_source", speech: "domain.audio_source" }[d.family];
+          const trainer = { vision: "domain.vision_segmenter", nlp: "domain.nlp_tagger", speech: "domain.speech_ctc" }[d.family];
+          setGraph((g) => ({ ...g, nodes: g.nodes.map((n) => ({ ...n, config:
+            n.type === source ? { ...n.config, path: d.path, n: null } :
+            n.type === trainer ? { ...n.config, resume_model_id: null } :
+            d.family === "nlp" && n.type === "domain.nlp_tokenizer" ? { ...n.config, fitted_model_id: null } : n.config })) }));
+          setUi((u) => ({ ...u, synthetic: d.synthetic, description: `Imported ${d.kind}; synthetic=${d.synthetic} (user declared); ${d.license.declaration}` }));
+        }} />}
       {view === "graph" && rl && (
         <RLWorkspace projectId={projectId} graph={graph} setGraph={setGraph} ui={ui} validation={rv ?? null} allRuns={allRuns} reloadRuns={reloadRuns} ensureSaved={ensureSaved} />
       )}

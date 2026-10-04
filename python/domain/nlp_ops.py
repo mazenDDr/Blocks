@@ -17,6 +17,7 @@ from operations._common import StrictConfig
 from tabular.core import ExecutionError, VType, resolve_path
 
 from . import checkpoints as CP
+from connectors.domain_import import provenance
 from .core import NLP_REPORT, TEXT_CORPUS, TOKEN_BATCH, DomainOperation, fixture_path, r, sha256_file, value
 
 DEFAULT_JSONL = "examples/fixtures/synthetic_ner.jsonl"
@@ -77,17 +78,19 @@ class NlpSource(DomainOperation):
     def execute(self, cfg, ins, ctx):
         p = fixture_path(cfg.path, "the committed fixture is examples/fixtures/synthetic_ner.jsonl")
         recs = read_corpus(p, cfg.n)
+        flags = {rec.get("synthetic") if type(rec.get("synthetic")) is bool else None for rec in recs}
+        source = provenance(p, next(iter(flags)) if len(flags) == 1 else None, SYNTH)
         types = sorted({s["label"] for r_ in recs for s in r_["spans"]})
         counts = {t: sum(1 for r_ in recs for s in r_["spans"] if s["label"] == t) for t in types}
         sha = sha256_file(p)
-        data = {"contract": {"n": len(recs), "types": types, "entityCounts": counts, "offsets": "character offsets into the raw text, end exclusive"}, "source": {"path": str(p), "sha256": sha, "synthetic": True}}
-        ex = [{"id": x["id"], "text": x["text"], "spans": [{**s, "surface": x["text"][s["start"]:s["end"]]} for s in x["spans"]]} for x in recs[:8]]
-        return {"corpus": value(TEXT_CORPUS, data, recs)}, {"path": str(p), "sha256": sha, "synthetic": True, "note": SYNTH, "contract": data["contract"],
+        data = {"contract": {"n": len(recs), "types": types, "entityCounts": counts, "offsets": "character offsets into the raw text, end exclusive"}, "source": source}
+        ex = [{"id": x["id"], "text": x["text"], "spans": [{**s, "surface": x["text"][s["start"]:s["end"]]} for s in x["spans"]], "sourceLines": x.get("sourceLines"), "originalTokens": x.get("originalTokens"), "originalTags": x.get("originalTags")} for x in recs[:8]]
+        return {"corpus": value(TEXT_CORPUS, data, recs)}, {**source, "contract": data["contract"],
                                                             "sentencesWithoutEntities": sum(1 for x in recs if not x["spans"]), "examples": ex,
-                                                            "provenance": {"source": "read from the fixture file; every span was checked to lie inside its text"}}
+                                                            "provenance": {"source": source, "spanValidation": "every span was checked to lie inside its text"}}
 
     def explain(self, cfg, inputs, outputs):
-        return {"equation": "record = (id, text, spans[(start, end, label)])", "rule": "Spans are character offsets into the raw text. Words, subwords and tags are all derived from them later, never the other way round.", "note": SYNTH}
+        return {"equation": "record = (id, text, spans[(start, end, label)])", "rule": "Spans are character offsets into the canonical text. Imported CoNLL text is explicitly reconstructed from tokens.", "note": "Source declaration and license are recorded at execution."}
 
 
 # ================================================================================================ tokenizer
@@ -251,7 +254,7 @@ class NlpTagger(DomainOperation):
                    "strictMetrics": res["strictMetrics"], "crossCheck": cross, "tokenAccuracy": {"value": res["tokenAccuracy"], "positions": res["tokenCount"], "note": "subword-level accuracy over SCORED positions only; a different quantity from the span F1 above"},
                    "invalidPredictedTransitions": res["invalidPredictedTransitions"], "maskCheck": {"maxAbsLogitDifference": mask_dev, "claim": "logits of a sentence alone equal its logits inside a padded batch",
                                                                                                            "shortestLen": len(vax[short].ids), "longestLen": len(vax[longest].ids)},
-                   "samples": res["records"], "seconds": res["seconds"], "synthetic": True, "note": SYNTH,
+                   "samples": res["records"], "seconds": res["seconds"], "synthetic": d.data.get("source", {}).get("synthetic"), "note": d.data.get("source", {}).get("note"),
                    "provenance": {"source": d.data.get("source"), "vocabSha256": d.data.get("vocabSha256"), "torch": torch.__version__, "model": "Embedding -> BiGRU (packed) -> Linear"}}
         summary["checkpoint"] = CP.persist(ctx, "nlp", signature, res["trainingState"],
             {"architecture": {"vocab": tok.get_vocab_size(), "n_labels": len(tags), "pad_id": pad_id, "emb": cfg.embedding, "hidden": cfg.hidden},

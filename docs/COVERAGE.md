@@ -326,14 +326,14 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `agent.tool_call` | agent | langgraph | yes | agent | 3 |
 | `domain.audio_features` | domain | python | yes | audio_features | 1 |
 | `domain.audio_resample` | domain | python | yes | audio_data | 1 |
-| `domain.audio_source` | domain | python | yes | audio_data | 1 |
-| `domain.nlp_source` | domain | python | yes | nlp_corpus | 1 |
+| `domain.audio_source` | domain | python | yes | audio_data | 2 |
+| `domain.nlp_source` | domain | python | yes | nlp_corpus | 2 |
 | `domain.nlp_tagger` | domain | python | yes | nlp_tagger | 1 |
 | `domain.nlp_tokenizer` | domain | python | yes | nlp_tokens | 1 |
 | `domain.speech_ctc` | domain | python | yes | speech_ctc | 1 |
 | `domain.vision_box_convert` | domain | python | yes | vision_data | 1 |
 | `domain.vision_segmenter` | domain | python | yes | vision_seg | 1 |
-| `domain.vision_source` | domain | python | yes | vision_data | 1 |
+| `domain.vision_source` | domain | python | yes | vision_data | 2 |
 | `domain.vision_transform` | domain | python | yes | vision_transform | 1 |
 | `dvc.csv_source` | tabular | dvc | yes | connector_source | 1 |
 | `postgres.query` | tabular | postgresql | yes | connector_source | 4 |

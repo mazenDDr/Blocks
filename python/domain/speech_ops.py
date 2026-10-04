@@ -17,6 +17,7 @@ from speech import features as FE
 from tabular.core import ExecutionError, VType, resolve_path
 
 from . import checkpoints as CP
+from connectors.domain_import import provenance
 from .core import AUDIO_BATCH, FEATURE_BATCH, SPEECH_REPORT, DomainOperation, fixture_path, peek_spec, r, sha256_file, value
 
 DEFAULT_NPZ = "examples/data/domain/synthetic_tones.npz"
@@ -33,7 +34,7 @@ def envelope(x: np.ndarray, bins: int = 800) -> dict[str, Any]:
 
 def clip_record(c: A.Clip, with_segments: bool = True) -> dict[str, Any]:
     w = c.wave[0].numpy()
-    d = {**A.contract(c), "text": c.text, "envelope": envelope(w), "rawHead": [round(float(v), 4) for v in w[:480]], "timeOfLastSample": A.time_of_sample(c.samples_per_channel - 1, c.sample_rate)}
+    d = {**A.contract(c), "text": c.text, "waveformChannel": 0, "envelope": envelope(w), "rawHead": [round(float(v), 4) for v in w[:480]], "timeOfLastSample": A.time_of_sample(c.samples_per_channel - 1, c.sample_rate)}
     if with_segments and c.segments:
         d["segments"] = [{"symbol": s["symbol"], "start": s["start"], "end": s["end"], "t0": s["start"] / c.sample_rate, "t1": s["end"] / c.sample_rate} for s in c.segments]
     return d
@@ -55,7 +56,7 @@ def _info(raw: dict[str, Any] | None, rate: int | None = None) -> dict[str, Any]
 
 # ================================================================================================ source
 class AudioSourceConfig(StrictConfig):
-    path: str = Field(DEFAULT_NPZ, description="SYNTHETIC tone-sequence fixture (.npz written by examples/make_domain_fixtures.py)")
+    path: str = Field(DEFAULT_NPZ, description="Canonical audio .npz: imported WAV/transcripts or labelled SYNTHETIC tones")
     n: int | None = Field(None, ge=1, title="use the first n clips (empty = all)")
     n_examples: int = Field(6, ge=1, le=12, title="clips recorded for the waveform inspector")
 
@@ -76,23 +77,24 @@ class AudioSource(DomainOperation):
 
     def execute(self, cfg, ins, ctx):
         p = fixture_path(cfg.path)
+        source = provenance(p, (peek_spec(cfg.path) or {}).get("synthetic"), SYNTH)
         clips, spec = A.load_npz(p, cfg.n)
         sha = sha256_file(p)
-        data = _batch_data(clips, spec["alphabet"], {"source": {"path": str(p), "sha256": sha, "synthetic": True}})
+        data = _batch_data(clips, spec["alphabet"], {"source": source})
         t = A.teaching_signal()
         assert t.samples_per_channel == A.TEACHING_SAMPLES_PER_CHANNEL
         first = clips[0]
-        summary = {"path": str(p), "sha256": sha, "synthetic": True, "note": SYNTH, "contract": data["contract"], "clips": [clip_record(c) for c in clips[:cfg.n_examples]],
+        summary = {**source, "contract": data["contract"], "clips": [clip_record(c) for c in clips[:cfg.n_examples]],
                    "lengthTable": [{"id": c.id, "samples": c.samples_per_channel, "seconds": c.duration} for c in clips[:20]],
                    "teaching": {**A.contract(t), "what": "a 2 s, 440 Hz sine generated in code at 16,000 Hz: exactly 32,000 samples per channel", "envelope": envelope(t.wave[0].numpy()),
                                 "rawHead": [round(float(v), 4) for v in t.wave[0, :480]], "expectedSamples": A.TEACHING_SAMPLES_PER_CHANNEL},
                    "firstClipIsTeachingLength": first.samples_per_channel == A.TEACHING_SAMPLES_PER_CHANNEL, "timeAxis": "t = sample_index / sample_rate",
-                   "provenance": {"source": "decoded from the fixture file (int16 PCM / 32767)"}}
+                   "provenance": {"source": source, "normalization": spec.get("normalization", "legacy fixture int16 PCM / 32767")}}
         return {"audio": value(AUDIO_BATCH, data, {"clips": clips, "alphabet": spec["alphabet"]})}, summary
 
     def explain(self, cfg, inputs, outputs):
         return {"equation": "samples_per_channel = round(duration_seconds x sample_rate);  t = i / sample_rate",
-                "rule": "The contract carries sample rate, channel count and length. A 2 s clip at 16,000 Hz has exactly 32,000 samples per channel.", "note": SYNTH}
+                "rule": "The contract carries sample rate, channel count and length. A 2 s clip at 16,000 Hz has exactly 32,000 samples per channel.", "note": "The sine teaching example is generated separately; source declaration and license are recorded at execution."}
 
 
 # ================================================================================================ resample
@@ -190,13 +192,13 @@ class AudioFeatures(DomainOperation):
         fmax = cfg.f_max or sr / 2
         pts = np.linspace(mel(cfg.f_min), mel(fmax), cfg.n_mels + 2)
         centres = [round(hz(m), 1) for m in pts[1:-1]]
-        data = {"contract": {"n": len(clips), "sampleRate": sr, "nMels": cfg.n_mels, "hop": cfg.hop_length, "framesMin": int(lengths.min()), "framesMax": int(lengths.max()), "paddedFrames": int(x.shape[1]),
+        data = {"contract": {"n": len(clips), "sampleRate": sr, "channels": clips[0].channels, "nMels": cfg.n_mels, "hop": cfg.hop_length, "framesMin": int(lengths.min()), "framesMax": int(lengths.max()), "paddedFrames": int(x.shape[1]),
                              "alphabet": d.obj["alphabet"]}, "source": d.data.get("source"), "config": FE.describe(cfg, sr)}
         ex = []
         for i in range(min(cfg.n_examples, len(clips))):
             c = clips[i]
             ex.append({"id": c.id, "text": c.text, "samples": c.samples_per_channel, "frames": int(feats[i].shape[0]), "spectrogram": [[round(float(v), 2) for v in row] for row in feats[i].tolist()],
-                       "frameTimes": [round(FE.frame_time(t, cfg.hop_length, sr, cfg.center, cfg.n_fft)[1], 4) for t in range(feats[i].shape[0])], "envelope": envelope(c.wave[0].numpy(), 400)})
+                       "frameTimes": [round(FE.frame_time(t, cfg.hop_length, sr, cfg.center, cfg.n_fft)[1], 4) for t in range(feats[i].shape[0])], "waveformChannel": 0, "envelope": envelope(c.wave[0].numpy(), 400)})
         summary = {"config": FE.describe(cfg, sr), "contract": data["contract"], "frameTable": table[:30], "formulaChecks": {"clips": len(table), "allEqual": all(t["formulaFrames"] == t["actualFrames"] for t in table)},
                    "stftCheck": {"clip": clips[0].id, "torchStftFrames": int(stft.shape[-1]), "formulaFrames": table[0]["formulaFrames"], "freqBins": int(stft.shape[-2])},
                    "batch": {"shape": list(x.shape), "lengths": lengths.tolist()[:40], "maskTrueCounts": mask.sum(1).tolist()[:40], "paddingFraction": float(1 - mask.float().mean()),
@@ -261,14 +263,14 @@ class SpeechCTC(DomainOperation):
             # an output frame f is produced by the convolution centred on input frame STRIDE*f
             to_t = lambda k: FE.frame_time(CT.STRIDE * k, fc.hop_length, sr, fc.center, fc.n_fft)[1]
             recs.append({**{k: v for k, v in x.items() if k != "spectrogram"}, "id": c.id, "samples": c.samples_per_channel, "spectrogram": [[round(float(v), 2) for v in row] for row in x["spectrogram"].tolist()],
-                         "envelope": envelope(c.wave[0].numpy(), 400), "tokenTimes": [round(to_t(k), 4) for k in f], "frameTimes": [round(to_t(k), 4) for k in range(x["outFrames"])],
+                         "waveformChannel": 0, "envelope": envelope(c.wave[0].numpy(), 400), "tokenTimes": [round(to_t(k), 4) for k in f], "frameTimes": [round(to_t(k), 4) for k in range(x["outFrames"])],
                          "gold": c.segments and [{"symbol": s["symbol"], "t0": s["start"] / sr, "t1": s["end"] / sr} for s in c.segments], "durationSeconds": c.duration})
         rates = res["rates"]
         summary = {"config": cfg.model_dump(), "nParams": res["nParams"], "curve": res["curve"], "alphabet": res["alphabet"], "vocabulary": {"blank": 0, **{c: i + 1 for i, c in enumerate(res["alphabet"])}},
-                   "ctc": {**res["ctc"], "inputLengths": "frames after the 2x time downsampling: floor((T + 2*1 - 3) / 2) + 1", "targetLengths": "label count per transcript (the separator tone is a label)",
+                   "ctc": {**res["ctc"], "inputLengths": "frames after the 2x time downsampling: floor((T + 2*1 - 3) / 2) + 1", "targetLengths": "character count per transcript; space, when present, is a label and never the CTC blank",
                            "constraint": "an alignment needs at least (labels + adjacent repeats) frames", "perClip": [{"clip": x["id"], "inputFrames": x["frames"], "outputFrames": x["outFrames"], "targetLength": x["targetLength"], "minFramesNeeded": x["minFramesNeeded"]} for x in recs]},
                    "normalization": res["normalization"], "rates": {**rates, "provenance": "corpus-level: total edits / total reference length over the validation clips; CER counts the separator as a character, WER splits on it"},
-                   "samples": recs, "split": {"seed": cfg.seed, "nVal": len(res["valIdx"]), "nTrain": len(res["trainIdx"]), "valIndices": res["valIdx"]}, "seconds": res["seconds"], "synthetic": True, "note": SYNTH,
+                   "samples": recs, "split": {"seed": cfg.seed, "nVal": len(res["valIdx"]), "nTrain": len(res["trainIdx"]), "valIndices": res["valIdx"]}, "seconds": res["seconds"], "synthetic": d.data.get("source", {}).get("synthetic"), "note": d.data.get("source", {}).get("note"),
                    "contract": d.data["contract"], "provenance": {"source": d.data.get("source"), "torch": torch.__version__, "model": "Conv1d(stride 2) -> BiGRU (packed) -> Linear; torch.nn.CTCLoss", "decoding": "greedy best path (argmax, collapse repeats, drop blanks)"}}
         summary["checkpoint"] = CP.persist(ctx, "speech", signature, res["trainingState"],
             {"architecture": {"n_mels": fc.n_mels, "vocab_with_blank": len(o["alphabet"]) + 1, "hidden": cfg.hidden},

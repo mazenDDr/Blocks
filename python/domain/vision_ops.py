@@ -16,6 +16,7 @@ from vision import segment as S
 from vision import transforms as T
 
 from . import checkpoints as CP
+from connectors.domain_import import provenance
 from .core import IMAGE_DATA, VISION_REPORT, DomainOperation, fixture_path, peek_spec, png_b64, r, sha256_file, value
 from .core import Plain
 
@@ -28,7 +29,9 @@ def _info(raw: dict[str, Any] | None, fmt: str, coords: str, n: int | None) -> d
     d: dict[str, Any] = {"boxFormat": fmt, "coords": coords, "n": n, "height": None, "width": None, "classes": [], "keypointNames": [], "flipPairs": [], "hasMasks": True,
                          "hasKeypoints": True, "colorSpace": "RGB"}
     if raw:
-        d.update(height=raw["size"], width=raw["size"], classes=raw["classes"], keypointNames=raw["keypointNames"], flipPairs=raw["flipPairs"], n=n if n is not None else raw["n"])
+        size = raw["size"]
+        h, w = size if isinstance(size, list) else (size, size)
+        d.update(height=h, width=w, classes=raw["classes"], keypointNames=raw["keypointNames"], flipPairs=raw["flipPairs"], n=n if n is not None else raw["n"])
     return d
 
 
@@ -42,7 +45,7 @@ def _record(s: C.VisionSample, spec: C.VisionSpec, nm: str = "") -> dict[str, An
     cm = S.class_map(s).numpy().astype(np.uint8)
     xyxy = C.to_xyxy_pixel(s.boxes, spec.box_format, spec.coords, (h, w))
     kp = C.keypoints_to_pixel(s.keypoints, spec.coords, (h, w))
-    return {"id": s.meta.get("id"), "size": [h, w], "image": png_b64(s.image.permute(1, 2, 0).numpy()), "labelMap": png_b64(cm, PALETTE),
+    return {"id": s.meta.get("id"), "metadata": s.meta, "size": [h, w], "image": png_b64(s.image.permute(1, 2, 0).numpy()), "labelMap": png_b64(cm, PALETTE),
             "boxesDeclared": [[r(x, 5) for x in b] for b in s.boxes.tolist()], "boxesXyxyPixel": [[r(x, 3) for x in b] for b in xyxy.tolist()], "labels": s.labels.tolist(),
             "keypoints": None if kp is None else [[[r(x, 3), r(y, 3), int(v)] for (x, y), v in zip(k, vv)] for k, vv in zip(kp, s.visibility)],
             "maskAreas": None if s.masks is None else [int(m.sum()) for m in s.masks]}
@@ -57,7 +60,7 @@ def _data_value(samples: list[C.VisionSample], spec: C.VisionSpec, extra: dict[s
 
 # ================================================================================================ source
 class VisionSourceConfig(StrictConfig):
-    path: str = Field(DEFAULT_NPZ, description="SYNTHETIC detection fixture (.npz written by examples/make_domain_fixtures.py)")
+    path: str = Field(DEFAULT_NPZ, description="Canonical vision .npz: imported COCO dataset or labelled SYNTHETIC fixture")
     n: int | None = Field(None, ge=1, title="use the first n images (empty = all)")
     box_format: Literal["xyxy", "xywh", "cxcywh"] = Field("xyxy", title="declared box format")
     coords: Literal["pixel", "normalized"] = Field("pixel", title="declared coordinates (normalized = fractions of image width/height)")
@@ -81,6 +84,7 @@ class VisionSource(DomainOperation):
 
     def execute(self, cfg, ins, ctx):
         p = fixture_path(cfg.path)
+        source = provenance(p, (peek_spec(cfg.path) or {}).get("synthetic"), SYNTH)
         samples, spec, raw = C.load_npz(p, cfg.n)
         spec.box_format, spec.coords = cfg.box_format, cfg.coords
         for s in samples:
@@ -93,17 +97,17 @@ class VisionSource(DomainOperation):
         cons = [C.consistency(s, spec, 0.0) for s in samples]
         hist = np.bincount(np.concatenate([s.labels.numpy() for s in samples] or [np.zeros(0, int)]), minlength=len(spec.classes)).tolist()
         sha = sha256_file(p)
-        out = _data_value(samples, spec, {"source": {"path": str(p), "configuredPath": cfg.path, "sha256": sha, "synthetic": True, "note": SYNTH}})
-        summary = {"path": str(p), "sha256": sha, "synthetic": True, "note": SYNTH, "contract": out.data["contract"], "classHistogram": dict(zip(spec.classes, hist)),
+        out = _data_value(samples, spec, {"source": {**source, "configuredPath": cfg.path}})
+        summary = {**source, "contract": out.data["contract"], "classHistogram": dict(zip(spec.classes, hist)),
                    "emptyImages": sum(1 for s in samples if len(s.labels) == 0), "occludedKeypoints": int(sum(int((s.visibility == 1).sum()) for s in samples)),
                    "consistency": {"ok": sum(c["ok"] for c in cons), "total": len(cons), "worstBoxVsMaskPx": max(c["maxBoxVsMaskPx"] for c in cons)},
-                   "samples": [_record(s, spec) for s in samples[:6]], "provenance": {"source": "read from the fixture file; boxes converted to the declared format/coordinates for the contract"}}
+                   "samples": [_record(s, spec) for s in samples[:6]], "provenance": {"source": source, "annotationPolicy": raw.get("boxPolicy", "fixture xyxy pixels"), "overlapPolicy": raw.get("overlapPolicy", "later instance wins")}}
         return {"data": out}, summary
 
     def explain(self, cfg, inputs, outputs):
         return {"equation": f"samples = (image CHW uint8, boxes [{cfg.box_format}, {cfg.coords}], labels, instance masks, keypoints (x, y, visibility), metadata)",
-                "rule": "Boxes are tight bounds of the VISIBLE pixels with exclusive max edges; keypoint visibility 2 = visible, 1 = occluded, 0 = not labelled. The declared format and coordinates are part of the wire's type.",
-                "note": SYNTH}
+                "rule": "Boxes use continuous exclusive max edges; imported COCO boxes are preserved, not silently refitted to masks. Keypoint visibility is 0/1/2. Format and coordinates are part of the wire type.",
+                "note": "Source declaration, license and annotation policy are recorded at execution."}
 
 
 # ================================================================================================ box conversion
@@ -274,7 +278,7 @@ class Segmenter(DomainOperation):
         prov_det = f"torchmetrics {torchmetrics.__version__} MeanAveragePrecision (pycocotools backend, IoU thresholds 0.50:0.95) on boxes of {S.CONNECTIVITY} of the predicted mask, score = mean class probability; DERIVED detections"
         summary = {"classes": names, "nParams": res["nParams"], "config": cfg.model_dump(), "split": {"seed": cfg.seed, "nTrain": res["nTrain"], "nVal": res["nVal"], "valIndices": res["valIdx"]},
                    "curve": res["curve"], "segmentation": {**seg, "classNames": names, "provenance": prov_seg}, "detection": {**m, "provenance": prov_det},
-                   "samples": recs, "palette": PALETTE[:len(names)], "seconds": res["seconds"], "synthetic": True, "note": SYNTH,
+                   "samples": recs, "palette": PALETTE[:len(names)], "seconds": res["seconds"], "synthetic": d.data.get("source", {}).get("synthetic"), "note": d.data.get("source", {}).get("note"),
                    "contract": d.data["contract"], "transformsApplied": d.data.get("transforms", []), "provenance": {"source": d.data.get("source"), "torch": torch.__version__,
                                                                                                              "model": "TinyFCN (2 encoder levels, bilinear upsample, skip connection)"}}
         summary["checkpoint"] = CP.persist(ctx, "vision", signature, res["trainingState"],

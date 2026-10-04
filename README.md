@@ -338,3 +338,23 @@ VOID_API_TOKEN=<secret> VOID_WORKBENCH=<dir> .venv/bin/python -m uvicorn control
 VOID_API_TOKEN=<secret> VOID_API=http://127.0.0.1:8778 pnpm -C apps/editor dev --host 127.0.0.1 --port 5303
 .venv/bin/pytest -q tests/test_auth.py
 ```
+
+
+## Import local vision, text and audio datasets
+
+Each domain workspace has an import form for backend-local files: COCO segmentation JSON + RGB images, CoNLL token/IOB2 labels, or WAV files listed in a JSON array of `{id, file, text}`. Declare synthetic status and license/permitted use explicitly. Verify the converted contract/source hashes, then apply it to the draft and run fresh training. Source declarations travel with inspections, saved-model inference and production reference provenance. See ADR 0022 and HANDOFF §19 for bounds and measured evidence.
+
+**Compatibility:** earlier saved vision/NLP/speech models (including registered domain versions) require retraining/registration after this source-code change. No dependency reinstall; other model families are unchanged. The user's existing port-8000 server was left running.
+
+Commands actually run on the Mac (isolated temporary workbench; all generated files below are SYNTHETIC fixtures):
+
+```bash
+PYTHONPATH=services VOID_WORKBENCH=/private/tmp/void-dataset-import-smoke .venv/bin/uvicorn control.app:create_app --factory --host 127.0.0.1 --port 8776
+VOID_API=http://127.0.0.1:8776 pnpm -C apps/editor dev --host 127.0.0.1 --port 5299 --strictPort
+.venv/bin/python examples/make_import_fixtures.py --out /private/tmp/void-import-fixtures
+.venv/bin/python examples/dataset_import_journey.py --base http://127.0.0.1:8776 --fixtures /private/tmp/void-import-fixtures
+.venv/bin/pytest -q tests/test_domain_import.py -o faulthandler_timeout=240
+.venv/bin/python -m backends.coverage --write
+```
+
+Run the servers in separate terminals. The journey creates three projects, imports/verifies fixture bytes, trains native models for two epochs and predicts from their persisted checkpoints. This verifies import mechanics, not real-world model accuracy. License/status assertions are user supplied; original CoNLL whitespace and speech timestamps cannot be recovered. Larger/streamed datasets, crowd/box-only COCO and browser uploads remain outside this release.

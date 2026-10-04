@@ -106,7 +106,7 @@ def register(app: FastAPI, sv):
                                    "partition": "held-out validation split", "source": p.manifest["source"]}}
         if ps.get("version", vid).get("adapter") == "domain":
             return {"records": p.reference_records(), "observedLabels": None, "family": p.manifest["family"], "inputContract": p.manifest["inputContract"],
-                    "labelNote": "Recorded SYNTHETIC held-out example of the source run; its ground truth is not exposed here.",
+                    "labelNote": "Recorded held-out example of the source run; synthetic status and license declaration are recorded in source provenance. Its ground truth is not exposed here.",
                     "provenance": {"versionId": vid, "runId": p.manifest["runId"], "modelId": p.manifest["modelId"], "exampleSha256": p.manifest["exampleSha256"],
                                    "partition": "recorded held-out example", "source": p.manifest["source"]}}
         df = pd.read_csv(io.BytesIO(sv.store.read_artifact(p.manifest["referenceSha256"]))).head(3)

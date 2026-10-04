@@ -55,7 +55,7 @@ function VisionView({ data, kind }: { data: RecordData; kind: string }) {
     {s && <><SamplePicker samples={samples} index={index} setIndex={setIndex} />
       <div className="domain-pair">{kind === "vision_transform" ? <><VisionOverlay sample={s.before} label="Before: ground truth" /><VisionOverlay sample={s.after} label="After: ground truth" /></>
         : <><VisionOverlay sample={s} label="Ground truth" />{kind === "vision_seg" && <VisionOverlay sample={s} prediction label="Learned prediction" />}</>}</div>
-      <div className="prov">Sample {s.id ?? s.before?.id} · {kind === "vision_seg" ? `validation, epoch ${data.config.epochs}` : "fixture / recorded transform"}</div>
+      <div className="prov">Sample {s.id ?? s.before?.id} · {kind === "vision_seg" ? `validation, epoch ${data.config.epochs}` : "source / recorded transform"}</div>
       <Facts title={s.log ? "Actual transform parameters and removed instances" : "Recorded coordinates, visibility and sample metrics"} value={s.log ?? Object.fromEntries(Object.entries(s).filter(([k]) => !["image", "gtMask", "predMask", "labelMap"].includes(k)))} />
     </>}
     <Facts title="Image and annotation contract" value={data.contract} />
@@ -92,7 +92,7 @@ function Waveform({ envelope, duration, selectedTime }: { envelope: RecordData; 
   const points = [...envelope.max.map((v: number, i: number) => `${i / n * 700},${45 - v * 40}`), ...envelope.min.map((v: number, i: number) => `${i / n * 700},${45 - v * 40}`).reverse()].join(" ");
   return <><svg className="domain-wave" viewBox="0 0 700 90" role="img" aria-label="Recorded waveform min/max envelope"><polygon points={points} fill="#387aa5" /><line x1="0" x2="700" y1="45" y2="45" stroke="#888" />
     {selectedTime != null && <line x1={selectedTime / duration * 700} x2={selectedTime / duration * 700} y1="0" y2="90" stroke="#d44" />}</svg>
-    <div className="domain-axis"><span>0 s</span><span>{num(duration)} s</span></div><p className="muted small">Min/max envelope over {envelope.samples} samples, {envelope.bins} bins. Time = sample index / sample rate.</p></>;
+    <div className="domain-axis"><span>0 s</span><span>{num(duration)} s</span></div><p className="muted small">Min/max envelope over {envelope.samples} samples, {envelope.bins} bins. Time = sample index / sample rate. Source waveform displays channel 0; spectral features use the declared channel policy.</p></>;
 }
 
 function Spectrogram({ values }: { values: number[][] }) {
@@ -122,7 +122,7 @@ function SpeechView({ data, kind }: { data: RecordData; kind: string }) {
       {s.spectrogram && <Spectrogram values={s.spectrogram} />}
       {s.frameTimes && <><label>Inspect {kind === "speech_ctc" ? "output" : "feature"} frame <input type="range" aria-label="speech frame" min="0" max={s.frameTimes.length - 1} value={frame} onChange={(e) => setFrame(Number(e.target.value))} /></label>
         <p>Frame {frame} · time {num(selected)} s{rate && <> · sample index ≈ {Math.round(selected * rate)}</>}{s.framePath && <> · best label {vocabulary[s.framePath[frame]] === " " ? "space" : vocabulary[s.framePath[frame]]} · probability {num(s.frameProb[frame])}</>}</p></>}
-      {s.tokenFrames && <><p className="muted small">Greedy token onset frames are model alignment observations; they are not forced alignment or word timestamps.</p><Facts title="Decoded tokens → output frames → time; synthetic gold tone regions" value={{ tokens: [...s.hyp], frames: s.tokenFrames, timesSeconds: s.tokenTimes, gold: s.gold }} /></>}
+      {s.tokenFrames && <><p className="muted small">Greedy token onset frames are model alignment observations; they are not forced alignment or word timestamps.</p><Facts title="Decoded tokens → output frames → time; gold timing regions (not recorded when unavailable)" value={{ tokens: [...s.hyp], frames: s.tokenFrames, timesSeconds: s.tokenTimes, gold: s.gold }} /></>}
       {s.align && <><h4>Edit-distance alignment</h4>{["cer", "wer"].map((k) => <div key={k}><b>{k.toUpperCase()}</b>: {num(s.align[k].rate)} · S {s.align[k].substitutions} / D {s.align[k].deletions} / I {s.align[k].insertions}
         <div className="domain-edits">{s.align[k].ops.map((o: RecordData, i: number) => <span key={i} className={`edit-${o.op}`} title={o.op}><b>{o.op}</b><code>{o.ref === null ? "∅" : o.ref === " " ? "␠" : o.ref}</code><code>{o.hyp === null ? "∅" : o.hyp === " " ? "␠" : o.hyp}</code></span>)}</div></div>)}</>}
       <div className="prov">Sample {s.id} · {data.config?.epochs ? `validation, epoch ${data.config.epochs}` : "source / recorded features"}</div>
@@ -141,7 +141,7 @@ export function DomainResultView({ runId, node }: { runId: string | null; node: 
   if (!st.data.available) return <><NotRecorded message={st.data.message} /><TabProv p={st.data.provenance} /></>;
   const { data, summaryKind: kind, provenance } = st.data;
   return <div className="domain-result"><TabProv p={provenance} label={`summary artifact ${(provenance as any)?.summarySha256?.slice(0, 12) ?? "not recorded"}`} />
-    {data.note && <p className="notice-inline synthetic">{data.note}</p>}
+    {data.note && <p className={data.synthetic === true ? "notice-inline synthetic" : "notice-inline"}>{data.note}</p>}
     {kind.startsWith("vision") ? <VisionView key={`${runId}/${node}`} data={data} kind={kind} /> : kind.startsWith("nlp") ? <NlpView key={`${runId}/${node}`} data={data} /> : <SpeechView key={`${runId}/${node}`} data={data} kind={kind} />}
     <Facts title="Recorded provenance and library / model identity" value={data.provenance} />
   </div>;

@@ -178,9 +178,13 @@ def load_npz(path, n: int | None, spec_override: dict[str, Any] | None = None) -
         keep = [j for j in range(labels_all.shape[0]) if labels_all[j] >= 0]
         boxes = torch.from_numpy(d["boxes"][i][keep]).float()
         labels = torch.from_numpy(labels_all[keep].astype(np.int64))
-        inst = torch.from_numpy(d["instances"][i].astype(np.int64))
-        masks = torch.stack([inst == (j + 1) for j in range(len(keep))]) if keep else torch.zeros(0, *inst.shape, dtype=torch.bool)
+        if "masks" in d.files:
+            masks = torch.from_numpy(d["masks"][i][keep].astype(bool))
+        else:
+            inst = torch.from_numpy(d["instances"][i].astype(np.int64))
+            masks = torch.stack([inst == (j + 1) for j in range(len(keep))]) if keep else torch.zeros(0, *inst.shape, dtype=torch.bool)
         kps = torch.from_numpy(d["keypoints"][i][keep]).float()
         vis = torch.from_numpy(d["visibility"][i][keep].astype(np.int8))
-        out.append(VisionSample(img, boxes, labels, masks, kps, vis, {"id": raw["ids"][i], "synthetic": True, "index": i}))
+        out.append(VisionSample(img, boxes, labels, masks, kps, vis, {"id": raw["ids"][i], "synthetic": raw.get("synthetic"), "index": i,
+                                                                "imported": raw.get("sampleMetadata", [None]*k_total)[i]}))
     return out, spec, raw

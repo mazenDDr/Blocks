@@ -43,7 +43,7 @@ def register(app, sv):
         m = call(lambda: CP.read_manifest(sv.store, identity))
         if not any(a["kind"] == "domain_inference_example" and a["sha256"] == m["exampleSha256"] and a["meta"].get("node") == m["node"] for a in sv.store.artifacts(m["runId"])):
             raise HTTPException(422, {"code": "E_DOMAIN_CHECKPOINT_TRUST", "message": "No recorded example for this model."})
-        return {"records": [json.loads(call(lambda: CP.verified(sv.store, m["exampleSha256"])))], "synthetic": True, "partition": "validation", "modelId": identity}
+        return {"records": [json.loads(call(lambda: CP.verified(sv.store, m["exampleSha256"])))], "synthetic": m["source"].get("synthetic"), "source": m["source"], "partition": "validation", "modelId": identity}
     @app.get("/api/domain/models/{identity}/checkpoint")
     def export(identity: str):
         m = call(lambda: CP.read_manifest(sv.store, identity))
