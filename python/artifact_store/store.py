@@ -161,12 +161,22 @@ class ArtifactStore:
         return freed
 
     def set_status(self, run_id: str, new: str, error: str | None = None) -> None:
-        run = self.get_run(run_id)
-        if run is None:
-            raise KeyError(run_id)
-        if new not in _TRANSITIONS.get(run["status"], set()):
-            raise IllegalTransition(f"{run['status']} -> {new}")
-        self._exec("UPDATE runs SET status=?, error=?, updated_at=? WHERE id=?", (new, error, time.time(), run_id))
+        # Check and update in ONE write transaction: the control process (cancel) and the worker (cancelling -> cancelled) race on the
+        # same row, and a separate read then write let a late "cancelling" overwrite a run the worker had already marked "cancelled".
+        with self._lock, closing(self._db()) as db:
+            db.isolation_level = None
+            db.execute("BEGIN IMMEDIATE")
+            try:
+                row = db.execute("SELECT status FROM runs WHERE id=?", (run_id,)).fetchone()
+                if row is None:
+                    raise KeyError(run_id)
+                if new not in _TRANSITIONS.get(row["status"], set()):
+                    raise IllegalTransition(f"{row['status']} -> {new}")
+                db.execute("UPDATE runs SET status=?, error=?, updated_at=? WHERE id=?", (new, error, time.time(), run_id))
+                db.execute("COMMIT")
+            except BaseException:
+                db.execute("ROLLBACK")
+                raise
 
     # ------------------------------------------------------------ events
     def append_event(self, run_id: str, seq: int, ts: float, type_: str, graph_hash: str, node_id: str | None, data: dict[str, Any]) -> None:

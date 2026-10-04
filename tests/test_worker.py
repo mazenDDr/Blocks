@@ -201,3 +201,39 @@ def test_cli_blocks_unknown_op(tmp_path, shapes_dir):
     p = subprocess.run([sys.executable, "-m", "worker.cli", str(f), "--data", str(shapes_dir), "--workbench", str(tmp_path / "wb")],
                        capture_output=True, text=True, cwd=ROOT, timeout=120)
     assert p.returncode == 2 and "E_UNKNOWN_OP" in p.stderr and "weird" in p.stderr
+
+
+def test_status_transitions_are_atomic_across_store_instances(tmp_path):
+    """A late cancel must never overwrite a run the worker already marked cancelled (check and update share one write transaction).
+    Separate ArtifactStore instances do not share the in-process lock, like the control process and a worker process."""
+    import threading
+
+    from artifact_store import ArtifactStore, IllegalTransition
+
+    control, worker = ArtifactStore(tmp_path / "wb"), ArtifactStore(tmp_path / "wb")
+    for i in range(150):
+        rid = f"r{i}"
+        control.create_run(rid, "h", {})
+        for s in ("preparing", "running"):
+            control.set_status(rid, s)
+        go = threading.Barrier(2)
+
+        def cancel():
+            go.wait()
+            try:
+                control.set_status(rid, "cancelling")
+            except IllegalTransition:
+                pass
+
+        def finish():
+            go.wait()
+            try:
+                worker.set_status(rid, "cancelling")
+            except IllegalTransition:
+                pass
+            worker.set_status(rid, "cancelled")
+
+        ts = [threading.Thread(target=cancel), threading.Thread(target=finish)]
+        [t.start() for t in ts]
+        [t.join() for t in ts]
+        assert control.get_run(rid)["status"] == "cancelled", f"round {i}"

@@ -2,8 +2,8 @@ import { useState } from "react";
 import { api, ApiError, errorText } from "../api";
 import { usePolling } from "../hooks";
 
-interface Candidate { runId: string; node: string; pipelineSha256: string; graphHash: string }
-interface Version { id: string; name: string; runId: string; node: string; owner: string; intendedUse: string; limitations: string; pipelineSha256: string; manifest: any }
+interface Candidate { runId: string; node: string; pipelineSha256: string; graphHash: string; adapter?: "tabular" | "domain" | "model" | "rl" | "unsup"; family?: string }
+interface Version { id: string; name: string; runId: string; node: string; owner: string; intendedUse: string; limitations: string; pipelineSha256: string; manifest: any; adapter?: "domain" | "model" | "rl" | "unsup"; family?: string; modelId?: string }
 interface Config { target: "local" | "staging"; namespace: string; concurrency: number; queueLimit: number; timeoutSeconds: number; maxBatch: number; sessionMode: "stateless" | "counter"; captureInputs: boolean }
 interface Release { id: string; versionId: string; config: Config; compatibility: any; resources: any }
 interface Overview { candidates: Candidate[]; versions: Version[]; releases: Release[]; routes: { target: string; namespace: string; release: string }[]; aliases: { name: string; version: string }[]; lifecycle: any[]; traffic: any[]; capabilities: any }
@@ -71,19 +71,37 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
     <nav className="tabs" aria-label="production tabs">{(["Registry", "Release", "Requests", "Traffic", "Monitoring"] as Tab[]).map((t) => <button key={t} className={tab === t ? "on" : ""} aria-pressed={tab === t} onClick={() => setTab(t)}>{t}</button>)}</nav>
     {(error || overview.error) && <p role="alert" className="error">{error ?? overview.error}</p>}{notice && <p role="status">{notice}</p>}{busy && <p role="status">{busy}…</p>}
     {tab === "Registry" && <div className="prod-grid"><section className="prod-card"><h3>Register a recorded native pipeline</h3>
-      {!candidates.length && <p>No compatible pipelines recorded yet. Run production_sensors or a supported tabular regression/classification graph first. Old runs and domain models need a supported fitted pipeline; registration never trains.</p>}
+      {!candidates.length && <p>No compatible models recorded yet. Run production_sensors, a supported tabular regression/classification graph, or a vision/NLP/speech example first. Old runs without a recorded pipeline or domain checkpoint need a rerun; registration never trains.</p>}
       <label>Completed run / estimator <select aria-label="registration candidate" value={candidate ? `${candidate.runId}:${candidate.node}` : ""} onChange={(e) => setCandidate(e.target.value)}>
-        {candidates.map((c) => <option key={`${c.runId}:${c.node}`} value={`${c.runId}:${c.node}`}>{c.runId} / {c.node}</option>)}</select></label>
+        {candidates.map((c) => <option key={`${c.runId}:${c.node}`} value={`${c.runId}:${c.node}`}>{c.runId} / {c.node} · {c.adapter === "domain" ? `${c.family} model (PyTorch)` : c.adapter === "model" ? "image classifier graph (PyTorch)" : c.adapter === "rl" ? "greedy DQN policy (PyTorch)" : c.adapter === "unsup" ? `${c.family} (scikit-learn, unsupervised)` : "tabular pipeline (scikit-learn)"}</option>)}</select></label>
       <label>Name <input value={name} onChange={(e) => setName(e.target.value)} /></label><label>Owner <input value={owner} onChange={(e) => setOwner(e.target.value)} /></label>
       <label>Intended use <textarea value={use} onChange={(e) => setUse(e.target.value)} /></label><label>Limitations <textarea value={limits} onChange={(e) => setLimits(e.target.value)} /></label>
-      <button disabled={!!busy || !candidate} onClick={() => act("Registering version", async () => { const v = await api.post<Version>("/api/production/versions", { ...candidate, pipelineSha256: undefined, graphHash: undefined, name, owner, intendedUse: use, limitations: limits }); setVersion(v.id); setNotice(`Registered immutable version ${v.id}`); })}>Register version</button>
+      <button disabled={!!busy || !candidate} onClick={() => act("Registering version", async () => { const v = await api.post<Version>("/api/production/versions", { runId: candidate!.runId, node: candidate!.node, name, owner, intendedUse: use, limitations: limits }); setVersion(v.id); setNotice(`Registered immutable version ${v.id}`); })}>Register version</button>
       {candidate && <p className="provenance">run {candidate.runId} · graph {candidate.graphHash} · pipeline {candidate.pipelineSha256}</p>}
     </section><section className="prod-card"><h3>Pinned pipeline and evidence</h3>{selectedVersion}
       {version ? <><p>{version.owner} · {version.intendedUse}</p><p>{version.limitations}</p><p className="provenance">version {version.id} · run {version.runId} · node {version.node}</p>
-        <button onClick={() => onOpenRun(version.runId)}>Open training run</button><h4>Input → fitted transforms → estimator → output</h4>
+        <button onClick={() => onOpenRun(version.runId)}>Open training run</button>
+        {version.adapter === "unsup" ? <><h4>Pinned {version.family}: raw features → fitted scaler → native estimator</h4>
+          <Metrics rows={[["Features", version.manifest.features.join(", ")], ["Scaled", version.manifest.scaled ? "fitted StandardScaler" : "no"], ["Estimator parameters", JSON.stringify(version.manifest.params)],
+            ["Fitted on", `${version.manifest.fittedOn?.rows ?? "?"} rows`], ["Frozen reference", `${version.manifest.referenceRows} fitted rows (in-sample)`]]} />
+          <p>Clusters are not classes. Label-based evidence is external agreement (ARI/NMI) with labels you supply; PCA reports reconstruction error.</p></>
+        : version.adapter === "rl" ? <><h4>Pinned policy: observation → final Q-network → greedy action</h4>
+          <Metrics rows={[["Environment", version.manifest.envId], ["Input contract", version.manifest.inputContract], ["Policy", version.manifest.policy],
+            ["Final Q-network", `${short(version.manifest.checkpointSha256)} (policy version ${version.manifest.policyVersion})`], ["Actions", version.manifest.actionSpace.n],
+            ["Frozen reference", `${version.manifest.referenceRows} replay-buffer observations`]]} />
+          <Recorded value={{ evaluation: version.manifest.evaluation, observationSpace: version.manifest.observationSpace, environment: version.manifest.environment }} /></>
+        : version.adapter === "model" ? <><h4>Pinned model graph: image → training preprocessing → lowered PyTorch graph → softmax</h4>
+          <Metrics rows={[["Input contract", version.manifest.inputContract], ["Preprocessing", version.manifest.preprocessing], ["Checkpoint", `${short(version.manifest.checkpointSha256)} (step ${version.manifest.checkpointStep})`],
+            ["Classes", version.manifest.outputSchema.classes.join(", ")], ["Frozen reference", `${version.manifest.referenceRows} held-out images (${short(version.manifest.referenceSha256)})`]]} />
+          <Recorded value={{ environment: version.manifest.environment, source: version.manifest.source, evaluation: version.manifest.evaluation }} /></>
+        : version.adapter === "domain" ? <><h4>Pinned {version.family} model: request → native preprocessing → PyTorch forward → decoding</h4>
+          <Metrics rows={[["Input contract", version.manifest.inputContract], ["Model manifest", short(version.modelId ?? "")], ["Checkpoint (native state dict)", short(version.manifest.checkpointSha256)],
+            ["Completed epochs", version.manifest.epochs], ["Tokenizer", version.manifest.tokenizer], ["Labels / classes", (version.manifest.outputSchema.classes ?? []).join(", ") || null]]} />
+          <Recorded value={{ environment: version.manifest.environment, source: version.manifest.source }} /></>
+        : <><h4>Input → fitted transforms → estimator → output</h4>
         <Recorded value={version.manifest.inputSchema} /><table><thead><tr><th>Node</th><th>Native operation</th><th>Fitted identity</th></tr></thead><tbody>
           {version.manifest.steps.map((s: any) => <tr key={s.node}><td>{s.node}</td><td>{s.type}</td><td>{s.fitNode ? short(version.manifest.fitArtifacts[s.fitNode]) : "declared column selection"}</td></tr>)}</tbody></table>
-        <Recorded value={{ featureOrder: version.manifest.featureOrder, outputSchema: version.manifest.outputSchema, environment: version.manifest.environment, modelSha256: version.manifest.modelSha256 }} />
+        <Recorded value={{ featureOrder: version.manifest.featureOrder, outputSchema: version.manifest.outputSchema, environment: version.manifest.environment, modelSha256: version.manifest.modelSha256 }} /></>}
         <label>Movable alias <input aria-label="version alias" value={alias} onChange={(e) => setAlias(e.target.value)} /></label><button disabled={!!busy} onClick={() => act("Updating alias", async () => { await api.put(`/api/production/aliases/${encodeURIComponent(alias)}`, { versionId }); setNotice("Alias updated; existing releases retain their pinned version."); })}>Point alias to selected version</button>
         <details><summary>Full immutable manifest / source / evaluations</summary><Recorded value={version.manifest} /></details></> : <p>Select a version to inspect its recorded pipeline.</p>}
       <Recorded value={data?.aliases ?? []} />
@@ -95,7 +113,7 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
       <label>Session state <select value={config.sessionMode} onChange={(e) => update("sessionMode", e.target.value as Config["sessionMode"])}><option value="stateless">Stateless</option><option value="counter">Durable request counter</option></select></label>
       <p>Counter updates are serialized and isolated by release/user/session. Caller-declared user IDs do not provide authentication. No native estimator or training state is updated.</p>
       <label><input type="checkbox" checked={config.captureInputs} onChange={(e) => update("captureInputs", e.target.checked)} /> Capture inputs and bounded transformed values for replay/drift</label>
-      <button disabled={!!busy || !version} onClick={() => act("Checking and warming candidate", async () => { const r = await api.post<Release>("/api/production/releases", { versionId, config }); setRelease(r.id); setNotice(`Candidate ${r.id} ready for explicit deployment.`); })}>Preview release candidate</button>
+      <button disabled={!!busy || !version} onClick={() => act("Checking and warming candidate", async () => { const r = await api.post<Release>("/api/production/releases", { versionId, config: version?.adapter === "domain" ? { ...config, maxBatch: Math.min(config.maxBatch, 4) } : config }); setRelease(r.id); setNotice(`Candidate ${r.id} ready for explicit deployment.`); })}>Preview release candidate</button>{version?.adapter === "domain" && <p>Domain models take 1–4 records per request; maxBatch is capped at 4.</p>}
     </section><section className="prod-card"><h3>Review and deploy</h3>{selectedRelease}
       {release && <><p className="provenance">release {release.id} · version {release.versionId}</p><Recorded value={{ config: release.config, compatibility: release.compatibility, resources: release.resources }} />
         <p>Current route: {route ? short(route.release) : "not deployed"}</p>
@@ -105,7 +123,7 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
       <details open><summary>Recorded lifecycle and routing</summary><Recorded value={data?.routes ?? []} /><Recorded value={data?.lifecycle ?? []} /></details>
     </section></div>}
     {tab === "Requests" && <div className="prod-grid"><section className="prod-card"><h3>Send a bounded real request</h3>{selectedVersion}{selectedRelease}
-      <button disabled={!!busy || !version} onClick={() => act("Reading recorded reference inputs", async () => { const r = await api.get<any>(`/api/production/versions/${versionId}/reference-input`); setPayload(JSON.stringify(r.records, null, 2)); setTrafficPayloads(JSON.stringify([r.records], null, 2)); setLabels(JSON.stringify(r.observedLabels)); setReference({ ...r.provenance, labelNote: r.labelNote }); })}>Load recorded training inputs</button>
+      <button disabled={!!busy || !version} onClick={() => act("Reading recorded reference inputs", async () => { const r = await api.get<any>(`/api/production/versions/${versionId}/reference-input`); setPayload(JSON.stringify(r.records, null, 2)); setTrafficPayloads(JSON.stringify([r.records], null, 2)); setLabels(JSON.stringify(r.observedLabels ?? [])); setReference({ ...r.provenance, labelNote: r.labelNote, inputContract: r.inputContract }); })}>{version?.adapter === "domain" ? "Load recorded held-out example" : version?.adapter === "model" ? "Load held-out validation images" : version?.adapter === "rl" ? "Load replay-buffer observations" : version?.adapter === "unsup" ? "Load fitted rows" : "Load recorded training inputs"}</button>
       <label>Records (JSON array matching the release schema)<textarea className="prod-json" aria-label="prediction records" value={payload} onChange={(e) => setPayload(e.target.value)} /></label>
       {reference != null && <details><summary>Payload provenance</summary><Recorded value={reference} /></details>}
       <label>User namespace <input disabled={!!busy} value={user} onChange={(e) => setUser(e.target.value)} /></label><label>Session <input disabled={!!busy} value={session} onChange={(e) => setSession(e.target.value)} /></label>
@@ -120,7 +138,12 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
         <p>{trace.capturePolicy}</p><button disabled={!!busy || !trace.records} onClick={() => act("Replaying isolated pinned forward pass", async () => setReplay(await api.post(`/api/production/requests/${trace.requestId}/replay`, { user: trace.user })))}>Replay captured inputs in isolation</button>
         {replay != null && <Recorded value={replay} />}
         <label>Observed ground-truth labels (JSON array)<textarea aria-label="ground truth labels" value={labels} onChange={(e) => setLabels(e.target.value)} /></label>
-        <p>When using loaded training inputs, labels are their recorded training-reference labels. That quality is in-sample evidence, not a held-out production benchmark.</p>
+        {version?.adapter === "unsup" ? <p>{version.family === "pca" ? "PCA takes no labels; its reconstruction error is monitored instead." : "Optional external labels (strings or integers), one per row. Agreement is reported as ARI/NMI, never accuracy."}</p>
+          : version?.adapter === "rl" ? <p>One reference action (integer) per observation, supplied by you. Recorded training actions came from the ε-greedy behaviour policy and are not offered as ground truth. The metric is action agreement, not environment return.</p>
+          : version?.adapter === "model" ? <p>One class name per image. Loaded validation images come with their recorded held-out labels.</p>
+          : version?.adapter === "domain"
+          ? <p>One label per predicted record: {version.family === "nlp" ? "a list of IOB2 labels, one per original word" : version.family === "speech" ? "the reference transcript string" : "an H×W integer class mask (0 = background)"}. Quality uses the family's native metric ({version.family === "nlp" ? "word accuracy and seqeval span F1" : version.family === "speech" ? "corpus CER/WER" : "pixel accuracy, mean IoU/Dice"}).</p>
+          : <p>When using loaded training inputs, labels are their recorded training-reference labels. That quality is in-sample evidence, not a held-out production benchmark.</p>}
         <button disabled={!!busy || trace.status !== 200} onClick={() => act("Recording ground truth", async () => { await api.post(`/api/production/requests/${trace.requestId}/labels`, { user: trace.user, labels: JSON.parse(labels) }); setNotice("Ground truth recorded with label delay; conflicting overwrites are refused."); monitor.reload(); })}>Record ground truth</button>
       </> : <p>Select or send a request. Nothing is fabricated when there is no recorded request.</p>}
     </section></div>}
@@ -151,9 +174,9 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
       <h3>Observed drift and separately measured task quality</h3><p>Drift alone does not establish an accuracy drop. Quality is unavailable until aligned ground-truth labels are supplied. No automatic retraining or rollback occurs.</p>
       {monitor.error && <p className="error">{monitor.error}</p>}{monitor.data ? <><p className="provenance">release {monitor.data.releaseId} · version {monitor.data.versionId} · reference {monitor.data.reference.sha256}</p>
         <Metrics rows={[["Observed requests", monitor.data.health.requests], ["Errors", monitor.data.health.errors], ["Schema errors", monitor.data.health.schemaErrors],
-          ["p95 request handling (ms, excludes persistence/HTTP encoding)", monitor.data.health.p95Ms], ["Rows with supplied labels", monitor.data.labelBasedQuality.labelledRows],
+          ["p95 request handling (ms, excludes persistence/HTTP encoding)", monitor.data.health.p95Ms], ["Rows / records with supplied labels", monitor.data.labelBasedQuality.labelledRows ?? monitor.data.labelBasedQuality.labelledRecords],
           ["Mean label delay (seconds)", monitor.data.labelBasedQuality.meanLabelDelaySeconds]]} />
-        <h4>Input changes against the recorded training reference</h4><table><thead><tr><th>Field</th><th>KS statistic / total variation</th><th>Current missing fraction</th><th>Evidence</th></tr></thead><tbody>
+        <h4>Input changes against the recorded {monitor.data.family ? "held-out example (descriptive input measures)" : "training reference"}</h4><table><thead><tr><th>Field</th><th>KS statistic / total variation</th><th>Current missing fraction</th><th>Evidence</th></tr></thead><tbody>
           {Object.entries(monitor.data.inputDrift).map(([field, d]: [string, any]) => <tr key={field}><td>{field}</td><td>{d.ksStatistic ?? d.totalVariation ?? "not recorded"}</td><td>{d.currentMissingFraction ?? "not recorded"}</td><td>{d.available ? `${d.referenceN} reference / ${d.currentN} current observations` : d.reason}</td></tr>)}</tbody></table>
         <h4>Prediction distribution change</h4><Recorded value={monitor.data.predictionDrift} /><h4>Quality measured only from supplied labels</h4>
         {monitor.data.labelBasedQuality.available ? <Metrics rows={Object.entries(monitor.data.labelBasedQuality.values)} /> : <p>{monitor.data.labelBasedQuality.reason}</p>}

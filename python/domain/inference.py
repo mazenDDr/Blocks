@@ -27,13 +27,28 @@ def make_model(m):
     return CTCModel(**arch)
 
 
-def predict(store, identity, records):
+def check_bounds(records):
     if not isinstance(records, list) or not 1 <= len(records) <= 4 or len(dumps(records).encode()) > 1_500_000:
         fail("Use 1–4 records within 1.5 MB.", "E_DOMAIN_INPUT_BOUNDS")
+
+
+def load(store, identity):
+    """Verified manifest, saved state and the native model rebuilt from it (strict state dict, eval mode). Reusable across requests."""
     m = CP.read_manifest(store, identity)
     state = CP.read_state(store, m)
     model = make_model(m)
     model.load_state_dict(state["weights"], strict=True); model.eval()
+    return m, state, model
+
+
+def predict(store, identity, records):
+    check_bounds(records)
+    m, state, model = load(store, identity)
+    return run(m, state, model, identity, records)
+
+
+def run(m, state, model, identity, records):
+    check_bounds(records)
     cfg = m["inference"]
     out = []
     with torch.inference_mode():

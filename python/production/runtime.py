@@ -43,6 +43,22 @@ class ProductionRuntime:
 
     def pipeline(self, version_id):
         version = self.ps.get("version", version_id)
+        if version.get("adapter") in ("model", "rl", "unsup"):
+            from . import model_adapter, rl_adapter, unsup_adapter
+            mod, cls = {"model": (model_adapter, model_adapter.ModelGraphPipeline), "rl": (rl_adapter, rl_adapter.PolicyPipeline),
+                        "unsup": (unsup_adapter, unsup_adapter.UnsupPipeline)}[version["adapter"]]
+            mod.verify(self.store, version["manifest"])  # environment, implementation and pinned hashes on every use
+            with self.lock:
+                if version_id not in self.pipelines:
+                    self.pipelines[version_id] = cls(self.store, version["manifest"])
+                return self.pipelines[version_id]
+        if version.get("adapter") == "domain":
+            from .domain_adapter import DomainPipeline, manifest_of
+            manifest_of(self.store, version["modelId"])  # re-verify manifest, checkpoint, environment and implementation on every use
+            with self.lock:
+                if version_id not in self.pipelines:
+                    self.pipelines[version_id] = DomainPipeline(self.store, version["modelId"])
+                return self.pipelines[version_id]
         # Recheck immutable bytes even when native objects are cached.
         manifest = json.loads(read_verified(self.store, version["pipelineSha256"]))
         if manifest["environment"] != environment() or manifest["adapterSha256"] != adapter_hash():
@@ -59,6 +75,35 @@ class ProductionRuntime:
         if row is None or row["status"] != "completed":
             raise ProductionError("E_REGISTER_RUN", "Registration requires a completed recorded run.")
         arts = [a for a in self.store.artifacts(req.runId, "inference_pipeline") if a["meta"]["node"] == req.node]
+        domain = [a for a in self.store.artifacts(req.runId, "domain_model") if a["meta"].get("node") == req.node and a["meta"].get("internalDomainModel")]
+        from . import unsup_adapter
+        unsup = unsup_adapter.manifest_for(self.store, req.runId, req.node)
+        if not arts and unsup:
+            sha, manifest = unsup
+            unsup_adapter.UnsupPipeline(self.store, manifest)
+            return self.ps.save("version", {**req.model_dump(), "adapter": "unsup", "family": manifest["method"], "pipelineSha256": sha, "manifest": manifest})
+        refused = [json.loads(self.store.read_artifact(a["sha256"])) for a in self.store.artifacts(req.runId, "unsup_refusal") if a["meta"]["node"] == req.node]
+        if not arts and refused:
+            raise ProductionError(refused[-1]["code"], refused[-1]["message"])
+        if not arts and not domain:
+            from .model_adapter import build_manifest, is_candidate, ModelGraphPipeline
+            if is_candidate(self.store, row) == req.node:
+                manifest = build_manifest(self.store, req.runId, req.node)
+                ModelGraphPipeline(self.store, manifest)  # loads the native model: registration fails if it cannot be served
+                return self.ps.save("version", {**req.model_dump(), "adapter": "model", "family": "image_classifier",
+                                                "pipelineSha256": manifest["checkpointSha256"], "manifest": manifest})
+            from . import rl_adapter
+            if rl_adapter.is_candidate(self.store, row) == req.node:
+                manifest = rl_adapter.build_manifest(self.store, req.runId, req.node)
+                rl_adapter.PolicyPipeline(self.store, manifest)
+                return self.ps.save("version", {**req.model_dump(), "adapter": "rl", "family": "rl_policy",
+                                                "pipelineSha256": manifest["checkpointSha256"], "manifest": manifest})
+        if not arts and domain:
+            from .domain_adapter import DomainPipeline
+            p = DomainPipeline(self.store, domain[-1]["sha256"])  # loads the native model: registration fails if it cannot be served
+            p.reference_records()
+            return self.ps.save("version", {**req.model_dump(), "adapter": "domain", "family": p.m["family"], "modelId": domain[-1]["sha256"],
+                                            "pipelineSha256": domain[-1]["sha256"], "manifest": p.manifest})
         if not arts:
             reasons = [json.loads(self.store.read_artifact(a["sha256"])) for a in self.store.artifacts(req.runId, "inference_refusal") if a["meta"]["node"] == req.node]
             raise ProductionError("E_PIPELINE_NOT_RECORDED", "No compatible inference pipeline recorded; rerun a supported tabular estimator. " + str(reasons))
@@ -69,14 +114,23 @@ class ProductionRuntime:
     def create_release(self, req):
         v = self.ps.resolve_version(req.versionId)
         p = self.pipeline(v["id"])
-        refs = self.store.read_artifact(p.manifest["referenceSha256"])
-        import io
-        import pandas as pd
-        records = pd.read_csv(io.BytesIO(refs)).astype(object).where(lambda x: x.notna(), None).head(1).to_dict("records")
+        domain = v.get("adapter") == "domain"
+        if v.get("adapter") in ("model", "rl", "unsup"):
+            records = p.reference_records(1)
+        elif domain:
+            if req.config.maxBatch > 4:
+                raise ProductionError("E_RELEASE_CONFIG", "Domain releases accept at most 4 records per request (maxBatch <= 4).")
+            records = p.reference_records()
+        else:
+            refs = self.store.read_artifact(p.manifest["referenceSha256"])
+            import io
+            import pandas as pd
+            records = pd.read_csv(io.BytesIO(refs)).astype(object).where(lambda x: x.notna(), None).head(1).to_dict("records")
         p.validate_records(records, req.config.maxBatch)
         result, timing = p.predict(records)
         r = self.ps.save("release", {"versionId": v["id"], "pipelineSha256": v["pipelineSha256"], "config": req.config.model_dump(),
-                                     "adapter": "local FastAPI / native scikit-learn CPU", "replicas": 1, "mode": "real local endpoint",
+                                     "adapter": f"local FastAPI / native PyTorch {v['family']} CPU" if v.get("adapter") in ("domain", "model", "rl") else "local FastAPI / native scikit-learn CPU",
+                                     "replicas": 1, "mode": "real local endpoint",
                                      "compatibility": {"ok": True, "warmupResultSha256": self.store.put_bytes(dumps(result).encode()), "timings": timing},
                                      "resources": {"placement": "same local control process, CPU", "autoscaling": "not implemented", "cost": "not measured"}})
         return r
