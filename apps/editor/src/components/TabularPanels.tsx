@@ -4,11 +4,12 @@ import { isTensorType, type Diagnostic, type GEdge, GNode, Graph, NodeView, OpIn
 import { fmtShape, shortHash, uid } from "../util";
 import { NotRecorded } from "./Provenance";
 import { NodeResultView, SchemaList, TabProv, TabularExplain, TablePreview, VIEW_LABEL } from "./Tabular";
+import { ConnectorSourceView, JoinView } from "./Connectors";
 
 const ACTIVE = ["queued", "preparing", "running", "cancelling"];
 
 /** Tabs of the node inspector for a tabular node: the table it outputs, the view that matches its operation, and the explanation. */
-export function tabularTabs(op: OpInfo | undefined, node: GNode, view: NodeView | undefined, runId: string | null): { names: string[]; render: (tab: string) => ReactNode } {
+export function tabularTabs(op: OpInfo | undefined, node: GNode, view: NodeView | undefined, runId: string | null, onConfig?: (patch: Record<string, unknown>) => void): { names: string[]; render: (tab: string) => ReactNode } {
   const tablePorts = op ? op.outputs.filter((p) => op.outputKinds[p] === "table") : [];
   const kind = op?.summaryKind ?? "step";
   const resultTab = VIEW_LABEL[kind] ?? "Result";
@@ -18,6 +19,8 @@ export function tabularTabs(op: OpInfo | undefined, node: GNode, view: NodeView 
     render: (tab) => {
       if (tab === "Table") return <TableTab runId={runId} node={node.id} ports={tablePorts} />;
       if (tab === "Explain") return <TabularExplain explain={view?.explain} purpose={op?.purpose ?? ""} typed={!!view?.typed} />;
+      if (kind === "connector_source") return <ConnectorSourceView runId={runId} node={node.id} pinned={(node.config.pin as string | null) ?? null} onPin={onConfig ? (id) => onConfig({ pin: id }) : undefined} />;
+      if (kind === "join") return <JoinView runId={runId} node={node.id} />;
       return <NodeResultView kind={kind} runId={runId} node={node.id} />;
     },
   };
@@ -147,6 +150,9 @@ export function TabularRunPanel({ projectId, graph, validation, runs, reloadRuns
                 {run.libraries && <span className="muted small"> · {Object.entries(run.libraries).map(([k, v]) => `${k} ${v}`).join(", ")}</span>}</div>
               {run.failure && <div className="errbadge"><b>{run.failure.code}</b> at {run.failure.node}: {run.failure.message}</div>}
               {run.sources.map((s) => <div key={s.node} className="small"><b>data</b> {s.node}: {s.path} · {s.rows} rows · sha256 <code>{s.sha256.slice(0, 16)}…</code></div>)}
+              {(run.snapshots ?? []).map((s) => <div key={s.node} className="small"><b>source</b> {s.node}: {s.connector} · {s.mode} · snapshot <code>{s.snapshotId.slice(0, 12)}…</code> · {s.rows} rows{s.reproducibility?.limited ? <span className="badge old">reproducibility limited</span> : null}</div>)}
+              {run.config.seed != null && <div className="small"><b>run seed</b> {run.config.seed} (replaces the seed of every node that has one)</div>}
+              {run.config.trial && <div className="small"><b>study trial</b> {String((run.config.trial as any).studyId)} / {String((run.config.trial as any).trialId)} · attempt {String((run.config.trial as any).attempt)} · seed {String((run.config.trial as any).seed ?? "—")} · fold {String((run.config.trial as any).fold ?? "—")}</div>}
               {run.splits.map((s) => <div key={s.node} className="small"><b>split</b> {s.node}: seed {s.seed}, validation fraction {s.validationFraction}, {s.nTrain} train / {s.nValidation} validation{s.stratifyBy ? `, stratified by ${s.stratifyBy}` : ""}{s.groupBy ? `, grouped by ${s.groupBy}` : ""}</div>)}
               <div className="nodes small">{run.nodes.map((n) => <span key={n.node} className={`runmark ${n.status}`} onClick={() => onSelectNode(n.node)} title={n.status}>{n.node}</span>)}</div>
               {run.status === "completed" && exports.map((n) => (

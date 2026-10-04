@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from datetime import date, datetime
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar
@@ -114,6 +115,8 @@ class ExecCtx:
     node_id: str
     run_id: str | None = None
     graph_hash: str | None = None
+    store: Any = None  # ArtifactStore of the run (connector sources record snapshots there)
+    pins: dict[str, str] = field(default_factory=dict)  # run-level source pins: node id -> snapshot id
 
 
 # ------------------------------------------------------------------------------------------------ op base
@@ -192,6 +195,8 @@ def clean(v: Any) -> Any:
         return bool(v)
     if v is pd.NA or v is pd.NaT:
         return None
+    if isinstance(v, (pd.Timestamp, datetime, date)):
+        return v.isoformat()
     return v
 
 

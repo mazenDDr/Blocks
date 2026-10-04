@@ -4,6 +4,8 @@ import {
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from "@xyflow/react";
 import { api, errorText } from "./api";
+import { DataWorkspace } from "./components/DataWorkspace";
+import { Experiments } from "./components/Experiments";
 import { ExportView } from "./components/ExportView";
 import { NodeInspector, InspectionBar, WireInspector, useInspectionData } from "./components/Inspector";
 import type { Ctx } from "./components/InspectorTabs";
@@ -43,6 +45,7 @@ function Workbench() {
   const [message, setMessage] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
   const [booted, setBooted] = useState(false);
+  const [view, setView] = useState<"graph" | "data" | "experiments">("graph");
   const [loadToken, setLoadToken] = useState(0);
   const { fitView } = useReactFlow();
 
@@ -162,6 +165,24 @@ function Workbench() {
     setSelNodes([id]); setSelEdges([]);
   };
 
+  /** Called by the Data workspace: add a connector source node to the open (tabular) graph. Returns a message for the user. */
+  const addSource = (type: string, config: Record<string, unknown>): string | null => {
+    const op = opsByType[type];
+    if (!op) return `The registry has no '${type}' block.`;
+    if (graph.graphKind !== "tabular") return "The open graph is a model graph. Use 'New tabular graph' (or open a tabular project) first.";
+    const id = nextId(shortName(op), new Set(graph.nodes.map((n) => n.id)));
+    const node: GNode = { id, type, version: op.version, config: { ...JSON.parse(JSON.stringify(op.defaults)), ...config }, stateRef: null };
+    const maxX = Math.max(-200, ...Object.values(ui.positions).map((p) => p.x));
+    edit((g) => ({ ...g, nodes: [...g.nodes, node] }));
+    setUi((u) => ({ ...u, positions: { ...u.positions, [id]: { x: maxX + 260, y: 120 } } }));
+    setSelNodes([id]);
+    return `Added node '${id}' to the graph '${projectId}'. Switch to the Graph view to connect and run it.`;
+  };
+  const openRun = (runId: string) => {
+    if (allRuns.some((r) => r.id === runId)) { setCtx({ runId, step: null, sample: null }); setView("graph"); setMessage(`Inspecting run ${runId}.`); }
+    else setMessage(`Run ${runId} belongs to another project; open that project to inspect it.`);
+  };
+
   // ---------------------------------------------------------------- project IO
   const save = useCallback(async () => {
     try {
@@ -227,6 +248,10 @@ function Workbench() {
           <optgroup label="Examples — model graphs">{examples.filter((p) => p.graphKind === "model").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}</option>)}</optgroup>
           <optgroup label="Examples — tabular / statistics graphs">{examples.filter((p) => p.graphKind === "tabular").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}{p.synthetic ? " (synthetic data)" : ""}</option>)}</optgroup>
         </select></label>
+        <span className="viewtabs" role="tablist" aria-label="workspace">
+          {([["graph", "Graph"], ["data", "Data"], ["experiments", "Experiments"]] as const).map(([k, label]) => (
+            <button key={k} role="tab" aria-selected={view === k} className={view === k ? "on" : ""} onClick={() => setView(k)}>{label}</button>))}
+        </span>
         <span className="badge kind" title="Graph kind: wires of different kinds never mean the same thing">{graph.graphKind} graph</span>
         <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled", EMPTY, null, false); }}>New model graph</button>
         <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled_tabular", EMPTY_TABULAR, null, false); }}>New tabular graph</button>
@@ -237,9 +262,12 @@ function Workbench() {
           {v && <small> · graph {v.graphHash.slice(0, 8)}</small>}
         </span>
       </header>
-      {ui.description && <div className={`notice ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic / teaching data. </b>}{ui.description}</div>}
+      {view === "graph" && ui.description && <div className={`notice ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic / teaching data. </b>}{ui.description}</div>}
       {message && <div className="toast" role="status" onClick={() => setMessage(null)}>{message} <small>(click to dismiss)</small></div>}
 
+      {view === "data" && <DataWorkspace onAddSource={addSource} tabular={tabular} />}
+      {view === "experiments" && <Experiments graph={graph} validation={v ?? null} projectId={projectId} ops={opsByType} ensureSaved={ensureSaved} onOpenRun={openRun} />}
+      {view === "graph" && <>
       <aside className="left"><Library ops={ops.filter((o) => o.graphKind === graph.graphKind)} onAdd={addBlock} /></aside>
 
       <main className="center">
@@ -257,7 +285,7 @@ function Workbench() {
           : <InspectionBar runs={runs} ctx={ctx} setCtx={setCtx} currentHash={v?.graphHash} checkpoints={insData.checkpoints} samples={insData.samples} />}
         {selNode ? (
           <NodeInspector key={selNode.id} node={selNode} op={opsByType[selNode.type]} ops={opsByType} view={v?.nodes[selNode.id]} graph={graph} ctx={ctx}
-            tabSet={tabular ? tabularTabs(opsByType[selNode.type], selNode, v?.nodes[selNode.id], ctx.runId) : undefined}
+            tabSet={tabular ? tabularTabs(opsByType[selNode.type], selNode, v?.nodes[selNode.id], ctx.runId, (patch) => setConfig(selNode.id, patch)) : undefined}
             onConfig={(patch) => setConfig(selNode.id, patch)} onConnect={connect} onDelete={() => removeNodes([selNode.id])} onRename={(nid) => rename(selNode.id, nid)} />
         ) : selEdge ? (
           tabular ? <TabularWireInspector edge={selEdge} graph={graph} validation={v} runId={ctx.runId} ops={opsByType} />
@@ -276,6 +304,7 @@ function Workbench() {
             baseline={ui.pinnedBaseline ?? null} setBaseline={(id) => setUi((u) => ({ ...u, pinnedBaseline: id }))} ensureSaved={ensureSaved} />
         )}
       </section>
+      </>}
 
       {showCode && <ExportView projectId={projectId} ensureSaved={ensureSaved} onClose={() => setShowCode(false)} />}
     </div>

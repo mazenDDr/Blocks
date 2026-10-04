@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
 from sklearn.impute import SimpleImputer
-from sklearn.model_selection import GroupShuffleSplit, train_test_split
+from sklearn.model_selection import GroupKFold, GroupShuffleSplit, KFold, StratifiedKFold, train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from graph_core.registry import register
@@ -334,6 +334,8 @@ class SplitConfig(StrictConfig):
     validation_fraction: float = Field(0.25, gt=0, lt=1)
     stratify_by: str | None = Field(None, title="stratify by column")
     group_by: str | None = Field(None, title="group by column (groups never span partitions)")
+    n_folds: int | None = Field(None, ge=2, le=50, title="k-fold: number of folds (replaces validation_fraction)")
+    fold: int | None = Field(None, ge=0, title="k-fold: index of the fold used as the validation partition")
 
 
 @register
@@ -352,10 +354,18 @@ class TrainValidationSplit(TabularOperation):
             raise OpError("E_SPLIT_CONFLICT", "Stratified and grouped splitting cannot be combined here.", "table",
                           [Fix("Clear 'stratify_by'", node_id, "stratify_by", None), Fix("Clear 'group_by'", node_id, "group_by", None)])
         need_columns(t, [c for c in (cfg.stratify_by, cfg.group_by) if c], "table", f"Split '{node_id}'")
+        if (cfg.n_folds is None) != (cfg.fold is None):
+            raise OpError("E_SPLIT_FOLD", "'n_folds' and 'fold' go together: set both for a k-fold partition, or neither.", None,
+                          [Fix("Clear 'fold'", node_id, "fold", None), Fix("Clear 'n_folds'", node_id, "n_folds", None)])
+        if cfg.n_folds is not None and cfg.fold >= cfg.n_folds:
+            raise OpError("E_SPLIT_FOLD", f"fold {cfg.fold} does not exist with {cfg.n_folds} folds (0..{cfg.n_folds - 1}).")
         n = t.info.get("rows")
         n_val = n_tr = None
         if n is not None and not cfg.group_by and t.info.get("rowsExact", True):
-            n_val = math.ceil(cfg.validation_fraction * n)
+            if cfg.n_folds is not None:
+                n_val = n // cfg.n_folds + (1 if cfg.fold < n % cfg.n_folds else 0)
+            else:
+                n_val = math.ceil(cfg.validation_fraction * n)
             n_tr = n - n_val
         base = dict(t.info)
         base.update(splitNode=node_id, splitSeed=cfg.seed)
@@ -368,7 +378,18 @@ class TrainValidationSplit(TabularOperation):
         pos = np.arange(len(df))
         if len(df) < 2:
             raise ExecutionError("E_SPLIT_TOO_SMALL", "Need at least 2 rows to split.")
-        if cfg.group_by:
+        if cfg.n_folds is not None:
+            try:
+                if cfg.group_by:
+                    folds = list(GroupKFold(n_splits=cfg.n_folds).split(pos, groups=df[cfg.group_by]))
+                elif cfg.stratify_by:
+                    folds = list(StratifiedKFold(n_splits=cfg.n_folds, shuffle=True, random_state=cfg.seed).split(pos, df[cfg.stratify_by]))
+                else:
+                    folds = list(KFold(n_splits=cfg.n_folds, shuffle=True, random_state=cfg.seed).split(pos))
+            except ValueError as e:
+                raise ExecutionError("E_SPLIT_FAILED", str(e))
+            tr, va = folds[cfg.fold]
+        elif cfg.group_by:
             g = df[cfg.group_by]
             tr, va = next(GroupShuffleSplit(n_splits=1, test_size=cfg.validation_fraction, random_state=cfg.seed).split(pos, groups=g))
         else:
@@ -381,9 +402,9 @@ class TrainValidationSplit(TabularOperation):
         train, val = df.iloc[tr], df.iloc[va]
         assert not set(train.index) & set(val.index)
         split = {"node": ctx.node_id, "seed": cfg.seed, "validationFraction": cfg.validation_fraction, "stratifyBy": cfg.stratify_by,
-                 "groupBy": cfg.group_by, "nTrain": len(train), "nValidation": len(val),
+                 "groupBy": cfg.group_by, "nFolds": cfg.n_folds, "fold": cfg.fold, "nTrain": len(train), "nValidation": len(val),
                  "trainRowIdsSha256": row_ids_sha256(train.index), "validationRowIdsSha256": row_ids_sha256(val.index)}
-        summary = {**split, "method": "GroupShuffleSplit" if cfg.group_by else ("train_test_split(stratify)" if cfg.stratify_by else "train_test_split"),
+        summary = {**split, "method": (f"{'GroupKFold' if cfg.group_by else 'StratifiedKFold' if cfg.stratify_by else 'KFold(shuffle)'} fold {cfg.fold} of {cfg.n_folds}") if cfg.n_folds is not None else "GroupShuffleSplit" if cfg.group_by else ("train_test_split(stratify)" if cfg.stratify_by else "train_test_split"),
                    "overlapRows": 0, "trainRowIds": [int(i) for i in train.index], "validationRowIds": [int(i) for i in val.index]}
         if cfg.group_by:
             summary["groupOverlap"] = len(set(train[cfg.group_by]) & set(val[cfg.group_by]))

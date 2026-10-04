@@ -132,3 +132,9 @@ pass. `pnpm build` and `pnpm tsc --noEmit` pass.
 ## Explicitly out of scope now
 Milestones 2–8 (connectors, statistics, LangGraph, RL, other backends, serving, code-block editor).
 Do not add placeholder buttons for them. Record them in `docs/CAPABILITIES.md` as "not implemented".
+
+
+## Milestone 2b status
+
+Connected data sources, snapshots, studies and sweeps are implemented (ADR 0004, `docs/CAPABILITIES.md`). Next bounded step: ablation builder (replace/bypass/freeze/remove with interface validation),
+parallel trials with quotas, early stopping with consumed-budget display, and a research record sheet linked to immutable run/evaluation identities.

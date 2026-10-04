@@ -24,6 +24,28 @@ class TabularRunConfig(BaseModel):
     model_config = {"extra": "forbid"}
     kind: str = "tabular"
     project_id: str | None = None
+    # Replaces the `seed` config of every node that has one (e.g. the split); the nodes and the original value are recorded in `run_started`.
+    seed: int | None = None
+    # node id -> snapshot id: read these recorded source snapshots instead of the live sources (repeat from a pinned source identity).
+    source_pins: dict[str, str] = {}
+    # Study identity (study, trial, attempt, seed, fold) when the run is a sweep trial; informational, never changes computation.
+    trial: dict | None = None
+
+
+def apply_run_seed(graph: Graph, seed: int | None) -> tuple[Graph, list[dict]]:
+    """Return a copy of `graph` with `seed` set on every node whose config has a `seed` field, and what was replaced."""
+    if seed is None:
+        return graph, []
+    from graph_core import registry
+
+    g = graph.model_copy(deep=True)
+    applied = []
+    for n in g.nodes:
+        op = registry.get_op(n.type)
+        if op is not None and "seed" in op.Config.model_fields:
+            applied.append({"node": n.id, "was": n.config.get("seed", op.Config.model_fields["seed"].default), "now": seed})
+            n.config["seed"] = seed
+    return g, applied
 
 
 def _advance(store: ArtifactStore, run_id: str, new: str) -> None:
@@ -35,8 +57,11 @@ def _advance(store: ArtifactStore, run_id: str, new: str) -> None:
 
 
 def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_id: str, should_cancel: Callable[[], bool] = lambda: False) -> str:
-    graph_hash = semantic_hash(graph)
+    graph_hash = semantic_hash(graph)  # identity of the stored graph; a run-level seed override is recorded separately
     em = Emitter(store, run_id, graph_hash)
+    from connectors import context as _ctx
+
+    _ctx.set_workbench(store.root)  # connector nodes find the connection registry next to the artifact store
     em.emit("run_queued", config=cfg.model_dump())
 
     def finish(status: str, error: str | None = None, **data) -> str:
@@ -47,8 +72,9 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
     try:
         _advance(store, run_id, "preparing")
         em.emit("run_preparing")
+        exec_graph, seed_applied = apply_run_seed(graph, cfg.seed)
         try:
-            report = require_executable(graph)
+            report = require_executable(exec_graph)
         except ExecutionBlocked as e:
             for d in e.diagnostics:
                 em.emit("validation_error", d.nodeId, **d.to_json())
@@ -57,7 +83,8 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
 
         _advance(store, run_id, "running")
         em.emit("run_started", kind="tabular", order=report.order, libraries={"pandas": pandas.__version__, "scikit-learn": sklearn.__version__,
-                                                                              "scipy": scipy.__version__, "numpy": numpy.__version__})
+                                                                              "scipy": scipy.__version__, "numpy": numpy.__version__},
+                seed=cfg.seed, seedApplied=seed_applied, sourcePins=cfg.source_pins, trial=cfg.trial)
 
         def on_start(nid: str, typ: str) -> None:
             em.emit("node_started", nid, type=typ)
@@ -67,20 +94,25 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
             for port, v in o.outs.items():
                 meta = {"node": o.node, "port": port, "graph_hash": graph_hash, **describe_value(v)}
                 if isinstance(v, Table):
-                    meta["lineage"] = clean({k: x for k, x in v.lineage.items() if k in ("source", "split")})
+                    meta["lineage"] = clean({k: x for k, x in v.lineage.items() if k in ("source", "sources", "join", "split")})
                 a = store.add_artifact(run_id, "node_output", artifact_bytes(v), "complete", None, meta)
                 arts.append({"port": port, "sha256": a["sha256"], "size": a["size"], **{k: meta[k] for k in ("valueKind",)}})
             # the summary (profile, fitted state, metrics, ...) is its own artifact so large ones stay out of the event stream
             s = store.add_artifact(run_id, "node_summary", dumps(o.summary).encode(), "complete", None, {"node": o.node, "type": o.type, "graph_hash": graph_hash})
             em.emit("node_finished", o.node, type=o.type, outputs=arts, summarySha256=s["sha256"], rows={p: len(v.df) for p, v in o.outs.items() if isinstance(v, Table)})
+            if o.summary.get("snapshotId"):
+                sn = o.summary["snapshot"]
+                em.emit("source_snapshot_recorded", o.node, connector=o.summary["connector"], mode=o.summary["mode"], snapshotId=o.summary["snapshotId"],
+                        kind=sn.get("kind"), contentSha256=o.summary.get("sha256"), rows=o.summary["rows"], reproducibility=sn.get("reproducibility"))
             if o.type == "tabular.csv_source":
                 em.emit("source_recorded", o.node, path=o.summary["path"], sha256=o.summary["sha256"], bytes=o.summary["bytes"], rows=o.summary["rows"])
             if o.type == "tabular.train_validation_split":
-                em.emit("split_recorded", o.node, **{k: o.summary[k] for k in ("seed", "validationFraction", "stratifyBy", "groupBy", "nTrain", "nValidation",
+                em.emit("split_recorded", o.node, **{k: o.summary[k] for k in ("seed", "validationFraction", "stratifyBy", "groupBy", "nFolds", "fold", "nTrain", "nValidation",
                                                                               "trainRowIdsSha256", "validationRowIdsSha256")})
 
         try:
-            run_graph(graph, report, run_id=run_id, graph_hash=graph_hash, on_start=on_start, on_finish=on_finish, should_cancel=should_cancel)
+            run_graph(exec_graph, report, run_id=run_id, graph_hash=graph_hash, on_start=on_start, on_finish=on_finish, should_cancel=should_cancel,
+                      store=store, pins=cfg.source_pins)
         except Cancelled:
             if store.get_run(run_id)["status"] != "cancelling":
                 store.set_status(run_id, "cancelling")

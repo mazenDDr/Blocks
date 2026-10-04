@@ -32,6 +32,11 @@ export function summarize(node: GNode, resolved?: Record<string, unknown>): stri
     case "pytorch.loss.cross_entropy": return `reduction ${c.reduction ?? "mean"}`;
     case "core.tensor_input": return `${(c.shape as Dim[] | undefined)?.map(fmtDim).join("×") ?? "?"} ${c.dtype ?? ""}`;
     case "tabular.csv_source": return String(c.path ?? "").split("/").pop() || "no file chosen";
+    case "postgres.query": return `${c.connection || "(no connection)"} · ${c.mode === "sql" ? "raw SQL" : c.query ? `${c.query.base?.name}${c.query.joins?.length ? ` + ${c.query.joins.length} join` : ""}` : "no table"}${c.pin ? " · pinned" : ""}`;
+    case "s3.csv_source": return `${c.connection || "(no connection)"} · ${c.key || "no object"}${c.pin ? " · pinned" : c.version_id ? " · version set" : ""}`;
+    case "s3.object_listing": return `${c.connection || "(no connection)"} · prefix ${c.prefix || "/"}${c.pin ? " · pinned" : ""}`;
+    case "dvc.csv_source": return `${c.connection || "(no connection)"} · ${c.path || "no path"} @ ${c.rev || "default rev"}${c.pin ? " · pinned" : ""}`;
+    case "tabular.join": return `${c.how ?? "inner"} on ${(c.left_on as string[] | undefined)?.join(",") || "?"} = ${(c.right_on as string[] | undefined)?.join(",") || "?"}${c.expect && c.expect !== "any" ? ` · expect ${c.expect}` : ""}`;
     case "tabular.select_columns": return `${(c.columns as unknown[] | undefined)?.length ?? 0} typed columns`;
     case "tabular.train_validation_split": return `validation ${c.validation_fraction ?? 0.25} · seed ${c.seed ?? 0}${c.stratify_by ? ` · stratified by ${c.stratify_by}` : ""}${c.group_by ? ` · grouped by ${c.group_by}` : ""}`;
     case "tabular.fit_standardize": case "tabular.fit_onehot": return `fit on train · ${(c.columns as string[] | undefined)?.length ? (c.columns as string[]).join(", ") : "all matching columns"}`;

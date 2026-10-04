@@ -34,6 +34,7 @@ class RunConfig(BaseModel):
     val_fraction: float = Field(0.2, gt=0, lt=1)
     split_seed: int | None = None  # seed of the train/val split; None means "same as seed"
     project_id: str | None = None  # which saved project this run came from (informational)
+    trial: dict | None = None  # study identity (study, trial, attempt, seed, fold) when the run is a sweep trial; informational
 
     @property
     def effective_split_seed(self) -> int:

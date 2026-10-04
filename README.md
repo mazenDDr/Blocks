@@ -1,8 +1,8 @@
 # Project Void: Visual AI Workbench
 
-Phase 0 (semantic and execution foundation), Phase 1 (visual CNN workbench: control API + editor) and Milestone 2a (tabular graph kind:
-data preparation, classical ML, statistics) are implemented. Milestone 2b (connectors, studies, sweeps) is not.
-See `docs/PLAN.md`, `docs/CAPABILITIES.md` and `docs/adr/` (ADR 0003 describes the tabular graph kind).
+Phase 0 (semantic and execution foundation), Phase 1 (visual CNN workbench: control API + editor), Milestone 2a (tabular graph kind:
+data preparation, classical ML, statistics) and Milestone 2b (connected data sources, versioned extraction, studies and sweeps) are implemented.
+See `docs/PLAN.md`, `docs/CAPABILITIES.md` and `docs/adr/` (ADR 0003: tabular graph kind; ADR 0004: connectors, snapshots, studies).
 
 ## Setup
 
@@ -11,6 +11,7 @@ python3 -m venv .venv
 .venv/bin/pip install -r python/requirements.txt
 .venv/bin/pip install -e .
 source .venv/bin/activate
+python -m connectors.install_pgserver      # local PostgreSQL for tests/example; pgserver has no CPython 3.13 wheel (see ADR 0004); `pip install pgserver==0.1.4` suffices on <= 3.12
 pnpm -C apps/editor install
 ```
 
@@ -42,6 +43,21 @@ Production build and type check of the editor:
 ```bash
 pnpm -C apps/editor build
 pnpm -C apps/editor exec tsc --noEmit
+```
+
+## Connected data (Milestone 2b)
+
+Open the **Data** tab in the editor to add connections (PostgreSQL, S3 or S3-compatible, DVC repository), test them and browse what they expose. Secrets are **references**
+(an environment variable name, or a key in a JSON file outside the project); the value is never stored, returned or exported. Add a table, object or dataset as a source node
+in a tabular graph; the PostgreSQL node has a visual query builder with the compiled parameterized SQL shown read-only (and a raw read-only SQL mode). Every run records a
+snapshot of what each source returned (Source & snapshot tab); pin it to repeat from that identity. The **Experiments** tab plans and runs bounded grid/random sweeps with seeds and
+folds as separate repeat dimensions, shows failed/retried/repeated trials, and compares a trial with the baseline.
+
+The example runs on LOCAL TEST SERVICES with SYNTHETIC data (real PostgreSQL 16 via pgserver; an S3 API mock via moto, not AWS):
+
+```bash
+python examples/connected_journey.py --workbench .workbench           # seeds, saves project 'connected_journey', runs the regression and a small sweep, prints the results
+python examples/connected_journey.py --workbench .workbench --serve   # ... and keeps the services + control API (127.0.0.1:8000) up; then `pnpm -C apps/editor dev` and open the project
 ```
 
 ## Tabular and statistics graphs from the command line

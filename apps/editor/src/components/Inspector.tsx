@@ -3,6 +3,7 @@ import { usePolling, useInspect } from "../hooks";
 import type { ActivationsResult, Checkpoint, Diagnostic, GEdge, GNode, Graph, NodeView, OpInfo, AnyRun, Sample, Unavailable, Validation } from "../types";
 import { dtypeOf, fmtNum, fmtShape, runLabel, shortHash } from "../util";
 import { ConfigForm } from "./ConfigForm";
+import { ConnectorConfigEditor, isConnectorOp } from "./Connectors";
 import { ActivationsTab, ArchitectureTab, type Ctx, ExplainTab, FeatureMaps, WeightsTab } from "./InspectorTabs";
 import { NotRecorded, ProvLine } from "./Provenance";
 
@@ -130,7 +131,10 @@ export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onCon
       <div className="tabbody">
         {tab === "Config" && op && (
           <>
-            <ConfigForm op={op} node={node} resolved={view?.resolvedConfig} onChange={onConfig} />
+            {isConnectorOp(node.type)
+              ? <ConnectorConfigEditor node={node} onChange={onConfig} />
+              : <ConfigForm op={op} node={node} resolved={view?.resolvedConfig} onChange={onConfig} />}
+            {node.type === "tabular.train_validation_split" && <div className="muted small">Set both n_folds and fold for a k-fold partition (validation_fraction is then ignored).</div>}
             {op.inputs.length > 0 && (
               <>
                 <h4>Connections</h4>

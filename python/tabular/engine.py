@@ -31,7 +31,7 @@ class NodeOutcome:
 
 def run_graph(graph: Graph, report: Report, *, run_id: str | None = None, graph_hash: str | None = None,
               on_start: Callable[[str, str], None] | None = None, on_finish: Callable[[NodeOutcome], None] | None = None,
-              should_cancel: Callable[[], bool] = lambda: False) -> dict[str, NodeOutcome]:
+              should_cancel: Callable[[], bool] = lambda: False, store: Any = None, pins: dict[str, str] | None = None) -> dict[str, NodeOutcome]:
     types = {n.id: n.type for n in graph.nodes}
     src = {(e.to.node, e.to.port): (e.from_.node, e.from_.port) for e in graph.edges}
     done: dict[str, NodeOutcome] = {}
@@ -44,7 +44,7 @@ def run_graph(graph: Graph, report: Report, *, run_id: str | None = None, graph_
             on_start(nid, types[nid])
         ins = {p: done[src[(nid, p)][0]].outs[src[(nid, p)][1]] for p in op.inputs}
         try:
-            outs, summary = op.execute(cfg, ins, ExecCtx(nid, run_id, graph_hash))
+            outs, summary = op.execute(cfg, ins, ExecCtx(nid, run_id, graph_hash, store, dict(pins or {})))
         except ExecutionError as e:
             raise NodeFailed(nid, e.code, e.message) from e
         except Exception as e:  # noqa: BLE001  (library errors are reported against the node, not swallowed)

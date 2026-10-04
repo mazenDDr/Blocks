@@ -142,3 +142,40 @@ textarea { font: inherit; width: 100%; border: 1px solid var(--line); border-rad
 .tabrun-grid section { min-width: 0; overflow: auto; }
 .problem { border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; margin: 4px 0; cursor: pointer; font-size: 11px; }
 .problem.error { border-color: #f0b4b4; background: #fdf3f3; } .problem.warning { border-color: #f0d49b; background: #fffaf0; } .problem .fix { color: var(--ok); }
+
+/* ---- Milestone 2b: data workspace, experiments board, connector editors ---- */
+.viewtabs { display: inline-flex; gap: 2px; margin-left: 8px; }
+.viewtabs button { border-radius: 0; border: 0; border-bottom: 2px solid transparent; background: none; font-weight: 600; }
+.viewtabs button.on { border-bottom-color: var(--accent); color: var(--accent); }
+.workspace { grid-column: 1 / -1; grid-row: 2 / -1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; min-width: 0; background: var(--bg); }
+.wsleft { background: var(--panel); border-right: 1px solid var(--line); overflow: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.wsmain { overflow: auto; padding: 12px 16px; min-width: 0; }
+.connitem { text-align: left; display: block; width: 100%; }
+.connitem.on { border-color: var(--accent); background: #eef4ff; }
+.connitem small { display: block; color: var(--muted); font-size: 10px; margin-top: 2px; }
+.addconn, .newsweep { max-width: 860px; }
+.addconn .row, .newsweep .row, .connector-config .row, .explorer .row { grid-template-columns: 130px 1fr; }
+.row.secretref { grid-template-columns: 130px 200px 1fr 90px; }
+.newsweep .row { grid-template-columns: 130px repeat(auto-fit, minmax(60px, auto)); }
+.qb .row { grid-template-columns: minmax(110px, auto) minmax(60px, 1fr) minmax(60px, auto) minmax(40px, auto); }
+.qbbox { border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; margin: 4px 0; background: #fafbfc; }
+.qbcols { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 8px; font-size: 11px; max-height: 160px; overflow: auto; }
+.compiled pre, .srcview pre, .sqlarea { background: #0f1722; color: #e6edf6; padding: 8px; border-radius: 4px; font-size: 11px; overflow: auto; white-space: pre-wrap; margin: 4px 0; }
+.sqlarea { width: 100%; font-family: ui-monospace, Menlo, monospace; resize: vertical; }
+.okbox { background: #e6f6ea; border: 1px solid #b6dfc1; color: #1c5b2e; padding: 4px 8px; border-radius: 4px; margin: 4px 0; }
+.srcerr { padding: 6px 8px; }
+.joinrep { border-left: 3px solid var(--accent); padding-left: 6px; margin: 4px 0; }
+.objlist { max-height: 160px; overflow: auto; border: 1px solid var(--line); padding: 4px; border-radius: 4px; margin: 4px 0; }
+.objlist button.on { border-color: var(--accent); }
+.tablewrap.short { max-height: 180px; }
+.previewbar, .explorer { margin-top: 8px; }
+tr.sel td { background: #eef4ff; } tr.baseline td { background: #f4f9f4; }
+.dtable tr[style*="cursor"]:hover td { background: #f3f6fb; }
+button.link { border: 0; background: none; color: var(--accent); padding: 0 2px; text-decoration: underline; cursor: pointer; }
+.status.planned, .status.completed_with_failures, .status.scheduler_error { background: #fff4e0; } .status.invalid { background: #fdeaea; } .status.running { background: #e8f0fe; }
+.compare, .plan { margin-top: 8px; }
+.connector-config .row, .qb .row, .previewbar .row { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.connector-config .row > .lbl, .qb .row > .lbl { flex: 0 0 104px; }
+.connector-config select, .connector-config input:not([type=checkbox]):not([type=radio]) { min-width: 0; max-width: 100%; }
+.connector-config .row > input:not([type=checkbox]):not([type=radio]), .connector-config .row > select { flex: 1 1 120px; }
+.qbcols { grid-template-columns: 1fr; }

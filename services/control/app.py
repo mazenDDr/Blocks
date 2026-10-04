@@ -32,6 +32,11 @@ from graph_core.validate import ExecutionBlocked, validate
 from worker.process import RunHandle, submit_run
 from worker.tabular_run import TabularRunConfig
 from worker.train import RunConfig, UnsupportedGraph, _io_contract
+from connectors import context as conn_context
+from connectors.errors import SourceError
+from connectors.registry import ConnectionRegistry
+from studies.runner import StudyRunner
+from studies.store import StudyStore
 
 from . import inspection as insp
 from . import tabular_inspection as tinsp
@@ -78,6 +83,24 @@ def _err(status: int, message: str, diagnostics: list | None = None, code: str =
     return HTTPException(status, {"code": code, "message": message, "diagnostics": diagnostics or []})
 
 
+def model_preflight(graph: Graph, cfg: RunConfig) -> None:
+    """Dataset and graph/dataset contract checks for a model run; raises HTTPException(422)."""
+    if not Path(cfg.data).is_dir():
+        raise _err(422, f"dataset directory '{cfg.data}' does not exist", code="dataset_missing")
+    n_dirs = sum(1 for d in Path(cfg.data).iterdir() if d.is_dir())
+    try:
+        report = validate(graph)
+        if not report.ok:
+            raise ExecutionBlocked(report.errors)
+        _, n_classes = _io_contract(graph, report, lower_graph(graph, report))
+        if n_dirs != n_classes:
+            raise UnsupportedGraph(f"dataset has {n_dirs} class folders but the graph outputs {n_classes} logits")
+    except ExecutionBlocked as e:
+        raise _err(422, "the graph has errors and cannot run", [d.to_json() for d in e.diagnostics], "execution_blocked")
+    except UnsupportedGraph as e:
+        raise _err(422, str(e), code="unsupported_graph")
+
+
 def node_view(graph: Graph, report) -> dict[str, Any]:
     """Per-node shapes, param counts, diagnostics, resolved config and explain data."""
     by_node: dict[str, list] = {}
@@ -120,6 +143,35 @@ class Services:
         self.handles: dict[str, RunHandle] = {}
         self.lock = threading.Lock()  # serializes run submission so one idempotency key creates one run
         self.examples = REPO / "examples"
+        conn_context.set_workbench(workbench)
+        self.connections = ConnectionRegistry(workbench)
+        self.studies = StudyStore(workbench)
+        self.study_runner = StudyRunner(self.studies, self.store, self.launch, self.cancel_run)
+
+    def cancel_run(self, rid: str) -> None:
+        try:
+            self.store.set_status(rid, "cancelling")
+        except IllegalTransition:
+            return
+        h = self.handles.get(rid)
+        if h:
+            h._cancel.set()
+
+    def launch(self, graph: Graph, cfg_dict: dict[str, Any]) -> str:
+        """Start one run for a study trial (same checks as POST /api/runs). Raises HTTPException with the reason when it cannot start."""
+        with self.lock:
+            if graph.graphKind == "tabular":
+                cfg = TabularRunConfig.model_validate(cfg_dict)
+                report = validate(graph)
+                if not report.ok:
+                    raise _err(422, "the graph has errors and cannot run", [d.to_json() for d in report.errors], "execution_blocked")
+            else:
+                base = RunConfig.model_validate(cfg_dict)
+                cfg = base.model_copy(update={"data": str(Path(base.data).expanduser().resolve())})
+                model_preflight(graph, cfg)
+            handle = submit_run(graph, cfg, self.workbench)
+            self.handles[handle.run_id] = handle
+            return handle.run_id
 
     def project_path(self, pid: str) -> Path:
         if not PROJECT_ID.match(pid):
@@ -140,12 +192,12 @@ class Services:
 
     def tabular_summary(self, row: dict[str, Any]) -> dict[str, Any]:
         rid = row["id"]
-        evs = self.store.events(rid, -1, ("run_started", "node_started", "node_finished", "node_failed", "source_recorded", "split_recorded", "validation_error"))
-        order, status, failure, sources, splits, libs = [], {}, None, [], [], None
+        evs = self.store.events(rid, -1, ("run_started", "node_started", "node_finished", "node_failed", "source_recorded", "source_snapshot_recorded", "split_recorded", "validation_error"))
+        order, status, failure, sources, splits, libs, snaps, seeded = [], {}, None, [], [], None, [], None
         for e in evs:
             d, t = e["data"], e["type"]
             if t == "run_started":
-                order, libs = d["order"], d.get("libraries")
+                order, libs, seeded = d["order"], d.get("libraries"), {"seed": d.get("seed"), "applied": d.get("seedApplied"), "pins": d.get("sourcePins")}
             elif t == "node_started":
                 status[e["node_id"]] = {"node": e["node_id"], "type": d["type"], "status": "running"}
             elif t == "node_finished":
@@ -155,6 +207,8 @@ class Services:
                 failure = {"node": e["node_id"], "code": d["code"], "message": d["message"]}
             elif t == "source_recorded":
                 sources.append({"node": e["node_id"], **d})
+            elif t == "source_snapshot_recorded":
+                snaps.append({"node": e["node_id"], **d})
             elif t == "split_recorded":
                 splits.append({"node": e["node_id"], **d})
             elif t == "validation_error":
@@ -163,7 +217,7 @@ class Services:
         return {"kind": "tabular", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": row["config"],
                 "createdAt": row["created_at"], "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "nodes": nodes,
                 "progress": {"nodesDone": sum(1 for n in nodes if n["status"] == "finished"), "nodes": len(order)},
-                "sources": sources, "splits": splits, "failure": failure, "libraries": libs}
+                "sources": sources, "snapshots": snaps, "runSeed": seeded, "splits": splits, "failure": failure, "libraries": libs}
 
     def run_summary(self, row: dict[str, Any]) -> dict[str, Any]:
         rid = row["id"]
@@ -195,6 +249,10 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     sv = Services(wb)
     app = FastAPI(title="Project Void control service", version="1.0.0")
     app.state.services = sv
+
+    @app.exception_handler(SourceError)
+    async def _source_error(_: Request, e: SourceError):
+        return JSONResponse({"detail": e.to_json()}, status_code=e.status)
 
     @app.exception_handler(insp.InspectError)
     async def _inspect_error(_: Request, e: insp.InspectError):
@@ -313,20 +371,7 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
                 sv.handles[handle.run_id] = handle
                 sv.store.put_idempotent(idempotency_key, req_hash, handle.run_id)
                 return JSONResponse({"runId": handle.run_id, "idempotentReplay": False, "status": "queued", "graphHash": semantic_hash(graph)}, status_code=201)
-            if not Path(cfg.data).is_dir():
-                raise _err(422, f"dataset directory '{cfg.data}' does not exist", code="dataset_missing")
-            n_dirs = sum(1 for d in Path(cfg.data).iterdir() if d.is_dir())
-            try:
-                report = validate(graph)
-                if not report.ok:
-                    raise ExecutionBlocked(report.errors)
-                _, n_classes = _io_contract(graph, report, lower_graph(graph, report))
-                if n_dirs != n_classes:
-                    raise UnsupportedGraph(f"dataset has {n_dirs} class folders but the graph outputs {n_classes} logits")
-            except ExecutionBlocked as e:
-                raise _err(422, "the graph has errors and cannot run", [d.to_json() for d in e.diagnostics], "execution_blocked")
-            except UnsupportedGraph as e:
-                raise _err(422, str(e), code="unsupported_graph")
+            model_preflight(graph, cfg)
             handle = submit_run(graph, cfg, sv.workbench)
             sv.handles[handle.run_id] = handle
             sv.store.put_idempotent(idempotency_key, req_hash, handle.run_id)
@@ -464,4 +509,8 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     def infer(req: InferRequest):
         return insp.infer(sv.run_data(req.runId), req.checkpointStep, req.sample, req.imageBase64)
 
+    from . import connections_api, studies_api
+
+    connections_api.register(app, sv)
+    studies_api.register(app, sv)
     return app

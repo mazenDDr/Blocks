@@ -293,6 +293,7 @@ export function StepView({ runId, node }: { runId: string | null; node: string }
 export const VIEW_LABEL: Record<string, string> = {
   source: "Source", profile: "Profile", split: "Partition", fit_state: "Fitted state", coefficients: "Coefficients", metrics: "Metrics",
   test_result: "Test", distribution: "Distribution", tail: "Tail probability", number: "Value", step: "Changes",
+  connector_source: "Source & snapshot", join: "Join report",
 };
 
 export function NodeResultView({ kind, runId, node }: { kind: string; runId: string | null; node: string }) {

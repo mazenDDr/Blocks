@@ -22,6 +22,7 @@ export const api = {
   get: <T,>(url: string, signal?: AbortSignal) => call<T>("GET", url, undefined, {}, signal),
   post: <T,>(url: string, body: unknown, headers?: Record<string, string>, signal?: AbortSignal) => call<T>("POST", url, body, headers, signal),
   put: <T,>(url: string, body: unknown) => call<T>("PUT", url, body),
+  del: <T,>(url: string) => call<T>("DELETE", url),
   validate: (graph: Graph, signal?: AbortSignal) => call<any>("POST", "/api/validate", { graph }, {}, signal),
   saveProject: (id: string, graph: Graph, ui: UiDoc) => call<{ id: string; graphHash: string }>("PUT", `/api/projects/${encodeURIComponent(id)}`, { graph, ui }),
 };

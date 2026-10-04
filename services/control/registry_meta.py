@@ -37,4 +37,10 @@ META: dict[str, tuple[str, str, str]] = {
     "scipy.tail_probability": ("Tail probability", "Statistics", "P(T >= t) or P(T <= t) under a reference distribution, via the survival function."),
     "scipy.hypothesis_test": ("Hypothesis test", "Statistics", "Null, alternative, statistic, p-value, alpha, decision and assumptions for a tail-probability test."),
     "scipy.two_group_comparison": ("Two-group comparison", "Statistics", "Welch / Student / paired t-test or Mann-Whitney U, with effect size, interval, design and diagnostics."),
+    # ---- connected data (Milestone 2b)
+    "postgres.query": ("PostgreSQL query", "Connected data", "Visual query builder (compiled to parameterized SQL) or read-only raw SQL on a PostgreSQL connection. Every run records the query, server snapshot token and a content hash."),
+    "s3.csv_source": ("S3 CSV object", "Connected data", "Reads a CSV/TSV object from an S3-compatible bucket. Pinned by object version id when the bucket is versioned; otherwise flagged as limited reproducibility."),
+    "s3.object_listing": ("S3 object listing", "Connected data", "Object metadata under a prefix (key, size, ETag, modified, optional id extracted from the key). Bodies are not read."),
+    "dvc.csv_source": ("DVC dataset", "Connected data", "Reads a DVC-tracked CSV at a Git revision; records the resolved commit, the DVC md5 and the content hash."),
+    "tabular.join": ("Join tables", "Data", "Joins two tables in the worker with a key-cardinality and unmatched-record report, row multiplication, and where it executed. NULL keys never match."),
 }

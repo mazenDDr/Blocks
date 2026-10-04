@@ -8,7 +8,7 @@ export function Library({ ops, onAdd }: { ops: OpInfo[]; onAdd: (op: OpInfo) => 
     const s = q.trim().toLowerCase();
     return ops.filter((o) => !s || `${o.displayName} ${o.type} ${o.purpose} ${o.category}`.toLowerCase().includes(s));
   }, [ops, q]);
-  const ORDER = ["Layers", "Loss", "Core", "Tensor ops", "Data", "Partition", "Preprocessing", "Models", "Evaluation", "Statistics"];
+  const ORDER = ["Layers", "Loss", "Core", "Tensor ops", "Data", "Connected data", "Partition", "Preprocessing", "Models", "Evaluation", "Statistics"];
   const cats = [...new Set(hits.map((o) => o.category))].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
   return (
     <div className="library" aria-label="Block library">
