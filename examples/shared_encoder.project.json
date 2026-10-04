@@ -1,0 +1,277 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "model",
+  "backend": "pytorch",
+  "nodes": [
+    {
+      "id": "left",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          "N",
+          4
+        ],
+        "dtype": "float32"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "right",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          "N",
+          4
+        ],
+        "dtype": "float32"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "enc_left",
+      "type": "core.composite",
+      "version": "1.0.0",
+      "config": {
+        "module": "encoder",
+        "version": "1.0.0",
+        "args": {},
+        "share": "clone"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "enc_right",
+      "type": "core.composite",
+      "version": "1.0.0",
+      "config": {
+        "module": "encoder",
+        "version": "1.0.0",
+        "args": {},
+        "share": "enc_left"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "diff",
+      "type": "tensor.sub",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "dist",
+      "type": "tensor.abs",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "head",
+      "type": "tensor.dense",
+      "version": "1.0.0",
+      "config": {
+        "out_features": 1
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "left_value__enc_left_x",
+      "kind": "tensor",
+      "from": {
+        "node": "left",
+        "port": "value"
+      },
+      "to": {
+        "node": "enc_left",
+        "port": "x"
+      }
+    },
+    {
+      "id": "right_value__enc_right_x",
+      "kind": "tensor",
+      "from": {
+        "node": "right",
+        "port": "value"
+      },
+      "to": {
+        "node": "enc_right",
+        "port": "x"
+      }
+    },
+    {
+      "id": "enc_left_z__diff_a",
+      "kind": "tensor",
+      "from": {
+        "node": "enc_left",
+        "port": "z"
+      },
+      "to": {
+        "node": "diff",
+        "port": "a"
+      }
+    },
+    {
+      "id": "enc_right_z__diff_b",
+      "kind": "tensor",
+      "from": {
+        "node": "enc_right",
+        "port": "z"
+      },
+      "to": {
+        "node": "diff",
+        "port": "b"
+      }
+    },
+    {
+      "id": "diff_output__dist_input",
+      "kind": "tensor",
+      "from": {
+        "node": "diff",
+        "port": "output"
+      },
+      "to": {
+        "node": "dist",
+        "port": "input"
+      }
+    },
+    {
+      "id": "dist_output__head_input",
+      "kind": "tensor",
+      "from": {
+        "node": "dist",
+        "port": "output"
+      },
+      "to": {
+        "node": "head",
+        "port": "input"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "encoder",
+      "version": "1.0.0",
+      "description": "Two-layer encoder: tanh(W2 tanh(W1 x))",
+      "inputs": [
+        {
+          "name": "x",
+          "dtype": "float32",
+          "shape": [
+            null,
+            4
+          ],
+          "description": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "z",
+          "from": {
+            "node": "a2",
+            "port": "output"
+          },
+          "dtype": null,
+          "shape": [
+            null,
+            8
+          ],
+          "description": ""
+        }
+      ],
+      "params": [],
+      "nodes": [
+        {
+          "id": "fc1",
+          "type": "tensor.dense",
+          "version": "1.0.0",
+          "config": {
+            "out_features": 8
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "a1",
+          "type": "tensor.tanh",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "fc2",
+          "type": "tensor.dense",
+          "version": "1.0.0",
+          "config": {
+            "out_features": 8
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "a2",
+          "type": "tensor.tanh",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        }
+      ],
+      "edges": [
+        {
+          "id": "$in_x__fc1_input",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "x"
+          },
+          "to": {
+            "node": "fc1",
+            "port": "input"
+          }
+        },
+        {
+          "id": "fc1_output__a1_input",
+          "kind": "tensor",
+          "from": {
+            "node": "fc1",
+            "port": "output"
+          },
+          "to": {
+            "node": "a1",
+            "port": "input"
+          }
+        },
+        {
+          "id": "a1_output__fc2_input",
+          "kind": "tensor",
+          "from": {
+            "node": "a1",
+            "port": "output"
+          },
+          "to": {
+            "node": "fc2",
+            "port": "input"
+          }
+        },
+        {
+          "id": "fc2_output__a2_input",
+          "kind": "tensor",
+          "from": {
+            "node": "fc2",
+            "port": "output"
+          },
+          "to": {
+            "node": "a2",
+            "port": "input"
+          }
+        }
+      ],
+      "reduction": null
+    }
+  ]
+}

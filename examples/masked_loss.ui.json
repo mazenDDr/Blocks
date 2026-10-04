@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "x": {
+      "x": 60,
+      "y": 80
+    },
+    "fc": {
+      "x": 320,
+      "y": 80
+    }
+  },
+  "description": "A linear model trained with a visual custom loss: module 'masked_weighted_mse_valid_count' (subtract, square, mask, weight, sum, divide by the number of VALID elements) composed from primitives and used as the training loss. The data is SYNTHETIC: targets with about 25% missing values (mask) and per-target weights.",
+  "synthetic": true
+}

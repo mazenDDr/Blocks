@@ -1,0 +1,278 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "model",
+  "backend": "pytorch",
+  "nodes": [
+    {
+      "id": "x",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          "N",
+          4
+        ],
+        "dtype": "float32"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "fc1",
+      "type": "tensor.dense",
+      "version": "1.0.0",
+      "config": {
+        "out_features": 8
+      },
+      "stateRef": null
+    },
+    {
+      "id": "act",
+      "type": "code.block",
+      "version": "1.0.0",
+      "config": {
+        "block": "softsign"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "fc2",
+      "type": "tensor.dense",
+      "version": "1.0.0",
+      "config": {
+        "out_features": 2
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "x_value__fc1_input",
+      "kind": "tensor",
+      "from": {
+        "node": "x",
+        "port": "value"
+      },
+      "to": {
+        "node": "fc1",
+        "port": "input"
+      }
+    },
+    {
+      "id": "fc1_output__act_x",
+      "kind": "tensor",
+      "from": {
+        "node": "fc1",
+        "port": "output"
+      },
+      "to": {
+        "node": "act",
+        "port": "x"
+      }
+    },
+    {
+      "id": "act_y__fc2_input",
+      "kind": "tensor",
+      "from": {
+        "node": "act",
+        "port": "y"
+      },
+      "to": {
+        "node": "fc2",
+        "port": "input"
+      }
+    }
+  ],
+  "codeBlocks": [
+    {
+      "id": "softsign",
+      "version": "1.0.0",
+      "description": "x / (1 + |x|), written in torch so it is differentiable",
+      "inputs": [
+        {
+          "name": "x",
+          "dtype": "float32",
+          "shape": [
+            "N",
+            8
+          ],
+          "same_as": null,
+          "description": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "y",
+          "dtype": "float32",
+          "shape": null,
+          "same_as": "x",
+          "description": ""
+        }
+      ],
+      "config": [],
+      "state": [],
+      "effects": [],
+      "randomness": "none",
+      "differentiable": true,
+      "dependencies": [],
+      "source": "import torch\n\n\ndef run(x):\n    \"\"\"softsign activation\"\"\"\n    return {\"y\": x / (1 + x.abs())}\n",
+      "fixtures": [
+        {
+          "name": "known values",
+          "inputs": {
+            "x": {
+              "values": [
+                [
+                  0.0,
+                  1.0,
+                  -1.0,
+                  3.0,
+                  -3.0,
+                  0.5,
+                  -0.5,
+                  9.0
+                ]
+              ]
+            }
+          },
+          "expect": {
+            "y": {
+              "values": [
+                [
+                  0.0,
+                  0.5,
+                  -0.5,
+                  0.75,
+                  -0.75,
+                  0.3333333333333333,
+                  -0.3333333333333333,
+                  0.9
+                ]
+              ],
+              "atol": 1e-06
+            }
+          }
+        },
+        {
+          "name": "random batch",
+          "inputs": {
+            "x": {
+              "shape": [
+                4,
+                8
+              ],
+              "seed": 1
+            }
+          }
+        }
+      ],
+      "limits": {}
+    }
+  ],
+  "training": {
+    "seed": 0,
+    "deterministic": true,
+    "epochs": 6,
+    "max_optimizer_steps": null,
+    "data": {
+      "kind": "synthetic_regression",
+      "path": "",
+      "image_size": [
+        64,
+        64
+      ],
+      "val_fraction": 0.2,
+      "n_train": 128,
+      "n_val": 32,
+      "seq_len": 8,
+      "vocab": 12,
+      "features": 4,
+      "outputs": 2,
+      "data_seed": 0,
+      "batch_size": 32,
+      "shuffle": true,
+      "drop_last": false,
+      "inputs": {},
+      "target": "y"
+    },
+    "loss": {
+      "kind": "mse",
+      "module": "",
+      "version": "1.0.0",
+      "args": {},
+      "output": "loss",
+      "ports": {
+        "pred": "output",
+        "target": "y"
+      }
+    },
+    "optimizer": {
+      "kind": "adam",
+      "lr": 0.02,
+      "momentum": 0.0,
+      "nesterov": false,
+      "dampening": 0.0,
+      "weight_decay": 0.0,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "eps": 1e-08,
+      "amsgrad": false
+    },
+    "clip": {
+      "kind": "none",
+      "max_norm": 1.0,
+      "norm_type": 2.0,
+      "value": 1.0
+    },
+    "scheduler": {
+      "kind": "none",
+      "timing": "optimizer_step",
+      "step_size": 10,
+      "gamma": 0.5,
+      "t_max": 100,
+      "warmup_steps": 5,
+      "factor": 0.5,
+      "patience": 2,
+      "metric": "val_loss",
+      "mode": "min"
+    },
+    "accumulation": {
+      "steps": 1,
+      "normalize": "mean",
+      "partial_window": "step"
+    },
+    "validation": {
+      "every": {
+        "unit": "epoch",
+        "n": 1
+      },
+      "eval_mode": true,
+      "no_grad": true
+    },
+    "checkpoint": {
+      "every": {
+        "unit": "epoch",
+        "n": 1
+      },
+      "keep_last": null,
+      "best": null
+    },
+    "early_stopping": null,
+    "stages": [
+      "zero_grad",
+      "forward",
+      "loss",
+      "backward",
+      "clip",
+      "optimizer_step",
+      "scheduler_step"
+    ],
+    "frozen": [],
+    "watch": null,
+    "breakpoints": [],
+    "probes": [],
+    "assertions": false,
+    "capture": null
+  }
+}

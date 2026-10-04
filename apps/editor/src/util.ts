@@ -18,6 +18,9 @@ export const pair = (v: unknown): [number, number] => (Array.isArray(v) ? [Numbe
 
 /** One-line summary of the settings that matter, per VISION 8.3 (e.g. "32 filters · 3x3 kernel · stride 1 · padding 1"). */
 export function summarize(node: GNode, resolved?: Record<string, unknown>): string {
+  if (node.type === "__module_input") return `${(node.config as any).name}: ${(node.config as any).dtype}${(node.config as any).shape ? " [" + (node.config as any).shape.map((d: any) => d ?? "?").join(", ") + "]" : ""}`;
+  if (node.type === "__module_output") return `output ${(node.config as any).name}`;
+  if (node.type === "tensor.dense") { const c = { ...node.config, ...(resolved ?? {}) } as any; return `${c.in_features ?? "?"} → ${c.out_features ?? 8}${c.bias === false ? " · no bias" : ""}`; }
   const c = { ...node.config, ...(resolved ?? {}) } as Record<string, any>;
   const k = (v: any) => pair(v).join("×");
   switch (node.type) {
@@ -65,6 +68,8 @@ export function nextId(base: string, taken: Set<string>): string {
 }
 
 export function runLabel(r: AnyRun): string {
+  if (r.kind === "procedure") return `${r.id} · ${r.status} · step ${r.progress.step}${r.validation?.val_loss != null ? ` · val loss ${r.validation.val_loss.toFixed(3)}` : ""}${r.rerunOf ? " · rerun" : ""}`;
+  if (r.kind === "sandbox") return `${r.id} · sandbox of ${r.parent} step ${r.step}`;
   if (r.kind === "tabular") return `${r.id} · ${r.status} · ${r.progress.nodesDone}/${r.progress.nodes} nodes`;
   return `${r.id} · ${r.status}${r.final ? ` · val acc ${(r.final.val_acc * 100).toFixed(0)}%` : ""}`;
 }

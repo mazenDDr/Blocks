@@ -25,6 +25,17 @@ class Operation:
     outputs: ClassVar[tuple[str, ...]] = ("output",)
     Config: ClassVar[type[BaseModel]]
 
+    def input_ports(self, cfg: Any) -> tuple[str, ...]:
+        """Ports can depend on the config (code blocks); every other operation has fixed ports."""
+        return self.inputs
+
+    def output_ports(self, cfg: Any) -> tuple[str, ...]:
+        return self.outputs
+
+    def has_state(self, cfg: Any, params: int) -> bool:
+        """Does a module of this op own tensors (parameters or buffers) that explicit sharing would share?"""
+        return params > 0
+
     def resolve(self, cfg: BaseModel, inputs: dict[str, TensorType]) -> BaseModel:
         """Replace "infer" fields using input types. Default: nothing to infer."""
         return cfg

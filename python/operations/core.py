@@ -59,7 +59,7 @@ class Reduce(nn.Module):
 # ---------------------------------------------------------------- tensor_input
 class InputConfig(StrictConfig):
     shape: list[int | str] = ["N", 3, 64, 64]
-    dtype: Literal["float32", "float64", "int64"] = "float32"
+    dtype: Literal["float32", "float64", "int64", "bool"] = "float32"
     layout: str = "NCHW"
 
     @field_validator("shape")

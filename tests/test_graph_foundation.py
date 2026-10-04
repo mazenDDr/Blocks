@@ -214,10 +214,15 @@ def test_every_op_declares_explain_and_param_formula(cnn_graph):
 
 
 def test_registry_has_planned_ops():
-    assert {o.type for o in registry.all_ops() if o.graph_kind == "model"} == {  # tabular ops are listed separately (test_tabular_*)
+    model_ops = {o.type for o in registry.all_ops() if o.graph_kind == "model"}  # tabular ops are listed separately (test_tabular_*)
+    phase1 = {
         "core.tensor_input", "pytorch.nn.conv2d", "pytorch.nn.relu", "pytorch.nn.max_pool2d", "pytorch.nn.adaptive_avg_pool2d",
         "pytorch.nn.flatten", "pytorch.nn.linear", "pytorch.loss.cross_entropy", "core.sub", "core.square", "core.mean", "core.sum",
         "core.scalar_mul", "core.add"}
+    assert phase1 <= model_ops  # the Phase 1 operations are all still there, unchanged
+    # Milestone 3 added only these families (tensor primitives, diagnostic blocks, structural blocks, code blocks)
+    extra = model_ops - phase1
+    assert all(t.startswith(("tensor.", "diag.")) or t in ("core.composite", "core.repeat", "core.select", "code.block") for t in extra), extra
 
 
 def test_conv_full_config_shape_and_params_match_torch():

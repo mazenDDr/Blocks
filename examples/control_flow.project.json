@@ -1,0 +1,419 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "model",
+  "backend": "pytorch",
+  "nodes": [
+    {
+      "id": "h0",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          "N",
+          6
+        ],
+        "dtype": "float32"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "context",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          "N",
+          6
+        ],
+        "dtype": "float32"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "loop",
+      "type": "core.repeat",
+      "version": "1.0.0",
+      "config": {
+        "module": "refine",
+        "version": "1.0.0",
+        "count": 3,
+        "carry": [
+          {
+            "input": "h",
+            "output": "h"
+          }
+        ],
+        "termination": {
+          "kind": "fixed_count"
+        },
+        "share": "tied"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "zero",
+      "type": "tensor.constant",
+      "version": "1.0.0",
+      "config": {
+        "value": 0.0
+      },
+      "stateRef": null
+    },
+    {
+      "id": "positive",
+      "type": "tensor.compare",
+      "version": "1.0.0",
+      "config": {
+        "op": "gt"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "all_positive",
+      "type": "tensor.any_all",
+      "version": "1.0.0",
+      "config": {
+        "kind": "all"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "pick",
+      "type": "core.select",
+      "version": "1.0.0",
+      "config": {
+        "then": {
+          "module": "branch_exp",
+          "version": "1.0.0"
+        },
+        "otherwise": {
+          "module": "branch_neg",
+          "version": "1.0.0"
+        }
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "h0_value__loop_h",
+      "kind": "tensor",
+      "from": {
+        "node": "h0",
+        "port": "value"
+      },
+      "to": {
+        "node": "loop",
+        "port": "h"
+      }
+    },
+    {
+      "id": "context_value__loop_context",
+      "kind": "tensor",
+      "from": {
+        "node": "context",
+        "port": "value"
+      },
+      "to": {
+        "node": "loop",
+        "port": "context"
+      }
+    },
+    {
+      "id": "loop_h__positive_a",
+      "kind": "tensor",
+      "from": {
+        "node": "loop",
+        "port": "h"
+      },
+      "to": {
+        "node": "positive",
+        "port": "a"
+      }
+    },
+    {
+      "id": "zero_value__positive_b",
+      "kind": "tensor",
+      "from": {
+        "node": "zero",
+        "port": "value"
+      },
+      "to": {
+        "node": "positive",
+        "port": "b"
+      }
+    },
+    {
+      "id": "positive_output__all_positive_input",
+      "kind": "tensor",
+      "from": {
+        "node": "positive",
+        "port": "output"
+      },
+      "to": {
+        "node": "all_positive",
+        "port": "input"
+      }
+    },
+    {
+      "id": "all_positive_output__pick_pred",
+      "kind": "tensor",
+      "from": {
+        "node": "all_positive",
+        "port": "output"
+      },
+      "to": {
+        "node": "pick",
+        "port": "pred"
+      }
+    },
+    {
+      "id": "loop_h__pick_x",
+      "kind": "tensor",
+      "from": {
+        "node": "loop",
+        "port": "h"
+      },
+      "to": {
+        "node": "pick",
+        "port": "x"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "refine",
+      "version": "1.0.0",
+      "description": "h_next = tanh(W (h + context))",
+      "inputs": [
+        {
+          "name": "h",
+          "dtype": "float32",
+          "shape": [
+            null,
+            6
+          ],
+          "description": ""
+        },
+        {
+          "name": "context",
+          "dtype": "float32",
+          "shape": [
+            null,
+            6
+          ],
+          "description": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "h",
+          "from": {
+            "node": "act",
+            "port": "output"
+          },
+          "dtype": null,
+          "shape": [
+            null,
+            6
+          ],
+          "description": ""
+        }
+      ],
+      "params": [],
+      "nodes": [
+        {
+          "id": "mix",
+          "type": "tensor.add",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "fc",
+          "type": "tensor.dense",
+          "version": "1.0.0",
+          "config": {
+            "out_features": 6
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "act",
+          "type": "tensor.tanh",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        }
+      ],
+      "edges": [
+        {
+          "id": "$in_h__mix_a",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "h"
+          },
+          "to": {
+            "node": "mix",
+            "port": "a"
+          }
+        },
+        {
+          "id": "$in_context__mix_b",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "context"
+          },
+          "to": {
+            "node": "mix",
+            "port": "b"
+          }
+        },
+        {
+          "id": "mix_output__fc_input",
+          "kind": "tensor",
+          "from": {
+            "node": "mix",
+            "port": "output"
+          },
+          "to": {
+            "node": "fc",
+            "port": "input"
+          }
+        },
+        {
+          "id": "fc_output__act_input",
+          "kind": "tensor",
+          "from": {
+            "node": "fc",
+            "port": "output"
+          },
+          "to": {
+            "node": "act",
+            "port": "input"
+          }
+        }
+      ],
+      "reduction": null
+    },
+    {
+      "id": "branch_exp",
+      "version": "1.0.0",
+      "description": "exp(x)",
+      "inputs": [
+        {
+          "name": "x",
+          "dtype": "float32",
+          "shape": [
+            null,
+            6
+          ],
+          "description": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "y",
+          "from": {
+            "node": "f",
+            "port": "output"
+          },
+          "dtype": null,
+          "shape": [
+            null,
+            6
+          ],
+          "description": ""
+        }
+      ],
+      "params": [],
+      "nodes": [
+        {
+          "id": "f",
+          "type": "tensor.exp",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        }
+      ],
+      "edges": [
+        {
+          "id": "$in_x__f_input",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "x"
+          },
+          "to": {
+            "node": "f",
+            "port": "input"
+          }
+        }
+      ],
+      "reduction": null
+    },
+    {
+      "id": "branch_neg",
+      "version": "1.0.0",
+      "description": "-x",
+      "inputs": [
+        {
+          "name": "x",
+          "dtype": "float32",
+          "shape": [
+            null,
+            6
+          ],
+          "description": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "y",
+          "from": {
+            "node": "f",
+            "port": "output"
+          },
+          "dtype": null,
+          "shape": [
+            null,
+            6
+          ],
+          "description": ""
+        }
+      ],
+      "params": [],
+      "nodes": [
+        {
+          "id": "f",
+          "type": "tensor.neg",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        }
+      ],
+      "edges": [
+        {
+          "id": "$in_x__f_input",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "x"
+          },
+          "to": {
+            "node": "f",
+            "port": "input"
+          }
+        }
+      ],
+      "reduction": null
+    }
+  ]
+}

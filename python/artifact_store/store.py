@@ -162,6 +162,13 @@ class ArtifactStore:
             out.append(d)
         return out
 
+    def set_artifact_status(self, run_id: str, sha256: str, status: str, kind: str | None = None) -> None:
+        """Retention marks (e.g. a checkpoint pruned by keep_last). The bytes stay: content-addressed files may be shared by other records."""
+        sql, args = "UPDATE artifacts SET status=? WHERE run_id=? AND sha256=?", [status, run_id, sha256]
+        if kind:
+            sql, args = sql + " AND kind=?", args + [kind]
+        self._exec(sql, tuple(args))
+
     def last_event(self, run_id: str, type_: str) -> dict[str, Any] | None:
         rows = self._exec("SELECT * FROM events WHERE run_id=? AND type=? ORDER BY seq DESC LIMIT 1", (run_id, type_))
         if not rows:

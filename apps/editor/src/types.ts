@@ -10,9 +10,24 @@ export type WireType = TensorType | ValueType;
 export const isTensorType = (t: WireType): t is TensorType => Array.isArray((t as TensorType).shape);
 
 export interface Endpoint { node: string; port: string }
-export interface GNode { id: string; type: string; version: string; config: Record<string, unknown>; stateRef?: string | null }
+export interface GNode { id: string; type: string; version: string; config: Record<string, unknown>; stateRef?: string | null; sharedWith?: string | null }
 export interface GEdge { id: string; kind: string; from: Endpoint; to: Endpoint }
-export interface Graph { schemaVersion: string; graphKind: string; backend: string; nodes: GNode[]; edges: GEdge[] }
+export interface PortSpec { name: string; dtype: string; shape: (number | string | null)[] | null; description?: string }
+export interface ModuleOutput { name: string; from: Endpoint; dtype?: string | null; shape?: (number | string | null)[] | null; description?: string }
+export interface ModuleParam { name: string; default: unknown; type?: string | null; description?: string }
+export interface ModuleDef {
+  id: string; version: string; description: string; inputs: PortSpec[]; outputs: ModuleOutput[]; params: ModuleParam[]; nodes: GNode[]; edges: GEdge[]; reduction?: Record<string, any> | null;
+}
+export interface CodeIO { name: string; dtype: string; shape?: (number | string | null)[] | null; same_as?: string | null; description?: string }
+export interface CodeBlockDef {
+  id: string; version: string; description: string; inputs: CodeIO[]; outputs: CodeIO[]; config: { name: string; type: string; default: unknown; description?: string }[];
+  state: { name: string; shape: number[]; dtype: string; init: number }[]; effects: string[]; randomness: string; differentiable: boolean; dependencies: string[];
+  source: string; fixtures: Record<string, any>[]; limits: Record<string, number>;
+}
+export interface Graph {
+  schemaVersion: string; graphKind: string; backend: string; nodes: GNode[]; edges: GEdge[];
+  modules?: ModuleDef[]; codeBlocks?: CodeBlockDef[]; training?: Record<string, any> | null;
+}
 export interface UiDoc {
   schemaVersion: string; positions: Record<string, { x: number; y: number }>; pinnedBaseline?: string | null;
   description?: string; synthetic?: boolean;
@@ -31,17 +46,36 @@ export interface JSchema {
 
 export interface Fix { label: string; node: string | null; key: string | null; value: unknown }
 export interface Diagnostic { code: string; severity: "error" | "warning"; nodeId: string | null; port: string | null; path: string; message: string; fixes: Fix[] }
+export interface ExplainStep { id: string; local: string; type: string; equation: string; params: number; config?: Record<string, unknown>; outputShape?: Dim[]; sharesParameters?: boolean }
 export interface NodeView {
   known: boolean; typed: boolean; diagnostics: Diagnostic[];
   inputShapes?: Record<string, WireType>; outputShapes?: Record<string, WireType>; params?: number;
   resolvedConfig?: Record<string, unknown>; explain?: Explain;
+  type?: string; nodeVersion?: string;
+  inputPorts?: string[]; outputPorts?: string[]; sharedWith?: string | null; sharesParameters?: boolean; observationOnly?: boolean;
+  // structural instances (composite / repeat / select)
+  structural?: boolean; kind?: string; module?: string; version?: string; members?: string[]; children?: string[]; note?: string; iterations?: number | null; termination?: string | null;
 }
+export interface InstanceBoundary { kind: "in" | "out"; port: string; node?: string; nodePort?: string }
+export interface InstanceInfo {
+  path: string; kind: string; module: string | null; version: string | null; inputs: string[]; outputs: string[]; members: string[]; children: string[]; note: string;
+  sharedWith: string | null; iterations: number | null; termination: string | null; typed: boolean; params: number;
+  inputShapes: Record<string, WireType>; outputShapes: Record<string, WireType>; diagnostics: Diagnostic[]; explain: Explain & { steps?: ExplainStep[] };
+  innerEdges?: { id: string; from: Endpoint; to: Endpoint }[]; boundary?: InstanceBoundary[];
+}
+export interface ModuleSummary {
+  id: string; version: string; description: string; inputs: PortSpec[]; outputs: ModuleOutput[]; params: ModuleParam[]; nodes: number; contentHash: string; usedBy: string[]; reduction?: Record<string, any> | null;
+}
+export interface ProcedureCheck { valid: boolean; diagnostics: Diagnostic[]; stages: string[] }
 export interface Explain {
-  equation?: string; shapeRule?: string; reduction?: string; note?: string; error?: string; rule?: string;
+  equation?: string; shapeRule?: string; reduction?: string; note?: string; error?: string; rule?: string; executionEffect?: string;
+  broadcast?: { rule: string; alignment: Record<string, unknown>[] }; axes?: { in: string[] | null; out: string[] | null };
+  steps?: ExplainStep[]; composite?: { instances: string[]; iterations: number | null };
   parameters?: { formula: string; terms: { name: string; shape: number[]; count: number }[]; total: number };
 }
 export interface Validation {
   ok: boolean; graphHash: string; graphKind?: string; totalParams: number; diagnostics: Diagnostic[]; nodes: Record<string, NodeView>;
+  flat?: Record<string, NodeView>; instances?: Record<string, InstanceInfo>; modules?: ModuleSummary[]; procedure?: ProcedureCheck;
 }
 
 export interface RunSummary {
@@ -102,8 +136,18 @@ export interface TabularRunSummary {
   failure: { node: string | null; code: string; message: string } | null;
   libraries: Record<string, string> | null;
 }
-export type AnyRun = RunSummary | TabularRunSummary;
+export interface ProcedureRunSummary {
+  kind: "procedure"; id: string; status: string; error: string | null; graphHash: string; createdAt: number; updatedAt: number; maxSeq: number; config: Record<string, any>;
+  totalParams: number | null; synthetic: boolean | null; dataNote: string | null; resumedFrom: { run_id: string; step: number } | null; rerunOf: string | null;
+  progress: { step: number; epochsDone: number; epochs: number | null; stepsPerEpoch: number | null };
+  last: { step: number; loss: number; lr: number; grad_norm: number | null } | null; validation: Record<string, number> | null; stoppedBy: string | null; checkpoints: number; captures: number[];
+}
+export interface SandboxRunSummary { kind: "sandbox"; id: string; status: string; parent: string; step: number; createdAt: number; updatedAt: number; graphHash: string; config: Record<string, any> }
+export type AnyRun = RunSummary | TabularRunSummary | ProcedureRunSummary | SandboxRunSummary;
 export const isTabularRun = (r: AnyRun): r is TabularRunSummary => r.kind === "tabular";
+export const isProcedureRun = (r: AnyRun): r is ProcedureRunSummary => r.kind === "procedure";
+export const isSandboxRun = (r: AnyRun): r is SandboxRunSummary => r.kind === "sandbox";
+export const isModelRun = (r: AnyRun): r is RunSummary => r.kind === undefined || r.kind === "model";
 
 export interface TabProvenance {
   runId: string | null; graphHash?: string; nodeId?: string | null; port?: string | null; partition?: string; source?: unknown; sourceSha256?: string;

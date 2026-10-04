@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "tokens": {
+      "x": 60,
+      "y": 80
+    },
+    "tok_emb": {
+      "x": 320,
+      "y": 80
+    },
+    "positions": {
+      "x": 60,
+      "y": 230
+    },
+    "pos_emb": {
+      "x": 320,
+      "y": 230
+    },
+    "embed_sum": {
+      "x": 580,
+      "y": 80
+    },
+    "pad_id": {
+      "x": 60,
+      "y": 380
+    },
+    "key_mask": {
+      "x": 320,
+      "y": 380
+    },
+    "enc1": {
+      "x": 840,
+      "y": 80
+    },
+    "enc2": {
+      "x": 1100,
+      "y": 80
+    },
+    "mask_f": {
+      "x": 580,
+      "y": 230
+    },
+    "mask_col": {
+      "x": 840,
+      "y": 230
+    },
+    "masked_h": {
+      "x": 1360,
+      "y": 80
+    },
+    "pool_sum": {
+      "x": 1620,
+      "y": 80
+    },
+    "count_sum": {
+      "x": 1100,
+      "y": 230
+    },
+    "count": {
+      "x": 1360,
+      "y": 230
+    },
+    "pooled": {
+      "x": 1880,
+      "y": 80
+    },
+    "head": {
+      "x": 2140,
+      "y": 80
+    }
+  },
+  "description": "A 2-layer post-LN transformer encoder from primitives (multi-head self-attention with Q/K/V projections, scaled scores, padding mask, softmax, output projection, residual + LayerNorm, GELU MLP) classifying SYNTHETIC token sequences: class 1 if token 1 occurs more often than token 2 (id 0 = padding). Use the Attention inspector on enc1/attn after a run.",
+  "synthetic": true
+}

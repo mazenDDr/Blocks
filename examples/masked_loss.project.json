@@ -1,0 +1,436 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "model",
+  "backend": "pytorch",
+  "nodes": [
+    {
+      "id": "x",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          "N",
+          4
+        ],
+        "dtype": "float32"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "fc",
+      "type": "tensor.dense",
+      "version": "1.0.0",
+      "config": {
+        "out_features": 2
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "x_value__fc_input",
+      "kind": "tensor",
+      "from": {
+        "node": "x",
+        "port": "value"
+      },
+      "to": {
+        "node": "fc",
+        "port": "input"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "masked_weighted_mse_valid_count",
+      "version": "1.0.0",
+      "description": "Masked, weighted squared error. divide by the number of VALID elements (sum of mask). If the denominator would be 0 it is clamped to 1e-08, giving loss 0 and gradient 0.",
+      "inputs": [
+        {
+          "name": "pred",
+          "dtype": "float32",
+          "shape": [
+            "N",
+            null
+          ],
+          "description": ""
+        },
+        {
+          "name": "target",
+          "dtype": "float32",
+          "shape": [
+            "N",
+            null
+          ],
+          "description": ""
+        },
+        {
+          "name": "mask",
+          "dtype": "float32",
+          "shape": [
+            "N",
+            null
+          ],
+          "description": ""
+        },
+        {
+          "name": "weights",
+          "dtype": "float32",
+          "shape": [
+            "N",
+            null
+          ],
+          "description": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "loss",
+          "from": {
+            "node": "loss",
+            "port": "output"
+          },
+          "dtype": "float32",
+          "shape": [],
+          "description": ""
+        }
+      ],
+      "params": [],
+      "nodes": [
+        {
+          "id": "diff",
+          "type": "tensor.sub",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "sq",
+          "type": "core.square",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "wm",
+          "type": "tensor.mul",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "terms",
+          "type": "tensor.mul",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "num",
+          "type": "core.sum",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "den_raw",
+          "type": "core.sum",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "den",
+          "type": "tensor.clamp",
+          "version": "1.0.0",
+          "config": {
+            "min": 1e-08
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "loss",
+          "type": "tensor.div",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        }
+      ],
+      "edges": [
+        {
+          "id": "$in_pred__diff_a",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "pred"
+          },
+          "to": {
+            "node": "diff",
+            "port": "a"
+          }
+        },
+        {
+          "id": "$in_target__diff_b",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "target"
+          },
+          "to": {
+            "node": "diff",
+            "port": "b"
+          }
+        },
+        {
+          "id": "diff_output__sq_input",
+          "kind": "tensor",
+          "from": {
+            "node": "diff",
+            "port": "output"
+          },
+          "to": {
+            "node": "sq",
+            "port": "input"
+          }
+        },
+        {
+          "id": "$in_weights__wm_a",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "weights"
+          },
+          "to": {
+            "node": "wm",
+            "port": "a"
+          }
+        },
+        {
+          "id": "$in_mask__wm_b",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "mask"
+          },
+          "to": {
+            "node": "wm",
+            "port": "b"
+          }
+        },
+        {
+          "id": "sq_output__terms_a",
+          "kind": "tensor",
+          "from": {
+            "node": "sq",
+            "port": "output"
+          },
+          "to": {
+            "node": "terms",
+            "port": "a"
+          }
+        },
+        {
+          "id": "wm_output__terms_b",
+          "kind": "tensor",
+          "from": {
+            "node": "wm",
+            "port": "output"
+          },
+          "to": {
+            "node": "terms",
+            "port": "b"
+          }
+        },
+        {
+          "id": "terms_output__num_input",
+          "kind": "tensor",
+          "from": {
+            "node": "terms",
+            "port": "output"
+          },
+          "to": {
+            "node": "num",
+            "port": "input"
+          }
+        },
+        {
+          "id": "$in_mask__den_raw_input",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "mask"
+          },
+          "to": {
+            "node": "den_raw",
+            "port": "input"
+          }
+        },
+        {
+          "id": "den_raw_output__den_input",
+          "kind": "tensor",
+          "from": {
+            "node": "den_raw",
+            "port": "output"
+          },
+          "to": {
+            "node": "den",
+            "port": "input"
+          }
+        },
+        {
+          "id": "num_output__loss_a",
+          "kind": "tensor",
+          "from": {
+            "node": "num",
+            "port": "output"
+          },
+          "to": {
+            "node": "loss",
+            "port": "a"
+          }
+        },
+        {
+          "id": "den_output__loss_b",
+          "kind": "tensor",
+          "from": {
+            "node": "den",
+            "port": "output"
+          },
+          "to": {
+            "node": "loss",
+            "port": "b"
+          }
+        }
+      ],
+      "reduction": {
+        "divisor": "valid_count",
+        "description": "divide by the number of VALID elements (sum of mask)",
+        "empty_policy": "denominator clamped to >= 1e-08; loss 0 when nothing is valid",
+        "formula": "sum(w*m*(p-t)^2) / sum(m)"
+      }
+    }
+  ],
+  "training": {
+    "seed": 0,
+    "deterministic": true,
+    "epochs": 8,
+    "max_optimizer_steps": null,
+    "data": {
+      "kind": "synthetic_regression",
+      "path": "",
+      "image_size": [
+        64,
+        64
+      ],
+      "val_fraction": 0.2,
+      "n_train": 256,
+      "n_val": 64,
+      "seq_len": 8,
+      "vocab": 12,
+      "features": 4,
+      "outputs": 2,
+      "data_seed": 0,
+      "batch_size": 32,
+      "shuffle": true,
+      "drop_last": false,
+      "inputs": {},
+      "target": "y"
+    },
+    "loss": {
+      "kind": "module",
+      "module": "masked_weighted_mse_valid_count",
+      "version": "1.0.0",
+      "args": {},
+      "output": "loss",
+      "ports": {
+        "pred": "output",
+        "target": "y",
+        "mask": "mask",
+        "weights": "weights"
+      }
+    },
+    "optimizer": {
+      "kind": "sgd",
+      "lr": 0.05,
+      "momentum": 0.9,
+      "nesterov": false,
+      "dampening": 0.0,
+      "weight_decay": 0.0,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "eps": 1e-08,
+      "amsgrad": false
+    },
+    "clip": {
+      "kind": "none",
+      "max_norm": 1.0,
+      "norm_type": 2.0,
+      "value": 1.0
+    },
+    "scheduler": {
+      "kind": "none",
+      "timing": "optimizer_step",
+      "step_size": 10,
+      "gamma": 0.5,
+      "t_max": 100,
+      "warmup_steps": 5,
+      "factor": 0.5,
+      "patience": 2,
+      "metric": "val_loss",
+      "mode": "min"
+    },
+    "accumulation": {
+      "steps": 1,
+      "normalize": "mean",
+      "partial_window": "step"
+    },
+    "validation": {
+      "every": {
+        "unit": "epoch",
+        "n": 1
+      },
+      "eval_mode": true,
+      "no_grad": true
+    },
+    "checkpoint": {
+      "every": {
+        "unit": "epoch",
+        "n": 1
+      },
+      "keep_last": null,
+      "best": null
+    },
+    "early_stopping": null,
+    "stages": [
+      "zero_grad",
+      "forward",
+      "loss",
+      "backward",
+      "clip",
+      "optimizer_step",
+      "scheduler_step"
+    ],
+    "frozen": [],
+    "watch": {
+      "param": "fc.weight",
+      "index": [
+        0,
+        0
+      ]
+    },
+    "breakpoints": [],
+    "probes": [],
+    "assertions": false,
+    "capture": null
+  }
+}

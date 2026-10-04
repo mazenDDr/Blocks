@@ -30,6 +30,7 @@ from graph_core.project_io import Project, load_project, save_project, ui_path_f
 from graph_core.schema import Graph, ProjectDocument
 from graph_core.validate import ExecutionBlocked, validate
 from worker.process import RunHandle, submit_run
+from worker.procedure_run import ProcedureRunConfig
 from worker.tabular_run import TabularRunConfig
 from worker.train import RunConfig, UnsupportedGraph, _io_contract
 from connectors import context as conn_context
@@ -41,6 +42,8 @@ from studies.store import StudyStore
 from . import inspection as insp
 from . import tabular_inspection as tinsp
 from .registry_meta import META
+from .m3_support import module_summaries, procedure_check
+from .views import node_view, views
 
 REPO = Path(__file__).resolve().parents[2]
 PROJECT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
@@ -101,37 +104,39 @@ def model_preflight(graph: Graph, cfg: RunConfig) -> None:
         raise _err(422, str(e), code="unsupported_graph")
 
 
-def node_view(graph: Graph, report) -> dict[str, Any]:
-    """Per-node shapes, param counts, diagnostics, resolved config and explain data."""
-    by_node: dict[str, list] = {}
-    for d in report.diagnostics:
-        if d.nodeId:
-            by_node.setdefault(d.nodeId, []).append(d.to_json())
-    out = {}
-    for n in graph.nodes:
-        op = registry.get_op(n.type)
-        entry: dict[str, Any] = {"known": op is not None, "diagnostics": by_node.get(n.id, []), "typed": n.id in report.output_types}
-        if n.id in report.output_types:
-            entry["inputShapes"] = {p: t.to_json() for p, t in report.input_types[n.id].items()}
-            entry["outputShapes"] = {p: t.to_json() for p, t in report.output_types[n.id].items()}
-            entry["params"] = report.params[n.id]
-            entry["resolvedConfig"] = report.resolved[n.id].model_dump(mode="json")
-            try:
-                entry["explain"] = jsonable_encoder(op.explain(report.resolved[n.id], report.input_types[n.id], report.output_types[n.id]))
-            except Exception as e:  # noqa: BLE001  (an explain bug must not break validation)
-                entry["explain"] = {"error": str(e)}
-        out[n.id] = entry
-    return out
-
-
 def validation_json(graph: Graph) -> dict[str, Any]:
     report = validate(graph)
     j = report.to_json()
     j["graphHash"] = semantic_hash(graph)
     j["graphKind"] = graph.graphKind
-    j["nodes"] = node_view(graph, report)
+    if graph.graphKind == "model":
+        v = views(graph, report)
+        j["nodes"], j["flat"], j["instances"] = v["nodes"], v["flat"], v["instances"]
+        j["modules"] = module_summaries(graph, report)
+        if graph.training is not None:
+            j["procedure"] = procedure_check(graph.training)
+    else:
+        j["nodes"] = node_view(graph, report)
     j["order"] = report.order
     return j
+
+
+def preflight_procedure(graph: Graph, cfg: ProcedureRunConfig) -> None:
+    """Everything that can be checked without training: procedure order rules, graph validity, data/graph contract, loss wiring. Raises HTTPException(422)."""
+    from training.spec import ProcedureSpec, check_procedure
+    from training.trainer import Trainer
+
+    try:
+        spec = ProcedureSpec.model_validate(cfg.procedure)
+    except ValidationError as e:
+        raise _err(422, "invalid training procedure: " + "; ".join(f"{'.'.join(str(x) for x in err['loc'])}: {err['msg']}" for err in e.errors()))
+    errs = [d for d in check_procedure(spec) if d.severity == "error"]
+    if errs:
+        raise _err(422, "the training procedure is not valid", [d.to_json() for d in errs], "procedure_invalid")
+    try:
+        Trainer(graph, spec)
+    except ExecutionBlocked as e:
+        raise _err(422, "the graph or its training setup has errors and cannot run", [d.to_json() for d in e.diagnostics], "execution_blocked")
 
 
 class Services:
@@ -219,10 +224,32 @@ class Services:
                 "progress": {"nodesDone": sum(1 for n in nodes if n["status"] == "finished"), "nodes": len(order)},
                 "sources": sources, "snapshots": snaps, "runSeed": seeded, "splits": splits, "failure": failure, "libraries": libs}
 
+    def procedure_summary(self, row: dict[str, Any]) -> dict[str, Any]:
+        rid = row["id"]
+        started = self.store.last_event(rid, "run_started")
+        last = self.store.last_event(rid, "train_step")
+        val = self.store.last_event(rid, "validation")
+        fin = self.store.last_event(rid, "run_finished")
+        spec = row["config"].get("procedure", {})
+        epochs = len(self.store.events(rid, -1, ("epoch_end",)))
+        sd = started["data"] if started else {}
+        return {"kind": "procedure", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": row["config"],
+                "createdAt": row["created_at"], "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid),
+                "totalParams": sd.get("total_params"), "synthetic": sd.get("synthetic"), "dataNote": sd.get("data"), "resumedFrom": sd.get("resumed_from"), "rerunOf": row["config"].get("rerun_of"),
+                "progress": {"step": last["data"]["step"] if last else 0, "epochsDone": epochs, "epochs": spec.get("epochs"), "stepsPerEpoch": sd.get("steps_per_epoch")},
+                "last": ({k: last["data"].get(k) for k in ("step", "loss", "lr", "grad_norm")} if last else None), "validation": val["data"] if val else None,
+                "stoppedBy": fin["data"].get("stopped_by") if fin else None, "checkpoints": len([a for a in self.store.artifacts(rid, "checkpoint") if a["status"] != "pruned"]),
+                "captures": [a["step"] for a in self.store.artifacts(rid, "capture")]}
+
     def run_summary(self, row: dict[str, Any]) -> dict[str, Any]:
         rid = row["id"]
         if row["config"].get("kind") == "tabular":
             return self.tabular_summary(row)
+        if row["config"].get("kind") == "procedure":
+            return self.procedure_summary(row)
+        if row["config"].get("kind") == "sandbox":
+            return {"kind": "sandbox", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": row["config"],
+                    "createdAt": row["created_at"], "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "parent": row["config"].get("parent"), "step": row["config"].get("step")}
         started = self.store.last_event(rid, "run_started")
         last_step = self.store.last_event(rid, "train_step")
         epochs = [e["data"] for e in self.store.events(rid, -1, ("epoch_end",))]
@@ -348,8 +375,13 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
         else:
             graph = req.graph
         tabular = graph.graphKind == "tabular"
+        procedure = graph.graphKind == "model" and req.config.get("kind") == "procedure"
         try:
-            if tabular:
+            if procedure:
+                body = {**req.config}
+                body["procedure"] = body.get("procedure") or graph.training or {}
+                cfg = ProcedureRunConfig.model_validate({**body, "project_id": req.projectId or body.get("project_id")})
+            elif tabular:
                 cfg = TabularRunConfig.model_validate({**req.config, "project_id": req.projectId or req.config.get("project_id")})
             else:
                 base = RunConfig.model_validate(req.config)
@@ -363,6 +395,12 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
                 if prior["request_hash"] != req_hash:
                     raise _err(409, "this Idempotency-Key was already used with a different request", code="idempotency_key_reused")
                 return JSONResponse({"runId": prior["run_id"], "idempotentReplay": True, "status": sv.store.get_run(prior["run_id"])["status"]})
+            if procedure:
+                preflight_procedure(graph, cfg)
+                handle = submit_run(graph, cfg, sv.workbench)
+                sv.handles[handle.run_id] = handle
+                sv.store.put_idempotent(idempotency_key, req_hash, handle.run_id)
+                return JSONResponse({"runId": handle.run_id, "idempotentReplay": False, "status": "queued", "graphHash": semantic_hash(graph)}, status_code=201)
             if tabular:
                 report = validate(graph)
                 if not report.ok:
@@ -509,8 +547,9 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     def infer(req: InferRequest):
         return insp.infer(sv.run_data(req.runId), req.checkpointStep, req.sample, req.imageBase64)
 
-    from . import connections_api, studies_api
+    from . import connections_api, m3_api, studies_api
 
     connections_api.register(app, sv)
     studies_api.register(app, sv)
+    m3_api.register(app, sv)
     return app

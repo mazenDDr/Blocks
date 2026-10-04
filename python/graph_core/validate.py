@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 import torch.nn as nn
 from pydantic import BaseModel, ValidationError
 
-from . import registry
+from . import composite, registry
 from .schema import SCHEMA_VERSION, Graph
 from .types import Diagnostic, Fix, OpError, TensorType
 
@@ -26,6 +26,9 @@ class Report:
     params: dict[str, int] = field(default_factory=dict)
     resolved: dict[str, BaseModel] = field(default_factory=dict)  # configs with "infer" resolved
     unresolved_nodes: list[str] = field(default_factory=list)  # nodes that could not be typed
+    graph: Graph | None = None  # the flat graph that was validated (structural nodes expanded; node ids are full paths)
+    expansion: composite.Expansion | None = None
+    shared: dict[str, str] = field(default_factory=dict)  # flat node -> flat node whose parameters it uses
 
     @property
     def errors(self) -> list[Diagnostic]:
@@ -65,8 +68,12 @@ def validate(graph: Graph) -> Report:
         from tabular.validate import validate_tabular
 
         return validate_tabular(graph)
+    ex = composite.expand(graph)
+    graph = ex.graph
     r = Report()
+    r.graph, r.expansion = graph, ex
     diag = r.diagnostics
+    diag.extend(ex.diagnostics)
 
     def add(code, msg, node=None, port=None, path="", fixes=None, severity="error"):
         diag.append(Diagnostic(code, msg, severity, node, port, path, fixes or []))
@@ -88,11 +95,16 @@ def validate(graph: Graph) -> Report:
             add("E_DUPLICATE_ID", f"Node id '{n.id}' is used more than once.", n.id, path=npath)
             continue
         seen.add(n.id)
-        if not ID_RE.match(n.id) or keyword.iskeyword(n.id) or n.id in RESERVED_IDS or hasattr(nn.Module, n.id):
+        parts = n.id.split("/")
+        top_only = len(parts) == 1
+        if (not all(ID_RE.match(x) for x in parts) or (top_only and (keyword.iskeyword(n.id) or n.id in RESERVED_IDS or hasattr(nn.Module, n.id)))
+                or n.id.startswith(".")):
             add("E_BAD_ID", f"Node id '{n.id}' is not usable as a Python/PyTorch module name.", n.id, path=npath,
                 fixes=[Fix("Rename the node to a letters/digits/underscore identifier that is not a reserved word")])
             continue
         op = registry.get_op(n.type)
+        if op is None and n.type.startswith("unresolved."):
+            continue  # a structural node that could not be expanded: the expansion already reported why
         if op is None:
             add("E_UNKNOWN_OP", f"Operation '{n.type}' is not available. The node is preserved but cannot execute until it is resolved.",
                 n.id, path=npath, fixes=[Fix("Install the plugin that provides this operation"), Fix("Replace the node with a supported operation")])
@@ -133,12 +145,14 @@ def validate(graph: Graph) -> Report:
         if bad:
             continue
         src, dst = ops.get(e.from_.node), ops.get(e.to.node)
-        if src and e.from_.port not in src.outputs:
-            add("E_UNKNOWN_PORT", f"Node '{e.from_.node}' has no output port '{e.from_.port}' (has {list(src.outputs)}).",
+        src_out = src.output_ports(cfgs[e.from_.node]) if src else ()
+        dst_in = dst.input_ports(cfgs[e.to.node]) if dst else ()
+        if src and e.from_.port not in src_out:
+            add("E_UNKNOWN_PORT", f"Node '{e.from_.node}' has no output port '{e.from_.port}' (has {list(src_out)}).",
                 e.from_.node, e.from_.port, f"{epath}/from")
             continue
-        if dst and e.to.port not in dst.inputs:
-            add("E_UNKNOWN_PORT", f"Node '{e.to.node}' has no input port '{e.to.port}' (has {list(dst.inputs)}).",
+        if dst and e.to.port not in dst_in:
+            add("E_UNKNOWN_PORT", f"Node '{e.to.node}' has no input port '{e.to.port}' (has {list(dst_in)}).",
                 e.to.node, e.to.port, f"{epath}/to")
             continue
         key = (e.to.node, e.to.port)
@@ -150,7 +164,7 @@ def validate(graph: Graph) -> Report:
         incoming[key] = (e.from_.node, e.from_.port)
 
     for nid, op in ops.items():
-        for p in op.inputs:
+        for p in op.input_ports(cfgs[nid]):
             if (nid, p) not in incoming:
                 add("E_MISSING_INPUT", f"Input '{p}' of '{nid}' is not connected.", nid, p, f"/nodes/{nid}/ports/{p}",
                     [Fix(f"Connect an output to {nid}.{p}")])
@@ -183,7 +197,7 @@ def validate(graph: Graph) -> Report:
             continue
         ins: dict[str, TensorType] = {}
         ready = True
-        for p in op.inputs:
+        for p in op.input_ports(cfgs[nid]):
             src = incoming.get((nid, p))
             if src is None or src[0] not in r.output_types:
                 ready = False
@@ -203,7 +217,116 @@ def validate(graph: Graph) -> Report:
             continue
         r.resolved[nid], r.input_types[nid], r.output_types[nid] = cfg, ins, outs
     r.unresolved_nodes += [i for i in cyc if i not in r.unresolved_nodes]
+    _check_sharing(r, graph, add)
+    _check_signatures(r, ex, add)
+    _check_boundaries(r, graph, incoming, add)
     return r
+
+
+def _check_boundaries(r: Report, graph: Graph, incoming: dict, add) -> None:
+    """A non-differentiable code block is an explicit gradient boundary: say so when parameters sit upstream of it."""
+    parents: dict[str, set[str]] = {}
+    for (dst, _), (src, _p) in incoming.items():
+        parents.setdefault(dst, set()).add(src)
+    for n in graph.nodes:
+        cfg = r.resolved.get(n.id)
+        if n.type != "code.block" or cfg is None or cfg.interface.get("differentiable"):
+            continue
+        seen, stack = set(), list(parents.get(n.id, ()))
+        while stack:
+            p = stack.pop()
+            if p in seen:
+                continue
+            seen.add(p)
+            stack.extend(parents.get(p, ()))
+        trained = sorted(p for p in seen if r.params.get(p, 0) > 0)
+        if trained:
+            add("W_NONDIFF_BOUNDARY", f"Code block '{n.id}' is not differentiable: no gradient flows through it, so the parameters of {', '.join(trained[:4])}"
+                f"{'...' if len(trained) > 4 else ''} upstream of it receive no gradient from losses downstream of it.", n.id, path=f"/nodes/{n.id}", severity="warning")
+
+
+def _check_sharing(r: Report, graph: Graph, add) -> None:
+    """A13: a node with sharedWith uses the target's parameter tensors. The target must be the same operation with the same
+    resolved config (so the tensors have the same shapes) and must not share itself."""
+    by_id = {n.id: n for n in graph.nodes}
+    for n in graph.nodes:
+        if not n.sharedWith:
+            continue
+        t = by_id.get(n.sharedWith)
+        if t is None:
+            add("E_SHARE_TARGET", f"'{n.id}' shares parameters with '{n.sharedWith}', which does not exist.", n.id, path=f"/nodes/{n.id}")
+            continue
+        if t.sharedWith:
+            add("E_SHARE_CHAIN", f"'{n.id}' shares with '{t.id}', which itself shares with '{t.sharedWith}'. Share with the original.", n.id, path=f"/nodes/{n.id}")
+            continue
+        if t.type != n.type:
+            add("E_SHARE_MISMATCH", f"'{n.id}' ({n.type}) cannot share parameters with '{t.id}' ({t.type}).", n.id, path=f"/nodes/{n.id}")
+            continue
+        if n.id in r.resolved and t.id in r.resolved:
+            a, b = r.resolved[n.id].model_dump(mode="json"), r.resolved[t.id].model_dump(mode="json")
+            if a != b:
+                diff = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+                add("E_SHARE_MISMATCH", f"'{n.id}' and '{t.id}' differ in {diff}, so their parameters have different shapes and cannot be shared.", n.id, path=f"/nodes/{n.id}")
+                continue
+            op = registry.get_op(t.type)
+            if op is not None and op.has_state(r.resolved[t.id], r.params.get(t.id, 0)):
+                r.shared[n.id] = t.id
+                r.params[n.id] = 0  # counted once, at the original
+
+
+def _spec_ok(spec_shape, spec_dtype, t: TensorType, binding: dict, what: str) -> str | None:
+    if spec_dtype and t.dtype != spec_dtype:
+        return f"{what} expects dtype {spec_dtype}, got {t.dtype}"
+    if spec_shape is None:
+        return None
+    if len(spec_shape) != len(t.shape):
+        return f"{what} expects rank {len(spec_shape)} {spec_shape}, got rank {len(t.shape)} {list(t.shape)}"
+    for i, (want, got) in enumerate(zip(spec_shape, t.shape)):
+        if want is None:
+            continue
+        if isinstance(want, str) and want != "N":
+            if binding.setdefault(want, got) != got:
+                return f"{what} dimension {i} is named '{want}' and was {binding[want]} elsewhere, but is {got} here"
+        elif want != got:
+            return f"{what} expects dimension {i} = {want}, got {got}"
+    return None
+
+
+def _check_signatures(r: Report, ex: composite.Expansion, add) -> None:
+    """Typed signatures of composite instances, loop-carried state and select branches (checked after inference)."""
+    def typ(ep):
+        return r.output_types.get(ep[0], {}).get(ep[1]) if ep else None
+
+    bindings: dict[str, dict] = {}
+    for path, name, src, spec in ex.sig_in:
+        t = typ(src)
+        if t is None:
+            continue
+        msg = _spec_ok(spec.shape, spec.dtype, t, bindings.setdefault(path, {}), f"input '{name}' of '{path}'")
+        if msg:
+            add("E_PORT_TYPE", msg + ".", path, name, f"/nodes/{path}/ports/{name}")
+    for path, name, src, spec in ex.sig_out:
+        t = typ(src)
+        if t is None:
+            continue
+        msg = _spec_ok(spec.shape, spec.dtype, t, bindings.setdefault(path, {}), f"output '{name}' of '{path}'")
+        if msg:
+            add("E_PORT_TYPE", msg + ".", path, name, f"/nodes/{path}/ports/{name}")
+    for path, ep in ex.pred_checks:
+        t = typ(ep)
+        if t is not None and (t.dtype != "bool" or len(t.shape) != 0):
+            add("E_BRANCH_PRED", f"The predicate of '{path}' must be a scalar bool tensor (shape [], dtype bool), got {list(t.shape)} {t.dtype}. "
+                "Reduce it with tensor.any_all.", path, "pred", f"/nodes/{path}/ports/pred")
+    for path, name, a, b in ex.branch_checks:
+        ta, tb = typ(a), typ(b)
+        if ta is not None and tb is not None and ta != tb:
+            add("E_BRANCH_TYPE", f"Output '{name}' of '{path}' has type {list(ta.shape)} {ta.dtype} in the then-branch but {list(tb.shape)} {tb.dtype} "
+                "in the otherwise-branch; branches must return the same type.", path, name, f"/nodes/{path}/ports/{name}")
+    for path, k, o, oep, p, init in ex.carry_checks:
+        tn, ti = typ(oep), typ(init)
+        if tn is not None and ti is not None and tn != ti:
+            add("E_CARRY_TYPE", f"Loop-carried state '{p}' of '{path}' is {list(ti.shape)} {ti.dtype} on entry but iteration {k - 1} produces "
+                f"{list(tn.shape)} {tn.dtype}; the body must preserve the type of carried state.", path, p, f"/nodes/{path}/ports/{p}")
 
 
 def require_executable(graph: Graph) -> Report:

@@ -1,5 +1,222 @@
 {
   "$defs": {
+    "CodeBlockDef": {
+      "additionalProperties": true,
+      "description": "An optional Python implementation with a declared typed interface (VISION 15.5). The source hash and the pinned\ndependencies are part of the graph, therefore of the semantic hash.",
+      "properties": {
+        "config": {
+          "items": {
+            "$ref": "#/$defs/CodeConfigField"
+          },
+          "title": "Config",
+          "type": "array"
+        },
+        "dependencies": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "differentiable": {
+          "default": false,
+          "title": "Differentiable",
+          "type": "boolean"
+        },
+        "effects": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Effects",
+          "type": "array"
+        },
+        "fixtures": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Fixtures",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/CodeIO"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "limits": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Limits",
+          "type": "object"
+        },
+        "outputs": {
+          "items": {
+            "$ref": "#/$defs/CodeIO"
+          },
+          "title": "Outputs",
+          "type": "array"
+        },
+        "randomness": {
+          "default": "none",
+          "title": "Randomness",
+          "type": "string"
+        },
+        "source": {
+          "default": "",
+          "title": "Source",
+          "type": "string"
+        },
+        "state": {
+          "items": {
+            "$ref": "#/$defs/CodeStateField"
+          },
+          "title": "State",
+          "type": "array"
+        },
+        "version": {
+          "default": "1.0.0",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "CodeBlockDef",
+      "type": "object"
+    },
+    "CodeConfigField": {
+      "additionalProperties": true,
+      "properties": {
+        "default": {
+          "default": 0.0,
+          "title": "Default"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "default": "float",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CodeConfigField",
+      "type": "object"
+    },
+    "CodeIO": {
+      "additionalProperties": true,
+      "properties": {
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "dtype": {
+          "default": "float32",
+          "title": "Dtype",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "same_as": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Same As"
+        },
+        "shape": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shape"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CodeIO",
+      "type": "object"
+    },
+    "CodeStateField": {
+      "additionalProperties": true,
+      "properties": {
+        "dtype": {
+          "default": "float32",
+          "title": "Dtype",
+          "type": "string"
+        },
+        "init": {
+          "default": 0.0,
+          "title": "Init",
+          "type": "number"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "shape": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Shape",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CodeStateField",
+      "type": "object"
+    },
     "Edge": {
       "additionalProperties": true,
       "properties": {
@@ -54,6 +271,13 @@
           "title": "Backend",
           "type": "string"
         },
+        "codeBlocks": {
+          "items": {
+            "$ref": "#/$defs/CodeBlockDef"
+          },
+          "title": "Codeblocks",
+          "type": "array"
+        },
         "edges": {
           "items": {
             "$ref": "#/$defs/Edge"
@@ -66,6 +290,13 @@
           "title": "Graphkind",
           "type": "string"
         },
+        "modules": {
+          "items": {
+            "$ref": "#/$defs/ModuleDef"
+          },
+          "title": "Modules",
+          "type": "array"
+        },
         "nodes": {
           "items": {
             "$ref": "#/$defs/Node"
@@ -77,9 +308,190 @@
           "default": "1.0.0",
           "title": "Schemaversion",
           "type": "string"
+        },
+        "training": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Training"
         }
       },
       "title": "Graph",
+      "type": "object"
+    },
+    "ModuleDef": {
+      "additionalProperties": true,
+      "description": "A reusable visual function: a subgraph with a typed signature. Instantiated by a `core.composite` node (or\n`core.repeat` / `core.select`). Inside, edges from node \"$in\" (port = input name) are the module inputs and config values\n`{\"$param\": name}` are replaced by the instance's argument (or the declared default).",
+      "properties": {
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/Edge"
+          },
+          "title": "Edges",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/PortSpec"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/Node"
+          },
+          "title": "Nodes",
+          "type": "array"
+        },
+        "outputs": {
+          "items": {
+            "$ref": "#/$defs/ModuleOutput"
+          },
+          "title": "Outputs",
+          "type": "array"
+        },
+        "params": {
+          "items": {
+            "$ref": "#/$defs/ModuleParam"
+          },
+          "title": "Params",
+          "type": "array"
+        },
+        "reduction": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reduction"
+        },
+        "version": {
+          "default": "1.0.0",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "ModuleDef",
+      "type": "object"
+    },
+    "ModuleOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "dtype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dtype"
+        },
+        "from": {
+          "$ref": "#/$defs/Endpoint"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "shape": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shape"
+        }
+      },
+      "required": [
+        "name",
+        "from"
+      ],
+      "title": "ModuleOutput",
+      "type": "object"
+    },
+    "ModuleParam": {
+      "additionalProperties": true,
+      "properties": {
+        "default": {
+          "default": null,
+          "title": "Default"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ModuleParam",
       "type": "object"
     },
     "Node": {
@@ -93,6 +505,18 @@
         "id": {
           "title": "Id",
           "type": "string"
+        },
+        "sharedWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sharedwith"
         },
         "stateRef": {
           "anyOf": [
@@ -121,6 +545,56 @@
         "type"
       ],
       "title": "Node",
+      "type": "object"
+    },
+    "PortSpec": {
+      "additionalProperties": true,
+      "description": "One named, typed port of a reusable module (its signature). shape entries: int, \"N\" (batch), another string (a named\ndimension bound consistently across the module's ports), or null (any).",
+      "properties": {
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "dtype": {
+          "default": "float32",
+          "title": "Dtype",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "shape": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shape"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "PortSpec",
       "type": "object"
     },
     "UiDoc": {

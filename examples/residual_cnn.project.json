@@ -1,0 +1,477 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "model",
+  "backend": "pytorch",
+  "nodes": [
+    {
+      "id": "images",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          "N",
+          3,
+          64,
+          64
+        ],
+        "dtype": "float32"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "stem",
+      "type": "pytorch.nn.conv2d",
+      "version": "1.0.0",
+      "config": {
+        "out_channels": 8,
+        "padding": [
+          1,
+          1
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "stem_act",
+      "type": "pytorch.nn.relu",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "res1",
+      "type": "core.composite",
+      "version": "1.0.0",
+      "config": {
+        "module": "residual_block",
+        "version": "1.0.0",
+        "args": {
+          "channels": 8
+        },
+        "share": "clone"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "res2",
+      "type": "core.composite",
+      "version": "1.0.0",
+      "config": {
+        "module": "residual_block",
+        "version": "1.0.0",
+        "args": {
+          "channels": 8
+        },
+        "share": "clone"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "pool",
+      "type": "pytorch.nn.adaptive_avg_pool2d",
+      "version": "1.0.0",
+      "config": {
+        "output_size": [
+          1,
+          1
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "flatten",
+      "type": "pytorch.nn.flatten",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "fc",
+      "type": "pytorch.nn.linear",
+      "version": "1.0.0",
+      "config": {
+        "out_features": 10
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "images_value__stem_input",
+      "kind": "tensor",
+      "from": {
+        "node": "images",
+        "port": "value"
+      },
+      "to": {
+        "node": "stem",
+        "port": "input"
+      }
+    },
+    {
+      "id": "stem_output__stem_act_input",
+      "kind": "tensor",
+      "from": {
+        "node": "stem",
+        "port": "output"
+      },
+      "to": {
+        "node": "stem_act",
+        "port": "input"
+      }
+    },
+    {
+      "id": "stem_act_output__res1_x",
+      "kind": "tensor",
+      "from": {
+        "node": "stem_act",
+        "port": "output"
+      },
+      "to": {
+        "node": "res1",
+        "port": "x"
+      }
+    },
+    {
+      "id": "res1_y__res2_x",
+      "kind": "tensor",
+      "from": {
+        "node": "res1",
+        "port": "y"
+      },
+      "to": {
+        "node": "res2",
+        "port": "x"
+      }
+    },
+    {
+      "id": "res2_y__pool_input",
+      "kind": "tensor",
+      "from": {
+        "node": "res2",
+        "port": "y"
+      },
+      "to": {
+        "node": "pool",
+        "port": "input"
+      }
+    },
+    {
+      "id": "pool_output__flatten_input",
+      "kind": "tensor",
+      "from": {
+        "node": "pool",
+        "port": "output"
+      },
+      "to": {
+        "node": "flatten",
+        "port": "input"
+      }
+    },
+    {
+      "id": "flatten_output__fc_input",
+      "kind": "tensor",
+      "from": {
+        "node": "flatten",
+        "port": "output"
+      },
+      "to": {
+        "node": "fc",
+        "port": "input"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "residual_block",
+      "version": "1.0.0",
+      "description": "y = relu(x + conv_b(relu(conv_a(x)))): a residual connection around two 3x3 convolutions",
+      "inputs": [
+        {
+          "name": "x",
+          "dtype": "float32",
+          "shape": [
+            null,
+            8,
+            null,
+            null
+          ],
+          "description": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "y",
+          "from": {
+            "node": "relu_out",
+            "port": "output"
+          },
+          "dtype": null,
+          "shape": [
+            null,
+            8,
+            null,
+            null
+          ],
+          "description": ""
+        }
+      ],
+      "params": [
+        {
+          "name": "channels",
+          "default": 8,
+          "type": "int",
+          "description": ""
+        }
+      ],
+      "nodes": [
+        {
+          "id": "conv_a",
+          "type": "pytorch.nn.conv2d",
+          "version": "1.0.0",
+          "config": {
+            "out_channels": {
+              "$param": "channels"
+            },
+            "kernel_size": [
+              3,
+              3
+            ],
+            "padding": [
+              1,
+              1
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "relu_a",
+          "type": "pytorch.nn.relu",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "conv_b",
+          "type": "pytorch.nn.conv2d",
+          "version": "1.0.0",
+          "config": {
+            "out_channels": {
+              "$param": "channels"
+            },
+            "kernel_size": [
+              3,
+              3
+            ],
+            "padding": [
+              1,
+              1
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "skip_add",
+          "type": "tensor.add",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "relu_out",
+          "type": "pytorch.nn.relu",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        }
+      ],
+      "edges": [
+        {
+          "id": "$in_x__conv_a_input",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "x"
+          },
+          "to": {
+            "node": "conv_a",
+            "port": "input"
+          }
+        },
+        {
+          "id": "conv_a_output__relu_a_input",
+          "kind": "tensor",
+          "from": {
+            "node": "conv_a",
+            "port": "output"
+          },
+          "to": {
+            "node": "relu_a",
+            "port": "input"
+          }
+        },
+        {
+          "id": "relu_a_output__conv_b_input",
+          "kind": "tensor",
+          "from": {
+            "node": "relu_a",
+            "port": "output"
+          },
+          "to": {
+            "node": "conv_b",
+            "port": "input"
+          }
+        },
+        {
+          "id": "conv_b_output__skip_add_a",
+          "kind": "tensor",
+          "from": {
+            "node": "conv_b",
+            "port": "output"
+          },
+          "to": {
+            "node": "skip_add",
+            "port": "a"
+          }
+        },
+        {
+          "id": "$in_x__skip_add_b",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "x"
+          },
+          "to": {
+            "node": "skip_add",
+            "port": "b"
+          }
+        },
+        {
+          "id": "skip_add_output__relu_out_input",
+          "kind": "tensor",
+          "from": {
+            "node": "skip_add",
+            "port": "output"
+          },
+          "to": {
+            "node": "relu_out",
+            "port": "input"
+          }
+        }
+      ],
+      "reduction": null
+    }
+  ],
+  "training": {
+    "seed": 0,
+    "deterministic": true,
+    "epochs": 3,
+    "max_optimizer_steps": null,
+    "data": {
+      "kind": "image_folder",
+      "path": "examples/data/shapes10",
+      "image_size": [
+        64,
+        64
+      ],
+      "val_fraction": 0.2,
+      "n_train": 256,
+      "n_val": 64,
+      "seq_len": 8,
+      "vocab": 12,
+      "features": 4,
+      "outputs": 2,
+      "data_seed": 0,
+      "batch_size": 16,
+      "shuffle": true,
+      "drop_last": false,
+      "inputs": {},
+      "target": "y"
+    },
+    "loss": {
+      "kind": "cross_entropy",
+      "module": "",
+      "version": "1.0.0",
+      "args": {},
+      "output": "loss",
+      "ports": {
+        "pred": "output",
+        "target": "y"
+      }
+    },
+    "optimizer": {
+      "kind": "adam",
+      "lr": 0.003,
+      "momentum": 0.0,
+      "nesterov": false,
+      "dampening": 0.0,
+      "weight_decay": 0.0,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "eps": 1e-08,
+      "amsgrad": false
+    },
+    "clip": {
+      "kind": "norm",
+      "max_norm": 5.0,
+      "norm_type": 2.0,
+      "value": 1.0
+    },
+    "scheduler": {
+      "kind": "none",
+      "timing": "optimizer_step",
+      "step_size": 10,
+      "gamma": 0.5,
+      "t_max": 100,
+      "warmup_steps": 5,
+      "factor": 0.5,
+      "patience": 2,
+      "metric": "val_loss",
+      "mode": "min"
+    },
+    "accumulation": {
+      "steps": 1,
+      "normalize": "mean",
+      "partial_window": "step"
+    },
+    "validation": {
+      "every": {
+        "unit": "epoch",
+        "n": 1
+      },
+      "eval_mode": true,
+      "no_grad": true
+    },
+    "checkpoint": {
+      "every": {
+        "unit": "epoch",
+        "n": 1
+      },
+      "keep_last": 2,
+      "best": null
+    },
+    "early_stopping": null,
+    "stages": [
+      "zero_grad",
+      "forward",
+      "loss",
+      "backward",
+      "clip",
+      "optimizer_step",
+      "scheduler_step"
+    ],
+    "frozen": [],
+    "watch": null,
+    "breakpoints": [],
+    "probes": [],
+    "assertions": false,
+    "capture": null
+  }
+}

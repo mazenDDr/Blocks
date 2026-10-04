@@ -109,3 +109,20 @@ export function useInspect<T>(url: string | null, body: unknown | null) {
   }, [key]);
   return state;
 }
+
+/** Debounced validation of one module on its own (instantiated on tensor inputs of its declared shapes). Shaped like a project validation. */
+export function useModuleValidation(graph: Graph, moduleId: string | null, version: string | null, shapes?: Record<string, (number | string)[]>, delay = 250) {
+  const [state, setState] = useState<{ data: (Validation & { outputs?: Record<string, any>; params?: number }) | null; pending: boolean; error: string | null }>({ data: null, pending: false, error: null });
+  useEffect(() => {
+    if (!moduleId) { setState({ data: null, pending: false, error: null }); return; }
+    const ctl = new AbortController();
+    setState((s) => ({ ...s, pending: true }));
+    const t = setTimeout(() => {
+      api.post<any>("/api/modules/validate", { graph, moduleId, version, shapes }, undefined, ctl.signal)
+        .then((d) => setState({ data: { ok: d.ok, graphHash: d.moduleHash, totalParams: d.params, diagnostics: d.diagnostics, nodes: d.nodes, outputs: d.outputs, params: d.params }, pending: false, error: null }))
+        .catch((e) => { if (!ctl.signal.aborted) setState((s) => ({ ...s, pending: false, error: errorText(e) })); });
+    }, delay);
+    return () => { clearTimeout(t); ctl.abort(); };
+  }, [graph, moduleId, version, JSON.stringify(shapes), delay]); // eslint-disable-line react-hooks/exhaustive-deps
+  return state;
+}

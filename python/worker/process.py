@@ -14,6 +14,7 @@ from graph_core.hashing import semantic_hash
 from graph_core.schema import Graph
 from graph_core.validate import require_executable
 
+from .procedure_run import ProcedureRunConfig, run_procedure
 from .tabular_run import TabularRunConfig, run_tabular
 from .train import RunConfig, run_training
 
@@ -27,6 +28,8 @@ def _child(graph_json: dict, cfg_json: dict, root: str, run_id: str, cancel_even
     graph = Graph.model_validate(graph_json)
     if graph.graphKind == "tabular":
         run_tabular(graph, TabularRunConfig.model_validate(cfg_json), store, run_id, should_cancel)
+    elif cfg_json.get("kind") == "procedure":
+        run_procedure(graph, ProcedureRunConfig.model_validate(cfg_json), store, run_id, should_cancel)
     else:
         run_training(graph, RunConfig.model_validate(cfg_json), store, run_id, should_cancel)
 
@@ -51,7 +54,7 @@ class RunHandle:
         return self.process.is_alive()
 
 
-def submit_run(graph: Graph, cfg: RunConfig | TabularRunConfig, workbench: str | Path = ".workbench", run_id: str | None = None) -> RunHandle:
+def submit_run(graph: Graph, cfg: RunConfig | TabularRunConfig | ProcedureRunConfig, workbench: str | Path = ".workbench", run_id: str | None = None) -> RunHandle:
     """Validate (raises ExecutionBlocked), record the run and its exact graph, and start the worker process."""
     require_executable(graph)
     store = ArtifactStore(workbench)

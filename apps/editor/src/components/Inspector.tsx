@@ -5,6 +5,8 @@ import { dtypeOf, fmtNum, fmtShape, runLabel, shortHash } from "../util";
 import { ConfigForm } from "./ConfigForm";
 import { ConnectorConfigEditor, isConnectorOp } from "./Connectors";
 import { ActivationsTab, ArchitectureTab, type Ctx, ExplainTab, FeatureMaps, WeightsTab } from "./InspectorTabs";
+import { CompositeForm, RepeatForm, SelectForm, SharingRow } from "./StructuralForms";
+import { CodeNodeForm } from "./CodeNodeForm";
 import { NotRecorded, ProvLine } from "./Provenance";
 
 /** Run / checkpoint / validation-sample selection used by the Weights, Activations and wire views. */
@@ -93,7 +95,16 @@ export function WireInspector({ edge, graph, validation, ctx, ops }: { edge: GEd
 // ---------------------------------------------------------------------------------------- shell
 const TABS = ["Config", "Architecture", "Weights", "Activations", "Explain"] as const;
 
-export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onConnect, onDelete, onRename, tabSet }: {
+export interface InnerActions {
+  /** the selected node lives inside an expanded instance: edits go to the module definition */
+  inner?: { module: string; version: string; instances: number; local: string } | null;
+  allViews?: Record<string, NodeView>;
+  onOpenModule?: () => void; onToggleExpand?: () => void; expanded?: boolean; onShare?: (target: string | null) => void; onEditCode?: (id: string, version: string) => void;
+  moduleEditing?: boolean;
+}
+
+export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onConnect, onDelete, onRename, tabSet, extra }: {
+  extra?: InnerActions;
   node: GNode; op?: OpInfo; ops: Record<string, OpInfo>; view?: NodeView; graph: Graph; ctx: Ctx;
   /** Replaces the model-graph tabs (Architecture, Weights, ...) with graph-kind specific ones; "Config" is always first. */
   tabSet?: { names: string[]; render: (tab: string) => ReactNode };
@@ -106,14 +117,22 @@ export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onCon
   const [nameErr, setNameErr] = useState<string | null>(null);
   useEffect(() => { setName(node.id); setNameErr(null); }, [node.id]);
   const diags = view?.diagnostics ?? [];
+  const inner = extra?.inner ?? null;
+  const structural = ["core.composite", "core.repeat", "core.select"].includes(node.type);
+  const inPorts = view?.inputPorts ?? op?.inputs ?? [];
+  const portsOf = (id: string, type: string) => extra?.allViews?.[id]?.outputPorts ?? ops[type]?.outputs ?? [];
   return (
     <div className="node-inspector">
       <div className="ni-head">
         <div><b>{op?.displayName ?? node.type}</b> <span className="badge">{op?.backend ?? "unresolved"}</span></div>
-        <button className="danger" onClick={onDelete}>Delete node</button>
+        {!inner && <button className="danger" onClick={onDelete}>Delete node</button>}
       </div>
+      {inner && <div className="notice">Inner node <code>{node.id}</code> of module <b>{inner.module}</b> v{inner.version} (<code>{inner.local}</code>). Edits here change the module definition, so they apply to all {inner.instances} instance(s) of it.</div>}
+      {(view?.sharedWith || node.sharedWith) && <div className="notice shared">{"\u{1F517}"} Shares parameters with <b>{view?.sharedWith ?? node.sharedWith}</b>: the very same tensors, not a copy.</div>}
+      {(node.type === "diag.probe" || node.type === "diag.histogram" || node.type === "diag.timer") && <div className="muted small"><b>Observation-only</b>: passes the value through unchanged; records only while a capture covers it.</div>}
+      {node.type === "diag.assert" && <div className="warn"><b>Execution-changing</b>: stops the run when the check fails (only when assertions are enabled for the run).</div>}
       <div className="row"><label className="lbl">Node id</label>
-        <input value={name} aria-label="node id" onChange={(e) => setName(e.target.value)}
+        <input value={name} aria-label="node id" disabled={!!inner} onChange={(e) => setName(e.target.value)}
           onBlur={() => { if (name !== node.id) { const err = onRename(name); setNameErr(err); if (err) setName(node.id); } }}
           onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
       </div>
@@ -131,14 +150,25 @@ export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onCon
       <div className="tabbody">
         {tab === "Config" && op && (
           <>
-            {isConnectorOp(node.type)
-              ? <ConnectorConfigEditor node={node} onChange={onConfig} />
-              : <ConfigForm op={op} node={node} resolved={view?.resolvedConfig} onChange={onConfig} />}
+            {structural && (
+              <div className="actions">
+                {extra?.onOpenModule && <button className="primary" onClick={extra.onOpenModule}>Open module</button>}
+                {extra?.onToggleExpand && node.type !== "core.select" && <button onClick={extra.onToggleExpand}>{extra.expanded ? "Collapse" : "Expand in place"}</button>}
+              </div>
+            )}
+            {node.type === "core.composite" ? <CompositeForm node={node} graph={graph} onConfig={onConfig} />
+              : node.type === "core.repeat" ? <RepeatForm node={node} graph={graph} onConfig={onConfig} />
+                : node.type === "core.select" ? <SelectForm node={node} graph={graph} onConfig={onConfig} />
+                  : node.type === "code.block" ? <CodeNodeForm node={node} graph={graph} view={view} onConfig={onConfig} onEdit={extra?.onEditCode} />
+                    : isConnectorOp(node.type)
+                      ? <ConnectorConfigEditor node={node} onChange={onConfig} />
+                      : <ConfigForm op={op} node={node} resolved={view?.resolvedConfig} onChange={onConfig} />}
+            {!inner && !structural && node.type !== "code.block" && (view?.params ?? 0) > 0 || node.sharedWith ? <SharingRow node={node} graph={graph} onShare={(t) => extra?.onShare?.(t)} /> : null}
             {node.type === "tabular.train_validation_split" && <div className="muted small">Set both n_folds and fold for a k-fold partition (validation_fraction is then ignored).</div>}
-            {op.inputs.length > 0 && (
+            {inPorts.length > 0 && !inner && (
               <>
                 <h4>Connections</h4>
-                {op.inputs.map((p) => {
+                {inPorts.map((p) => {
                   const cur = graph.edges.find((e) => e.to.node === node.id && e.to.port === p);
                   const val = cur ? `${cur.from.node}.${cur.from.port}` : "";
                   return (
@@ -149,7 +179,7 @@ export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onCon
                         const [n, ...rest] = e.target.value.split("."); onConnect(node.id, p, { node: n, port: rest.join(".") });
                       }}>
                         <option value="">(not connected)</option>
-                        {graph.nodes.filter((n) => n.id !== node.id).flatMap((n) => (ops[n.type]?.outputs ?? []).filter((po) => ops[n.type]?.outputKinds?.[po] === op.inputKinds?.[p]).map((po) => `${n.id}.${po}`)).map((o) => <option key={o} value={o}>{o}</option>)}
+                        {graph.nodes.filter((n) => n.id !== node.id).flatMap((n) => portsOf(n.id, n.type).filter((po) => (ops[n.type]?.outputKinds?.[po] ?? "tensor") === (op.inputKinds?.[p] ?? "tensor")).map((po) => `${n.id}.${po}`)).map((o) => <option key={o} value={o}>{o}</option>)}
                       </select>
                     </div>
                   );

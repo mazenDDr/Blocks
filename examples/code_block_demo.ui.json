@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "x": {
+      "x": 60,
+      "y": 80
+    },
+    "fc1": {
+      "x": 320,
+      "y": 80
+    },
+    "act": {
+      "x": 580,
+      "y": 80
+    },
+    "fc2": {
+      "x": 840,
+      "y": 80
+    }
+  },
+  "description": "Optional code: the activation 'act' is a Python block (softsign) with a typed interface, run in an isolated subprocess. It is declared differentiable, so the layer before it trains. Open the Code tab on the node to edit, test with fixtures, and publish a version. The training data is SYNTHETIC.",
+  "synthetic": true
+}

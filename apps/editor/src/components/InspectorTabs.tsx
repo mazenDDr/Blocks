@@ -144,6 +144,25 @@ export function ExplainTab({ op, view }: { op: OpInfo; view?: NodeView }) {
       {e.equation && <><h4>Equation</h4><pre>{e.equation}</pre></>}
       {e.shapeRule && <><h4>Shape rule</h4><pre>{e.shapeRule}</pre></>}
       {e.reduction && <><h4>Reduction</h4><p>{e.reduction}</p></>}
+      {e.executionEffect && <div className={e.executionEffect.startsWith("EXECUTION") ? "warn" : "muted"}><b>Effect on execution:</b> {e.executionEffect}</div>}
+      {e.axes && (e.axes.out || e.axes.in) && <p><b>Axis semantics:</b> {e.axes.in ? `in [${e.axes.in.join(", ")}] ` : ""}{e.axes.out ? `→ out [${e.axes.out.join(", ")}]` : ""}</p>}
+      {e.broadcast && (
+        <>
+          <h4>Broadcasting (declared rule)</h4>
+          <p className="small">{e.broadcast.rule}</p>
+          <table><thead><tr>{Object.keys(e.broadcast.alignment[0] ?? {}).map((k) => <th key={k}>{k}</th>)}</tr></thead><tbody>
+            {e.broadcast.alignment.map((r, i) => <tr key={i}>{Object.values(r).map((v, j) => <td key={j}>{String(v)}</td>)}</tr>)}
+          </tbody></table>
+        </>
+      )}
+      {e.steps && e.steps.length > 0 && (
+        <>
+          <h4>Inside this block (live from the current definition)</h4>
+          <table><thead><tr><th>node</th><th>operation</th><th>output</th><th className="num">parameters</th></tr></thead><tbody>
+            {e.steps.map((st) => <tr key={st.id} title={st.equation}><td>{st.local}{st.sharesParameters ? " 🔗" : ""}</td><td>{st.type}{st.config && Object.keys(st.config).length ? ` ${JSON.stringify(st.config)}` : ""}</td><td>{st.outputShape ? `[${st.outputShape.join(", ")}]` : ""}</td><td className="num">{fmtInt(st.params)}</td></tr>)}
+          </tbody></table>
+        </>
+      )}
       {e.note && <p>{e.note}</p>}
       <h4>Parameters</h4>
       <pre>{e.parameters?.formula}</pre>

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "h0": {
+      "x": 60,
+      "y": 80
+    },
+    "context": {
+      "x": 60,
+      "y": 230
+    },
+    "loop": {
+      "x": 320,
+      "y": 80
+    },
+    "zero": {
+      "x": 60,
+      "y": 380
+    },
+    "positive": {
+      "x": 580,
+      "y": 80
+    },
+    "all_positive": {
+      "x": 840,
+      "y": 80
+    },
+    "pick": {
+      "x": 1100,
+      "y": 80
+    }
+  },
+  "description": "Structured control flow, no cycles: 'loop' applies module 'refine' three times with loop-carried state h and tied parameters (fixed_count termination); 'pick' is a typed select between two branch modules with a scalar bool predicate (both branches are evaluated; the predicate chooses the outputs).",
+  "synthetic": false
+}

@@ -11,7 +11,12 @@ from .hashing import semantic_hash
 from .schema import Graph
 from .validate import require_executable
 
-_NODE_RE = re.compile(r"#\s*node:\s*([A-Za-z0-9_]+)")
+_NODE_RE = re.compile(r"#\s*node:\s*([A-Za-z0-9_/]+)")
+
+
+def _py(nid: str) -> str:
+    """Node ids that are paths (res1/conv_a) become identifiers (res1__conv_a); the `# node:` comment keeps the real path."""
+    return nid.replace("/", "__")
 
 
 def generate_pytorch(graph: Graph) -> str:
@@ -21,6 +26,7 @@ def generate_pytorch(graph: Graph) -> str:
 
         raise ExecutionBlocked([Diagnostic("E_UNSUPPORTED_GRAPH_KIND", f"Graph kind '{graph.graphKind}' has no PyTorch export.", path="/graphKind")])
     report = require_executable(graph)
+    orig, graph = graph, (report.graph or graph)
     types = {n.id: n.type for n in graph.nodes}
     src_of = {(e.to.node, e.to.port): e.from_.node for e in graph.edges}
     used = {e.from_.node for e in graph.edges}
@@ -32,17 +38,22 @@ def generate_pytorch(graph: Graph) -> str:
         op = registry.get_op(types[nid])
         cfg = report.resolved[nid]
         ctor, fwd = op.codegen(cfg)
+        py = _py(nid)
+        if nid in report.shared:
+            ctor = f"self.{_py(report.shared[nid])}"  # the same module object: the parameters are shared
+            fwd = fwd if "{m}" in fwd else "{m}(" + ", ".join("{%d}" % i for i in range(len(op.input_ports(cfg)))) + ")"
         if ctor:
-            init.append(f"        self.{nid} = {ctor}  # node: {nid}")
+            note = f" (shares parameters with {report.shared[nid]})" if nid in report.shared else ""
+            init.append(f"        self.{py} = {ctor}  # node: {nid}{note}")
         if nid in inputs:
             body.append(f"        # node: {nid} (forward argument)")
         else:
-            args = [src_of[(nid, p)] for p in op.inputs]
-            expr = fwd.format(*args, m=f"self.{nid}")
-            body.append(f"        {nid} = {expr}  # node: {nid}")
+            args = [_py(src_of[(nid, p)]) for p in op.input_ports(cfg)]
+            expr = fwd.format(*args, m=f"self.{py}")
+            body.append(f"        {py} = {expr}  # node: {nid}")
 
     lines = [
-        f"# Generated from graph {semantic_hash(graph)}. Regenerate rather than edit.",
+        f"# Generated from graph {semantic_hash(orig)}. Regenerate rather than edit.",
         "import torch",
         "import torch.nn as nn",
         "",
@@ -52,9 +63,9 @@ def generate_pytorch(graph: Graph) -> str:
         "        super().__init__()",
         *init,
         "",
-        f"    def forward(self, {', '.join(inputs)}):",
+        f"    def forward(self, {', '.join(_py(i) for i in inputs)}):",
         *body,
-        f"        return {', '.join(outputs)}",
+        f"        return {', '.join(_py(o) for o in outputs)}",
         "",
     ]
     return "\n".join(lines)

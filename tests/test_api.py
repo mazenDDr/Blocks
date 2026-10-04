@@ -68,7 +68,7 @@ def trained(client, shapes_dir):
 # ------------------------------------------------------------------------------------------ registry / validate
 def test_registry_exposes_config_schema_and_defaults(client):
     ops = {o["type"]: o for o in client.get("/api/registry").json()["ops"] if o["graphKind"] == "model"}  # tabular ops: test_tabular_api.py
-    assert len(ops) == 14
+    assert len(ops) >= 14 and {"core.tensor_input", "pytorch.nn.conv2d", "pytorch.loss.cross_entropy"} <= ops.keys()  # Phase 1 ops plus the Milestone 3 families
     conv = ops["pytorch.nn.conv2d"]
     assert conv["inputs"] == ["input"] and conv["outputs"] == ["output"] and conv["backend"] == "pytorch"
     assert {"in_channels", "out_channels", "kernel_size", "padding_mode"} <= conv["configSchema"]["properties"].keys()

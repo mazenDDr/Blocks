@@ -77,6 +77,19 @@ PY
 
 Runs submitted through the API (`POST /api/runs` with a tabular graph and `{"config": {}}`) store events and artifacts in `.workbench/` like CNN runs.
 
+## Research-level composition (Milestone 3)
+
+Commands that were run for this milestone:
+
+```bash
+python examples/make_m3_examples.py        # writes the six Milestone 3 example projects (deterministic)
+pytest -q                                  # unit, API and worker tests (the code-block tests start real sandbox subprocesses)
+pnpm -C apps/editor build && pnpm -C apps/editor exec tsc --noEmit
+```
+
+In the editor, Open the examples `residual_cnn` (module instances, Expand / Open), `shared_encoder` (shared parameters), `masked_loss` (visual loss module as the training loss), `transformer_sequence`
+(Training, Debug and Attention tabs), `code_block_demo` (Modules & code, Edit code) and `control_flow` (repeat and select). Training runs use SYNTHETIC data (labelled everywhere). See `docs/adr/0005`-`0007`.
+
 ## Run the tests
 
 ```bash

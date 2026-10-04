@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "left": {
+      "x": 60,
+      "y": 80
+    },
+    "right": {
+      "x": 60,
+      "y": 230
+    },
+    "enc_left": {
+      "x": 320,
+      "y": 80
+    },
+    "enc_right": {
+      "x": 320,
+      "y": 230
+    },
+    "diff": {
+      "x": 580,
+      "y": 80
+    },
+    "dist": {
+      "x": 840,
+      "y": 80
+    },
+    "head": {
+      "x": 1100,
+      "y": 80
+    }
+  },
+  "description": "A Siamese-style model: enc_right is an instance that SHARES its parameters with enc_left (parameter identity, not a copy); the card shows the shared marker. Gradients from both call sites accumulate on the same tensors.",
+  "synthetic": false
+}

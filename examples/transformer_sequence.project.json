@@ -1,0 +1,1469 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "model",
+  "backend": "pytorch",
+  "nodes": [
+    {
+      "id": "tokens",
+      "type": "core.tensor_input",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          "N",
+          8
+        ],
+        "dtype": "int64"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "tok_emb",
+      "type": "tensor.embedding",
+      "version": "1.0.0",
+      "config": {
+        "num_embeddings": 12,
+        "embedding_dim": 16,
+        "padding_idx": 0
+      },
+      "stateRef": null
+    },
+    {
+      "id": "positions",
+      "type": "tensor.arange",
+      "version": "1.0.0",
+      "config": {
+        "n": 8
+      },
+      "stateRef": null
+    },
+    {
+      "id": "pos_emb",
+      "type": "tensor.embedding",
+      "version": "1.0.0",
+      "config": {
+        "num_embeddings": 8,
+        "embedding_dim": 16
+      },
+      "stateRef": null
+    },
+    {
+      "id": "embed_sum",
+      "type": "tensor.add",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "pad_id",
+      "type": "tensor.constant",
+      "version": "1.0.0",
+      "config": {
+        "value": 0,
+        "dtype": "int64"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "key_mask",
+      "type": "tensor.compare",
+      "version": "1.0.0",
+      "config": {
+        "op": "ne"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "enc1",
+      "type": "core.composite",
+      "version": "1.0.0",
+      "config": {
+        "module": "transformer_encoder_block",
+        "version": "1.0.0",
+        "args": {},
+        "share": "clone"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "enc2",
+      "type": "core.composite",
+      "version": "1.0.0",
+      "config": {
+        "module": "transformer_encoder_block",
+        "version": "1.0.0",
+        "args": {},
+        "share": "clone"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "mask_f",
+      "type": "tensor.cast",
+      "version": "1.0.0",
+      "config": {
+        "dtype": "float32"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "mask_col",
+      "type": "tensor.reshape",
+      "version": "1.0.0",
+      "config": {
+        "shape": [
+          "N",
+          -1,
+          1
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "masked_h",
+      "type": "tensor.mul",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "pool_sum",
+      "type": "core.sum",
+      "version": "1.0.0",
+      "config": {
+        "dims": [
+          1
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "count_sum",
+      "type": "core.sum",
+      "version": "1.0.0",
+      "config": {
+        "dims": [
+          1
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "count",
+      "type": "tensor.clamp",
+      "version": "1.0.0",
+      "config": {
+        "min": 1.0
+      },
+      "stateRef": null
+    },
+    {
+      "id": "pooled",
+      "type": "tensor.div",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "head",
+      "type": "tensor.dense",
+      "version": "1.0.0",
+      "config": {
+        "out_features": 2
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "tokens_value__tok_emb_input",
+      "kind": "tensor",
+      "from": {
+        "node": "tokens",
+        "port": "value"
+      },
+      "to": {
+        "node": "tok_emb",
+        "port": "input"
+      }
+    },
+    {
+      "id": "positions_output__pos_emb_input",
+      "kind": "tensor",
+      "from": {
+        "node": "positions",
+        "port": "output"
+      },
+      "to": {
+        "node": "pos_emb",
+        "port": "input"
+      }
+    },
+    {
+      "id": "tok_emb_output__embed_sum_a",
+      "kind": "tensor",
+      "from": {
+        "node": "tok_emb",
+        "port": "output"
+      },
+      "to": {
+        "node": "embed_sum",
+        "port": "a"
+      }
+    },
+    {
+      "id": "pos_emb_output__embed_sum_b",
+      "kind": "tensor",
+      "from": {
+        "node": "pos_emb",
+        "port": "output"
+      },
+      "to": {
+        "node": "embed_sum",
+        "port": "b"
+      }
+    },
+    {
+      "id": "tokens_value__key_mask_a",
+      "kind": "tensor",
+      "from": {
+        "node": "tokens",
+        "port": "value"
+      },
+      "to": {
+        "node": "key_mask",
+        "port": "a"
+      }
+    },
+    {
+      "id": "pad_id_value__key_mask_b",
+      "kind": "tensor",
+      "from": {
+        "node": "pad_id",
+        "port": "value"
+      },
+      "to": {
+        "node": "key_mask",
+        "port": "b"
+      }
+    },
+    {
+      "id": "embed_sum_output__enc1_x",
+      "kind": "tensor",
+      "from": {
+        "node": "embed_sum",
+        "port": "output"
+      },
+      "to": {
+        "node": "enc1",
+        "port": "x"
+      }
+    },
+    {
+      "id": "key_mask_output__enc1_mask",
+      "kind": "tensor",
+      "from": {
+        "node": "key_mask",
+        "port": "output"
+      },
+      "to": {
+        "node": "enc1",
+        "port": "mask"
+      }
+    },
+    {
+      "id": "enc1_y__enc2_x",
+      "kind": "tensor",
+      "from": {
+        "node": "enc1",
+        "port": "y"
+      },
+      "to": {
+        "node": "enc2",
+        "port": "x"
+      }
+    },
+    {
+      "id": "key_mask_output__enc2_mask",
+      "kind": "tensor",
+      "from": {
+        "node": "key_mask",
+        "port": "output"
+      },
+      "to": {
+        "node": "enc2",
+        "port": "mask"
+      }
+    },
+    {
+      "id": "key_mask_output__mask_f_input",
+      "kind": "tensor",
+      "from": {
+        "node": "key_mask",
+        "port": "output"
+      },
+      "to": {
+        "node": "mask_f",
+        "port": "input"
+      }
+    },
+    {
+      "id": "mask_f_output__mask_col_input",
+      "kind": "tensor",
+      "from": {
+        "node": "mask_f",
+        "port": "output"
+      },
+      "to": {
+        "node": "mask_col",
+        "port": "input"
+      }
+    },
+    {
+      "id": "enc2_y__masked_h_a",
+      "kind": "tensor",
+      "from": {
+        "node": "enc2",
+        "port": "y"
+      },
+      "to": {
+        "node": "masked_h",
+        "port": "a"
+      }
+    },
+    {
+      "id": "mask_col_output__masked_h_b",
+      "kind": "tensor",
+      "from": {
+        "node": "mask_col",
+        "port": "output"
+      },
+      "to": {
+        "node": "masked_h",
+        "port": "b"
+      }
+    },
+    {
+      "id": "masked_h_output__pool_sum_input",
+      "kind": "tensor",
+      "from": {
+        "node": "masked_h",
+        "port": "output"
+      },
+      "to": {
+        "node": "pool_sum",
+        "port": "input"
+      }
+    },
+    {
+      "id": "mask_col_output__count_sum_input",
+      "kind": "tensor",
+      "from": {
+        "node": "mask_col",
+        "port": "output"
+      },
+      "to": {
+        "node": "count_sum",
+        "port": "input"
+      }
+    },
+    {
+      "id": "count_sum_output__count_input",
+      "kind": "tensor",
+      "from": {
+        "node": "count_sum",
+        "port": "output"
+      },
+      "to": {
+        "node": "count",
+        "port": "input"
+      }
+    },
+    {
+      "id": "pool_sum_output__pooled_a",
+      "kind": "tensor",
+      "from": {
+        "node": "pool_sum",
+        "port": "output"
+      },
+      "to": {
+        "node": "pooled",
+        "port": "a"
+      }
+    },
+    {
+      "id": "count_output__pooled_b",
+      "kind": "tensor",
+      "from": {
+        "node": "count",
+        "port": "output"
+      },
+      "to": {
+        "node": "pooled",
+        "port": "b"
+      }
+    },
+    {
+      "id": "pooled_output__head_input",
+      "kind": "tensor",
+      "from": {
+        "node": "pooled",
+        "port": "output"
+      },
+      "to": {
+        "node": "head",
+        "port": "input"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "multi_head_attention",
+      "version": "1.0.0",
+      "description": "Self-attention: Q,K,V = xWq,xWk,xWv split into heads; scores = QK^T/sqrt(d_head); padding mask (False = ignore key) fills -1e9 before softmax; weights = softmax over keys; context = weights V; heads merged and projected by Wo.",
+      "inputs": [
+        {
+          "name": "x",
+          "dtype": "float32",
+          "shape": [
+            null,
+            null,
+            16
+          ],
+          "description": ""
+        },
+        {
+          "name": "mask",
+          "dtype": "bool",
+          "shape": [
+            null,
+            null
+          ],
+          "description": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "y",
+          "from": {
+            "node": "out_proj",
+            "port": "output"
+          },
+          "dtype": null,
+          "shape": [
+            null,
+            null,
+            16
+          ],
+          "description": ""
+        }
+      ],
+      "params": [
+        {
+          "name": "d_model",
+          "default": 16,
+          "type": "int",
+          "description": ""
+        },
+        {
+          "name": "attn_dropout",
+          "default": 0.0,
+          "type": "float",
+          "description": ""
+        }
+      ],
+      "nodes": [
+        {
+          "id": "q_proj",
+          "type": "tensor.dense",
+          "version": "1.0.0",
+          "config": {
+            "out_features": {
+              "$param": "d_model"
+            }
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "q_split",
+          "type": "tensor.reshape",
+          "version": "1.0.0",
+          "config": {
+            "shape": [
+              "N",
+              -1,
+              2,
+              8
+            ],
+            "axes": [
+              "N",
+              "T",
+              "H",
+              "dh"
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "q_heads",
+          "type": "tensor.permute",
+          "version": "1.0.0",
+          "config": {
+            "dims": [
+              0,
+              2,
+              1,
+              3
+            ],
+            "axes": [
+              "N",
+              "H",
+              "T",
+              "dh"
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "k_proj",
+          "type": "tensor.dense",
+          "version": "1.0.0",
+          "config": {
+            "out_features": {
+              "$param": "d_model"
+            }
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "k_split",
+          "type": "tensor.reshape",
+          "version": "1.0.0",
+          "config": {
+            "shape": [
+              "N",
+              -1,
+              2,
+              8
+            ],
+            "axes": [
+              "N",
+              "T",
+              "H",
+              "dh"
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "k_heads",
+          "type": "tensor.permute",
+          "version": "1.0.0",
+          "config": {
+            "dims": [
+              0,
+              2,
+              1,
+              3
+            ],
+            "axes": [
+              "N",
+              "H",
+              "T",
+              "dh"
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "v_proj",
+          "type": "tensor.dense",
+          "version": "1.0.0",
+          "config": {
+            "out_features": {
+              "$param": "d_model"
+            }
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "v_split",
+          "type": "tensor.reshape",
+          "version": "1.0.0",
+          "config": {
+            "shape": [
+              "N",
+              -1,
+              2,
+              8
+            ],
+            "axes": [
+              "N",
+              "T",
+              "H",
+              "dh"
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "v_heads",
+          "type": "tensor.permute",
+          "version": "1.0.0",
+          "config": {
+            "dims": [
+              0,
+              2,
+              1,
+              3
+            ],
+            "axes": [
+              "N",
+              "H",
+              "T",
+              "dh"
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "k_t",
+          "type": "tensor.permute",
+          "version": "1.0.0",
+          "config": {
+            "dims": [
+              0,
+              1,
+              3,
+              2
+            ],
+            "axes": [
+              "N",
+              "H",
+              "dh",
+              "T"
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "raw_scores",
+          "type": "tensor.matmul",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "scores",
+          "type": "core.scalar_mul",
+          "version": "1.0.0",
+          "config": {
+            "factor": 0.35355339059327373
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "mask_b",
+          "type": "tensor.reshape",
+          "version": "1.0.0",
+          "config": {
+            "shape": [
+              "N",
+              1,
+              1,
+              -1
+            ],
+            "axes": [
+              "N",
+              "1",
+              "1",
+              "T_k"
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "neg_inf",
+          "type": "tensor.constant",
+          "version": "1.0.0",
+          "config": {
+            "value": -1000000000.0,
+            "label": "masked positions get a large negative score before softmax"
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "masked",
+          "type": "tensor.where",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "weights",
+          "type": "tensor.softmax",
+          "version": "1.0.0",
+          "config": {
+            "dim": -1
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "attn_drop",
+          "type": "tensor.dropout",
+          "version": "1.0.0",
+          "config": {
+            "p": {
+              "$param": "attn_dropout"
+            }
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "context",
+          "type": "tensor.matmul",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "ctx_perm",
+          "type": "tensor.permute",
+          "version": "1.0.0",
+          "config": {
+            "dims": [
+              0,
+              2,
+              1,
+              3
+            ],
+            "axes": [
+              "N",
+              "T",
+              "H",
+              "dh"
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "merged",
+          "type": "tensor.reshape",
+          "version": "1.0.0",
+          "config": {
+            "shape": [
+              "N",
+              -1,
+              16
+            ],
+            "axes": [
+              "N",
+              "T",
+              "D"
+            ]
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "out_proj",
+          "type": "tensor.dense",
+          "version": "1.0.0",
+          "config": {
+            "out_features": {
+              "$param": "d_model"
+            }
+          },
+          "stateRef": null,
+          "sharedWith": null
+        }
+      ],
+      "edges": [
+        {
+          "id": "$in_x__q_proj_input",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "x"
+          },
+          "to": {
+            "node": "q_proj",
+            "port": "input"
+          }
+        },
+        {
+          "id": "q_proj_output__q_split_input",
+          "kind": "tensor",
+          "from": {
+            "node": "q_proj",
+            "port": "output"
+          },
+          "to": {
+            "node": "q_split",
+            "port": "input"
+          }
+        },
+        {
+          "id": "q_split_output__q_heads_input",
+          "kind": "tensor",
+          "from": {
+            "node": "q_split",
+            "port": "output"
+          },
+          "to": {
+            "node": "q_heads",
+            "port": "input"
+          }
+        },
+        {
+          "id": "$in_x__k_proj_input",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "x"
+          },
+          "to": {
+            "node": "k_proj",
+            "port": "input"
+          }
+        },
+        {
+          "id": "k_proj_output__k_split_input",
+          "kind": "tensor",
+          "from": {
+            "node": "k_proj",
+            "port": "output"
+          },
+          "to": {
+            "node": "k_split",
+            "port": "input"
+          }
+        },
+        {
+          "id": "k_split_output__k_heads_input",
+          "kind": "tensor",
+          "from": {
+            "node": "k_split",
+            "port": "output"
+          },
+          "to": {
+            "node": "k_heads",
+            "port": "input"
+          }
+        },
+        {
+          "id": "$in_x__v_proj_input",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "x"
+          },
+          "to": {
+            "node": "v_proj",
+            "port": "input"
+          }
+        },
+        {
+          "id": "v_proj_output__v_split_input",
+          "kind": "tensor",
+          "from": {
+            "node": "v_proj",
+            "port": "output"
+          },
+          "to": {
+            "node": "v_split",
+            "port": "input"
+          }
+        },
+        {
+          "id": "v_split_output__v_heads_input",
+          "kind": "tensor",
+          "from": {
+            "node": "v_split",
+            "port": "output"
+          },
+          "to": {
+            "node": "v_heads",
+            "port": "input"
+          }
+        },
+        {
+          "id": "k_heads_output__k_t_input",
+          "kind": "tensor",
+          "from": {
+            "node": "k_heads",
+            "port": "output"
+          },
+          "to": {
+            "node": "k_t",
+            "port": "input"
+          }
+        },
+        {
+          "id": "q_heads_output__raw_scores_a",
+          "kind": "tensor",
+          "from": {
+            "node": "q_heads",
+            "port": "output"
+          },
+          "to": {
+            "node": "raw_scores",
+            "port": "a"
+          }
+        },
+        {
+          "id": "k_t_output__raw_scores_b",
+          "kind": "tensor",
+          "from": {
+            "node": "k_t",
+            "port": "output"
+          },
+          "to": {
+            "node": "raw_scores",
+            "port": "b"
+          }
+        },
+        {
+          "id": "raw_scores_output__scores_input",
+          "kind": "tensor",
+          "from": {
+            "node": "raw_scores",
+            "port": "output"
+          },
+          "to": {
+            "node": "scores",
+            "port": "input"
+          }
+        },
+        {
+          "id": "$in_mask__mask_b_input",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "mask"
+          },
+          "to": {
+            "node": "mask_b",
+            "port": "input"
+          }
+        },
+        {
+          "id": "mask_b_output__masked_cond",
+          "kind": "tensor",
+          "from": {
+            "node": "mask_b",
+            "port": "output"
+          },
+          "to": {
+            "node": "masked",
+            "port": "cond"
+          }
+        },
+        {
+          "id": "scores_output__masked_a",
+          "kind": "tensor",
+          "from": {
+            "node": "scores",
+            "port": "output"
+          },
+          "to": {
+            "node": "masked",
+            "port": "a"
+          }
+        },
+        {
+          "id": "neg_inf_value__masked_b",
+          "kind": "tensor",
+          "from": {
+            "node": "neg_inf",
+            "port": "value"
+          },
+          "to": {
+            "node": "masked",
+            "port": "b"
+          }
+        },
+        {
+          "id": "masked_output__weights_input",
+          "kind": "tensor",
+          "from": {
+            "node": "masked",
+            "port": "output"
+          },
+          "to": {
+            "node": "weights",
+            "port": "input"
+          }
+        },
+        {
+          "id": "weights_output__attn_drop_input",
+          "kind": "tensor",
+          "from": {
+            "node": "weights",
+            "port": "output"
+          },
+          "to": {
+            "node": "attn_drop",
+            "port": "input"
+          }
+        },
+        {
+          "id": "attn_drop_output__context_a",
+          "kind": "tensor",
+          "from": {
+            "node": "attn_drop",
+            "port": "output"
+          },
+          "to": {
+            "node": "context",
+            "port": "a"
+          }
+        },
+        {
+          "id": "v_heads_output__context_b",
+          "kind": "tensor",
+          "from": {
+            "node": "v_heads",
+            "port": "output"
+          },
+          "to": {
+            "node": "context",
+            "port": "b"
+          }
+        },
+        {
+          "id": "context_output__ctx_perm_input",
+          "kind": "tensor",
+          "from": {
+            "node": "context",
+            "port": "output"
+          },
+          "to": {
+            "node": "ctx_perm",
+            "port": "input"
+          }
+        },
+        {
+          "id": "ctx_perm_output__merged_input",
+          "kind": "tensor",
+          "from": {
+            "node": "ctx_perm",
+            "port": "output"
+          },
+          "to": {
+            "node": "merged",
+            "port": "input"
+          }
+        },
+        {
+          "id": "merged_output__out_proj_input",
+          "kind": "tensor",
+          "from": {
+            "node": "merged",
+            "port": "output"
+          },
+          "to": {
+            "node": "out_proj",
+            "port": "input"
+          }
+        }
+      ],
+      "reduction": null
+    },
+    {
+      "id": "transformer_encoder_block",
+      "version": "1.0.0",
+      "description": "Encoder block, post-layer-norm: x1 = LayerNorm(x + Attention(x)); y = LayerNorm(x1 + W2 GELU(W1 x1)). Residual paths are the add nodes.",
+      "inputs": [
+        {
+          "name": "x",
+          "dtype": "float32",
+          "shape": [
+            null,
+            null,
+            16
+          ],
+          "description": ""
+        },
+        {
+          "name": "mask",
+          "dtype": "bool",
+          "shape": [
+            null,
+            null
+          ],
+          "description": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "y",
+          "from": {
+            "node": "ln2",
+            "port": "output"
+          },
+          "dtype": null,
+          "shape": [
+            null,
+            null,
+            16
+          ],
+          "description": ""
+        }
+      ],
+      "params": [],
+      "nodes": [
+        {
+          "id": "attn",
+          "type": "core.composite",
+          "version": "1.0.0",
+          "config": {
+            "module": "multi_head_attention",
+            "version": "1.0.0",
+            "args": {
+              "d_model": 16
+            },
+            "share": "clone"
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "add1",
+          "type": "tensor.add",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "ln1",
+          "type": "tensor.layernorm",
+          "version": "1.0.0",
+          "config": {
+            "normalized_dims": 1
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "ff1",
+          "type": "tensor.dense",
+          "version": "1.0.0",
+          "config": {
+            "out_features": 32
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "act",
+          "type": "tensor.gelu",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "ff2",
+          "type": "tensor.dense",
+          "version": "1.0.0",
+          "config": {
+            "out_features": 16
+          },
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "add2",
+          "type": "tensor.add",
+          "version": "1.0.0",
+          "config": {},
+          "stateRef": null,
+          "sharedWith": null
+        },
+        {
+          "id": "ln2",
+          "type": "tensor.layernorm",
+          "version": "1.0.0",
+          "config": {
+            "normalized_dims": 1
+          },
+          "stateRef": null,
+          "sharedWith": null
+        }
+      ],
+      "edges": [
+        {
+          "id": "$in_x__attn_x",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "x"
+          },
+          "to": {
+            "node": "attn",
+            "port": "x"
+          }
+        },
+        {
+          "id": "$in_mask__attn_mask",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "mask"
+          },
+          "to": {
+            "node": "attn",
+            "port": "mask"
+          }
+        },
+        {
+          "id": "$in_x__add1_a",
+          "kind": "tensor",
+          "from": {
+            "node": "$in",
+            "port": "x"
+          },
+          "to": {
+            "node": "add1",
+            "port": "a"
+          }
+        },
+        {
+          "id": "attn_y__add1_b",
+          "kind": "tensor",
+          "from": {
+            "node": "attn",
+            "port": "y"
+          },
+          "to": {
+            "node": "add1",
+            "port": "b"
+          }
+        },
+        {
+          "id": "add1_output__ln1_input",
+          "kind": "tensor",
+          "from": {
+            "node": "add1",
+            "port": "output"
+          },
+          "to": {
+            "node": "ln1",
+            "port": "input"
+          }
+        },
+        {
+          "id": "ln1_output__ff1_input",
+          "kind": "tensor",
+          "from": {
+            "node": "ln1",
+            "port": "output"
+          },
+          "to": {
+            "node": "ff1",
+            "port": "input"
+          }
+        },
+        {
+          "id": "ff1_output__act_input",
+          "kind": "tensor",
+          "from": {
+            "node": "ff1",
+            "port": "output"
+          },
+          "to": {
+            "node": "act",
+            "port": "input"
+          }
+        },
+        {
+          "id": "act_output__ff2_input",
+          "kind": "tensor",
+          "from": {
+            "node": "act",
+            "port": "output"
+          },
+          "to": {
+            "node": "ff2",
+            "port": "input"
+          }
+        },
+        {
+          "id": "ln1_output__add2_a",
+          "kind": "tensor",
+          "from": {
+            "node": "ln1",
+            "port": "output"
+          },
+          "to": {
+            "node": "add2",
+            "port": "a"
+          }
+        },
+        {
+          "id": "ff2_output__add2_b",
+          "kind": "tensor",
+          "from": {
+            "node": "ff2",
+            "port": "output"
+          },
+          "to": {
+            "node": "add2",
+            "port": "b"
+          }
+        },
+        {
+          "id": "add2_output__ln2_input",
+          "kind": "tensor",
+          "from": {
+            "node": "add2",
+            "port": "output"
+          },
+          "to": {
+            "node": "ln2",
+            "port": "input"
+          }
+        }
+      ],
+      "reduction": null
+    }
+  ],
+  "training": {
+    "seed": 1,
+    "deterministic": true,
+    "epochs": 10,
+    "max_optimizer_steps": null,
+    "data": {
+      "kind": "synthetic_sequence",
+      "path": "",
+      "image_size": [
+        64,
+        64
+      ],
+      "val_fraction": 0.2,
+      "n_train": 512,
+      "n_val": 128,
+      "seq_len": 8,
+      "vocab": 12,
+      "features": 4,
+      "outputs": 2,
+      "data_seed": 0,
+      "batch_size": 32,
+      "shuffle": true,
+      "drop_last": false,
+      "inputs": {},
+      "target": "y"
+    },
+    "loss": {
+      "kind": "cross_entropy",
+      "module": "",
+      "version": "1.0.0",
+      "args": {},
+      "output": "loss",
+      "ports": {
+        "pred": "output",
+        "target": "y"
+      }
+    },
+    "optimizer": {
+      "kind": "adam",
+      "lr": 0.005,
+      "momentum": 0.0,
+      "nesterov": false,
+      "dampening": 0.0,
+      "weight_decay": 0.0,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "eps": 1e-08,
+      "amsgrad": false
+    },
+    "clip": {
+      "kind": "norm",
+      "max_norm": 1.0,
+      "norm_type": 2.0,
+      "value": 1.0
+    },
+    "scheduler": {
+      "kind": "cosine",
+      "timing": "optimizer_step",
+      "step_size": 10,
+      "gamma": 0.5,
+      "t_max": 160,
+      "warmup_steps": 5,
+      "factor": 0.5,
+      "patience": 2,
+      "metric": "val_loss",
+      "mode": "min"
+    },
+    "accumulation": {
+      "steps": 1,
+      "normalize": "mean",
+      "partial_window": "step"
+    },
+    "validation": {
+      "every": {
+        "unit": "epoch",
+        "n": 1
+      },
+      "eval_mode": true,
+      "no_grad": true
+    },
+    "checkpoint": {
+      "every": {
+        "unit": "epoch",
+        "n": 2
+      },
+      "keep_last": 3,
+      "best": null
+    },
+    "early_stopping": {
+      "metric": "val_loss",
+      "mode": "min",
+      "patience": 5,
+      "min_delta": 0.0
+    },
+    "stages": [
+      "zero_grad",
+      "forward",
+      "loss",
+      "backward",
+      "clip",
+      "optimizer_step",
+      "scheduler_step"
+    ],
+    "frozen": [],
+    "watch": {
+      "param": "head.weight",
+      "index": [
+        0,
+        0
+      ]
+    },
+    "breakpoints": [],
+    "probes": [],
+    "assertions": false,
+    "capture": null
+  }
+}
