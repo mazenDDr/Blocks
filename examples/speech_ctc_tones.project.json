@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "domain",
+  "backend": "python",
+  "nodes": [
+    {
+      "id": "audio",
+      "type": "domain.audio_source",
+      "version": "1.0.0",
+      "config": {
+        "path": "examples/data/domain/synthetic_tones.npz"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "features",
+      "type": "domain.audio_features",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "ctc",
+      "type": "domain.speech_ctc",
+      "version": "1.0.0",
+      "config": {
+        "epochs": 60
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "kind": "audio_batch",
+      "from": {
+        "node": "audio",
+        "port": "audio"
+      },
+      "to": {
+        "node": "features",
+        "port": "audio"
+      }
+    },
+    {
+      "id": "e2",
+      "kind": "feature_batch",
+      "from": {
+        "node": "features",
+        "port": "features"
+      },
+      "to": {
+        "node": "ctc",
+        "port": "features"
+      }
+    }
+  ]
+}

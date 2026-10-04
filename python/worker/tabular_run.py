@@ -82,8 +82,13 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
         import numpy, pandas, scipy, sklearn  # noqa: E401
 
         _advance(store, run_id, "running")
-        em.emit("run_started", kind="tabular", order=report.order, libraries={"pandas": pandas.__version__, "scikit-learn": sklearn.__version__,
-                                                                              "scipy": scipy.__version__, "numpy": numpy.__version__},
+        libraries = {"pandas": pandas.__version__, "scikit-learn": sklearn.__version__, "scipy": scipy.__version__, "numpy": numpy.__version__}
+        if graph.graphKind == "domain":
+            import torch
+            torch.set_num_threads(1)  # these tiny CPU examples are bounded to one intra-op thread
+            from importlib.metadata import version
+            libraries.update({name: version(name) for name in ("torch", "torchvision", "torchaudio", "tokenizers", "seqeval", "torchmetrics", "pycocotools")})
+        em.emit("run_started", kind=graph.graphKind, order=report.order, libraries=libraries,
                 seed=cfg.seed, seedApplied=seed_applied, sourcePins=cfg.source_pins, trial=cfg.trial)
 
         def on_start(nid: str, typ: str) -> None:

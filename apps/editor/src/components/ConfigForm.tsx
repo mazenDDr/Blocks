@@ -53,13 +53,28 @@ function ColumnSpecEditor({ value, onChange, dtypes }: { value: ColSpec[]; onCha
   );
 }
 
+/** Structured settings stay editable; invalid JSON never changes the graph. */
+function JsonInput({ value, onChange, label }: { value: unknown; onChange: (v: unknown) => void; label: string }) {
+  const [text, setText] = useState(JSON.stringify(value, null, 2));
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { setText(JSON.stringify(value, null, 2)); setError(null); }, [value]);
+  return <div><textarea rows={8} aria-label={label} value={text ?? ""} onChange={(e) => setText(e.target.value)} />
+    <button onClick={() => { try { onChange(JSON.parse(text)); setError(null); } catch { setError("Enter valid JSON."); } }}>Apply {label}</button>
+    {error && <div role="alert" className="error">{error}</div>}</div>;
+}
+
 const isInferInt = (s: JSchema) => !!s.anyOf && s.anyOf.some((a) => a.const === "infer") && s.anyOf.some((a) => a.type === "integer");
 const literals = (a: JSchema): string[] => (a.const !== undefined ? [String(a.const)] : a.enum ? a.enum.map(String) : []);
 
 function Field({ name, schema, value, resolved, onChange, defs }: { name: string; schema: JSchema; value: unknown; resolved: unknown; onChange: (v: unknown) => void; defs?: Record<string, JSchema> }) {
+  if (schema.$ref) {
+    const ref = defs?.[schema.$ref.split("/").pop()!];
+    if (ref) return <Field name={name} schema={ref} value={value} resolved={resolved} onChange={onChange} defs={defs} />;
+  }
   if (schema.type === "array" && schema.items?.$ref) {
     const def = defs?.[schema.items.$ref.split("/").pop()!];
     const dt = def?.properties?.dtype?.enum?.map(String);
+    if (!def?.properties?.name || !dt) return <JsonInput label={name} value={value} onChange={onChange} />;
     if (def?.properties?.name && dt) return <ColumnSpecEditor value={(Array.isArray(value) ? value : []) as ColSpec[]} dtypes={dt} onChange={onChange} />;
   }
   if (schema.type === "array" && schema.items?.type === "string") return <StringListInput label={name} multiline={name === "assumptions"} value={(Array.isArray(value) ? value : []) as string[]} onChange={onChange} />;
@@ -93,12 +108,12 @@ function Field({ name, schema, value, resolved, onChange, defs }: { name: string
           {lits.map((l) => <option key={l} value={l}>{l}</option>)}
           {hasNull && <option value="__none">none (default behaviour)</option>}
         </select>
-        {sel === "__value" && typed && <Field name={name} schema={typed} value={value} resolved={resolved} onChange={onChange} />}
+        {sel === "__value" && typed && <Field name={name} schema={typed} value={value} resolved={resolved} onChange={onChange} defs={defs} />}
       </div>
     );
   }
   if (schema.enum) {
-    return <select aria-label={name} value={String(value)} onChange={(e) => onChange(e.target.value)}>{schema.enum.map((o) => <option key={String(o)} value={String(o)}>{String(o)}</option>)}</select>;
+    return <select aria-label={name} value={String(value)} onChange={(e) => onChange(schema.enum!.find((v) => String(v) === e.target.value))}>{schema.enum.map((o) => <option key={String(o)} value={String(o)}>{String(o)}</option>)}</select>;
   }
   switch (schema.type) {
     case "boolean": return <input type="checkbox" aria-label={name} checked={!!value} onChange={(e) => onChange(e.target.checked)} />;
@@ -122,6 +137,7 @@ function Field({ name, schema, value, resolved, onChange, defs }: { name: string
       }
       return <ListInput label={name} value={arr as unknown[]} onChange={onChange} />;
     }
+    case "object": return <JsonInput label={name} value={value} onChange={onChange} />;
     default: return <code>{JSON.stringify(value)}</code>;
   }
 }

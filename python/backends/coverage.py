@@ -206,7 +206,7 @@ def render_markdown(L: dict | None = None) -> str:
     w("")
     w("## Operations of other graph kinds")
     w("")
-    w("Tabular, agent and reinforcement-learning operations run on their own native libraries (scikit-learn, SciPy, LangGraph, Gymnasium + PyTorch); the TensorFlow/JAX backends apply to model graphs only. "
+    w("Tabular, agent, reinforcement-learning and domain operations run on their own native libraries (scikit-learn, SciPy, LangGraph, Gymnasium + PyTorch; domain: torchvision, torchaudio, tokenizers, seqeval and torchmetrics/pycocotools); the TensorFlow/JAX backends apply to model graphs only. "
       "Their depth is the explainer / view named below.")
     w("")
     w("| Operation | Graph kind | Native backend | Explain | Dedicated view | Test files mentioning the id |")

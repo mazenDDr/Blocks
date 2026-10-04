@@ -9,3 +9,4 @@ from . import diag_ops  # noqa: F401  (diagnostic blocks + structural block cata
 from . import code_ops  # noqa: F401  (code blocks, Milestone 3)
 from agent import blocks as agent_blocks  # noqa: F401  (graph kind "agent", Milestone 4; heavy libraries are imported lazily at run time)
 from rl import ops as rl_ops  # noqa: F401  (graph kind "rl", Milestone 5)
+from domain import ops as domain_ops  # noqa: F401  (graph kind "domain": vision, NLP, speech; Milestone 6b)

@@ -86,6 +86,10 @@ def inspect_tabular(store: ArtifactStore, run_id: str, req) -> dict[str, Any]:
         return _unavailable(tr, kind, f"Node '{node}' has no recorded result in run {run_id} (it did not run; see the run's failure).", node)
     data = json.loads(store.read_artifact(a["sha256"]))
     prov = tr.prov(node, None, summaryKind=want, summarySha256=a["sha256"], nodeType=tr.types[node])
+    if isinstance(data, dict):
+        source = data.get("provenance", {}).get("source")
+        if isinstance(source, dict) and source.get("sha256"):
+            prov["sourceSha256"] = source["sha256"]
     fo = data.get("fittedOn") if isinstance(data, dict) else None
     if fo:
         prov["fittedOn"] = fo

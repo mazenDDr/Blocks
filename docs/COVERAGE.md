@@ -309,7 +309,7 @@ Also refused on JAX: any float64 tensor (`E_BACKEND_UNSUPPORTED_DTYPE`; JAX woul
 
 ## Operations of other graph kinds
 
-Tabular, agent and reinforcement-learning operations run on their own native libraries (scikit-learn, SciPy, LangGraph, Gymnasium + PyTorch); the TensorFlow/JAX backends apply to model graphs only. Their depth is the explainer / view named below.
+Tabular, agent, reinforcement-learning and domain operations run on their own native libraries (scikit-learn, SciPy, LangGraph, Gymnasium + PyTorch; domain: torchvision, torchaudio, tokenizers, seqeval and torchmetrics/pycocotools); the TensorFlow/JAX backends apply to model graphs only. Their depth is the explainer / view named below.
 
 | Operation | Graph kind | Native backend | Explain | Dedicated view | Test files mentioning the id |
 |---|---|---|---|---|---|
@@ -324,6 +324,17 @@ Tabular, agent and reinforcement-learning operations run on their own native lib
 | `agent.set_state` | agent | langgraph | yes | agent | 3 |
 | `agent.structured_output` | agent | langgraph | yes | agent | 3 |
 | `agent.tool_call` | agent | langgraph | yes | agent | 3 |
+| `domain.audio_features` | domain | python | yes | audio_features | 1 |
+| `domain.audio_resample` | domain | python | yes | audio_data | 1 |
+| `domain.audio_source` | domain | python | yes | audio_data | 1 |
+| `domain.nlp_source` | domain | python | yes | nlp_corpus | 1 |
+| `domain.nlp_tagger` | domain | python | yes | nlp_tagger | 1 |
+| `domain.nlp_tokenizer` | domain | python | yes | nlp_tokens | 1 |
+| `domain.speech_ctc` | domain | python | yes | speech_ctc | 1 |
+| `domain.vision_box_convert` | domain | python | yes | vision_data | 1 |
+| `domain.vision_segmenter` | domain | python | yes | vision_seg | 1 |
+| `domain.vision_source` | domain | python | yes | vision_data | 1 |
+| `domain.vision_transform` | domain | python | yes | vision_transform | 1 |
 | `dvc.csv_source` | tabular | dvc | yes | connector_source | 1 |
 | `postgres.query` | tabular | postgresql | yes | connector_source | 2 |
 | `rl.dqn_learner` | rl | gymnasium | yes | rl_learner | 1 |

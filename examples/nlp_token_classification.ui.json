@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "corpus": {
+      "x": 0,
+      "y": 0
+    },
+    "tokenize": {
+      "x": 300,
+      "y": 0
+    },
+    "tagger": {
+      "x": 600,
+      "y": 0
+    }
+  },
+  "description": "SYNTHETIC template sentences with made-up names and CHARACTER-offset entity spans (PER, ORG, LOC). A WordPiece tokenizer is trained offline on the training sentences; labels follow a declared alignment policy. Open the tokenizer and tagger nodes: text, subwords, labels and predictions aligned; span metrics follow seqeval conventions.",
+  "synthetic": true
+}

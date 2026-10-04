@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "audio": {
+      "x": 0,
+      "y": 0
+    },
+    "features": {
+      "x": 300,
+      "y": 0
+    },
+    "ctc": {
+      "x": 600,
+      "y": 0
+    }
+  },
+  "description": "SYNTHETIC tone sequences (not speech): each symbol is a pure tone, 16 kHz mono, clips of 1.0/1.5/2.0 s (a 2 s clip has exactly 32,000 samples). Mel features with declared window/hop/padding, a tiny CTC model and greedy decoding; open the nodes for waveform, spectrogram, frame-to-token alignment and the S/D/I error alignment.",
+  "synthetic": true
+}

@@ -68,6 +68,10 @@ def validate(graph: Graph) -> Report:
         from tabular.validate import validate_tabular
 
         return validate_tabular(graph)
+    if graph.graphKind == "domain":
+        from tabular.validate import validate_tabular
+
+        return validate_tabular(graph, "domain", "python")
     if graph.graphKind == "rl":
         from rl.validate import validate_rl
 

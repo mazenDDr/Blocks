@@ -4,12 +4,13 @@ import { isTensorType, type Diagnostic, type GEdge, GNode, Graph, NodeView, OpIn
 import { fmtShape, shortHash, uid } from "../util";
 import { NotRecorded } from "./Provenance";
 import { NodeResultView, SchemaList, TabProv, TabularExplain, TablePreview, VIEW_LABEL } from "./Tabular";
+import { DomainResultView } from "./DomainViews";
 import { ConnectorSourceView, JoinView } from "./Connectors";
 
 const ACTIVE = ["queued", "preparing", "running", "cancelling"];
 
 /** Tabs of the node inspector for a tabular node: the table it outputs, the view that matches its operation, and the explanation. */
-export function tabularTabs(op: OpInfo | undefined, node: GNode, view: NodeView | undefined, runId: string | null, onConfig?: (patch: Record<string, unknown>) => void): { names: string[]; render: (tab: string) => ReactNode } {
+export function tabularTabs(op: OpInfo | undefined, node: GNode, view: NodeView | undefined, runId: string | null, onConfig?: (patch: Record<string, unknown>) => void, refreshKey?: number): { names: string[]; render: (tab: string) => ReactNode } {
   const tablePorts = op ? op.outputs.filter((p) => op.outputKinds[p] === "table") : [];
   const kind = op?.summaryKind ?? "step";
   const resultTab = VIEW_LABEL[kind] ?? "Result";
@@ -21,6 +22,7 @@ export function tabularTabs(op: OpInfo | undefined, node: GNode, view: NodeView 
       if (tab === "Explain") return <TabularExplain explain={view?.explain} purpose={op?.purpose ?? ""} typed={!!view?.typed} />;
       if (kind === "connector_source") return <ConnectorSourceView runId={runId} node={node.id} pinned={(node.config.pin as string | null) ?? null} onPin={onConfig ? (id) => onConfig({ pin: id }) : undefined} />;
       if (kind === "join") return <JoinView runId={runId} node={node.id} />;
+      if (op?.graphKind === "domain") return <DomainResultView key={`${runId}/${node.id}/${refreshKey}`} runId={runId} node={node.id} />;
       return <NodeResultView kind={kind} runId={runId} node={node.id} />;
     },
   };
@@ -55,7 +57,7 @@ export function TabularWireInspector({ edge, graph, validation, runId, ops }: { 
       <h4>Value crossing this wire</h4>
       {edge.kind === "table"
         ? <TablePreview runId={runId} node={edge.from.node} port={edge.from.port} />
-        : runId ? <NodeResultView kind={sop?.summaryKind ?? "step"} runId={runId} node={edge.from.node} /> : <NotRecorded message="No run selected. Values are read from a recorded run, never simulated." />}
+        : runId ? (sop?.graphKind === "domain" ? <DomainResultView runId={runId} node={edge.from.node} /> : <NodeResultView kind={sop?.summaryKind ?? "step"} runId={runId} node={edge.from.node} />) : <NotRecorded message="No run selected. Values are read from a recorded run, never simulated." />}
     </div>
   );
 }
@@ -121,7 +123,7 @@ export function TabularRunPanel({ projectId, graph, validation, runs, reloadRuns
           </div>
           {err && <div className="error pre">{err}</div>}
           <h4>Problems ({diags.filter((d) => d.severity === "error").length} errors, {diags.filter((d) => d.severity === "warning").length} warnings)</h4>
-          {diags.length === 0 && <div className="muted small">No problems. Fit nodes read only the training partition.</div>}
+          {diags.length === 0 && <div className="muted small">{graph.graphKind === "domain" ? "No contract violations. Training and evaluation use separate fixture partitions." : "No problems. Fit nodes read only the training partition."}</div>}
           {diags.map((d, i) => (
             <div key={i} className={`problem ${d.severity}`} onClick={() => d.nodeId && onSelectNode(d.nodeId)} role="button" tabIndex={0}>
               <b>{d.code}</b> <span className="muted">{d.nodeId}{d.port ? `.${d.port}` : ""}</span> <code className="small">{d.path}</code>

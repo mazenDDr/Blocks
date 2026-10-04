@@ -132,8 +132,9 @@ export interface RunEvent { run_id: string; seq: number; ts: number; type: strin
 
 // ---- tabular graph kind -------------------------------------------------------------------------------
 export interface TabularNodeStatus { node: string; type?: string; status: "pending" | "running" | "finished" | "failed"; rows?: Record<string, number> }
-export interface TabularRunSummary {
-  kind: "tabular"; id: string; status: string; error: string | null; graphHash: string; createdAt: number; updatedAt: number; maxSeq: number;
+export type TabularRunSummary = (NodeRunSummary & { kind: "tabular" }) | (NodeRunSummary & { kind: "domain" });
+interface NodeRunSummary {
+  id: string; status: string; error: string | null; graphHash: string; createdAt: number; updatedAt: number; maxSeq: number;
   config: { kind: string; project_id: string | null; seed?: number | null; source_pins?: Record<string, string>; trial?: Record<string, unknown> | null };
   snapshots?: { node: string; connector: string; mode: string; snapshotId: string; kind: string; contentSha256: string | null; rows: number; reproducibility: { level: string; limited: boolean } }[];
   nodes: TabularNodeStatus[]; progress: { nodesDone: number; nodes: number };
@@ -156,7 +157,7 @@ export interface RLRunSummary {
 }
 export type AnyRun = RunSummary | TabularRunSummary | ProcedureRunSummary | SandboxRunSummary | RLRunSummary | import("./components/agent/types").AgentRunSummary;
 export const isRLRun = (r: AnyRun): r is RLRunSummary => r.kind === "rl";
-export const isTabularRun = (r: AnyRun): r is TabularRunSummary => r.kind === "tabular";
+export const isTabularRun = (r: AnyRun): r is TabularRunSummary => r.kind === "tabular" || r.kind === "domain";
 export const isProcedureRun = (r: AnyRun): r is ProcedureRunSummary => r.kind === "procedure";
 export const isSandboxRun = (r: AnyRun): r is SandboxRunSummary => r.kind === "sandbox";
 export const isModelRun = (r: AnyRun): r is RunSummary => r.kind === undefined || r.kind === "model";

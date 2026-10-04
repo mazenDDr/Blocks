@@ -2,7 +2,7 @@
 
 Phase 0 (semantic and execution foundation), Phase 1 (visual CNN workbench: control API + editor), Milestone 2a (tabular graph kind:
 data preparation, classical ML, statistics), Milestone 2b (connected data sources, versioned extraction, studies and sweeps), Milestone 3 (research-level composition) and
-Milestone 4 (language-model and agent workflows on native LangGraph), Milestone 5 (reinforcement learning, unsupervised workflows) and Milestone 6a (TensorFlow/Keras 3 and JAX backends for a portable model-graph subset, compatibility reports, native exports, coverage ledger, benchmarks) are implemented.
+Milestone 4 (language-model and agent workflows on native LangGraph), Milestone 5 (reinforcement learning, unsupervised workflows) and Milestone 6a (TensorFlow/Keras 3 and JAX backends for a portable model-graph subset, compatibility reports, native exports, coverage ledger, benchmarks) and Milestone 6b (typed vision, NLP and speech workflows with recorded inspection) are implemented.
 See `docs/PLAN.md`, `docs/CAPABILITIES.md` and `docs/adr/` (ADR 0003: tabular graph kind; ADR 0004: connectors, snapshots, studies; ADR 0008: agent graph kind, memory, context recording; ADR 0010: additional backends, compatibility, coverage).
 
 ## Setup
@@ -180,3 +180,28 @@ Prints one JSON event per line (run id, graph hash, seq, ts, type, node id, data
 Runs, events and checkpoints are stored in `.workbench/` (`meta.db`, `artifacts/<sha256>`). `Ctrl-C` requests a
 cooperative cancel and leaves a `partial` checkpoint. A graph with an unknown op or a channel mismatch is
 rejected before any training, with exit code 2 and the diagnostics on stderr.
+
+
+## Vision, NLP and speech (Milestone 6b)
+
+Commands run for this milestone:
+
+```bash
+.venv/bin/python examples/make_domain_fixtures.py  # deterministic labelled SYNTHETIC vision/audio NPZ + text JSONL; binary data is gitignored
+.venv/bin/python examples/make_domain_examples.py # three valid graph + UI examples
+.venv/bin/python -m backends.coverage --write
+.venv/bin/python examples/domain_journey.py --workbench /private/tmp/void-m6b-cli
+.venv/bin/pytest -q -o faulthandler_timeout=240
+.venv/bin/pytest -q -m live
+.venv/bin/pytest -q tests/test_domain_api.py -o faulthandler_timeout=240
+pnpm -C apps/editor build
+pnpm -C apps/editor exec tsc --noEmit
+```
+
+In **Open → Examples — vision / NLP / speech**, select `vision_segmentation_synthetic`, `nlp_token_classification` or `speech_ctc_tones`. Each opens its domain workspace. Press **Run graph**, wait for completion, then select a stage:
+
+- Vision: **Annotated images → Geometric transforms → Train segmentation**. Inspect actual before/after annotations, the clipping/removal policy and predicted masks/derived boxes against validation ground truth. Toggle mask overlays. IoU/Dice and derived detection mAP state their reference and aggregation.
+- NLP: **Character-span corpus → WordPiece tokenization → Train token classifier**. Click a subword to highlight its original character span; inspect IDs, word IDs, attention, loss labels and predictions. Label alignment and span-evaluation convention are declared, and the tokenizer is fitted offline on train sentences only.
+- Speech: **Audio and teaching signal → STFT and mel features → Train CTC recognizer**. The labelled teaching signal has 32,000 samples/channel. Inspect waveform, actual frame-count formula, batch lengths/masks, mel spectrogram, selected frame time, greedy output alignment and CER/WER substitutions/deletions/insertions. The training fixture is generated tones, not recorded speech.
+
+Use **Graph** to edit connections and inspect typed wires, or edit a stage's settings directly in the workspace. Structured transform/policy JSON is applied explicitly and validated. Old runs retain their original graph/artifact identity after edits; all values are recorded from the selected run. Models run on CPU. Native torchvision/torchaudio/tokenizers/seqeval/torchmetrics/pycocotools/jiwer versions are pinned in `python/requirements.txt` (already installed here). Domain checkpoint/resume and general dataset import are not implemented; see ADR 0011 and `docs/CAPABILITIES.md`.

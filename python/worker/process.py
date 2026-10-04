@@ -32,7 +32,7 @@ def _child(graph_json: dict, cfg_json: dict, root: str, run_id: str, cancel_even
         run_agent(graph, AgentRunConfig.model_validate(cfg_json), store, run_id, should_cancel, resume)
     elif graph.graphKind == "rl":
         run_rl(graph, RLRunConfig.model_validate(cfg_json), store, run_id, should_cancel)
-    elif graph.graphKind == "tabular":
+    elif graph.graphKind in ("tabular", "domain"):
         run_tabular(graph, TabularRunConfig.model_validate(cfg_json), store, run_id, should_cancel)
     elif cfg_json.get("kind") == "procedure":
         run_procedure(graph, ProcedureRunConfig.model_validate(cfg_json), store, run_id, should_cancel)

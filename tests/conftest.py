@@ -106,3 +106,21 @@ def client_factory():
     yield make
     for c in opened:
         c.__exit__(None, None, None)
+
+
+def load_domain_generator():
+    spec = importlib.util.spec_from_file_location("make_domain_fixtures", EXAMPLES / "make_domain_fixtures.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@pytest.fixture(scope="session")
+def domain_fixtures():
+    """The deterministic SYNTHETIC vision / audio fixtures (gitignored) at their documented location; generated when absent. Returns the generator module."""
+    gen = load_domain_generator()
+    if not gen.VISION_NPZ.exists():
+        gen.write_vision()
+    if not gen.AUDIO_NPZ.exists():
+        gen.write_audio()
+    return gen

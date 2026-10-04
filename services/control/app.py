@@ -198,8 +198,8 @@ class Services:
     def launch(self, graph: Graph, cfg_dict: dict[str, Any]) -> str:
         """Start one run for a study trial (same checks as POST /api/runs). Raises HTTPException with the reason when it cannot start."""
         with self.lock:
-            if graph.graphKind in ("tabular", "rl"):
-                cfg = (RLRunConfig if graph.graphKind == "rl" else TabularRunConfig).model_validate(cfg_dict)
+            if graph.graphKind in ("tabular", "rl", "domain"):
+                cfg = (RLRunConfig if graph.graphKind == "rl" else TabularRunConfig).model_validate({**cfg_dict, "kind": graph.graphKind})
                 report = validate(graph)
                 if not report.ok:
                     raise _err(422, "the graph has errors and cannot run", [d.to_json() for d in report.errors], "execution_blocked")
@@ -252,7 +252,7 @@ class Services:
             elif t == "validation_error":
                 failure = failure or {"node": e["node_id"], "code": d["code"], "message": d["message"]}
         nodes = [status.get(n, {"node": n, "status": "pending"}) for n in order]
-        return {"kind": "tabular", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": row["config"],
+        return {"kind": row["config"].get("kind", "tabular"), "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": row["config"],
                 "createdAt": row["created_at"], "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "nodes": nodes,
                 "progress": {"nodesDone": sum(1 for n in nodes if n["status"] == "finished"), "nodes": len(order)},
                 "sources": sources, "snapshots": snaps, "runSeed": seeded, "splits": splits, "failure": failure, "libraries": libs}
@@ -298,7 +298,7 @@ class Services:
 
     def run_summary(self, row: dict[str, Any]) -> dict[str, Any]:
         rid = row["id"]
-        if row["config"].get("kind") == "tabular":
+        if row["config"].get("kind") in ("tabular", "domain"):
             return self.tabular_summary(row)
         if row["config"].get("kind") == "rl":
             return self.rl_summary(row)
@@ -499,7 +499,7 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
             raise _err(422, f"This graph targets backend '{graph.backend}'. Training runs execute on PyTorch only: the {graph.backend} backend runs forward, loss, "
                        "gradients and one SGD step through the backends API, not worker training runs. Set the graph's backend to 'pytorch' to train it.",
                        code="backend_training_unsupported")
-        tabular = graph.graphKind in ("tabular", "rl")   # typed-wire graph kinds: validate, then submit (their config models differ below)
+        tabular = graph.graphKind in ("tabular", "rl", "domain")   # typed-wire graph kinds: validate, then submit (their config models differ below)
         rl = graph.graphKind == "rl"
         agent = graph.graphKind == "agent"
         procedure = graph.graphKind == "model" and req.config.get("kind") == "procedure"
@@ -514,7 +514,7 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
             elif rl:
                 cfg = RLRunConfig.model_validate({**req.config, "project_id": req.projectId or req.config.get("project_id")})
             elif tabular:
-                cfg = TabularRunConfig.model_validate({**req.config, "project_id": req.projectId or req.config.get("project_id")})
+                cfg = TabularRunConfig.model_validate({**req.config, "kind": graph.graphKind, "project_id": req.projectId or req.config.get("project_id")})
             else:
                 base = RunConfig.model_validate(req.config)
                 cfg = base.model_copy(update={"data": str(Path(base.data).expanduser().resolve()), "project_id": req.projectId or base.project_id})
@@ -657,7 +657,7 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
             return {"available": False, "kind": req.kind, "reason": "no_run", "message": "No run exists yet; nothing is recorded.",
                     "provenance": {"runId": None, "nodeId": req.node}}
         row = sv.store.get_run(rid)
-        if row is not None and row["config"].get("kind") == "tabular":
+        if row is not None and row["config"].get("kind") in ("tabular", "domain"):
             return tinsp.inspect_tabular(sv.store, rid, req)
         if req.kind not in ("weights", "activations", "sample_loss", "confusion"):
             raise _err(422, f"'{req.kind}' inspection applies to tabular runs only")

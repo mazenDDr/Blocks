@@ -114,3 +114,18 @@ META: dict[str, tuple[str, str, str]] = {
     "sklearn.projection": ("2-D projection (non-metric)", "Unsupervised", "t-SNE embedding for viewing only; distances and cluster separation in it are not evidence."),
     "sklearn.cluster_diagnostics": ("Cluster diagnostics", "Unsupervised", "Method-appropriate internal metrics, elbow, seed / bootstrap stability, and external metrics only when labels are declared."),
 }
+
+
+META.update({
+    "domain.vision_source": ("Annotated images", "Vision", "Image, boxes, instance masks and keypoints from a labelled SYNTHETIC fixture."),
+    "domain.vision_box_convert": ("Box format conversion", "Vision", "Explicit box and keypoint coordinate conversion."),
+    "domain.vision_transform": ("Geometric transforms", "Vision", "Native torchvision geometry with declared clipping, removal and flip pairs."),
+    "domain.vision_segmenter": ("Train segmentation", "Vision", "Tiny PyTorch FCN, validation IoU/Dice and derived detection mAP."),
+    "domain.nlp_source": ("Character-span corpus", "NLP", "Labelled SYNTHETIC text with original source spans."),
+    "domain.nlp_tokenizer": ("WordPiece tokenization", "NLP", "Offline vocabulary fitted on train text; explicit subword labels and masks."),
+    "domain.nlp_tagger": ("Train token classifier", "NLP", "Packed BiGRU tagger and seqeval-convention span evaluation."),
+    "domain.audio_source": ("Audio and teaching signal", "Speech", "SYNTHETIC tones with sample/time contract and the 32,000-sample teaching signal."),
+    "domain.audio_resample": ("Resample audio", "Speech", "Native torchaudio resampling with updated sample and segment coordinates."),
+    "domain.audio_features": ("STFT and mel features", "Speech", "Native torchaudio features, frame formula, sequence lengths and masks."),
+    "domain.speech_ctc": ("Train CTC recognizer", "Speech", "Native CTCLoss, greedy frame path and CER/WER edit alignment."),
+})

@@ -19,19 +19,19 @@ export function useValidation(graph: Graph, delay = 250) {
 }
 
 export function usePolling<T>(url: string | null, intervalMs: number, deps: unknown[] = []): { data: T | null; error: string | null; reload: () => void } {
-  const [data, setData] = useState<T | null>(null);
+  const [snapshot, setSnapshot] = useState<{ url: string | null; data: T | null }>({ url: null, data: null });
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    if (!url) { setData(null); return; }
+    if (!url) { setSnapshot({ url, data: null }); return; }
     let alive = true;
-    const run = () => api.get<T>(url).then((d) => { if (alive) { setData(d); setError(null); } }).catch((e) => { if (alive) setError(errorText(e)); });
+    const run = () => api.get<T>(url).then((d) => { if (alive) { setSnapshot({ url, data: d }); setError(null); } }).catch((e) => { if (alive) setError(errorText(e)); });
     run();
     const h = intervalMs > 0 ? setInterval(run, intervalMs) : undefined;
     return () => { alive = false; if (h) clearInterval(h); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, intervalMs, tick, ...deps]);
-  return { data, error, reload: () => setTick((t) => t + 1) };
+  return { data: snapshot.url === url ? snapshot.data : null, error, reload: () => setTick((t) => t + 1) };
 }
 
 export function useRuns(projectId: string | null) {

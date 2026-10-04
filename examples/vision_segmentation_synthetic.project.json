@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "domain",
+  "backend": "python",
+  "nodes": [
+    {
+      "id": "images",
+      "type": "domain.vision_source",
+      "version": "1.0.0",
+      "config": {
+        "path": "examples/data/domain/synthetic_shapes_det.npz"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "augment",
+      "type": "domain.vision_transform",
+      "version": "1.0.0",
+      "config": {
+        "steps": [
+          {
+            "op": "random_hflip",
+            "p": 0.5,
+            "seed": 1
+          },
+          {
+            "op": "pad",
+            "pad": [
+              8,
+              8,
+              8,
+              8
+            ],
+            "fill": 128
+          }
+        ],
+        "policy": {
+          "clip": true,
+          "min_visible_fraction": 0.0,
+          "min_size": 1.0
+        }
+      },
+      "stateRef": null
+    },
+    {
+      "id": "segmenter",
+      "type": "domain.vision_segmenter",
+      "version": "1.0.0",
+      "config": {
+        "epochs": 12
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "kind": "image_batch+annotations",
+      "from": {
+        "node": "images",
+        "port": "data"
+      },
+      "to": {
+        "node": "augment",
+        "port": "data"
+      }
+    },
+    {
+      "id": "e2",
+      "kind": "image_batch+annotations",
+      "from": {
+        "node": "augment",
+        "port": "data"
+      },
+      "to": {
+        "node": "segmenter",
+        "port": "data"
+      }
+    }
+  ]
+}

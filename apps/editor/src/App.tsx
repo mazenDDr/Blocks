@@ -5,6 +5,7 @@ import {
 } from "@xyflow/react";
 import { api, errorText } from "./api";
 import { AgentWorkspace } from "./components/agent/AgentWorkspace";
+import { DomainWorkspace } from "./components/DomainWorkspace";
 import { RLWorkspace } from "./components/rl/RLWorkspace";
 import { GraphContext } from "./components/UnsupViews";
 import { AttentionWorkspace } from "./components/Attention";
@@ -42,7 +43,7 @@ const EMPTY_UI: UiDoc = { schemaVersion: "1.0.0", positions: {} };
 const LAST_KEY = "void.lastProject";
 const nodeTypes = { card: OpNodeCard, group: GroupCard };
 type AnyNode = CardNode | GroupNode;
-type View = "graph" | "data" | "experiments" | "training" | "debug" | "attention" | "backends" | "coverage";
+type View = "graph" | "data" | "experiments" | "training" | "debug" | "attention" | "backends" | "coverage" | "domain";
 interface Scope { module: string; version: string; via: string }
 
 const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -92,7 +93,8 @@ function Workbench() {
   const { fitView } = useReactFlow();
 
   const opsByType = useMemo(() => Object.fromEntries([...ops, ...PSEUDO_OPS].map((o) => [o.type, o])), [ops]);
-  const tabular = graph.graphKind === "tabular";
+  const domain = graph.graphKind === "domain";
+  const tabular = graph.graphKind === "tabular" || domain;
   const agent = graph.graphKind === "agent";
   const rl = graph.graphKind === "rl";
 
@@ -138,7 +140,7 @@ function Workbench() {
 
   const adopt = useCallback((id: string, g: Graph, u: UiDoc | null, savedState: boolean) => {
     const uu = u ?? EMPTY_UI;
-    setProjectId(id); setGraph(g); setUi(uu); setSelNodes([]); setSelEdges([]); setScope([]); setExpanded([]); setView("graph");
+    setProjectId(id); setGraph(g); setUi(uu); setSelNodes([]); setSelEdges([]); setScope([]); setExpanded([]); setView(g.graphKind === "domain" ? "domain" : "graph");
     setSaved(savedState ? JSON.stringify([g, uu]) : "");
     setLoadToken((n) => n + 1);
     setCtx({ runId: null, step: null, sample: null });
@@ -493,6 +495,7 @@ function Workbench() {
           <optgroup label="Examples — model graphs">{examples.filter((p) => p.graphKind === "model").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}{p.synthetic ? " (synthetic data)" : ""}</option>)}</optgroup>
           <optgroup label="Examples — agent graphs (LangGraph)">{examples.filter((p) => p.graphKind === "agent").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}{p.synthetic ? " (synthetic data)" : ""}</option>)}</optgroup>
           <optgroup label="Examples — reinforcement learning (Gymnasium)">{examples.filter((p) => p.graphKind === "rl").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}{p.synthetic ? " (synthetic data)" : ""}</option>)}</optgroup>
+          <optgroup label="Examples — vision / NLP / speech">{examples.filter((p) => p.graphKind === "domain").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id} (SYNTHETIC)</option>)}</optgroup>
           <optgroup label="Examples — tabular / statistics graphs">{examples.filter((p) => p.graphKind === "tabular").map((p) => <option key={p.id} value={`example:${p.id}`}>{p.id}{p.synthetic ? " (synthetic data)" : ""}</option>)}</optgroup>
         </select></label>
         {!tabular && !agent && !rl && (
@@ -506,7 +509,7 @@ function Workbench() {
           </label>
         )}
         <span className="viewtabs" role="tablist" aria-label="workspace">
-          {(rl ? [["graph", "RL lab"]] as [View, string][] : agent ? [["graph", "Agent"], ["data", "Data"]] as [View, string][] : [["graph", "Graph"], ["data", "Data"], ["experiments", "Experiments"], ...(tabular ? [] : [["training", "Training"], ["debug", "Debug"], ["attention", "Attention"], ["backends", "Backend"]]), ["coverage", "Coverage"]] as [View, string][]).map(([k, label]) => (
+          {(domain ? [["domain", "Domain workspace"], ["graph", "Graph"], ["coverage", "Coverage"]] as [View, string][] : rl ? [["graph", "RL lab"]] as [View, string][] : agent ? [["graph", "Agent"], ["data", "Data"]] as [View, string][] : [["graph", "Graph"], ["data", "Data"], ["experiments", "Experiments"], ...(tabular ? [] : [["training", "Training"], ["debug", "Debug"], ["attention", "Attention"], ["backends", "Backend"]]), ["coverage", "Coverage"]] as [View, string][]).map(([k, label]) => (
             <button key={k} role="tab" aria-selected={view === k} className={view === k ? "on" : ""} onClick={() => setView(k)}>{label}</button>))}
         </span>
         <span className="badge kind" title="Graph kind: wires of different kinds never mean the same thing">{graph.graphKind} graph</span>
@@ -524,6 +527,8 @@ function Workbench() {
       {view === "graph" && !agent && !rl && ui.description && <div className={`notice ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic / teaching data. </b>}{ui.description}</div>}
       {message && <div className="toast" role="status" onClick={() => setMessage(null)}>{message} <small>(click to dismiss)</small></div>}
 
+      {view === "domain" && domain && <DomainWorkspace key={projectId} projectId={projectId} graph={graph} validation={rv ?? null} ops={opsByType} runs={tabRuns} runId={ctx.runId}
+        setRunId={(id) => setCtx({ runId: id, step: null, sample: null })} reloadRuns={reloadRuns} ensureSaved={ensureSaved} onConfig={setConfig} />}
       {view === "graph" && rl && (
         <RLWorkspace projectId={projectId} graph={graph} setGraph={setGraph} ui={ui} validation={rv ?? null} allRuns={allRuns} reloadRuns={reloadRuns} ensureSaved={ensureSaved} />
       )}
@@ -581,7 +586,7 @@ function Workbench() {
           : <InspectionBar runs={runs} ctx={ctx} setCtx={setCtx} currentHash={rv?.graphHash} checkpoints={insData.checkpoints} samples={insData.samples} />}
         {selNode ? (
           <NodeInspector key={selNode.id} node={selNode} op={opsByType[selNode.type]} ops={opsByType} view={selView} graph={cur} ctx={ctx}
-            tabSet={tabular ? tabularTabs(opsByType[selNode.type], selNode, selView, ctx.runId, (patch) => setConfig(selNode.id, patch)) : undefined}
+            tabSet={tabular ? tabularTabs(opsByType[selNode.type], selNode, selView, ctx.runId, (patch) => setConfig(selNode.id, patch), tabRun?.maxSeq) : undefined}
             extra={{ ...extra, moduleEditing: !!def }}
             onConfig={(patch) => setConfig(selNode.id, patch)} onConnect={connect} onDelete={() => removeNodes([selNode.id])} onRename={(nid) => rename(selNode.id, nid)} />
         ) : selEdge ? (

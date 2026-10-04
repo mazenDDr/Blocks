@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "domain",
+  "backend": "python",
+  "nodes": [
+    {
+      "id": "corpus",
+      "type": "domain.nlp_source",
+      "version": "1.0.0",
+      "config": {
+        "path": "examples/fixtures/synthetic_ner.jsonl"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "tokenize",
+      "type": "domain.nlp_tokenizer",
+      "version": "1.0.0",
+      "config": {},
+      "stateRef": null
+    },
+    {
+      "id": "tagger",
+      "type": "domain.nlp_tagger",
+      "version": "1.0.0",
+      "config": {
+        "epochs": 25
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "kind": "text_corpus",
+      "from": {
+        "node": "corpus",
+        "port": "corpus"
+      },
+      "to": {
+        "node": "tokenize",
+        "port": "corpus"
+      }
+    },
+    {
+      "id": "e2",
+      "kind": "token_batch",
+      "from": {
+        "node": "tokenize",
+        "port": "tokens"
+      },
+      "to": {
+        "node": "tagger",
+        "port": "tokens"
+      }
+    }
+  ]
+}

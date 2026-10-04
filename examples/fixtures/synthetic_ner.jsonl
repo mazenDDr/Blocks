@@ -1,0 +1,240 @@
+{"id": "ner_0000", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0001", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 39, "label": "LOC", "start": 33}, {"end": 62, "label": "PER", "start": 46}], "synthetic": true, "text": "Zortan Labs opened a branch near Selnor, said Fenzor Tisbermel."}
+{"id": "ner_0002", "spans": [{"end": 24, "label": "PER", "start": 10}, {"end": 42, "label": "ORG", "start": 30}], "synthetic": true, "text": "Last week Tannor Bralivu told Quibra Works about the plan."}
+{"id": "ner_0003", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 41, "label": "LOC", "start": 33}, {"end": 58, "label": "PER", "start": 48}], "synthetic": true, "text": "Norsel Corp opened a branch near Kotanpen, said Dax Bravik."}
+{"id": "ner_0004", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 34, "label": "ORG", "start": 23}, {"end": 49, "label": "LOC", "start": 38}], "synthetic": true, "text": "Zormel Melcal works at Lipen Group in Port-Liando."}
+{"id": "ner_0005", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 32, "label": "LOC", "start": 21}, {"end": 43, "label": "LOC", "start": 37}], "synthetic": true, "text": "Norando Livuvik left Port-Norzor for Penber."}
+{"id": "ner_0006", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 27, "label": "LOC", "start": 19}, {"end": 37, "label": "LOC", "start": 32}], "synthetic": true, "text": "Fen Liandoqui left Quizorur for Vutan."}
+{"id": "ner_0007", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 27, "label": "PER", "start": 17}, {"end": 45, "label": "LOC", "start": 36}], "synthetic": true, "text": "Melbra Linor and Cal Morcal visited Andourqui last week."}
+{"id": "ner_0008", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 30, "label": "PER", "start": 20}, {"end": 47, "label": "LOC", "start": 39}], "synthetic": true, "text": "Penvu Bermorcal and Qui Tissel visited Quivutan last week."}
+{"id": "ner_0009", "spans": [{"end": 14, "label": "PER", "start": 0}, {"end": 29, "label": "LOC", "start": 20}, {"end": 40, "label": "LOC", "start": 34}], "synthetic": true, "text": "Vusel Fenbrali left Melcalfen for Tissel."}
+{"id": "ner_0010", "spans": [{"end": 8, "label": "LOC", "start": 0}], "synthetic": true, "text": "Melurtis is cold in winter."}
+{"id": "ner_0011", "spans": [{"end": 24, "label": "PER", "start": 11}, {"end": 41, "label": "ORG", "start": 30}], "synthetic": true, "text": "Reportedly Pen Caldaxpen told Daxzor Labs about the plan."}
+{"id": "ner_0012", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0013", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 34, "label": "ORG", "start": 23}, {"end": 49, "label": "LOC", "start": 38}], "synthetic": true, "text": "Tan Berberfen works at Fensel Corp in Port-Tisfen."}
+{"id": "ner_0014", "spans": [{"end": 10, "label": "ORG", "start": 0}, {"end": 42, "label": "LOC", "start": 32}, {"end": 61, "label": "PER", "start": 49}], "synthetic": true, "text": "Tisvu Corp opened a branch near Port-Kotis, said Tisli Zortis."}
+{"id": "ner_0015", "spans": [{"end": 14, "label": "ORG", "start": 4}, {"end": 30, "label": "LOC", "start": 25}, {"end": 53, "label": "PER", "start": 37}], "synthetic": true, "text": "The Vuli Group office in Morvu hired Vikfen Tandaxzor."}
+{"id": "ner_0016", "spans": [{"end": 12, "label": "ORG", "start": 0}, {"end": 43, "label": "LOC", "start": 34}, {"end": 64, "label": "PER", "start": 50}], "synthetic": true, "text": "Daxvik Group opened a branch near Berselmel, said Brafen Urbrako."}
+{"id": "ner_0017", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0018", "spans": [{"end": 11, "label": "PER", "start": 0}, {"end": 30, "label": "PER", "start": 16}, {"end": 50, "label": "LOC", "start": 39}], "synthetic": true, "text": "Vufen Kopen and Melko Urmordax visited Port-Vikqui last week."}
+{"id": "ner_0019", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0020", "spans": [{"end": 15, "label": "ORG", "start": 4}, {"end": 35, "label": "LOC", "start": 26}, {"end": 54, "label": "PER", "start": 42}], "synthetic": true, "text": "The Tanmor Labs office in Vikvikcal hired Nor Vuquical."}
+{"id": "ner_0021", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0022", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 35, "label": "ORG", "start": 23}, {"end": 49, "label": "LOC", "start": 39}], "synthetic": true, "text": "Pentan Daxpen works at Nornor Works in Port-Melli."}
+{"id": "ner_0023", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 39, "label": "ORG", "start": 23}, {"end": 54, "label": "LOC", "start": 43}], "synthetic": true, "text": "Morqui Norfen works at Viknor Institute in Port-Fenbra."}
+{"id": "ner_0024", "spans": [{"end": 26, "label": "PER", "start": 11}, {"end": 42, "label": "ORG", "start": 32}], "synthetic": true, "text": "Reportedly Daxvu Vikbravik told Livik Corp about the plan."}
+{"id": "ner_0025", "spans": [{"end": 16, "label": "ORG", "start": 4}, {"end": 38, "label": "LOC", "start": 27}, {"end": 60, "label": "PER", "start": 45}], "synthetic": true, "text": "The Andozor Labs office in Port-Melfen hired Vikbra Daxkopen."}
+{"id": "ner_0026", "spans": [{"end": 6, "label": "LOC", "start": 0}], "synthetic": true, "text": "Penpen is cold in winter."}
+{"id": "ner_0027", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 29, "label": "LOC", "start": 19}, {"end": 42, "label": "LOC", "start": 34}], "synthetic": true, "text": "Calbra Tistan left Port-Melvu for Urquitis."}
+{"id": "ner_0028", "spans": [{"end": 9, "label": "ORG", "start": 0}, {"end": 42, "label": "LOC", "start": 31}, {"end": 63, "label": "PER", "start": 49}], "synthetic": true, "text": "Urko Corp opened a branch near Port-Tannor, said Ando Tisquifen."}
+{"id": "ner_0029", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 27, "label": "LOC", "start": 21}, {"end": 37, "label": "LOC", "start": 32}], "synthetic": true, "text": "Melvu Morquivik left Bernor for Vufen."}
+{"id": "ner_0030", "spans": [{"end": 23, "label": "PER", "start": 10}, {"end": 40, "label": "ORG", "start": 29}], "synthetic": true, "text": "Last week Quiber Calzor told Calzor Labs about the plan."}
+{"id": "ner_0031", "spans": [{"end": 16, "label": "PER", "start": 0}, {"end": 38, "label": "ORG", "start": 26}, {"end": 50, "label": "LOC", "start": 42}], "synthetic": true, "text": "Tisbra Daxbrazor works at Calber Group in Urcalsel."}
+{"id": "ner_0032", "spans": [{"end": 16, "label": "ORG", "start": 4}, {"end": 35, "label": "LOC", "start": 27}, {"end": 54, "label": "PER", "start": 42}], "synthetic": true, "text": "The Andoqui Corp office in Melvutis hired Ko Penquiber."}
+{"id": "ner_0033", "spans": [{"end": 16, "label": "ORG", "start": 4}, {"end": 35, "label": "LOC", "start": 27}, {"end": 53, "label": "PER", "start": 42}], "synthetic": true, "text": "The Selando Labs office in Bertanko hired Li Vumorpen."}
+{"id": "ner_0034", "spans": [{"end": 24, "label": "PER", "start": 11}, {"end": 40, "label": "ORG", "start": 30}], "synthetic": true, "text": "Reportedly Cal Fentanvik told Quiko Corp about the plan."}
+{"id": "ner_0035", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 33, "label": "ORG", "start": 22}, {"end": 46, "label": "LOC", "start": 37}], "synthetic": true, "text": "Vu Meltispen works at Brasel Labs in Vikberbra."}
+{"id": "ner_0036", "spans": [{"end": 8, "label": "LOC", "start": 0}], "synthetic": true, "text": "Calmorko is cold in winter."}
+{"id": "ner_0037", "spans": [{"end": 16, "label": "PER", "start": 0}, {"end": 42, "label": "ORG", "start": 26}, {"end": 57, "label": "LOC", "start": 46}], "synthetic": true, "text": "Tansel Nortispen works at Zortis Institute in Port-Selbra."}
+{"id": "ner_0038", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0039", "spans": [{"end": 12, "label": "ORG", "start": 0}, {"end": 44, "label": "LOC", "start": 34}, {"end": 64, "label": "PER", "start": 51}], "synthetic": true, "text": "Pennor Group opened a branch near Andopenfen, said Kozor Kolizor."}
+{"id": "ner_0040", "spans": [{"end": 16, "label": "ORG", "start": 4}, {"end": 36, "label": "LOC", "start": 27}, {"end": 57, "label": "PER", "start": 43}], "synthetic": true, "text": "The Andotis Labs office in Bradaxbra hired Tisko Berurcal."}
+{"id": "ner_0041", "spans": [{"end": 16, "label": "PER", "start": 0}, {"end": 31, "label": "LOC", "start": 22}, {"end": 45, "label": "LOC", "start": 36}], "synthetic": true, "text": "Andour Calbermor left Daxdaxzor for Daxselbra."}
+{"id": "ner_0042", "spans": [{"end": 11, "label": "LOC", "start": 0}], "synthetic": true, "text": "Port-Bersel is cold in winter."}
+{"id": "ner_0043", "spans": [{"end": 10, "label": "PER", "start": 0}, {"end": 27, "label": "PER", "start": 15}, {"end": 47, "label": "LOC", "start": 36}], "synthetic": true, "text": "Ber Norbra and Branor Daxur visited Port-Tisdax last week."}
+{"id": "ner_0044", "spans": [{"end": 23, "label": "PER", "start": 10}, {"end": 40, "label": "ORG", "start": 29}], "synthetic": true, "text": "Last week Zorfen Penmor told Vuvik Works about the plan."}
+{"id": "ner_0045", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 23, "label": "LOC", "start": 18}, {"end": 34, "label": "LOC", "start": 28}], "synthetic": true, "text": "Tan Quiquivu left Fenko for Daxmel."}
+{"id": "ner_0046", "spans": [{"end": 9, "label": "LOC", "start": 0}], "synthetic": true, "text": "Viktanfen is cold in winter."}
+{"id": "ner_0047", "spans": [{"end": 16, "label": "ORG", "start": 4}, {"end": 38, "label": "LOC", "start": 27}, {"end": 55, "label": "PER", "start": 45}], "synthetic": true, "text": "The Andoli Group office in Port-Melqui hired Bra Bermel."}
+{"id": "ner_0048", "spans": [{"end": 23, "label": "PER", "start": 10}, {"end": 40, "label": "ORG", "start": 29}], "synthetic": true, "text": "Yesterday Calzor Norzor told Tistan Labs about the plan."}
+{"id": "ner_0049", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0050", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 29, "label": "PER", "start": 17}, {"end": 46, "label": "LOC", "start": 38}], "synthetic": true, "text": "Li Calcaldax and Quical Urber visited Seltisvu last week."}
+{"id": "ner_0051", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 28, "label": "PER", "start": 18}, {"end": 42, "label": "LOC", "start": 37}], "synthetic": true, "text": "Urpen Vufenko and Ando Urqui visited Morli last week."}
+{"id": "ner_0052", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 39, "label": "LOC", "start": 33}, {"end": 55, "label": "PER", "start": 46}], "synthetic": true, "text": "Urmel Group opened a branch near Zorqui, said Mel Melvu."}
+{"id": "ner_0053", "spans": [{"end": 16, "label": "PER", "start": 0}, {"end": 31, "label": "PER", "start": 21}, {"end": 48, "label": "LOC", "start": 40}], "synthetic": true, "text": "Braqui Morcalqui and Bra Berdax visited Bermelur last week."}
+{"id": "ner_0054", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 37, "label": "ORG", "start": 25}, {"end": 48, "label": "LOC", "start": 41}], "synthetic": true, "text": "Morvik Mellimel works at Tiscal Group in Quiando."}
+{"id": "ner_0055", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 43, "label": "LOC", "start": 33}, {"end": 62, "label": "PER", "start": 50}], "synthetic": true, "text": "Fenvik Corp opened a branch near Port-Urdax, said Tanur Mornor."}
+{"id": "ner_0056", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0057", "spans": [{"end": 19, "label": "ORG", "start": 4}, {"end": 35, "label": "LOC", "start": 30}, {"end": 55, "label": "PER", "start": 42}], "synthetic": true, "text": "The Quivu Institute office in Komel hired Sel Daxselzor."}
+{"id": "ner_0058", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 27, "label": "LOC", "start": 18}, {"end": 41, "label": "LOC", "start": 32}], "synthetic": true, "text": "Vikcal Penli left Berdaxmel for Port-Urko."}
+{"id": "ner_0059", "spans": [{"end": 19, "label": "ORG", "start": 4}, {"end": 38, "label": "LOC", "start": 30}, {"end": 55, "label": "PER", "start": 45}], "synthetic": true, "text": "The Limel Institute office in Braursel hired Fen Seldax."}
+{"id": "ner_0060", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0061", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 34, "label": "ORG", "start": 22}, {"end": 49, "label": "LOC", "start": 38}], "synthetic": true, "text": "Calli Penber works at Norsel Works in Port-Bercal."}
+{"id": "ner_0062", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0063", "spans": [{"end": 15, "label": "ORG", "start": 0}, {"end": 46, "label": "LOC", "start": 37}, {"end": 61, "label": "PER", "start": 53}], "synthetic": true, "text": "Lifen Institute opened a branch near Zorbertis, said Vu Tisli."}
+{"id": "ner_0064", "spans": [{"end": 11, "label": "PER", "start": 0}, {"end": 23, "label": "LOC", "start": 17}, {"end": 34, "label": "LOC", "start": 28}], "synthetic": true, "text": "Ur Tiskovik left Zortis for Norpen."}
+{"id": "ner_0065", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 36, "label": "PER", "start": 20}, {"end": 55, "label": "LOC", "start": 45}], "synthetic": true, "text": "Quical Melbervu and Zorqui Tispennor visited Port-Vikvu last week."}
+{"id": "ner_0066", "spans": [{"end": 15, "label": "ORG", "start": 4}, {"end": 35, "label": "LOC", "start": 26}, {"end": 52, "label": "PER", "start": 42}], "synthetic": true, "text": "The Melvik Labs office in Mortancal hired Sel Quizor."}
+{"id": "ner_0067", "spans": [{"end": 25, "label": "PER", "start": 10}, {"end": 42, "label": "ORG", "start": 31}], "synthetic": true, "text": "Yesterday Urcal Viktanmel told Seldax Labs about the plan."}
+{"id": "ner_0068", "spans": [{"end": 25, "label": "PER", "start": 10}, {"end": 43, "label": "ORG", "start": 31}], "synthetic": true, "text": "Last week Urqui Bercalzor told Quipen Works about the plan."}
+{"id": "ner_0069", "spans": [{"end": 20, "label": "ORG", "start": 4}, {"end": 39, "label": "LOC", "start": 31}, {"end": 59, "label": "PER", "start": 46}], "synthetic": true, "text": "The Penmor Institute office in Selselli hired Braando Zorko."}
+{"id": "ner_0070", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0071", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0072", "spans": [{"end": 8, "label": "LOC", "start": 0}], "synthetic": true, "text": "Tanursel is cold in winter."}
+{"id": "ner_0073", "spans": [{"end": 11, "label": "LOC", "start": 0}], "synthetic": true, "text": "Port-Bersel is cold in winter."}
+{"id": "ner_0074", "spans": [{"end": 10, "label": "ORG", "start": 0}, {"end": 39, "label": "LOC", "start": 32}, {"end": 55, "label": "PER", "start": 46}], "synthetic": true, "text": "Tanli Labs opened a branch near Kofenvu, said Qui Melvu."}
+{"id": "ner_0075", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 32, "label": "LOC", "start": 21}, {"end": 43, "label": "LOC", "start": 37}], "synthetic": true, "text": "Kobra Selselmel left Port-Selmel for Viktis."}
+{"id": "ner_0076", "spans": [{"end": 22, "label": "PER", "start": 10}, {"end": 38, "label": "ORG", "start": 28}], "synthetic": true, "text": "Yesterday Bermor Koqui told Quiko Corp about the plan."}
+{"id": "ner_0077", "spans": [{"end": 10, "label": "LOC", "start": 0}], "synthetic": true, "text": "Port-Kober is cold in winter."}
+{"id": "ner_0078", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0079", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0080", "spans": [{"end": 6, "label": "LOC", "start": 0}], "synthetic": true, "text": "Tanber is cold in winter."}
+{"id": "ner_0081", "spans": [{"end": 16, "label": "ORG", "start": 4}, {"end": 35, "label": "LOC", "start": 27}, {"end": 53, "label": "PER", "start": 42}], "synthetic": true, "text": "The Tisqui Works office in Melmelvu hired Quiqui Liur."}
+{"id": "ner_0082", "spans": [{"end": 20, "label": "PER", "start": 6}, {"end": 38, "label": "ORG", "start": 26}], "synthetic": true, "text": "Today Penur Urmorzor told Tismel Works about the plan."}
+{"id": "ner_0083", "spans": [{"end": 24, "label": "PER", "start": 11}, {"end": 42, "label": "ORG", "start": 30}], "synthetic": true, "text": "Reportedly Dax Quitissel told Daxmor Group about the plan."}
+{"id": "ner_0084", "spans": [{"end": 18, "label": "PER", "start": 10}, {"end": 35, "label": "ORG", "start": 24}], "synthetic": true, "text": "Yesterday Vu Fenko told Tanzor Corp about the plan."}
+{"id": "ner_0085", "spans": [{"end": 6, "label": "LOC", "start": 0}], "synthetic": true, "text": "Fentis is cold in winter."}
+{"id": "ner_0086", "spans": [{"end": 21, "label": "PER", "start": 11}, {"end": 38, "label": "ORG", "start": 27}], "synthetic": true, "text": "Reportedly Tis Melbra told Zorvu Group about the plan."}
+{"id": "ner_0087", "spans": [{"end": 14, "label": "PER", "start": 0}, {"end": 33, "label": "PER", "start": 19}, {"end": 48, "label": "LOC", "start": 42}], "synthetic": true, "text": "Selmor Fenando and Mor Quizorando visited Penqui last week."}
+{"id": "ner_0088", "spans": [{"end": 10, "label": "PER", "start": 0}, {"end": 25, "label": "PER", "start": 15}, {"end": 44, "label": "LOC", "start": 34}], "synthetic": true, "text": "Pen Meldax and Cal Melmor visited Port-Urmel last week."}
+{"id": "ner_0089", "spans": [{"end": 11, "label": "LOC", "start": 0}], "synthetic": true, "text": "Port-Fencal is cold in winter."}
+{"id": "ner_0090", "spans": [{"end": 15, "label": "ORG", "start": 4}, {"end": 34, "label": "LOC", "start": 26}, {"end": 50, "label": "PER", "start": 41}], "synthetic": true, "text": "The Norqui Labs office in Selkodax hired Zor Selko."}
+{"id": "ner_0091", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0092", "spans": [{"end": 11, "label": "PER", "start": 0}, {"end": 32, "label": "ORG", "start": 21}, {"end": 42, "label": "LOC", "start": 36}], "synthetic": true, "text": "Morur Zorli works at Quili Works in Tanmor."}
+{"id": "ner_0093", "spans": [{"end": 12, "label": "ORG", "start": 0}, {"end": 43, "label": "LOC", "start": 34}, {"end": 61, "label": "PER", "start": 50}], "synthetic": true, "text": "Berqui Group opened a branch near Quidaxtan, said Ber Vikando."}
+{"id": "ner_0094", "spans": [{"end": 15, "label": "PER", "start": 6}, {"end": 38, "label": "ORG", "start": 21}], "synthetic": true, "text": "Today Vu Tanqui told Andoqui Institute about the plan."}
+{"id": "ner_0095", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0096", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 39, "label": "LOC", "start": 33}, {"end": 60, "label": "PER", "start": 46}], "synthetic": true, "text": "Melvu Works opened a branch near Fenvik, said Kovu Quiselvik."}
+{"id": "ner_0097", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0098", "spans": [{"end": 10, "label": "PER", "start": 0}, {"end": 24, "label": "PER", "start": 15}, {"end": 39, "label": "LOC", "start": 33}], "synthetic": true, "text": "Pen Penpen and Mor Lidax visited Daxfen last week."}
+{"id": "ner_0099", "spans": [{"end": 8, "label": "PER", "start": 0}, {"end": 23, "label": "LOC", "start": 14}, {"end": 36, "label": "LOC", "start": 28}], "synthetic": true, "text": "Li Limel left Andotanko for Berurcal."}
+{"id": "ner_0100", "spans": [{"end": 10, "label": "ORG", "start": 0}, {"end": 40, "label": "LOC", "start": 32}, {"end": 63, "label": "PER", "start": 47}], "synthetic": true, "text": "Quivu Corp opened a branch near Urcalfen, said Penmel Vikpentan."}
+{"id": "ner_0101", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0102", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 26, "label": "LOC", "start": 18}, {"end": 41, "label": "LOC", "start": 31}], "synthetic": true, "text": "Pen Tanursel left Melbrali for Vikandober."}
+{"id": "ner_0103", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 39, "label": "LOC", "start": 33}, {"end": 59, "label": "PER", "start": 46}], "synthetic": true, "text": "Vikqui Labs opened a branch near Norbra, said Sel Daxandoli."}
+{"id": "ner_0104", "spans": [{"end": 10, "label": "PER", "start": 0}, {"end": 25, "label": "LOC", "start": 16}, {"end": 36, "label": "LOC", "start": 30}], "synthetic": true, "text": "Vik Quimel left Berquimor for Bermor."}
+{"id": "ner_0105", "spans": [{"end": 16, "label": "ORG", "start": 0}, {"end": 43, "label": "LOC", "start": 38}, {"end": 65, "label": "PER", "start": 50}], "synthetic": true, "text": "Quidax Institute opened a branch near Liber, said Selsel Tanlifen."}
+{"id": "ner_0106", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 27, "label": "LOC", "start": 19}, {"end": 43, "label": "LOC", "start": 32}], "synthetic": true, "text": "Calbra Melfen left Selvumor for Port-Morzor."}
+{"id": "ner_0107", "spans": [{"end": 10, "label": "PER", "start": 0}, {"end": 24, "label": "LOC", "start": 16}, {"end": 33, "label": "LOC", "start": 29}], "synthetic": true, "text": "Tan Pencal left Morlinor for Vuvu."}
+{"id": "ner_0108", "spans": [{"end": 20, "label": "PER", "start": 6}, {"end": 42, "label": "ORG", "start": 26}], "synthetic": true, "text": "Today Lisel Urandoli told Tispen Institute about the plan."}
+{"id": "ner_0109", "spans": [{"end": 11, "label": "LOC", "start": 0}], "synthetic": true, "text": "Port-Zorsel is cold in winter."}
+{"id": "ner_0110", "spans": [{"end": 15, "label": "ORG", "start": 4}, {"end": 31, "label": "LOC", "start": 26}, {"end": 48, "label": "PER", "start": 38}], "synthetic": true, "text": "The Vutis Group office in Brako hired Qui Daxtis."}
+{"id": "ner_0111", "spans": [{"end": 11, "label": "PER", "start": 0}, {"end": 22, "label": "LOC", "start": 17}, {"end": 36, "label": "LOC", "start": 27}], "synthetic": true, "text": "Ur Lipenzor left Daxli for Tantisdax."}
+{"id": "ner_0112", "spans": [{"end": 20, "label": "ORG", "start": 4}, {"end": 42, "label": "LOC", "start": 31}, {"end": 62, "label": "PER", "start": 49}], "synthetic": true, "text": "The Tissel Institute office in Port-Fenbra hired Kodax Tanando."}
+{"id": "ner_0113", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0114", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 33, "label": "PER", "start": 17}, {"end": 47, "label": "LOC", "start": 42}], "synthetic": true, "text": "Qui Caltisur and Morbra Penpenzor visited Kober last week."}
+{"id": "ner_0115", "spans": [{"end": 10, "label": "LOC", "start": 0}], "synthetic": true, "text": "Port-Vusel is cold in winter."}
+{"id": "ner_0116", "spans": [{"end": 21, "label": "PER", "start": 11}, {"end": 38, "label": "ORG", "start": 27}], "synthetic": true, "text": "Reportedly Nor Tanpen told Penvu Group about the plan."}
+{"id": "ner_0117", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 42, "label": "LOC", "start": 33}, {"end": 60, "label": "PER", "start": 49}], "synthetic": true, "text": "Pentan Labs opened a branch near Tantisdax, said Vu Vikbravu."}
+{"id": "ner_0118", "spans": [{"end": 10, "label": "ORG", "start": 0}, {"end": 38, "label": "LOC", "start": 32}, {"end": 59, "label": "PER", "start": 45}], "synthetic": true, "text": "Fenli Labs opened a branch near Berfen, said Sel Quiandoqui."}
+{"id": "ner_0119", "spans": [{"end": 14, "label": "ORG", "start": 0}, {"end": 47, "label": "LOC", "start": 36}, {"end": 67, "label": "PER", "start": 54}], "synthetic": true, "text": "Vuko Institute opened a branch near Port-Norzor, said Tis Berdaxfen."}
+{"id": "ner_0120", "spans": [{"end": 16, "label": "ORG", "start": 4}, {"end": 33, "label": "LOC", "start": 27}, {"end": 55, "label": "PER", "start": 40}], "synthetic": true, "text": "The Fenber Group office in Viktis hired Fentan Libersel."}
+{"id": "ner_0121", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0122", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0123", "spans": [{"end": 10, "label": "ORG", "start": 0}, {"end": 39, "label": "LOC", "start": 32}, {"end": 59, "label": "PER", "start": 46}], "synthetic": true, "text": "Vutis Corp opened a branch near Likocal, said Pen Berbraqui."}
+{"id": "ner_0124", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 34, "label": "ORG", "start": 23}, {"end": 49, "label": "LOC", "start": 38}], "synthetic": true, "text": "Zordax Tisber works at Daxber Corp in Port-Nortan."}
+{"id": "ner_0125", "spans": [{"end": 9, "label": "LOC", "start": 0}], "synthetic": true, "text": "Zorselpen is cold in winter."}
+{"id": "ner_0126", "spans": [{"end": 14, "label": "PER", "start": 0}, {"end": 35, "label": "ORG", "start": 24}, {"end": 44, "label": "LOC", "start": 39}], "synthetic": true, "text": "Tisqui Livikli works at Normel Labs in Calur."}
+{"id": "ner_0127", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0128", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 27, "label": "LOC", "start": 21}, {"end": 40, "label": "LOC", "start": 32}], "synthetic": true, "text": "Norvik Bervupen left Bersel for Vuselsel."}
+{"id": "ner_0129", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 28, "label": "LOC", "start": 19}, {"end": 42, "label": "LOC", "start": 33}], "synthetic": true, "text": "Fenpen Tannor left Fenmorcal for Tanzorqui."}
+{"id": "ner_0130", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 31, "label": "PER", "start": 18}, {"end": 45, "label": "LOC", "start": 40}], "synthetic": true, "text": "Ber Selquivik and Fen Fenbravik visited Daxli last week."}
+{"id": "ner_0131", "spans": [{"end": 12, "label": "ORG", "start": 0}, {"end": 39, "label": "LOC", "start": 34}, {"end": 58, "label": "PER", "start": 46}], "synthetic": true, "text": "Bradax Group opened a branch near Tanvu, said Vik Callimel."}
+{"id": "ner_0132", "spans": [{"end": 6, "label": "LOC", "start": 0}], "synthetic": true, "text": "Tiszor is cold in winter."}
+{"id": "ner_0133", "spans": [{"end": 15, "label": "ORG", "start": 4}, {"end": 38, "label": "LOC", "start": 26}, {"end": 56, "label": "PER", "start": 45}], "synthetic": true, "text": "The Vikko Works office in Port-Andovik hired Zor Andodax."}
+{"id": "ner_0134", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0135", "spans": [{"end": 10, "label": "LOC", "start": 0}], "synthetic": true, "text": "Port-Tisvu is cold in winter."}
+{"id": "ner_0136", "spans": [{"end": 24, "label": "PER", "start": 10}, {"end": 45, "label": "ORG", "start": 30}], "synthetic": true, "text": "Last week Sel Andopencal told Selko Institute about the plan."}
+{"id": "ner_0137", "spans": [{"end": 6, "label": "LOC", "start": 0}], "synthetic": true, "text": "Quidax is cold in winter."}
+{"id": "ner_0138", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 44, "label": "LOC", "start": 33}, {"end": 60, "label": "PER", "start": 51}], "synthetic": true, "text": "Brasel Labs opened a branch near Port-Penbra, said Nor Fenur."}
+{"id": "ner_0139", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0140", "spans": [{"end": 11, "label": "LOC", "start": 0}], "synthetic": true, "text": "Port-Seldax is cold in winter."}
+{"id": "ner_0141", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 29, "label": "PER", "start": 17}, {"end": 44, "label": "LOC", "start": 38}], "synthetic": true, "text": "Liqui Daxsel and Vik Vumelzor visited Penvik last week."}
+{"id": "ner_0142", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 31, "label": "PER", "start": 18}, {"end": 50, "label": "LOC", "start": 40}], "synthetic": true, "text": "Pendax Norpen and Tanmor Brabra visited Port-Selli last week."}
+{"id": "ner_0143", "spans": [{"end": 10, "label": "PER", "start": 0}, {"end": 37, "label": "ORG", "start": 20}, {"end": 50, "label": "LOC", "start": 41}], "synthetic": true, "text": "Qui Seltis works at Calando Institute in Tandaxpen."}
+{"id": "ner_0144", "spans": [{"end": 12, "label": "ORG", "start": 0}, {"end": 45, "label": "LOC", "start": 34}, {"end": 65, "label": "PER", "start": 52}], "synthetic": true, "text": "Bramel Group opened a branch near Port-Melcal, said Pen Norquibra."}
+{"id": "ner_0145", "spans": [{"end": 21, "label": "PER", "start": 10}, {"end": 39, "label": "ORG", "start": 27}], "synthetic": true, "text": "Last week Cal Urtanvu told Andobra Labs about the plan."}
+{"id": "ner_0146", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 40, "label": "LOC", "start": 33}, {"end": 60, "label": "PER", "start": 47}], "synthetic": true, "text": "Melur Group opened a branch near Limorli, said Calpen Selzor."}
+{"id": "ner_0147", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 31, "label": "LOC", "start": 21}, {"end": 47, "label": "LOC", "start": 36}], "synthetic": true, "text": "Vuzor Vikberfen left Port-Penur for Port-Norcal."}
+{"id": "ner_0148", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 33, "label": "PER", "start": 20}, {"end": 53, "label": "LOC", "start": 42}], "synthetic": true, "text": "Bracal Bradaxvu and Livu Zorvikli visited Port-Tisber last week."}
+{"id": "ner_0149", "spans": [{"end": 13, "label": "ORG", "start": 0}, {"end": 40, "label": "LOC", "start": 35}, {"end": 60, "label": "PER", "start": 47}], "synthetic": true, "text": "Andocal Group opened a branch near Zorvu, said Tisvu Livunor."}
+{"id": "ner_0150", "spans": [{"end": 9, "label": "LOC", "start": 0}], "synthetic": true, "text": "Bradaxmel is cold in winter."}
+{"id": "ner_0151", "spans": [{"end": 14, "label": "ORG", "start": 4}, {"end": 34, "label": "LOC", "start": 25}, {"end": 55, "label": "PER", "start": 41}], "synthetic": true, "text": "The Vuzor Corp office in Quipenbra hired Andocal Fennor."}
+{"id": "ner_0152", "spans": [{"end": 18, "label": "PER", "start": 6}, {"end": 39, "label": "ORG", "start": 24}], "synthetic": true, "text": "Today Daxur Calqui told Calli Institute about the plan."}
+{"id": "ner_0153", "spans": [{"end": 15, "label": "ORG", "start": 4}, {"end": 35, "label": "LOC", "start": 26}, {"end": 55, "label": "PER", "start": 42}], "synthetic": true, "text": "The Seldax Labs office in Tisselmel hired Fentis Quidax."}
+{"id": "ner_0154", "spans": [{"end": 22, "label": "PER", "start": 10}, {"end": 39, "label": "ORG", "start": 28}], "synthetic": true, "text": "Last week Litan Fenqui told Calbra Corp about the plan."}
+{"id": "ner_0155", "spans": [{"end": 20, "label": "ORG", "start": 4}, {"end": 36, "label": "LOC", "start": 31}, {"end": 61, "label": "PER", "start": 43}], "synthetic": true, "text": "The Brabra Institute office in Norko hired Morando Tisnorando."}
+{"id": "ner_0156", "spans": [{"end": 11, "label": "LOC", "start": 0}], "synthetic": true, "text": "Port-Seltan is cold in winter."}
+{"id": "ner_0157", "spans": [{"end": 20, "label": "ORG", "start": 4}, {"end": 41, "label": "LOC", "start": 31}, {"end": 61, "label": "PER", "start": 48}], "synthetic": true, "text": "The Bertis Institute office in Andocalbra hired Selur Norando."}
+{"id": "ner_0158", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 35, "label": "PER", "start": 20}, {"end": 53, "label": "LOC", "start": 44}], "synthetic": true, "text": "Tanando Calvuko and Vikfen Fenlimel visited Zormeltan last week."}
+{"id": "ner_0159", "spans": [{"end": 14, "label": "PER", "start": 0}, {"end": 36, "label": "ORG", "start": 24}, {"end": 45, "label": "LOC", "start": 40}], "synthetic": true, "text": "Cal Vikfenando works at Seldax Group in Tisli."}
+{"id": "ner_0160", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0161", "spans": [{"end": 10, "label": "PER", "start": 0}, {"end": 35, "label": "ORG", "start": 20}, {"end": 50, "label": "LOC", "start": 39}], "synthetic": true, "text": "Tis Zortan works at Berli Institute in Port-Tisqui."}
+{"id": "ner_0162", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 35, "label": "ORG", "start": 23}, {"end": 50, "label": "LOC", "start": 39}], "synthetic": true, "text": "Tan Fenselvik works at Norqui Works in Port-Melmel."}
+{"id": "ner_0163", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0164", "spans": [{"end": 16, "label": "PER", "start": 0}, {"end": 33, "label": "PER", "start": 21}, {"end": 51, "label": "LOC", "start": 42}], "synthetic": true, "text": "Quizor Tanbernor and Mor Morfenko visited Quifenvik last week."}
+{"id": "ner_0165", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0166", "spans": [{"end": 8, "label": "LOC", "start": 0}], "synthetic": true, "text": "Mortanko is cold in winter."}
+{"id": "ner_0167", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0168", "spans": [{"end": 21, "label": "PER", "start": 6}, {"end": 38, "label": "ORG", "start": 27}], "synthetic": true, "text": "Today Kobra Calcalqui told Melsel Labs about the plan."}
+{"id": "ner_0169", "spans": [{"end": 14, "label": "PER", "start": 0}, {"end": 29, "label": "PER", "start": 19}, {"end": 44, "label": "LOC", "start": 38}], "synthetic": true, "text": "Andobra Quiqui and Berko Liko visited Berbra last week."}
+{"id": "ner_0170", "spans": [{"end": 23, "label": "PER", "start": 11}, {"end": 40, "label": "ORG", "start": 29}], "synthetic": true, "text": "Reportedly Penur Quimel told Tisvu Works about the plan."}
+{"id": "ner_0171", "spans": [{"end": 20, "label": "ORG", "start": 4}, {"end": 36, "label": "LOC", "start": 31}, {"end": 53, "label": "PER", "start": 43}], "synthetic": true, "text": "The Meltan Institute office in Melko hired Bra Quitan."}
+{"id": "ner_0172", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 34, "label": "PER", "start": 20}, {"end": 51, "label": "LOC", "start": 43}], "synthetic": true, "text": "Kovik Tisviknor and Pen Penandofen visited Vikkonor last week."}
+{"id": "ner_0173", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0174", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0175", "spans": [{"end": 9, "label": "LOC", "start": 0}], "synthetic": true, "text": "Vikfenvik is cold in winter."}
+{"id": "ner_0176", "spans": [{"end": 20, "label": "ORG", "start": 4}, {"end": 37, "label": "LOC", "start": 31}, {"end": 56, "label": "PER", "start": 44}], "synthetic": true, "text": "The Zorbra Institute office in Melzor hired Zorzor Limel."}
+{"id": "ner_0177", "spans": [{"end": 19, "label": "ORG", "start": 4}, {"end": 41, "label": "LOC", "start": 30}, {"end": 59, "label": "PER", "start": 48}], "synthetic": true, "text": "The Morur Institute office in Port-Quivik hired Ando Selsel."}
+{"id": "ner_0178", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0179", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 42, "label": "ORG", "start": 25}, {"end": 52, "label": "LOC", "start": 46}], "synthetic": true, "text": "Urqui Calquimel works at Andomor Institute in Tanzor."}
+{"id": "ner_0180", "spans": [{"end": 21, "label": "PER", "start": 10}, {"end": 39, "label": "ORG", "start": 27}], "synthetic": true, "text": "Last week Tan Andonor told Tisdax Works about the plan."}
+{"id": "ner_0181", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0182", "spans": [{"end": 19, "label": "PER", "start": 6}, {"end": 36, "label": "ORG", "start": 25}], "synthetic": true, "text": "Today Fen Vikdaxcal told Penbra Labs about the plan."}
+{"id": "ner_0183", "spans": [{"end": 7, "label": "PER", "start": 0}, {"end": 25, "label": "PER", "start": 12}, {"end": 44, "label": "LOC", "start": 34}], "synthetic": true, "text": "Vu Livu and Brafen Norsel visited Port-Litis last week."}
+{"id": "ner_0184", "spans": [{"end": 5, "label": "LOC", "start": 0}], "synthetic": true, "text": "Vutis is cold in winter."}
+{"id": "ner_0185", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0186", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 34, "label": "PER", "start": 18}, {"end": 49, "label": "LOC", "start": 43}], "synthetic": true, "text": "Zor Fenzordax and Fentan Mornornor visited Vikbra last week."}
+{"id": "ner_0187", "spans": [{"end": 14, "label": "ORG", "start": 4}, {"end": 30, "label": "LOC", "start": 25}, {"end": 50, "label": "PER", "start": 37}], "synthetic": true, "text": "The Livu Works office in Vikur hired Nor Pentanfen."}
+{"id": "ner_0188", "spans": [{"end": 11, "label": "PER", "start": 0}, {"end": 26, "label": "LOC", "start": 17}, {"end": 42, "label": "LOC", "start": 31}], "synthetic": true, "text": "Nor Litanko left Vikviknor for Port-Tandax."}
+{"id": "ner_0189", "spans": [{"end": 16, "label": "ORG", "start": 4}, {"end": 31, "label": "LOC", "start": 27}, {"end": 52, "label": "PER", "start": 38}], "synthetic": true, "text": "The Morpen Group office in Vuko hired Vikur Quimorvu."}
+{"id": "ner_0190", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 38, "label": "ORG", "start": 22}, {"end": 52, "label": "LOC", "start": 42}], "synthetic": true, "text": "Meltis Selko works at Viknor Institute in Port-Lipen."}
+{"id": "ner_0191", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 39, "label": "LOC", "start": 33}, {"end": 59, "label": "PER", "start": 46}], "synthetic": true, "text": "Penmor Corp opened a branch near Melpen, said Litan Vupenvu."}
+{"id": "ner_0192", "spans": [{"end": 23, "label": "PER", "start": 10}, {"end": 42, "label": "ORG", "start": 29}], "synthetic": true, "text": "Last week Bra Penandoli told Andotis Works about the plan."}
+{"id": "ner_0193", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0194", "spans": [{"end": 8, "label": "LOC", "start": 0}], "synthetic": true, "text": "Norzorur is cold in winter."}
+{"id": "ner_0195", "spans": [{"end": 25, "label": "PER", "start": 10}, {"end": 43, "label": "ORG", "start": 31}], "synthetic": true, "text": "Last week Tisur Tisfenmel told Brabra Works about the plan."}
+{"id": "ner_0196", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 34, "label": "ORG", "start": 22}, {"end": 50, "label": "LOC", "start": 38}], "synthetic": true, "text": "Tis Urtisqui works at Braando Corp in Port-Tisando."}
+{"id": "ner_0197", "spans": [{"end": 16, "label": "ORG", "start": 4}, {"end": 33, "label": "LOC", "start": 27}, {"end": 52, "label": "PER", "start": 40}], "synthetic": true, "text": "The Tisbra Works office in Zormor hired Ber Morlifen."}
+{"id": "ner_0198", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 35, "label": "ORG", "start": 23}, {"end": 45, "label": "LOC", "start": 39}], "synthetic": true, "text": "Zorzor Zormel works at Brabra Group in Tanmel."}
+{"id": "ner_0199", "spans": [{"end": 15, "label": "ORG", "start": 4}, {"end": 36, "label": "LOC", "start": 26}, {"end": 58, "label": "PER", "start": 43}], "synthetic": true, "text": "The Kofen Works office in Port-Urtan hired Zorko Zorberfen."}
+{"id": "ner_0200", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 28, "label": "PER", "start": 18}, {"end": 48, "label": "LOC", "start": 37}], "synthetic": true, "text": "Tisqui Melnor and Pen Calzor visited Port-Fencal last week."}
+{"id": "ner_0201", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0202", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 38, "label": "LOC", "start": 33}, {"end": 57, "label": "PER", "start": 45}], "synthetic": true, "text": "Urmor Group opened a branch near Tanko, said Fenber Kofen."}
+{"id": "ner_0203", "spans": [{"end": 15, "label": "ORG", "start": 4}, {"end": 34, "label": "LOC", "start": 26}, {"end": 54, "label": "PER", "start": 41}], "synthetic": true, "text": "The Norli Works office in Tanvuqui hired Fen Brafennor."}
+{"id": "ner_0204", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 33, "label": "ORG", "start": 23}, {"end": 48, "label": "LOC", "start": 37}], "synthetic": true, "text": "Zortis Vikber works at Konor Labs in Port-Mornor."}
+{"id": "ner_0205", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 27, "label": "PER", "start": 17}, {"end": 43, "label": "LOC", "start": 36}], "synthetic": true, "text": "Penmel Penur and Li Andober visited Melando last week."}
+{"id": "ner_0206", "spans": [{"end": 11, "label": "ORG", "start": 0}, {"end": 42, "label": "LOC", "start": 33}, {"end": 65, "label": "PER", "start": 49}], "synthetic": true, "text": "Calmel Labs opened a branch near Morselzor, said Vuando Zormelqui."}
+{"id": "ner_0207", "spans": [{"end": 11, "label": "PER", "start": 0}, {"end": 32, "label": "ORG", "start": 21}, {"end": 41, "label": "LOC", "start": 36}], "synthetic": true, "text": "Penvu Quiur works at Meltis Labs in Penur."}
+{"id": "ner_0208", "spans": [{"end": 14, "label": "ORG", "start": 4}, {"end": 37, "label": "LOC", "start": 25}, {"end": 58, "label": "PER", "start": 44}], "synthetic": true, "text": "The Melli Labs office in Port-Penando hired Daxmel Liurpen."}
+{"id": "ner_0209", "spans": [{"end": 21, "label": "PER", "start": 10}, {"end": 39, "label": "ORG", "start": 27}], "synthetic": true, "text": "Last week Selko Urbra told Quisel Group about the plan."}
+{"id": "ner_0210", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0211", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0212", "spans": [{"end": 10, "label": "ORG", "start": 0}, {"end": 41, "label": "LOC", "start": 32}, {"end": 62, "label": "PER", "start": 48}], "synthetic": true, "text": "Penur Corp opened a branch near Bratisqui, said Dax Andocalzor."}
+{"id": "ner_0213", "spans": [{"end": 10, "label": "PER", "start": 0}, {"end": 32, "label": "ORG", "start": 20}, {"end": 42, "label": "LOC", "start": 36}], "synthetic": true, "text": "Cal Tanbra works at Seltis Works in Quimor."}
+{"id": "ner_0214", "spans": [{"end": 22, "label": "PER", "start": 10}, {"end": 40, "label": "ORG", "start": 28}], "synthetic": true, "text": "Yesterday Cal Selfenur told Brabra Works about the plan."}
+{"id": "ner_0215", "spans": [{"end": 9, "label": "PER", "start": 0}, {"end": 26, "label": "LOC", "start": 15}, {"end": 37, "label": "LOC", "start": 31}], "synthetic": true, "text": "Ur Norpen left Port-Tisber for Morcal."}
+{"id": "ner_0216", "spans": [{"end": 17, "label": "PER", "start": 0}, {"end": 37, "label": "ORG", "start": 27}, {"end": 47, "label": "LOC", "start": 41}], "synthetic": true, "text": "Tisnor Zorselando works at Urli Group in Quibra."}
+{"id": "ner_0217", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0218", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0219", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 38, "label": "ORG", "start": 23}, {"end": 53, "label": "LOC", "start": 42}], "synthetic": true, "text": "Tan Urquiando works at Vikvu Institute in Port-Penzor."}
+{"id": "ner_0220", "spans": [{"end": 17, "label": "PER", "start": 0}, {"end": 29, "label": "LOC", "start": 23}, {"end": 45, "label": "LOC", "start": 34}], "synthetic": true, "text": "Andober Mortisfen left Quinor for Port-Viksel."}
+{"id": "ner_0221", "spans": [{"end": 12, "label": "ORG", "start": 0}, {"end": 43, "label": "LOC", "start": 34}, {"end": 65, "label": "PER", "start": 50}], "synthetic": true, "text": "Zorpen Group opened a branch near Tanmorcal, said Penko Vikcalqui."}
+{"id": "ner_0222", "spans": [{"end": 15, "label": "ORG", "start": 4}, {"end": 37, "label": "LOC", "start": 26}, {"end": 55, "label": "PER", "start": 44}], "synthetic": true, "text": "The Calko Group office in Port-Pencal hired Ur Quiurnor."}
+{"id": "ner_0223", "spans": [{"end": 6, "label": "LOC", "start": 0}], "synthetic": true, "text": "Quipen is cold in winter."}
+{"id": "ner_0224", "spans": [{"end": 17, "label": "PER", "start": 6}, {"end": 38, "label": "ORG", "start": 23}], "synthetic": true, "text": "Today Bra Zorvuli told Fenvu Institute about the plan."}
+{"id": "ner_0225", "spans": [{"end": 20, "label": "ORG", "start": 4}, {"end": 40, "label": "LOC", "start": 31}, {"end": 55, "label": "PER", "start": 47}], "synthetic": true, "text": "The Koando Institute office in Quipenmel hired Mel Liko."}
+{"id": "ner_0226", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0227", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 33, "label": "ORG", "start": 22}, {"end": 44, "label": "LOC", "start": 37}], "synthetic": true, "text": "Mor Kotissel works at Norvik Labs in Andobra."}
+{"id": "ner_0228", "spans": [{"end": 13, "label": "PER", "start": 0}, {"end": 32, "label": "PER", "start": 18}, {"end": 50, "label": "LOC", "start": 41}], "synthetic": true, "text": "Mor Melmorcal and Mor Andoquibra visited Port-Liko last week."}
+{"id": "ner_0229", "spans": [{"end": 11, "label": "PER", "start": 0}, {"end": 23, "label": "LOC", "start": 17}, {"end": 33, "label": "LOC", "start": 28}], "synthetic": true, "text": "Lifen Urzor left Selcal for Kobra."}
+{"id": "ner_0230", "spans": [{"end": 12, "label": "ORG", "start": 0}, {"end": 42, "label": "LOC", "start": 34}, {"end": 61, "label": "PER", "start": 49}], "synthetic": true, "text": "Vikfen Group opened a branch near Quimorko, said Qui Braurmor."}
+{"id": "ner_0231", "spans": [{"end": 16, "label": "ORG", "start": 0}, {"end": 44, "label": "LOC", "start": 38}, {"end": 63, "label": "PER", "start": 51}], "synthetic": true, "text": "Daxsel Institute opened a branch near Penvik, said Melber Limor."}
+{"id": "ner_0232", "spans": [{"end": 10, "label": "LOC", "start": 0}], "synthetic": true, "text": "Port-Vutan is cold in winter."}
+{"id": "ner_0233", "spans": [{"end": 12, "label": "PER", "start": 0}, {"end": 27, "label": "LOC", "start": 18}, {"end": 43, "label": "LOC", "start": 32}], "synthetic": true, "text": "Qui Quivudax left Melbrasel for Port-Berpen."}
+{"id": "ner_0234", "spans": [{"end": 9, "label": "PER", "start": 0}, {"end": 21, "label": "LOC", "start": 15}, {"end": 32, "label": "LOC", "start": 26}], "synthetic": true, "text": "Bra Norko left Melfen for Tisnor."}
+{"id": "ner_0235", "spans": [{"end": 10, "label": "PER", "start": 0}, {"end": 32, "label": "ORG", "start": 20}, {"end": 47, "label": "LOC", "start": 36}], "synthetic": true, "text": "Vik Penpen works at Bersel Group in Port-Pentis."}
+{"id": "ner_0236", "spans": [{"end": 10, "label": "PER", "start": 0}, {"end": 33, "label": "PER", "start": 15}, {"end": 50, "label": "LOC", "start": 42}], "synthetic": true, "text": "Qui Braqui and Andomel Vikquiando visited Bracalvu last week."}
+{"id": "ner_0237", "spans": [{"end": 15, "label": "PER", "start": 0}, {"end": 31, "label": "LOC", "start": 21}, {"end": 42, "label": "LOC", "start": 36}], "synthetic": true, "text": "Kotis Tisfenber left Port-Vunor for Tanzor."}
+{"id": "ner_0238", "spans": [], "synthetic": true, "text": "Nothing happened in the meeting today."}
+{"id": "ner_0239", "spans": [{"end": 11, "label": "PER", "start": 0}, {"end": 24, "label": "LOC", "start": 17}, {"end": 40, "label": "LOC", "start": 29}], "synthetic": true, "text": "Tan Andober left Urvubra for Port-Zorvik."}

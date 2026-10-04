@@ -55,3 +55,12 @@ namex==0.1.0
 optree==0.20.0
 protobuf==7.36.2
 termcolor==3.3.0
+
+# ---- Milestone 6b: native domain workflows and evaluation references ----
+torchvision==0.29.1
+torchaudio==2.11.0
+tokenizers==0.23.2
+seqeval==1.2.2
+torchmetrics==1.9.0
+pycocotools==2.0.11
+jiwer==4.0.0

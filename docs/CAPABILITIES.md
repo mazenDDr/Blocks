@@ -196,7 +196,7 @@ Known gaps: PPO and other algorithms, continuous actions, async vector envs, exa
 ## Milestone 6a: additional backends, compatibility reports, coverage ledger (A06, A18, A19)
 
 Design record: `docs/adr/0010-additional-backends-compatibility-and-coverage.md`. The generated, per-operation ledger is `docs/COVERAGE.md` (`python -m backends.coverage --write`; also `GET /api/coverage` and the editor's Coverage tab).
-Pinned and installed here (macOS arm64, CPython 3.13.12): tensorflow 2.21.0, keras 3.15.1 (TensorFlow backend), jax 0.11.2 / jaxlib 0.11.2; **all three backends are available**. Vision, NLP and speech domain workflows are 6b and are not implemented.
+Pinned and installed here (macOS arm64, CPython 3.13.12): tensorflow 2.21.0, keras 3.15.1 (TensorFlow backend), jax 0.11.2 / jaxlib 0.11.2; **all three backends are available**. Vision, NLP and speech domain workflows are documented in the Milestone 6b section below.
 
 | Capability | Where | Test |
 |---|---|---|
@@ -228,3 +228,24 @@ no max-pool dilation, adaptive pooling only when the size divides; no worker tra
 no GPU/accelerator support or measurement; multi-backend pipelines joined by artifact contracts are not implemented; max-pool gradient tie-breaking may differ between frameworks (continuous random fixtures have no ties); probes, the debugger,
 recorded reruns and attention inspection are PyTorch-only (activation capture exists on all three); the coverage ledger's "tests" column counts conformance cases/workloads and test files that mention an op id literally (a static scan, not a mutation of coverage);
 architecture templates and pretrained weights are tracked separately (none provided); the benchmark covers one CNN and a 3-element MSE graph on CPU only, with threads requested but the JAX thread setting unverified.
+
+## Milestone 6b: vision, NLP and speech domain workflows (A56–A58)
+
+Native libraries available here: torchvision 0.29.1, torchaudio 2.11.0, tokenizers 0.23.2, seqeval 1.2.2, torchmetrics 1.9.0, pycocotools 2.0.11, jiwer 4.0.0. See ADR 0011. All training data is explicitly labelled SYNTHETIC; tone recognition is not a real-speech benchmark.
+
+| Capability | Where | Evidence |
+|---|---|---|
+| Separate `domain` graph kind, 11 registered operations, distinct image/token/audio/feature/report wire types; stable format/rate/policy/ignore-index errors before execution | `domain/`, `graph_core/validate.py` | `test_domain_api.py` |
+| A56: declared xyxy/xywh/cxcywh, pixel/normalized coordinates; instance masks, keypoints with COCO visibility, metadata and flip pairs | `vision/contract.py` | `test_domain_vision.py` |
+| Annotation-preserving resize, crop, horizontal/vertical flip, rotate-90, pad, affine; seeded random flip with actual decision; clipping/removal/refit policy removes annotation rows together | `vision/transforms.py` | native tv_tensors and exact image/mask/keypoint geometry comparisons in `test_domain_vision.py` |
+| Tiny native PyTorch FCN segmentation, aggregate IoU/Dice/pixel accuracy; mAP of derived connected-component detections via torchmetrics/pycocotools | `vision/segment.py` | hand calculations/native reference metrics and actual learning in `test_domain_vision.py` |
+| A58: offline WordPiece fitted on train text, original character spans/subwords/word IDs, first/all-subword labels, -100 ignore labels, truncation, padding/attention masks and IOB2 validation | `nlp/subword.py`, `domain/nlp_ops.py` | `test_domain_nlp.py`, including truncated-word/SEP boundary |
+| Packed BiGRU token classifier, padding-invariant logits, word-span default and strict IOB2 evaluation with seqeval agreement | `nlp/model.py`, `nlp/iob.py` | `test_domain_nlp.py` (random valid/invalid tag sequences) |
+| A57: sample rate, channels, duration and sample↔time; exactly 32,000 teaching samples/channel; native resampling | `speech/audio.py` | `test_domain_speech.py`, including stereo accounting and nondivisible resample length |
+| Declared Hann/Hamming window, FFT/hop/centering/padding, torchaudio STFT/mel/log features, odd/even frame formulas, lengths/masks and downsampling lengths | `speech/features.py` | native torch.stft / torchaudio comparisons and padding invariance in `test_domain_speech.py` |
+| Native CTCLoss with feasibility and reduction; tiny Conv/BiGRU tone recognizer, greedy blank/repeat decoding, onset frames; S/D/I alignment and corpus CER/WER | `speech/ctc.py` | brute-force CTC path sums, jiwer and actual learning in `test_domain_speech.py` |
+| Three deterministic fixture generators and runnable JSON graph examples; source content hashes and fitted tokenizer JSON persisted | `examples/make_domain_fixtures.py`, `make_domain_examples.py` | deterministic bytes, validated examples, actual process runs in domain tests |
+| Read-only recorded domain inspection with run/graph/node/source/artifact provenance; bounded source/prediction samples | control API and existing CAS worker | `test_actual_domain_worker_inspection_is_recorded_and_read_only` in `test_domain_api.py` |
+| Editor domain workspaces linked from project picker; vision overlays before/after and prediction/GT, selectable source spans/subwords/labels, waveform/spectrogram/frame selection and CTC/error alignment; editable settings and typed graph canvas | `DomainWorkspace.tsx`, `DomainViews.tsx` | editor build/type check; browser verification recorded in HANDOFF |
+
+Not implemented: domain model/optimizer checkpoints, exact resume, general dataset importers beyond fixture formats, pretrained models, dedicated detector training, speech playback/streaming/beam search/forced alignment, language-model generation and multimodal fusion. Cancellation is between domain nodes. Affine boxes enclose transformed corners unless the explicit mask-refit policy is selected; they are not claimed to be tight masks. Native tokenizer vocabulary tie-breaking is not claimed deterministic across versions.
