@@ -188,3 +188,82 @@ def test_api_run_with_cache_reports_hits_in_the_run_summary(tmp_path):
         bad = c.post("/api/runs", json={"graph": g.to_json(), "config": {"cache": "always"}}, headers={"Idempotency-Key": uuid.uuid4().hex})
         assert bad.status_code == 422
         assert json.dumps(go(g, "off")["nodes"]).count('"cache"') == 0
+
+
+# ------------------------------------------------------------------------------------------------ retention
+def entries(store):
+    return store._exec("SELECT key, sha256, node_id, run_id FROM node_cache")
+
+
+def test_prune_dry_run_reports_and_changes_nothing(store, graph):
+    from tabular.cache import cache_summary, prune
+
+    run(store, graph, "r1")
+    s = cache_summary(store)
+    assert s["entries"] == 16 and s["projects"][0]["projectId"] == "p1" and s["projects"][0]["nodes"] == 16 and s["bytes"] > 0
+    rep = prune(store, project_id="p1", dry_run=True)
+    assert rep["removed"] == 16 and rep["bytesFreed"] == 0 and len(entries(store)) == 16
+    assert all(store.verify(e["sha256"]) for e in entries(store))
+
+
+def test_keep_latest_per_node_drops_older_variants_and_only_cache_bytes(store, graph):
+    from tabular.cache import prune
+
+    run(store, graph, "r1")
+    run(store, set_cfg(graph.model_copy(deep=True), "ols", fit_intercept=False), "r2")   # ols, metrics, predictions get a second entry
+    assert len(entries(store)) == 19
+    old = {e["node_id"]: e for e in entries(store) if e["run_id"] == "r1" and e["node_id"] in ("ols", "metrics", "predictions")}
+    rep = prune(store, project_id="p1", keep_latest_per_node=1)
+    assert rep["removed"] == 3 and {e["node_id"] for e in rep["entries"]} == {"ols", "metrics", "predictions"} and rep["bytesFreed"] > 0
+    assert len(entries(store)) == 16 and all(not store.path_of(e["sha256"]).exists() for e in old.values())
+    # recorded run artifacts are untouched, and the pruned original result is simply recomputed (a miss), identical to before
+    assert all(store.verify(a["sha256"]) for a in store.artifacts("r1"))
+    again = run(store, graph, "r3")
+    assert {n for n, s in status(again).items() if s == "miss"} == {"ols", "metrics", "predictions"}
+    assert again["ols"]["cache"]["changed"] == ["settings"] and "(run r2)" in again["ols"]["cache"]["reason"]  # compared with the kept r2 entry
+    assert outputs(store, "r3") == outputs(store, "r1")
+
+
+def test_older_than_and_project_scope(store, graph):
+    import time
+
+    from tabular.cache import prune
+
+    run(store, graph, "r1")
+    assert prune(store, project_id="other", dry_run=False)["removed"] == 0            # another project's scope selects nothing
+    assert prune(store, project_id="p1", older_than_seconds=3600)["removed"] == 0      # everything is newer than an hour
+    rep = prune(store, all_projects=True, older_than_seconds=0, now=time.time() + 1)
+    assert rep["removed"] == 16 and entries(store) == []
+    assert all(d["cache"]["status"] in ("miss", "bypass") for d in run(store, graph, "r2").values())
+
+
+def test_shared_bytes_are_kept_while_referenced(store, graph):
+    run(store, graph, "r1")
+    e = entries(store)[0]
+    store.add_artifact("r1", "probe", store.read_artifact(e["sha256"]), "complete", None, {})  # same bytes recorded as a run artifact
+    assert store.delete_node_cache([e["key"]]) == 0 and store.path_of(e["sha256"]).exists()
+
+
+def test_cache_api_summary_and_prune(tmp_path):
+    import uuid
+
+    from fastapi.testclient import TestClient
+
+    from control.app import create_app
+
+    with TestClient(create_app(tmp_path / "wb")) as c:
+        r = c.post("/api/runs", json={"projectId": None, "graph": example("tabular_regression").to_json(), "config": {"cache": "reuse", "project_id": "api"}},
+                   headers={"Idempotency-Key": uuid.uuid4().hex})
+        assert r.status_code == 201, r.text
+        import time
+        for _ in range(1200):
+            if c.get(f"/api/runs/{r.json()['runId']}").json()["status"] == "completed":
+                break
+            time.sleep(0.1)
+        s = c.get("/api/cache/nodes").json()
+        assert s["entries"] == 16 and s["projects"][0]["projectId"] == "api"
+        assert c.post("/api/cache/nodes/prune", json={}).status_code == 422                       # scope must be explicit
+        assert c.post("/api/cache/nodes/prune", json={"projectId": "api"}).json()["dryRun"] is True  # default is a report
+        assert c.get("/api/cache/nodes").json()["entries"] == 16
+        done = c.post("/api/cache/nodes/prune", json={"projectId": "api", "dryRun": False}).json()
+        assert done["removed"] == 16 and done["bytesFreed"] > 0 and c.get("/api/cache/nodes").json()["entries"] == 0

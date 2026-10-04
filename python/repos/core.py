@@ -74,7 +74,9 @@ class Repos:
 
     # ------------------------------------------------------------------ git plumbing
     def _git(self, mirror: Path | None, *args: str, input_: bytes | None = None, check: bool = True) -> bytes:
-        env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(self.root), "GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1",
+        # HOME is kept so the user's own Git credential helpers/ssh settings authorize private remotes; the safety settings below are
+        # passed with -c, which takes precedence over any user configuration.
+        env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", str(self.root)), "GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1",
                "GIT_ASKPASS": "", "SSH_ASKPASS": "", "LC_ALL": "C"}
         for k in ("SSH_AUTH_SOCK", "GIT_SSH_COMMAND", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy", "SSL_CERT_FILE", "GIT_SSL_CAINFO"):
             if k in os.environ:

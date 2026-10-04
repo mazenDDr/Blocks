@@ -312,9 +312,10 @@ Limits: CPU and completed-epoch continuation only, local owning control process,
 | Opt-in `cache: "reuse"` run setting; per-node keys over operation/version, node id, resolved settings (after run seed override), tabular implementation file hashes, Python/native library versions and input identities; sources hashed by content read | `tabular/cache.py`, `tabular/engine.py`, `worker/tabular_run.py`, `artifact_store/store.py` (`node_cache` index) | `test_node_cache.py` |
 | Editing a node re-executes it and its dependents only; reverting reuses the earlier results; changed source bytes, run seed, implementation or environment invalidate exactly what depends on them | same | `test_node_cache.py` |
 | Reused results recorded as ordinary run artifacts, byte-identical to original and uncached execution; corrupted entries are refused and recomputed | same | `test_node_cache.py` |
+| Retention: per-project summary; explicit prune (dry-run default, keep latest N per node, older-than) that frees only unreferenced entry bytes and never touches run artifacts; editor size/keep-latest/clear controls | `tabular/cache.py`, `services/control/cache_api.py`, `TabularPanels.tsx` | `test_node_cache.py` |
 | Recorded decision per node (`hit`/`miss`/`bypass`, reason, what changed, source run) in events, run summary and the editor Run record's node-cache table | `services/control/app.py`, `apps/editor/src/components/TabularPanels.tsx` | `test_node_cache.py` (API) |
 
-Not implemented: caching for model/procedure/agent/RL/domain graphs, connector sources, joins, code blocks or plugin operations (they always run); entry retention/garbage collection; sharing entries across workbenches; any import/upload path for entries. Cache-off (default) runs are unchanged.
+Not implemented: caching for model/procedure/agent/RL/domain graphs, connector sources, joins, code blocks or plugin operations (they always run); automatic retention policies (pruning is explicit); sharing entries across workbenches; any import/upload path for entries. Cache-off (default) runs are unchanged.
 
 ## Pinned repository browse and code import (A44, ADR 0016)
 

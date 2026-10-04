@@ -153,3 +153,45 @@ class NodeCache:
 
     def set_identity(self, nid: str, d: Decision, outs: dict[str, Any]) -> None:
         self.ids[nid] = d.key if d.key is not None else content_identity(outs)
+
+
+# ------------------------------------------------------------------------------------------------ retention
+def cache_summary(store: Any) -> dict[str, Any]:
+    rows = store.node_cache_entries()
+    by: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        b = by.setdefault(r["project_id"] or "", {"projectId": r["project_id"], "entries": 0, "bytes": 0, "nodes": set()})
+        b["entries"] += 1
+        b["bytes"] += r["size"]
+        b["nodes"].add(r["node_id"])
+    return {"entries": len(rows), "bytes": sum(r["size"] for r in rows), "oldest": rows[0]["created_at"] if rows else None,
+            "newest": rows[-1]["created_at"] if rows else None,
+            "projects": [{**{k: v for k, v in b.items() if k != "nodes"}, "nodes": len(b["nodes"])} for b in sorted(by.values(), key=lambda x: x["projectId"] or "")]}
+
+
+def prune(store: Any, *, project_id: str | None = None, all_projects: bool = False, keep_latest_per_node: int | None = None,
+          older_than_seconds: float | None = None, now: float | None = None, dry_run: bool = False) -> dict[str, Any]:
+    """Select entries to drop. With no rule, every selected entry goes. `keep_latest_per_node` keeps the newest N per (project, node, op);
+    `older_than_seconds` drops only entries older than that. Recorded run artifacts are never touched: a pruned result is simply recomputed
+    (a cache miss) the next time it is needed."""
+    import time as _t
+
+    if keep_latest_per_node is not None and keep_latest_per_node < 0:
+        raise ValueError("keep_latest_per_node must be >= 0")
+    rows = store.node_cache_entries(project_id, any_project=all_projects)
+    now = _t.time() if now is None else now
+    groups: dict[tuple, list[dict[str, Any]]] = {}
+    for r in rows:
+        groups.setdefault((r["project_id"], r["node_id"], r["op_type"]), []).append(r)
+    drop = []
+    for g in groups.values():
+        g.sort(key=lambda r: r["created_at"], reverse=True)
+        for i, r in enumerate(g):
+            if keep_latest_per_node is not None and i < keep_latest_per_node:
+                continue
+            if older_than_seconds is not None and now - r["created_at"] <= older_than_seconds:
+                continue
+            drop.append(r)
+    freed = 0 if dry_run else store.delete_node_cache([r["key"] for r in drop])
+    return {"dryRun": dry_run, "selected": len(rows), "removed": len(drop), "indexBytes": sum(r["size"] for r in drop), "bytesFreed": freed,
+            "entries": [{k: r[k] for k in ("key", "node_id", "op_type", "run_id", "project_id", "size", "created_at")} for r in drop]}

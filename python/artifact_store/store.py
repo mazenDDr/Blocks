@@ -139,6 +139,27 @@ class ArtifactStore:
         self._exec("INSERT OR IGNORE INTO node_cache VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                    (key, sha256, size, run_id, node_id, op_type, project_id, node_part, implementation, environment, inputs, time.time()))
 
+    def node_cache_entries(self, project_id: str | None = None, any_project: bool = True) -> list[dict[str, Any]]:
+        sql, args = "SELECT key, sha256, size, run_id, node_id, op_type, project_id, created_at FROM node_cache", ()
+        if not any_project:
+            sql, args = sql + " WHERE project_id IS ?", (project_id,)
+        return [dict(r) for r in self._exec(sql + " ORDER BY created_at, rowid", args)]
+
+    def delete_node_cache(self, keys: list[str]) -> int:
+        """Remove index rows, then each entry file that no remaining index row or artifact record refers to. Returns bytes freed."""
+        freed = 0
+        with self._lock, closing(self._db()) as db:
+            with db:
+                shas = {r["sha256"] for k in keys for r in db.execute("SELECT sha256 FROM node_cache WHERE key=?", (k,))}
+                db.executemany("DELETE FROM node_cache WHERE key=?", [(k,) for k in keys])
+                for sha in shas:
+                    used = db.execute("SELECT 1 FROM node_cache WHERE sha256=? UNION ALL SELECT 1 FROM artifacts WHERE sha256=? LIMIT 1", (sha, sha)).fetchone()
+                    p = self.path_of(sha)
+                    if used is None and p.exists():
+                        freed += p.stat().st_size
+                        p.unlink()
+        return freed
+
     def set_status(self, run_id: str, new: str, error: str | None = None) -> None:
         run = self.get_run(run_id)
         if run is None:

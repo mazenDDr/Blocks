@@ -237,3 +237,23 @@ def test_http_browse_and_import_journey(tmp_path, source):
         tested = c.post("/api/codeblocks/test", json={"block": {**imp.json()["block"], "fixtures": [{"name": "f", "inputs": {"x": {"shape": [4, 3], "seed": 1}}}]}})
         assert tested.status_code == 200 and tested.json()["ok"], tested.text
     assert not source["marker"].exists()
+
+
+def test_user_git_config_cannot_reenable_hooks_or_external_diff(tmp_path, source, monkeypatch):
+    """HOME is kept so the user's credential helpers work, but a user-level hooksPath (git runs reference-transaction hooks during
+    fetch) or diff.external must not execute anything: the safety settings are passed with -c, which wins over user configuration."""
+    home, hooks, marker = tmp_path / "home", tmp_path / "userhooks", tmp_path / "USER_HOOK_RAN"
+    home.mkdir()
+    hooks.mkdir()
+    for name in ("reference-transaction", "post-checkout", "post-merge"):
+        (hooks / name).write_text(f"#!/bin/sh\ntouch {marker}\n")
+        (hooks / name).chmod(0o755)
+    (home / ".gitconfig").write_text(f"[core]\n\thooksPath = {hooks}\n[diff]\n\texternal = sh -c 'touch {marker}'\n")
+    monkeypatch.setenv("HOME", str(home))
+    git(source["path"], "rev-parse", "HEAD")  # sanity: the user config is valid for git itself
+    repos = Repos(tmp_path / "wb")
+    r = repos.resolve(source["path"], "v1")
+    repos.tree(r["repoId"], r["commit"])
+    repos.compare(r["repoId"], source["c1"], source["c2"], ["stats_utils.py"])
+    repos.resolve(source["path"], "v2")  # a second fetch updates refs again
+    assert not marker.exists() and not source["marker"].exists()

@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, errorText } from "../api";
 import { isTensorType, type Diagnostic, type GEdge, GNode, Graph, NodeView, OpInfo, TabularRunSummary, Validation } from "../types";
 import { fmtShape, shortHash, uid } from "../util";
@@ -81,6 +81,35 @@ export function TabularRunBar({ runs, runId, setRunId, currentHash }: { runs: Ta
   );
 }
 
+// ---------------------------------------------------------------------------------------- node cache retention
+interface CacheSummary { entries: number; bytes: number; projects: { projectId: string | null; entries: number; bytes: number; nodes: number }[] }
+const fmtBytes = (n: number) => (n >= 1 << 20 ? `${(n / (1 << 20)).toFixed(1)} MB` : `${Math.ceil(n / 1024)} KB`);
+
+function CacheControls({ projectId, refresh }: { projectId: string; refresh: string }) {
+  const [sum, setSum] = useState<CacheSummary | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const load = () => api.get<CacheSummary>("/api/cache/nodes").then(setSum).catch(() => setSum(null));
+  useEffect(() => { load(); }, [projectId, refresh]);
+  const mine = sum?.projects.find((p) => p.projectId === projectId);
+  if (!mine) return null;
+  const prune = async (keepLatestPerNode: number | null) => {
+    try {
+      const preview = await api.post<{ removed: number; indexBytes: number }>("/api/cache/nodes/prune", { projectId, keepLatestPerNode, dryRun: true });
+      if (!preview.removed) { setMsg("Nothing to remove."); return; }
+      if (!window.confirm(`Remove ${preview.removed} cached node results (${fmtBytes(preview.indexBytes)}) for ${projectId}? Recorded runs are not affected; removed results are recomputed when next needed.`)) return;
+      const r = await api.post<{ removed: number; bytesFreed: number }>("/api/cache/nodes/prune", { projectId, keepLatestPerNode, dryRun: false });
+      setMsg(`Removed ${r.removed} entries, freed ${fmtBytes(r.bytesFreed)}.`); load();
+    } catch (e) { setMsg(errorText(e)); }
+  };
+  return (
+    <div className="small cachectl">
+      Cached results for this project: {mine.entries} ({fmtBytes(mine.bytes)}, {mine.nodes} nodes){" "}
+      <button className="link" onClick={() => prune(1)}>keep only the latest per node</button> · <button className="link" onClick={() => prune(null)}>clear</button>
+      {msg && <span className="muted"> {msg}</span>}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------------------- node cache explanation
 function CacheTable({ run, onSelectNode }: { run: TabularRunSummary; onSelectNode: (id: string) => void }) {
   const done = run.nodes.filter((n) => n.cache);
@@ -147,6 +176,7 @@ export function TabularRunPanel({ projectId, graph, validation, runs, reloadRuns
               <input type="checkbox" checked={reuse} onChange={(e) => setReuse(e.target.checked)} /> Reuse unchanged node results (cache)
             </label>
           )}
+          {graph.graphKind === "tabular" && <CacheControls projectId={projectId} refresh={runs.map((r) => r.id + r.status).join(",")} />}
           {err && <div className="error pre">{err}</div>}
           <h4>Problems ({diags.filter((d) => d.severity === "error").length} errors, {diags.filter((d) => d.severity === "warning").length} warnings)</h4>
           {diags.length === 0 && <div className="muted small">{graph.graphKind === "domain" ? "No contract violations. Training and evaluation use separate fixture partitions." : "No problems. Fit nodes read only the training partition."}</div>}
