@@ -269,7 +269,7 @@ An intention without a recorded worker run requires investigation/new identity r
 
 ### Remaining work for Claude
 
-Read ADR 0013/0014 and ACCEPTANCE before extending this milestone. Domain state persistence, completed-epoch child continuation and separate local native inference/export subsequently shipped in §10. Native tabular debugger interventions, broad external-user onboarding/accessibility, cross-host/GPU operation, online tracker sharing, A09 numerical dependency caches and A44 repository source-code import remain gaps. General production registry/release adapters for domain/CNN/agent/RL/Keras/JAX remain unavailable. Model inspection opened before its checkpoint appears can retain “not recorded” until the tab/context is reopened; do not fabricate values to cover that existing refresh limitation.
+Read ADR 0013/0014 and ACCEPTANCE before extending this milestone. Domain state persistence, completed-epoch child continuation and separate local native inference/export subsequently shipped in §10. Native tabular debugger interventions, broad external-user onboarding/accessibility, cross-host/GPU operation, online tracker sharing, A09 numerical dependency caches and A44 repository source-code import remain gaps. General production registry/release adapters for domain/CNN/agent/RL/Keras/JAX remain unavailable. Model inspection opened before its checkpoint appears used to retain “not recorded” until the tab/context was reopened; fixed in §13 (it re-asks while the run is active).
 
 Next agent: inspect `git status`, `git log -1` and `git remote -v`; preserve new user work. Select any next scope from the actual acceptance gaps and latest user direction rather than rebuilding completed milestones. Continue alone, keep this handoff current, run §4 verification for substantive changes, commit verified work and push to the private origin. Never stop the user's port 8000 service; close every temporary server/browser you start.
 
@@ -371,3 +371,9 @@ Continuation in the same Linux x86_64 cloud session as §11, on branch `claude/l
 ### Next
 
 No acceptance row is `not implemented`, but every row is bounded. The largest remaining gaps are in CAPABILITIES: multi-file repository packages, LFS/submodules, dependency installation, cache retention, domain/agent production adapters, cross-host/GPU, and team features. The Mac-specific evidence (live Ollama tests, port 8000 service) should be re-run on the user's machine when convenient.
+
+## 13. Inspection refresh fix and continuation — Claude, 2026-10-04
+
+PR [mazenDDr/project-void#1](https://github.com/mazenDDr/project-void/pull/1) was opened from `claude/laughing-bell-la46nd` for §11–§12. It is mergeable, has no review comments and no CI checks (the repository has no workflows).
+
+**Fixed: inspection stuck on “not recorded”.** `useInspect` (apps/editor/src/hooks.ts) asked once per request key. With “latest checkpoint” selected, the key does not change when the first checkpoint appears, so the Weights/Activations/wire views kept showing “not recorded” until reopened. Unavailable inspection answers now carry `runStatus` (`services/control/inspection.py`). While an answer is `not_recorded` for a queued/preparing/running/paused/cancelling run, the hook re-asks every 3 s. The retry count is tied to the request key, so a new selection starts fresh and terminal runs are not polled. `tests/test_api.py` asserts `runStatus`. Real Chromium (reference CNN, conv_1 ▸ Weights, then Run): “not recorded” at 1.6 s, real filters rendered at 8.1 s without reopening, zero errors. The same journey with the previous hook stayed “not recorded” for the full 60 s window, which confirms the root cause.

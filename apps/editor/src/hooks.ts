@@ -93,20 +93,33 @@ export function useRunStream(runId: string | null, onTerminal?: () => void): Str
   return state;
 }
 
-/** POST to an inspect/infer endpoint whenever `req` changes. `req === null` means "nothing to ask". */
-export function useInspect<T>(url: string | null, body: unknown | null) {
+const ACTIVE_RUN = ["queued", "preparing", "running", "paused", "cancelling"];
+
+/** True when the answer is "not recorded yet" for a run that is still active, so asking again later can give a recorded value. */
+export const pendingRecord = (d: unknown): boolean =>
+  !!d && typeof d === "object" && (d as any).available === false && (d as any).reason === "not_recorded" && ACTIVE_RUN.includes((d as any).runStatus);
+
+/** POST to an inspect/infer endpoint whenever `req` changes. `req === null` means "nothing to ask". While the answer is "not recorded"
+ * for an active run (e.g. "latest checkpoint" before the first one exists), ask again every `retryMs` so the view fills in by itself. */
+export function useInspect<T>(url: string | null, body: unknown | null, retryMs = 3000) {
   const [state, setState] = useState<{ data: T | null; loading: boolean; error: string | null }>({ data: null, loading: false, error: null });
   const key = url && body ? url + JSON.stringify(body) : null;
+  const [retry, setRetry] = useState<{ key: string | null; n: number }>({ key: null, n: 0 });
+  const attempt = retry.key === key ? retry.n : 0;  // the retry count belongs to one request; a new request starts at 0
   useEffect(() => {
     if (!key || !url) { setState({ data: null, loading: false, error: null }); return; }
     const ctl = new AbortController();
-    setState((s) => ({ ...s, loading: true, error: null }));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (attempt === 0) setState((s) => ({ ...s, loading: true, error: null }));
     api.post<T>(url, body, undefined, ctl.signal)
-      .then((data) => setState({ data, loading: false, error: null }))
+      .then((data) => {
+        setState({ data, loading: false, error: null });
+        if (retryMs > 0 && pendingRecord(data)) timer = setTimeout(() => setRetry({ key, n: attempt + 1 }), retryMs);
+      })
       .catch((e) => { if (!ctl.signal.aborted) setState({ data: null, loading: false, error: errorText(e) }); });
-    return () => ctl.abort();
+    return () => { ctl.abort(); if (timer) clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, attempt]);
   return state;
 }
 

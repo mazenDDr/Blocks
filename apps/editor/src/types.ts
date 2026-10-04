@@ -109,7 +109,7 @@ export interface Provenance {
   nodeId?: string; sampleIndex?: number | null; sampleId?: string; source?: string; normalization?: string; epoch?: number;
   preprocessing?: string; trueLabel?: string | null;
 }
-export interface Unavailable { available: false; kind: string; reason: string; message: string; provenance: Provenance }
+export interface Unavailable { available: false; kind: string; reason: string; message: string; runStatus?: string | null; provenance: Provenance }
 export interface Stats { min: number; max: number; mean: number; std: number; count: number }
 export interface Slice { offset: number; limit: number; of: number; truncated: boolean }
 export interface WeightsResult {

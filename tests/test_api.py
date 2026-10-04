@@ -309,6 +309,7 @@ def test_inspect_before_any_run_says_not_recorded(tmp_path):
         sv.store.add_artifact("r0", "graph", json.dumps(g.to_json()).encode(), "complete", None, {})
         j = c.post("/api/runs/r0/inspect", json={"kind": "weights", "node": "conv_1"}).json()
         assert j["available"] is False and j["reason"] == "not_recorded" and j["provenance"]["runId"] == "r0"
+        assert j["runStatus"] == "queued"  # lets the editor re-ask while the run is still active
         j = c.post("/api/runs/r0/inspect", json={"kind": "activations", "node": "conv_1", "sample": 0}).json()
         assert j["available"] is False and j["reason"] == "not_recorded"
         assert c.post("/api/infer", json={"runId": "r0", "sample": 0}).json()["available"] is False
