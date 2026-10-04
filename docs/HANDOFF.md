@@ -2,12 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
+> **Codex on the user's Mac: start at §17.** It lists what changed since your last session, the compatibility effects on the existing local workbench, the verification to run first, and the remaining work in priority order. §11–§16 are the detailed records behind it.
+
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0014`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0021`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -43,7 +45,11 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | 6b Vision detection/segmentation, NLP, speech workflows | done, verified (bounded scope; see §7) | 927e9c3 |
 | 7 Registry and production investigation | done, verified (bounded local tabular adapter; see §8) | 302cc50 |
 | 8 Scale, integrations, community | done, verified (bounded local CPU/offline scope; see §9) | cc8b4d0 |
-| Domain checkpoint/inference continuation | done, verified (native CPU completed-epoch continuation/local inference; see §10) | this release; `git log -1` |
+| Domain checkpoint/inference continuation | done, verified (native CPU completed-epoch continuation/local inference; see §10) | 90d6721 |
+| A09 node cache, A44 repository import, inspection refresh, cache retention (Claude, cloud) | done, verified on Linux x86 (see §11–§13) | PR #1 → 0d25b02 |
+| Production serving for domain, CNN, RL, unsupervised; run-status race fix | done, verified on Linux x86 (see §14) | PR #2 → 6c39878 |
+| Multi-file repository imports | done, verified on Linux x86 (see §15) | PR #3 → 14b7b27 |
+| Optional bearer token | done, verified on Linux x86 (see §16) | PR #4 → 1f5d026 |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -54,6 +60,8 @@ After 7: full suite → **894 passed, 1 skipped, 6 deselected**; live → **6 pa
 After 8: full suite → **919 passed, 1 skipped, 6 deselected**; live → **6 passed, 920 deselected**. Editor build/TypeScript, curl readiness, real native worker/tracker/connected CLI journeys, and keyboard-only installed Chrome inspection/integration journeys passed. See §9.
 
 After domain checkpoints/inference: full suite → **931 passed, 1 skipped, 6 deselected**; live → **6 passed, 932 deselected**. Editor build/TypeScript, native HTTP CLI, curl and installed Chrome all-three-domain inference/continuation journeys passed. See §10.
+
+After the Claude cloud sessions (§11–§16, Linux x86_64 container, not the Mac): full suite → **1000 passed, 1 skipped, 6 deselected** on `1f5d026`. Live tests were **not run** (no Ollama there). Re-verify on the Mac per §17.
 
 ### Check for in-progress work first
 Run `git status`. If there are uncommitted files, a previous session was cut off mid-milestone: inspect them with `git diff`, do **not** discard them, finish that milestone, verify (§4), then commit.
@@ -90,6 +98,8 @@ Run `git status`. If there are uncommitted files, a previous session was cut off
 - Update `docs/CAPABILITIES.md`, `README.md` and add an ADR under `docs/adr/` for notable decisions.
 
 ## 5. Remaining work
+
+> **Superseded: the current remaining-work list is §17.4.** The entries below are the historical milestone acceptance references, all completed.
 
 ### 6b — completed domain scope (VISION §9.7, §9.8, §23 Milestone 6 "Domain evidence", A56, A57, A58)
 
@@ -404,3 +414,93 @@ PR [mazenDDr/project-void#2](https://github.com/mazenDDr/project-void/pull/2) (�
 ## 16. Optional bearer-token boundary — Claude, 2026-10-04
 
 PR [mazenDDr/project-void#3](https://github.com/mazenDDr/project-void/pull/3) (§15) was merged as `14b7b27`. ADR 0021 adds `services/control/auth.py`: with `VOID_API_TOKEN` set, every request needs the bearer token, and weak tokens are refused when the app is created (validated eagerly, because Starlette builds middleware lazily). The Vite proxy injects the header server-side; `production/traffic.py` and the example journeys authenticate. `tests/test_auth.py` has 4 cases, including a real loopback traffic run with the token. In Chromium, the editor with the proxy token loaded normally (API 200); without it every call got 401; the token is absent from the client scripts.
+
+## 17. Handoff to Codex on the user's Mac — written by Claude, 2026-10-04
+
+The user asked for this section so Codex can continue on their PC. Everything below is on `origin/master` at **`1f5d026`** (PRs #1–#4 merged). The Claude sessions ran in a Linux x86_64 cloud container, so Mac-specific evidence (live Ollama tests, port 8000 service, installed Chrome) has **not** been re-collected for this code.
+
+### 17.1 Get the code
+
+```bash
+cd /Users/mazenkhaled/project-void
+git status                      # preserve any local work first (see §2 "Check for in-progress work")
+git fetch origin && git checkout master && git pull --ff-only origin master
+git log -1                      # expect 1f5d026 or later
+```
+
+The remote setup from §7 (HTTPS remote using the `gh` credential helper) is unchanged. The branch `claude/laughing-bell-la46nd` is identical to `master` and can be ignored or deleted. The Claude sessions used one PR per verified round and merged it at the user's request; the user previously had Codex commit verified work directly to `master` and push. Either works; follow the user's latest instruction.
+
+### 17.2 Compatibility effects on the existing local workbench (read before restarting anything)
+
+- **Dependencies: none changed.** `python/requirements.txt`, `python/tracking/{requirements,lock}.txt`, `apps/editor/package.json` and `pnpm-lock.yaml` are identical to `90d6721`, so no reinstall is needed. `connectors/install_pgserver.py` only changed its Linux path (compound manylinux tag); macOS is unaffected.
+- **Saved domain models (vision/NLP/speech) become unavailable.** `python/domain/inference.py` was refactored into `load`/`run` (behaviour unchanged, tested). ADR 0014's implementation hash covers every file in `domain/`, `vision/`, `nlp/` and `speech/`, so models trained before `6c39878` are refused with `E_DOMAIN_CHECKPOINT_ENVIRONMENT`. This is the intended safety behaviour. Tell the user, then retrain the examples (`examples/domain_checkpoint_journey.py` or the editor) if they want saved models. Do not weaken the check.
+- **Registered tabular production versions keep serving.** The tabular adapter identity files (`production/pipeline.py`, `operations/tabular_ops.py`, `tabular/core.py`) are unchanged. The unsupervised capture was deliberately put in its own module (ADR 0020), and a test pins that file set.
+- **Workbench schema.** `meta.db` gains a `node_cache` table, created automatically (`CREATE TABLE IF NOT EXISTS`). `production.sqlite` is unchanged. Repository mirrors go under `<workbench>/repos/`.
+- **Run status updates** are now one SQLite write transaction (§14). Behaviour is the same except that the cancel race is gone.
+- **Port 8000.** The user's own uvicorn (§3) is still running old code. Do not stop it; ask the user whether and when to restart it. Use other ports for your own servers and stop them afterwards.
+
+### 17.3 Verify first (§4, on the Mac)
+
+```bash
+source .venv/bin/activate
+pytest -q -o faulthandler_timeout=240        # cloud result: 1000 passed, 1 skipped (Anthropic without key)
+pytest -q -m live                            # NOT yet run for this code; needs local Ollama (expect 6 passed)
+pnpm -C apps/editor build && pnpm -C apps/editor exec tsc --noEmit
+.venv/bin/python -m backends.coverage --check
+```
+
+Then curl and installed-Chrome journeys (puppeteer-core, scripts outside the repo, as before) for the new surfaces:
+1. Tabular run with **Reuse unchanged node results** twice, edit one node, check the node-cache table (§11), then **keep only the latest per node** (§13).
+2. Graph ▸ Modules & code ▸ **Import from repository…** on a local Git repo, including a multi-file package (§12, §15).
+3. Production for each new family: an NLP example, the reference CNN trained in the editor, a CartPole run, and `unsupervised_cells` k-means. Register → release → deploy → request → labels → monitoring (§14).
+4. Weights tab opened before the first checkpoint fills in by itself (§13).
+5. Backend and editor with `VOID_API_TOKEN` (§16).
+
+Watch on macOS arm64 specifically:
+- `tests/test_debugger.py::test_conditional_breakpoint_is_labelled_execution_changing_and_stops_resumably` now uses an MSE regression fixture (§11) designed to overflow on any platform. Confirm it passes on arm64.
+- `test_status_transitions_are_atomic_across_store_instances` stresses SQLite locking with threads. The macOS note in `artifact_store/store.py` mentions an earlier libsqlite deadlock in one process; the test uses two store instances, each with its own lock. If it hangs on macOS, investigate rather than skip.
+- Domain and production tests retrain tiny models; arm64 numerics can differ slightly. Tests compare served outputs with the same native objects, not fixed numbers, so differences should not matter.
+
+Record results in a new HANDOFF section, as previous sessions did.
+
+### 17.4 Remaining work, in priority order
+
+Everything in ACCEPTANCE is bounded evidence (no `not implemented` rows). These are the real gaps, from `docs/CAPABILITIES.md` "Not implemented" lines and the ADRs:
+
+1. **Mac verification (§17.3).** Required before anything else.
+2. **Domain dataset importers (COCO / WAV + transcripts / CoNLL): needs the user's decision first.** The domain source ops (`domain/{vision,nlp,speech}_ops.py`) and summaries hard-code `synthetic: True` and the SYNTHETIC notes, so real data would be mislabelled. Correct provenance means editing those files, which (like §17.2) makes every saved domain model unavailable until retrained. If the user agrees, a suggested design:
+   - converters that write each source's existing canonical format (span JSONL, the vision `.npz` contract in `vision/contract.py`, the speech `.npz` in `speech/audio.py`) into the workbench, content-addressed;
+   - a recorded `synthetic` flag and source license carried from the converter into the source summaries;
+   - COCO polygons/RLE to instance masks via the pinned `pycocotools`, WAV decoding via `torchaudio`, CoNLL BIO to character spans;
+   - tests comparing against native library readers.
+3. **Agent graph serving: feasible on the Mac because Ollama runs there.** This is the one family still missing from production serving (ADR 0017–0020 cover the rest). It needs an ADR first:
+   - what to pin: graph, model provider, model name, and the digest from Ollama `/api/show`;
+   - memory/index identities, and tool effects with their approval policy;
+   - per-session state, provider non-determinism, and which state may be written by serving.
+   Follow the shared runtime pattern in `production/runtime.py` (adapters: tabular, `domain`, `model`, `rl`, `unsup`). Live tests must be `@pytest.mark.live`.
+4. **Anthropic live test.** It skips without `ANTHROPIC_API_KEY`. Only run it if the user provides a key through the environment; never store it.
+5. **Online MLflow/W&B destinations.** The bridges are local/offline (ADR 0013). Online use needs the user's accounts and credentials through environment references only.
+6. **Serving gaps inside implemented families:**
+   - non-image or multi-input model graphs, and procedure-trained sequence models (ADR 0018);
+   - continuous-action, image-observation or recurrent policies (ADR 0019);
+   - fitted preprocessing upstream of unsupervised estimators (ADR 0020);
+   - a larger domain monitoring reference than the single recorded held-out example (ADR 0017).
+7. **Node cache.**
+   - Extend it to model/procedure graphs: needs a determinism contract per op; ADR 0015 explicitly excludes training activations across updates.
+   - Optional automatic retention policy; explicit prune exists.
+8. **Repository import (ADR 0016):** notebooks as entry points, data files a package reads at import time (would need a declared `file_read` effect), LFS object download, submodule fetch, dependency installation into an isolated environment, and hosted-provider (GitHub/GitLab) browsing with credentials.
+9. **Access control beyond the shared token (ADR 0021):** user accounts, roles, per-user audit, and TLS deployment guidance or tests.
+10. **Infrastructure-bound, keep honest:** GPU (Apple MPS could be explored but numerical-equivalence tests would need new tolerances), cloud/remote deployment, cross-host worker TLS, distributed training, multi-agent RL, external-user onboarding and accessibility certification. Leave these `not implemented` unless real infrastructure exists to test against.
+
+### 17.5 Conventions that still apply
+
+- §4 working rules are unchanged:
+  - no mock or fabricated values;
+  - "not recorded" when absent;
+  - never weaken tests: replace an assertion only with a stronger one when behaviour intentionally changes, and say so in HANDOFF;
+  - README lists only commands actually run;
+  - update CAPABILITIES/ACCEPTANCE/README and add an ADR for notable decisions (next number: **0022**);
+  - commit message style from `git log`, with a co-author line naming your own model.
+- Identity hashes are deliberate. Editing files covered by an implementation hash (domain ADR 0014, tabular adapter ADR 0012, node cache ADR 0015, serving adapters ADR 0018–0020) invalidates saved artifacts that depend on them. Say so in HANDOFF whenever you do it.
+- Production adapters share one interface: `manifest`, `validate_records(records, max_batch)`, `predict(records) -> (result, timings)`, plus `reference_records()` for warmup and monitoring. They re-verify environment and implementation on every use, and all labels/quality are measured only from supplied ground truth.
+- Keep the user's port 8000 service running, stop every server and browser you start, and keep the HANDOFF current so the next agent can resume from Git alone.
