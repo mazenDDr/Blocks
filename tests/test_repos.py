@@ -54,6 +54,9 @@ def source(tmp_path):
         "pkg/__init__.py": trap, "pkg/helpers.py": "def double(x):\n    return 2 * x\n",
         "setup.py": "import setuptools\n" + trap + "setuptools.setup(name='fixture', install_requires=['requests'])\n",
         "conftest.py": trap, "install.sh": f"#!/bin/sh\ntouch {marker}\n",
+        "lib/__init__.py": "SCALE = 3\n", "lib/mathops.py": "from . import SCALE\n\ndef mul(x):\n    return x * SCALE\n",
+        "lib/api.py": "from .mathops import mul\n\ndef triple(x):\n    return mul(x)\n",
+        "uses_lib.py": "from lib.api import triple\n\ndef scaled(x, bias=0.0):\n    return triple(x) + bias\n",
         "requirements.txt": "numpy==2.5.3\ntorch>=2.0  # any recent\n-e .\n",
         "pyproject.toml": '[project]\nname = "fixture"\ndependencies = ["scipy==1.18.1"]\n[project.optional-dependencies]\nplot = ["matplotlib"]\n'
                           '[build-system]\nrequires = ["setuptools"]\nbuild-backend = "setuptools.build_meta"\n',
@@ -142,9 +145,10 @@ def test_python_inspection_parses_without_importing(repos, source):
     assert set(fns) == {"standardize", "summary"} and fns["standardize"]["params"][1] == {"name": "eps", "default": 1e-6, "hasDefault": True}
     assert info["wrappable"] and info["imports"] == ["torch"]
     multi = repos.inspect_python(r["repoId"], r["commit"], "multi.py")
-    assert not multi["wrappable"] and multi["localImports"] == ["pkg.helpers"]
-    with pytest.raises(RepoError, match="cannot be wrapped"):
-        repos.import_function(r["repoId"], r["commit"], "multi.py", "twice", {**INTERFACE, "config": []})
+    assert multi["wrappable"] and multi["localImports"] == ["pkg", "pkg.helpers"]   # the package __init__ runs on import, so it is bundled
+    assert [b["path"] for b in multi["bundledModules"]] == ["pkg/__init__.py", "pkg/helpers.py"]
+    out = repos.import_function(r["repoId"], r["commit"], "multi.py", "twice", {**INTERFACE, "config": []})
+    assert [m["path"] for m in out["record"]["modules"]] == ["pkg/__init__.py", "pkg/helpers.py"]
     repos.inspect_python(r["repoId"], r["commit"], "setup.py")  # parsed, not executed
     assert not source["marker"].exists()
 
@@ -273,3 +277,39 @@ def test_mirror_listing_and_removal_keep_imports(repos, source):
     assert repos.resolve(source["path"], "v1")["commit"] == source["c1"]             # a fresh resolve restores browsing
     with pytest.raises(RepoError):
         repos.remove_mirror("../../etc")
+
+
+
+def test_multi_file_package_with_relative_imports_runs_from_pinned_texts(repos, source, tmp_path):
+    r = repos.resolve(source["path"], "v1")
+    info = repos.inspect_python(r["repoId"], r["commit"], "uses_lib.py")
+    assert info["wrappable"] and info["localImports"] == ["lib", "lib.api", "lib.mathops"]
+    out = repos.import_function(r["repoId"], r["commit"], "uses_lib.py", "scaled",
+                                {"id": "scaled", "inputs": [{"name": "x", "shape": ["N", 3]}], "outputs": [{"name": "y", "same_as": "x"}],
+                                 "config": [{"name": "bias", "type": "float", "default": 0.0}]})
+    mods = {m["path"]: m for m in out["record"]["modules"]}
+    assert set(mods) == {"lib/__init__.py", "lib/api.py", "lib/mathops.py"}
+    assert mods["lib/mathops.py"]["blob"] == git(source["path"], "rev-parse", "v1:lib/mathops.py")
+    x = [[1.0, -2.0, 0.5]]
+    d = CodeBlockDef.model_validate({**out["block"], "fixtures": [{"name": "f", "inputs": {"x": {"values": x}}, "config": {"bias": 1.0},
+                                                                     "expect": {"y": {"values": [[4.0, -5.0, 2.5]], "atol": 1e-6}}}]})
+    res = check_block(d)
+    assert res["ok"], res
+    # the pinned texts are part of the block, so its identity changes if a bundled module changes, and nothing is read from disk
+    shutil_moved = tmp_path / "moved-src"
+    import shutil
+    shutil.move(source["path"], shutil_moved)
+    try:
+        assert check_block(d.model_copy(update={"fixtures": [{"name": "g", "inputs": {"x": {"values": x}}}]}))["ok"]
+    finally:
+        shutil.move(shutil_moved, source["path"])
+
+
+def test_trapped_package_init_runs_only_in_the_sandbox_and_is_refused(repos, source):
+    r = repos.resolve(source["path"], "v1")
+    out = repos.import_function(r["repoId"], r["commit"], "multi.py", "twice", {**INTERFACE, "id": "twice", "config": []})
+    assert not source["marker"].exists()                                  # importing executed nothing
+    d = CodeBlockDef.model_validate({**out["block"], "fixtures": [{"name": "f", "inputs": {"x": {"shape": [2, 3], "seed": 0}}}]})
+    res = check_block(d)
+    assert not res["ok"] and "not allowed" in res["fixtures"][0]["error"]["message"]   # pkg/__init__ tried an undeclared file write
+    assert not source["marker"].exists()

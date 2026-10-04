@@ -8,7 +8,7 @@ interface Entry { path: string; mode: string; type: string; blob: string; size: 
 interface Dep { spec: string; name: string; constraint: string | null; pinned: boolean; pin: string | null; source: string }
 interface Tree { entries: Entry[]; counts: Record<string, number>; dependencies: { declared: Dep[]; notes: string[] }; license: { path: string; spdxGuess: string | null; sha256: string; note: string } | null }
 interface Fn { name: string; line: number; params: { name: string; default: unknown; hasDefault: boolean }[]; varargs: boolean; doc: string | null }
-interface PyInfo { path: string; blob: string; sha256: string; functions: Fn[]; imports: string[]; localImports: string[]; wrappable: boolean; problems: string[]; note: string }
+interface PyInfo { path: string; blob: string; sha256: string; functions: Fn[]; imports: string[]; localImports: string[]; bundledModules: { module: string; path: string; blob: string; bytes: number }[]; wrappable: boolean; problems: string[]; note: string }
 
 const KIND_LABEL: Record<string, string> = {
   python_source: "Python", installation_script: "installation script (never run)", dependency_manifest: "dependencies", license: "license", dataset: "dataset",
@@ -134,6 +134,7 @@ export function RepoImport({ onImport, onClose, setMessage }: { onImport: (d: Co
                       {py.wrappable && (
                         <>
                           <div className="small">imports: {py.imports.join(", ") || "none"}</div>
+                          {py.bundledModules.length > 0 && <div className="small">bundled repository modules (pinned texts, run only in the sandbox; package <code>__init__</code> files run on import): {py.bundledModules.map((b) => <code key={b.path}>{b.path}</code>).reduce((a: any[], c, i) => (i ? [...a, ", ", c] : [c]), [])}</div>}
                           <label>Function <select aria-label="entry function" value={fn} onChange={(e) => choose(e.target.value)}>
                             <option value="">(choose)</option>
                             {py.functions.filter((x) => !x.varargs).map((x) => <option key={x.name} value={x.name}>{x.name}({x.params.map((p) => p.name).join(", ")}) · line {x.line}</option>)}

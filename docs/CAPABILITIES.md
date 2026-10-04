@@ -327,7 +327,7 @@ Not implemented: caching for model/procedure/agent/RL/domain graphs, connector s
 | ast-only Python inspection; wrap one top-level function of a single-file module as a code block; immutable, integrity-checked import record; block `origin` part of the semantic hash; chosen pins verified by the sandbox | same, `apps/editor/src/components/RepoImport.tsx` | `test_repos.py` |
 | Local-modification status and commit comparison for the imported file; editor import dialog and origin banner | `CodeBlockEditor.tsx`, `RepoImport.tsx` | `test_repos.py` (HTTP) |
 
-Not implemented: multi-file packages/notebooks as entry points, wrapping repository data/config/model files as typed sources, LFS download, submodule fetch, dependency installation, hosted-provider APIs/credential UI, history/blame, automatic mirror retention (explicit listing/removal via `/api/repos/mirrors` and `DELETE /api/repos/{id}` exists). The code-block sandbox guard is best-effort, not a hostile-code boundary.
+Not implemented: notebooks or compiled extensions as entry points (pure-Python multi-file packages are bundled from pinned texts; ADR 0016 addendum), wrapping repository data/config/model files as typed sources, LFS download, submodule fetch, dependency installation, hosted-provider APIs/credential UI, history/blame, automatic mirror retention (explicit listing/removal via `/api/repos/mirrors` and `DELETE /api/repos/{id}` exists). The code-block sandbox guard is best-effort, not a hostile-code boundary.
 
 ## Domain models in the production registry (ADR 0017)
 

@@ -13,4 +13,14 @@ VISION §7.9 asks for browsing repository content at a pinned commit, distinguis
 
 Tests (`tests/test_repos.py`) use a real local Git repository whose `setup.py`, `conftest.py`, package `__init__.py`, `install.sh`, source-repo `post-checkout` hook and `.gitattributes` diff/filter drivers would each create a marker file if executed. Resolve, browse, read, inspect, compare and import leave no marker.
 
-Remaining: multi-file packages and notebooks as entry points, wrapping data/config/model files as typed sources, LFS object download, submodule fetch, dependency installation or environment creation, hosted-provider (GitHub/GitLab) API browsing and credential UI, history/blame views, and automatic mirror retention. Explicit cleanup was added later: `GET /api/repos/mirrors` lists fetched mirrors with size and import counts, and `DELETE /api/repos/{id}` removes one while keeping import records and imported blocks; a fresh resolve restores browsing.
+Remaining: notebooks as entry points (multi-file pure-Python packages: see the addendum), wrapping data/config/model files as typed sources, LFS object download, submodule fetch, dependency installation or environment creation, hosted-provider (GitHub/GitLab) API browsing and credential UI, history/blame views, and automatic mirror retention. Explicit cleanup was added later: `GET /api/repos/mirrors` lists fetched mirrors with size and import counts, and `DELETE /api/repos/{id}` removes one while keeping import records and imported blocks; a fresh resolve restores browsing.
+
+## Addendum: multi-file packages (2026-10-04)
+
+The single-file restriction is lifted for pure-Python repository packages. `inspect_python` resolves, with `ast` only, the closure of repository modules reachable from the entry file:
+- absolute and relative imports, including `from pkg import submodule`;
+- the `__init__.py` of every parent package, because Python executes those on import.
+
+Unresolvable relative imports, unreadable modules, and bundles over 50 files or 1 MB are refused with the reason. The generated block embeds each module's exact pinned text behind an in-memory import hook (`importlib` meta-path finder/loader). Nothing is read from disk at run time; a test moves the source repository away and the block still runs. All bundled code executes only inside the code-block sandbox under its declared effects: the booby-trapped `pkg/__init__.py` in the test fixture is refused by the guard there, and no marker is written. Every module's path, blob, sha256 and size is recorded in the import record and the block `origin`, which is part of the semantic hash. A three-module package with relative imports computes the expected values in the sandbox (test and Chromium journey).
+
+Still not supported: compiled extensions, notebooks, namespace packages without `__init__.py`, data files read by the package at import time (they would need a declared `file_read` effect and are not bundled), and installing third-party dependencies.
