@@ -31,6 +31,8 @@ GIT_TIMEOUT = 120
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 _REV = re.compile(r"^[A-Za-z0-9._/@^~-]{1,200}$")
 _NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+MAX_BUNDLE_MODULES = 50
+MAX_BUNDLE_BYTES = 1_000_000
 INSTALL_SCRIPTS = {"setup.py", "conftest.py", "noxfile.py", "tasks.py", "build.py", "Makefile", "install.sh", "setup.sh"}
 
 
@@ -293,23 +295,16 @@ class Repos:
             tree = ast.parse(f["text"], filename=path)
         except SyntaxError as e:
             raise RepoError("E_REPO_SYNTAX", f"{path} line {e.lineno}: {e.msg}") from e
-        files = {e["path"] for e in self.tree(repo_id, commit)["entries"]}
-        top_dirs = {p.split("/", 1)[0] for p in files}
+        entries = self.tree(repo_id, commit)["entries"]
+        index = _module_index(entries)
         imports, local = [], []
         for node in ast.walk(tree):
-            names = []
             if isinstance(node, ast.Import):
-                names = [a.name for a in node.names]
-            elif isinstance(node, ast.ImportFrom):
-                if node.level:
-                    local.append("." * node.level + (node.module or ""))
-                    continue
-                names = [node.module or ""]
-            for n in names:
-                imports.append(n)
-                top = n.split(".")[0]
-                if f"{top}.py" in files or top in top_dirs:
-                    local.append(n)
+                imports += [a.name for a in node.names]
+            elif isinstance(node, ast.ImportFrom) and not node.level:
+                imports.append(node.module or "")
+        modules, unresolved = self._closure(repo_id, commit, path, tree, index)
+        local = sorted({m for m in modules if m != _module_name(path)})
         funcs = []
         for n in tree.body:
             if isinstance(n, ast.FunctionDef):
@@ -319,13 +314,57 @@ class Repos:
                                                                          for i, (x, d) in enumerate(zip(a.args, defaults))],
                               "varargs": bool(a.vararg or a.kwarg or a.kwonlyargs or a.posonlyargs), "doc": ast.get_docstring(n)})
         problems = []
-        if local:
-            problems.append(f"imports other files of this repository ({', '.join(sorted(set(local)))}); only single-file entry points can be wrapped")
+        if unresolved:
+            problems.append(f"imports repository modules that cannot be resolved at this commit ({', '.join(sorted(unresolved))})")
+        bundle = [modules[m] for m in local]
+        if len(bundle) > MAX_BUNDLE_MODULES or sum(b["bytes"] for b in bundle) > MAX_BUNDLE_BYTES:
+            problems.append(f"its repository modules exceed the bundle limit ({MAX_BUNDLE_MODULES} files, {MAX_BUNDLE_BYTES} bytes)")
         if any(f_["name"] == "run" for f_ in funcs):
             problems.append("defines a top-level 'run', which is the code-block entry name; wrapping is refused")
         return {**{k: f[k] for k in ("repoId", "url", "commit", "path", "blob", "sha256")}, "functions": funcs, "imports": sorted(set(imports)),
-                "localImports": sorted(set(local)), "wrappable": not problems, "problems": problems,
+                "localImports": local, "bundledModules": bundle, "wrappable": not problems, "problems": problems,
                 "note": "Parsed with ast; the module was not imported or executed."}
+
+    def _closure(self, repo_id, commit, path, tree, index):
+        """Repository modules reachable from `path` by (relative or absolute) imports, parsed with ast only. Package __init__ files of every
+        imported module are included because Python executes them on import. Returns ({module: entry}, unresolved relative imports)."""
+        found, unresolved, queue = {}, set(), [(_module_name(path), path, tree)]
+        seen = {_module_name(path)}
+        while queue:
+            mod, p, t = queue.pop()
+            pkg = mod if p.endswith("/__init__.py") else mod.rpartition(".")[0]
+            wanted = []
+            for node in ast.walk(t):
+                if isinstance(node, ast.Import):
+                    wanted += [a.name for a in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    if node.level:  # relative: resolve against this module's package, `level - 1` packages up
+                        base, up = (pkg.split(".") if pkg else []), node.level - 1
+                        target = ".".join([*base[:len(base) - up], *(node.module.split(".") if node.module else [])]) if up <= len(base) else ""
+                        if not base or not target:
+                            unresolved.add("." * node.level + (node.module or ""))
+                            continue
+                    else:
+                        target = node.module or ""
+                    wanted.append(target)
+                    wanted += [f"{target}.{a.name}" for a in node.names if a.name != "*"]  # `from pkg import submodule`
+            for name in wanted:
+                parts = name.split(".")
+                for i in range(1, len(parts) + 1):  # parent packages run first on import
+                    m = ".".join(parts[:i])
+                    if m in index and m not in seen:
+                        seen.add(m)
+                        info = self.read(repo_id, commit, index[m])
+                        if info["text"] is None:
+                            unresolved.add(m)
+                            continue
+                        found[m] = {"module": m, "path": index[m], "blob": info["blob"], "sha256": info["sha256"], "bytes": info["bytes"],
+                                    "package": index[m].endswith("/__init__.py"), "text": info["text"]}
+                        try:
+                            queue.append((m, index[m], ast.parse(info["text"], filename=index[m])))
+                        except SyntaxError:
+                            unresolved.add(m)
+        return found, unresolved
 
     # ------------------------------------------------------------------ compare / update deliberately
     def compare(self, repo_id: str, base: str, head: str, paths: list[str]) -> dict[str, Any]:
@@ -361,12 +400,14 @@ class Repos:
             raise RepoError("E_REPO_INTERFACE", f"Interface does not match {function}({', '.join(params)}): "
                             + "; ".join(([f"not parameters: {unknown}"] if unknown else []) + ([f"required parameters not supplied: {required}"] if required else [])))
         text = self.read(repo_id, commit, path)["text"]
+        bundle = info["bundledModules"]
+        preamble = _bundle_preamble(bundle, _module_name(path), path.endswith("/__init__.py")) if bundle or "/" in path else ""
         call = f"{function}({', '.join(f'{x}={x}' for x in inputs + config)})"
         sig = ", ".join(inputs) + (", *, " + ", ".join(f"{c['name']}={c.get('default')!r}" for c in interface.get("config", [])) if config else "")
         ret = f"{{{outputs[0]!r}: _out}}" if len(outputs) == 1 else "{" + ", ".join(f"{o!r}: _out[{i}]" for i, o in enumerate(outputs)) + "}"
         source = (f"# Imported from {info['url']} at commit {commit}, file {path} (blob {info['blob']}, sha256 {info['sha256']}).\n"
                   "# Edits to this block are recorded as local modifications of the pinned import.\n"
-                  + text.rstrip("\n") + "\n\n\n# --- workbench adapter (generated) ---\n"
+                  + preamble + text.rstrip("\n") + "\n\n\n# --- workbench adapter (generated) ---\n"
                   f"def run({sig}):\n    _out = {call}\n" + (f"    if not isinstance(_out, tuple) or len(_out) != {len(outputs)}:\n"
                                                               f"        raise TypeError('{function} must return a tuple of {len(outputs)} values')\n" if len(outputs) > 1 else "")
                   + f"    return {ret}\n")
@@ -374,6 +415,7 @@ class Repos:
         tree = self.tree(repo_id, commit)
         record = {"format": "void-repo-import/1", "url": info["url"], "commit": commit, "tree": src_info["tree"], "path": path, "blob": info["blob"],
                   "fileSha256": info["sha256"], "function": function, "parameters": params, "imports": info["imports"],
+                  "modules": [{k: b[k] for k in ("module", "path", "blob", "sha256", "bytes")} for b in bundle],
                   "license": tree["license"], "declaredDependencies": tree["dependencies"]["declared"], "dependencyNotes": tree["dependencies"]["notes"],
                   "pins": sorted(pins or []), "interface": interface, "sourceSha256": _sha256(source.encode())}
         data = json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
@@ -384,6 +426,7 @@ class Repos:
             tmp.write_bytes(data)
             os.replace(tmp, dest)
         origin = {"importId": import_id, "url": info["url"], "commit": commit, "path": path, "blob": info["blob"], "function": function,
+                  "modules": [{"path": b["path"], "blob": b["blob"]} for b in bundle],
                   "importedSourceSha256": record["sourceSha256"]}
         block = {**interface, "source": source, "dependencies": sorted(pins or []), "origin": origin}
         return {"importId": import_id, "record": record, "block": block}
@@ -458,3 +501,43 @@ def _req(spec: str, where: str) -> dict[str, Any]:
     name, rest = (m.group(1), m.group(3).split(";")[0].strip()) if m else (spec, "")
     pinned = bool(re.fullmatch(r"==\s*[A-Za-z0-9.+!_-]+", rest))
     return {"spec": spec, "name": name, "constraint": rest or None, "pinned": pinned, "pin": f"{name}=={rest[2:].strip()}" if pinned else None, "source": where}
+
+
+def _module_name(path: str) -> str:
+    p = path[:-3]
+    return (p[:-len("/__init__")] if p.endswith("/__init__") else p).replace("/", ".")
+
+
+def _module_index(entries: list[dict[str, Any]]) -> dict[str, str]:
+    """Dotted module name -> repository path for every importable Python file (symlinks never followed)."""
+    out = {}
+    for e in entries:
+        p = e["path"]
+        if e["type"] == "blob" and e["mode"] != "120000" and p.endswith(".py") and all(part.isidentifier() for part in p[:-3].split("/")):
+            out[_module_name(p)] = p
+    return out
+
+
+def _bundle_preamble(bundle: list[dict[str, Any]], entry_module: str, entry_is_package: bool) -> str:
+    """An in-memory import hook serving the pinned module texts. Nothing is read from disk; the code still executes only in the sandbox."""
+    mods = {b["module"]: (b["path"], b["package"], b["text"]) for b in bundle}
+    package = entry_module if entry_is_package else entry_module.rpartition(".")[0]
+    lines = ["# --- pinned repository modules (generated): served from these exact texts, never read from disk ---",
+             "import sys as _void_sys, importlib.abc as _void_abc, importlib.util as _void_util",
+             f"_VOID_MODULES = {mods!r}",
+             "class _VoidPinnedModules(_void_abc.MetaPathFinder, _void_abc.Loader):",
+             "    def find_spec(self, name, path=None, target=None):",
+             "        return _void_util.spec_from_loader(name, self, is_package=_VOID_MODULES[name][1]) if name in _VOID_MODULES else None",
+             "    def create_module(self, spec):",
+             "        return None",
+             "    def exec_module(self, module):",
+             "        rel, is_pkg, text = _VOID_MODULES[module.__name__]",
+             "        module.__file__ = '<pinned>/' + rel",
+             "        if is_pkg:",
+             "            module.__path__ = []",
+             "        exec(compile(text, module.__file__, 'exec'), module.__dict__)",
+             "if not any(isinstance(f, _VoidPinnedModules) for f in _void_sys.meta_path):",
+             "    _void_sys.meta_path.insert(0, _VoidPinnedModules())",
+             f"__package__ = {package!r}  # the entry file's own package, for its relative imports",
+             "# --- entry file ---", ""]
+    return "\n".join(lines) + "\n"
