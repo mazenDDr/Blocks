@@ -8,7 +8,9 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 5173,
-      proxy: { "/api": { target: env.VOID_API ?? "http://127.0.0.1:8000", changeOrigin: true } },
+      // VOID_API_TOKEN (optional) is added here, on the dev server, so the token never ships in the browser bundle.
+      proxy: { "/api": { target: env.VOID_API ?? "http://127.0.0.1:8000", changeOrigin: true,
+                         headers: env.VOID_API_TOKEN ? { Authorization: `Bearer ${env.VOID_API_TOKEN}` } : undefined } },
     },
   };
 });

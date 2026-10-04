@@ -6,13 +6,14 @@ import json
 import time
 import uuid
 from pathlib import Path
+import os
 import httpx
 from domain import samples
 
 
 def journey(base):
     out=[]
-    with httpx.Client(base_url=base,timeout=90,trust_env=False) as c:
+    with httpx.Client(headers=({'Authorization': 'Bearer ' + os.environ['VOID_API_TOKEN']} if os.environ.get('VOID_API_TOKEN') else {}), base_url=base,timeout=90,trust_env=False) as c:
         def post(path, body):
             r=c.post(path,json=body,headers={'Idempotency-Key':uuid.uuid4().hex});r.raise_for_status();return r.json()
         def get(path):

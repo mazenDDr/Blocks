@@ -21,8 +21,9 @@ from .pipeline import ProductionError
 
 
 class TrafficRunner:
-    def __init__(self, runtime):
+    def __init__(self, runtime, api_token: str | None = None):
         self.runtime = runtime
+        self.headers = {"Authorization": f"Bearer {api_token}"} if api_token else {}  # the server's own boundary, when configured
         self.lock = threading.Lock()
         self.jobs = {}
 
@@ -82,7 +83,7 @@ class TrafficRunner:
                         "payloadBytes": len(dumps(payload).encode()), "batchSize": len(payload)}
         result = None
         try:
-            with httpx.Client(timeout=cfg["timeoutSeconds"]+2, trust_env=False, follow_redirects=False,
+            with httpx.Client(timeout=cfg["timeoutSeconds"]+2, trust_env=False, follow_redirects=False, headers=self.headers,
                               limits=httpx.Limits(max_connections=spec.concurrency)) as client:
                 for i in range(spec.warmupRequests):
                     if cancel.is_set():

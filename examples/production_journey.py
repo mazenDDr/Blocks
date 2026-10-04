@@ -11,6 +11,7 @@ import time
 import uuid
 from urllib.parse import urlparse
 
+import os
 import httpx
 
 
@@ -21,7 +22,7 @@ def main():
     args = parser.parse_args()
     if urlparse(args.base).hostname not in ("localhost","127.0.0.1"):
         parser.error("this example only targets a local workbench")
-    with httpx.Client(base_url=args.base,timeout=35,trust_env=False) as c:
+    with httpx.Client(headers=({'Authorization': 'Bearer ' + os.environ['VOID_API_TOKEN']} if os.environ.get('VOID_API_TOKEN') else {}), base_url=args.base,timeout=35,trust_env=False) as c:
         def call(method,path,**kw):
             r=c.request(method,path,**kw)
             r.raise_for_status()

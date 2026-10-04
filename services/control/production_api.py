@@ -34,7 +34,7 @@ class Labels(User):
 
 def register(app: FastAPI, sv):
     rt = ProductionRuntime(sv.store)
-    traffic = TrafficRunner(rt)
+    traffic = TrafficRunner(rt, getattr(sv, "api_token", None))
     sv.production, sv.traffic = rt, traffic
     ps = rt.ps
 
