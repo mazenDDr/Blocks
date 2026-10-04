@@ -220,9 +220,11 @@ def test_registry_has_planned_ops():
         "pytorch.nn.flatten", "pytorch.nn.linear", "pytorch.loss.cross_entropy", "core.sub", "core.square", "core.mean", "core.sum",
         "core.scalar_mul", "core.add"}
     assert phase1 <= model_ops  # the Phase 1 operations are all still there, unchanged
-    # Milestone 3 added only these families (tensor primitives, diagnostic blocks, structural blocks, code blocks)
+    # Milestone 3 added only these families (tensor primitives, diagnostic blocks, structural blocks, code blocks); Milestone 6 added the two
+    # explicitly backend-specific nodes (no other new family is allowed)
     extra = model_ops - phase1
-    assert all(t.startswith(("tensor.", "diag.")) or t in ("core.composite", "core.repeat", "core.select", "code.block") for t in extra), extra
+    assert all(t.startswith(("tensor.", "diag.")) or t in ("core.composite", "core.repeat", "core.select", "code.block",
+                                                              "keras.layers.separable_conv2d", "jax.lax.cumsum") for t in extra), extra
 
 
 def test_conv_full_config_shape_and_params_match_torch():

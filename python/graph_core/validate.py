@@ -86,8 +86,10 @@ def validate(graph: Graph) -> Report:
     def add(code, msg, node=None, port=None, path="", fixes=None, severity="error"):
         diag.append(Diagnostic(code, msg, severity, node, port, path, fixes or []))
 
-    if graph.backend != "pytorch":
-        add("E_UNSUPPORTED_BACKEND", f"Backend '{graph.backend}' is not implemented; only 'pytorch' is.", path="/backend")
+    from backends.registry import BACKEND_IDS
+
+    if graph.backend not in BACKEND_IDS:
+        add("E_UNSUPPORTED_BACKEND", f"Backend '{graph.backend}' is not implemented; model graphs support {list(BACKEND_IDS)}.", path="/backend")
     if graph.graphKind != "model":
         add("E_UNSUPPORTED_GRAPH_KIND", f"Graph kind '{graph.graphKind}' is not implemented; only 'model' and 'tabular' are.", path="/graphKind")
     if graph.schemaVersion.split(".")[0] != SCHEMA_VERSION.split(".")[0]:
@@ -124,6 +126,10 @@ def validate(graph: Graph) -> Report:
             add("E_UNSUPPORTED_VERSION", f"'{n.type}' version {n.version} is not available (have {op.version}). No silent upgrade is performed.",
                 n.id, path=npath)
             continue
+        if op.backend in ("keras", "jax") and graph.backend in BACKEND_IDS and op.backend != graph.backend:
+            add("E_BACKEND_OP", f"'{n.type}' is a {op.backend}-specific node and the graph targets '{graph.backend}'. It is not replaced by a similar operation; "
+                f"switch the graph's backend to '{op.backend}' or remove the node.", n.id, path=f"/nodes/{n.id}",
+                fixes=[Fix(f"Set backend to '{op.backend}'", None, "backend", op.backend)])
         try:
             cfgs[n.id] = op.Config.model_validate(n.config)
         except ValidationError as e:
@@ -226,9 +232,22 @@ def validate(graph: Graph) -> Report:
         r.resolved[nid], r.input_types[nid], r.output_types[nid] = cfg, ins, outs
     r.unresolved_nodes += [i for i in cyc if i not in r.unresolved_nodes]
     _check_sharing(r, graph, add)
+    if graph.backend in ("keras", "jax"):
+        _check_backend(r, graph, add)
     _check_signatures(r, ex, add)
     _check_boundaries(r, graph, incoming, add)
     return r
+
+
+def _check_backend(r: Report, graph: Graph, add) -> None:
+    """A18: a node the selected backend cannot run is an error NOW, with the adapter's stable code. (Backend-specific nodes on the wrong backend
+    were already reported by the node loop.)"""
+    from backends.compat import node_checks
+
+    for nid, chk in node_checks(r, graph.backend).items():
+        if chk.status == "unsupported" and chk.code != "E_BACKEND_OP":
+            add(chk.code, f"{chk.reason} (backend '{graph.backend}')", nid, path=f"/nodes/{nid}",
+                fixes=[Fix("Set backend to 'pytorch', which supports every operation of the model graph kind", None, "backend", "pytorch")])
 
 
 def _check_boundaries(r: Report, graph: Graph, incoming: dict, add) -> None:

@@ -1,10 +1,10 @@
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { isTensorType, type GNode, type NodeView, type OpInfo, type TabularNodeStatus } from "../types";
+import { isTensorType, type CompatNode, type GNode, type NodeView, type OpInfo, type TabularNodeStatus } from "../types";
 import { fmtInt, fmtShape, summarize } from "../util";
 import { SchemaList } from "./Tabular";
 
 export interface CardData extends Record<string, unknown> {
-  gnode: GNode; op?: OpInfo; view?: NodeView; pending: boolean; runStatus?: TabularNodeStatus;
+  gnode: GNode; op?: OpInfo; view?: NodeView; pending: boolean; runStatus?: TabularNodeStatus; compat?: CompatNode;
   /** composite / repeat / select: open the module for editing, expand or collapse the inner nodes in place */
   onOpen?: () => void; onToggle?: () => void; expanded?: boolean; inner?: boolean; localName?: string;
 }
@@ -15,7 +15,7 @@ const portTop = (i: number, n: number) => `${((i + 1) * 100) / (n + 1)}%`;
 /** VISION 8.3 card. Model graphs show tensor shapes and parameter counts; tabular graphs show the schema (columns/types), row count,
  *  partition and the kind of each wire instead. */
 export function OpNodeCard({ data, selected }: NodeProps<CardNode>) {
-  const { gnode, op, view, pending, runStatus, onOpen, onToggle, expanded, inner, localName } = data;
+  const { gnode, op, view, pending, runStatus, onOpen, onToggle, expanded, inner, localName, compat } = data;
   const errors = view?.diagnostics.filter((d) => d.severity === "error") ?? [];
   const warnings = view?.diagnostics.filter((d) => d.severity === "warning") ?? [];
   const inputs = view?.inputPorts ?? op?.inputs ?? [], outputs = view?.outputPorts ?? op?.outputs ?? [];
@@ -31,6 +31,7 @@ export function OpNodeCard({ data, selected }: NodeProps<CardNode>) {
       <div className="card-head">
         <b>{structural ? (view?.kind ? `${view.kind.replace("core.", "")}` : op?.displayName) : (op?.displayName ?? gnode.type)}</b>
         <span className="badge">{structural ? "module" : (op?.backend ?? "unresolved")}</span>
+        {compat && <span className={`badge compat-badge compat-${compat.status}`} title={compat.status === "unsupported" ? `${compat.code}: ${compat.reason}` : compat.conversions.length ? compat.conversions.map((c) => `${c.kind}: ${c.detail}`).join("\n") : "runs as authored on the selected backend"}>{compat.status === "unsupported" ? `unsupported: ${compat.code?.replace("E_BACKEND_", "")}` : compat.status === "converted" ? `converted ×${compat.conversions.length}` : "supported"}</span>}
         {shared && <span className="badge shared-badge" title={`This call site uses the parameter tensors of ${shared}: the very same tensors, not a copy.`}>{"\u{1F517}"} shared</span>}
         {diagKind && <span className={`badge diag-${diagKind}`} title={diagKind === "observation-only" ? "Passes the value through unchanged; records only while a capture covers it." : "Stops the run when its check fails. Only active when assertions are enabled."}>{diagKind}</span>}
       </div>

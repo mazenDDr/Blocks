@@ -25,6 +25,12 @@ def generate_pytorch(graph: Graph) -> str:
         from .validate import ExecutionBlocked
 
         raise ExecutionBlocked([Diagnostic("E_UNSUPPORTED_GRAPH_KIND", f"Graph kind '{graph.graphKind}' has no PyTorch export.", path="/graphKind")])
+    if graph.backend != "pytorch":
+        from .types import Diagnostic
+        from .validate import ExecutionBlocked
+
+        raise ExecutionBlocked([Diagnostic("E_BACKEND_MISMATCH", f"This graph targets backend '{graph.backend}'; generate_pytorch exports PyTorch. "
+                                           f"Use backends.export_code(graph, '{graph.backend}').", path="/backend")])
     report = require_executable(graph)
     orig, graph = graph, (report.graph or graph)
     types = {n.id: n.type for n in graph.nodes}

@@ -138,3 +138,8 @@ Do not add placeholder buttons for them. Record them in `docs/CAPABILITIES.md` a
 
 Connected data sources, snapshots, studies and sweeps are implemented (ADR 0004, `docs/CAPABILITIES.md`). Next bounded step: ablation builder (replace/bypass/freeze/remove with interface validation),
 parallel trials with quotas, early stopping with consumed-budget display, and a research record sheet linked to immutable run/evaluation identities.
+
+
+## Milestone 6a status
+
+TensorFlow/Keras 3 and JAX portable subsets, compatibility reports, native exports, the generated coverage ledger and the A19 benchmark are implemented (ADR 0010). Next bounded step: Milestone 6b (vision, NLP and speech domain workflows), then worker training runs for a second backend if they are wanted.

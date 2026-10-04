@@ -224,3 +224,27 @@ export interface RunDiff {
   a: string; b: string; changeCount: number; warning: string | null; identity: { a: unknown; b: unknown };
   graph: { available: boolean; changes: Record<string, any>[] }; runConfig: { field: string; from: unknown; to: unknown }[]; data: { node: string; from: unknown; to: unknown }[];
 }
+
+// ---- backends and the coverage ledger (Milestone 6a)
+export interface BackendInfoJson {
+  id: string; title: string; role: string; layout: string; training: string; init: string; pinned: Record<string, string | null>;
+  available: boolean; versions: Record<string, string>; reason: string | null; facets: Record<string, string>;
+}
+export interface CompatConversion { kind: string; detail: string }
+export interface CompatNode { type: string; status: "supported" | "converted" | "unsupported"; conversions: CompatConversion[]; code: string | null; reason: string | null }
+export interface CompatReport {
+  backend: string; title: string; graphHash: string; ok: boolean; executable: boolean; counts: Record<string, number>; nodes: Record<string, CompatNode>;
+  unchecked: string[]; structural: { code: string; nodeId?: string | null; message: string }[]; sharing: { owner: string; users: string[] }[];
+  available: boolean; availabilityReason: string | null; versions: Record<string, string>; facets: Record<string, string>; init: string; layout: string; training: string;
+}
+export interface LedgerModelRow {
+  type: string; graphKind: string; backend: string; explain: boolean; architecture: string; testFiles: string[]; workloads: string[];
+  execution: Record<string, string>; inspection: Record<string, string>; restrictions: Record<string, string[]>;
+  tests: Record<string, { cases: string[]; workloads: string[]; refusalCases: string[] }>;
+}
+export interface LedgerOtherRow { type: string; graphKind: string; backend: string; explain: boolean; view: string | null; testFiles: string[] }
+export interface Ledger {
+  backends: { id: string; title: string; role: string; pinned: Record<string, string | null>; layout: string; training: string; init: string }[];
+  model: LedgerModelRow[]; other: LedgerOtherRow[]; refusals: { case: string; op: string; backend: string; code: string }[];
+  conformanceCases: number; workloads: string[]; templateNote: string; markdown: string;
+}

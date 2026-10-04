@@ -57,6 +57,16 @@ class ValidateRequest(BaseModel):
     graph: Graph
 
 
+class CompatRequest(BaseModel):
+    graph: Graph
+    backend: str
+
+
+class ExportRequest(BaseModel):
+    graph: Graph
+    backend: str = "pytorch"
+
+
 class InspectRequest(BaseModel):
     kind: Literal["weights", "activations", "sample_loss", "confusion",
                   "table", "profile", "fit_state", "coefficients", "metrics", "test_result", "distribution", "tail", "number", "summary"]
@@ -409,6 +419,68 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
             raise _err(422, "the graph cannot be exported until its errors are fixed", [d.to_json() for d in e.diagnostics], "execution_blocked")
         return {"projectId": pid, "graphHash": semantic_hash(graph), "language": "python", "code": code}
 
+    # ------------------------------------------------------------------ backends (Milestone 6a)
+    def _export_for(graph: Graph, backend: str, pid: str | None = None) -> dict[str, Any]:
+        import backends as B
+
+        if graph.graphKind != "model":
+            raise _err(422, f"'{graph.graphKind}' graphs have no native {backend} export", code="export_unsupported")
+        if backend not in B.BACKEND_IDS:
+            raise _err(404, f"unknown backend '{backend}' (known: {list(B.BACKEND_IDS)})", code="unknown_backend")
+        try:
+            code = B.export_code(graph, backend)
+        except B.BackendError as e:
+            diags = [{"code": v["code"], "nodeId": n, "message": v["reason"]} for n, v in (e.report.nodes.items() if e.report else []) if v["status"] == "unsupported"]
+            diags += [{"code": d["code"], "nodeId": d.get("nodeId"), "message": d["message"]} for d in (e.report.structural if e.report else [])]
+            raise _err(422, e.message, diags, e.code.lower())
+        except ExecutionBlocked as e:
+            raise _err(422, "the graph cannot be exported until its errors are fixed", [d.to_json() for d in e.diagnostics], "execution_blocked")
+        return {"projectId": pid, "graphHash": semantic_hash(graph), "backend": backend, "language": "python", "code": code}
+
+    @app.get("/api/backends")
+    def get_backends():
+        import backends as B
+
+        return {"backends": [B.describe(b) for b in B.BACKEND_IDS]}
+
+    @app.post("/api/backends/compat")
+    def post_compat(req: CompatRequest):
+        """Backend compatibility report for a model graph, computed before anything executes."""
+        import backends as B
+
+        if req.graph.graphKind != "model":
+            raise _err(422, f"backend compatibility applies to model graphs, not '{req.graph.graphKind}'", code="compat_unsupported")
+        try:
+            rep = B.compat_report(req.graph, req.backend)
+        except B.BackendError as e:
+            raise _err(404, e.message, code="unknown_backend")
+        return rep.to_json()
+
+    @app.post("/api/export")
+    def post_export(req: ExportRequest):
+        return _export_for(req.graph, req.backend)
+
+    def _register_backend_export(backend: str) -> None:
+        # one literal route per backend: a `{backend}` path parameter would shadow sibling routes such as .../export/bundle
+        @app.get(f"/api/projects/{{pid}}/export/{backend}", name=f"export_{backend}")
+        def export_backend(pid: str):
+            path = sv.project_path(pid)
+            if not path.exists():
+                raise HTTPException(404, {"code": "not_found", "message": f"no project '{pid}'"})
+            return _export_for(load_project(path).graph, backend, pid)
+
+    for _b in ("keras", "jax"):
+        _register_backend_export(_b)
+
+    @app.get("/api/coverage")
+    def get_coverage():
+        """The public coverage ledger (generated from the registry and adapters; docs/COVERAGE.md is the same data rendered)."""
+        from backends import coverage as C
+
+        L = C.build_ledger()
+        L["markdown"] = C.render_markdown(L)
+        return L
+
     # ------------------------------------------------------------------ runs
     @app.post("/api/runs")
     def submit(req: SubmitRequest, idempotency_key: str | None = Header(None, alias="Idempotency-Key")):
@@ -423,6 +495,10 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
             graph = load_project(path).graph
         else:
             graph = req.graph
+        if graph.graphKind == "model" and graph.backend != "pytorch":
+            raise _err(422, f"This graph targets backend '{graph.backend}'. Training runs execute on PyTorch only: the {graph.backend} backend runs forward, loss, "
+                       "gradients and one SGD step through the backends API, not worker training runs. Set the graph's backend to 'pytorch' to train it.",
+                       code="backend_training_unsupported")
         tabular = graph.graphKind in ("tabular", "rl")   # typed-wire graph kinds: validate, then submit (their config models differ below)
         rl = graph.graphKind == "rl"
         agent = graph.graphKind == "agent"

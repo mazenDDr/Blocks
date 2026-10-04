@@ -126,3 +126,20 @@ export function useModuleValidation(graph: Graph, moduleId: string | null, versi
   }, [graph, moduleId, version, JSON.stringify(shapes), delay]); // eslint-disable-line react-hooks/exhaustive-deps
   return state;
 }
+
+/** Backend compatibility report of the draft graph for its selected backend (debounced, stale responses aborted). Model graphs only. */
+export function useCompat(graph: Graph, backend: string, enabled: boolean, delay = 300) {
+  const [state, setState] = useState<{ data: import("./types").CompatReport | null; pending: boolean; error: string | null }>({ data: null, pending: enabled, error: null });
+  useEffect(() => {
+    if (!enabled) { setState({ data: null, pending: false, error: null }); return; }
+    const ctl = new AbortController();
+    setState((s) => ({ ...s, pending: true }));
+    const t = setTimeout(() => {
+      api.post<import("./types").CompatReport>("/api/backends/compat", { graph, backend }, undefined, ctl.signal)
+        .then((data) => setState({ data, pending: false, error: null }))
+        .catch((e) => { if (!ctl.signal.aborted) setState((s) => ({ ...s, pending: false, error: errorText(e) })); });
+    }, delay);
+    return () => { clearTimeout(t); ctl.abort(); };
+  }, [graph, backend, enabled, delay]);
+  return state;
+}

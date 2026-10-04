@@ -16,6 +16,8 @@ META: dict[str, tuple[str, str, str]] = {
     "core.square": ("Square", "Tensor ops", "Elementwise x^2."),
     "core.sum": ("Sum", "Tensor ops", "Sum over chosen dims."),
     "core.mean": ("Mean", "Tensor ops", "Mean over chosen dims with an explicit divisor rule."),
+    "keras.layers.separable_conv2d": ("SeparableConv2D (Keras)", "Backend-specific", "Keras-only: depthwise then pointwise convolution in one layer. Rejected on other backends."),
+    "jax.lax.cumsum": ("cumsum (jax.lax)", "Backend-specific", "JAX-only: inclusive cumulative sum along one axis (optionally reversed). Rejected on other backends."),
     "core.scalar_mul": ("Scalar multiply", "Tensor ops", "Multiply every element by a constant."),
     # ---- tabular graph kind
     "tabular.csv_source": ("CSV table source", "Data", "Reads a local CSV file into a table; the file's SHA-256 is recorded with every run."),

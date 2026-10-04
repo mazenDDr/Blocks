@@ -99,6 +99,11 @@ def lower_graph(graph: Graph, report: Report | None = None) -> GraphModule:
         from .types import Diagnostic
 
         raise ExecutionBlocked([Diagnostic("E_UNSUPPORTED_GRAPH_KIND", f"Graph kind '{graph.graphKind}' is not lowered to PyTorch.", path="/graphKind")])
+    if graph.backend != "pytorch":
+        from .types import Diagnostic
+
+        raise ExecutionBlocked([Diagnostic("E_BACKEND_MISMATCH", f"This graph targets backend '{graph.backend}'; lower_graph builds PyTorch modules. "
+                                           f"Use backends.compile_graph(graph, '{graph.backend}'), or set the graph's backend to 'pytorch'.", path="/backend")])
     if report is None or not report.ok:
         report = require_executable(graph)
     return GraphModule(report.graph or graph, report)

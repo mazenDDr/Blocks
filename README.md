@@ -2,8 +2,8 @@
 
 Phase 0 (semantic and execution foundation), Phase 1 (visual CNN workbench: control API + editor), Milestone 2a (tabular graph kind:
 data preparation, classical ML, statistics), Milestone 2b (connected data sources, versioned extraction, studies and sweeps), Milestone 3 (research-level composition) and
-Milestone 4 (language-model and agent workflows on native LangGraph) are implemented.
-See `docs/PLAN.md`, `docs/CAPABILITIES.md` and `docs/adr/` (ADR 0003: tabular graph kind; ADR 0004: connectors, snapshots, studies; ADR 0008: agent graph kind, memory, context recording).
+Milestone 4 (language-model and agent workflows on native LangGraph), Milestone 5 (reinforcement learning, unsupervised workflows) and Milestone 6a (TensorFlow/Keras 3 and JAX backends for a portable model-graph subset, compatibility reports, native exports, coverage ledger, benchmarks) are implemented.
+See `docs/PLAN.md`, `docs/CAPABILITIES.md` and `docs/adr/` (ADR 0003: tabular graph kind; ADR 0004: connectors, snapshots, studies; ADR 0008: agent graph kind, memory, context recording; ADR 0010: additional backends, compatibility, coverage).
 
 ## Setup
 
@@ -136,6 +136,27 @@ pnpm -C apps/editor build && pnpm -C apps/editor exec tsc --noEmit
 
 In the editor open an example under "Examples - reinforcement learning" and press Run (CartPole needs about 15 s), then open Rollouts, Replay buffer and Transition trace; the Variants tab runs reward
 variants x seeds as a study. Open `unsupervised_cells` / `unsupervised_moons` (SYNTHETIC data), press Run graph, and click the clustering, PCA, projection and diagnostics nodes.
+
+## Additional backends, compatibility reports and the coverage ledger (Milestone 6a)
+
+A model graph can target `pytorch` (default), `keras` (TensorFlow/Keras 3 on the TensorFlow backend) or `jax`. Only a portable subset (14 operations: tensor input, conv2d, relu, max_pool2d, adaptive average pooling,
+flatten, linear, cross-entropy, sub/add/square/scalar_mul/sum/mean) runs on Keras and JAX; everything else, and every unsupported setting, is reported per node with a stable code **before** execution and nothing is
+substituted. Keras and JAX execute forward, loss, gradients and one SGD step; **training runs, checkpoints and run history remain PyTorch-only**. See ADR 0010, `docs/CAPABILITIES.md` and the generated `docs/COVERAGE.md`.
+
+Commands that were run for this milestone:
+
+```bash
+.venv/bin/pip install tensorflow==2.21.0 keras==3.15.1 jax==0.11.2 jaxlib==0.11.2    # CPU wheels for CPython 3.13 / macOS arm64; pinned (with their dependencies) in python/requirements.txt
+python -m backends.coverage --write        # regenerates docs/COVERAGE.md from the registry, adapters and tests (tests/test_coverage_ledger.py fails when it is stale)
+python benchmarks/run_benchmarks.py        # A19: graph-lowered vs handwritten native, per backend; writes benchmarks/results/m6a_raw.json and m6a_summary.md (about 3 minutes)
+pytest -q                                  # includes tests/test_backend_*.py and tests/test_coverage_ledger.py (they skip with the reason when a backend is unavailable)
+pytest -q -m live
+pnpm -C apps/editor build && pnpm -C apps/editor exec tsc --noEmit
+```
+
+In the editor open a model graph (for example `reference_cnn`) and use the **Backend** selector in the top bar: nodes get compatibility badges (supported / converted ×n / unsupported with the code), the **Backend** tab lists
+every conversion and refusal and the VISION 14.2 facets, **Export code** shows deterministic native source for PyTorch, Keras or JAX, and the **Coverage** tab shows the ledger. Try `padding_mode: reflect` on a convolution and select Keras.
+The same data over HTTP: `GET /api/backends`, `POST /api/backends/compat`, `POST /api/export`, `GET /api/projects/{id}/export/{backend}`, `GET /api/coverage`.
 
 ## Run the tests
 

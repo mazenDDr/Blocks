@@ -359,3 +359,18 @@ table.decisions tr.excluded td { background: #fff5f5; } table.decisions tr.kept 
 .policybanner, .projbanner, .externalbanner { padding: 5px 8px; border-radius: 4px; margin: 4px 0; font-size: 11.5px; } .policybanner { background: #eef2ff; border: 1px solid #c9d2f0; } .projbanner { background: #fff4e0; border: 1px solid #f0d49b; color: #6d4700; } .externalbanner { background: #f3e8ff; border: 1px solid #d8b4fe; }
 .legendchip { margin-left: 8px; } .legendchip i { display: inline-block; width: 9px; height: 9px; border-radius: 5px; margin-right: 3px; }
 .scatter { margin: 4px 0; max-width: 520px; }
+
+/* ---- backends and coverage (Milestone 6a) */
+.badge.compat-supported { background: #e6f6ea; border-color: #b6dfc1; }
+.badge.compat-converted { background: #fff4e0; border-color: #f0d49b; }
+.badge.compat-unsupported, .badge.bad { background: #fdeaea; border-color: #f0b4b4; color: var(--bad); }
+.card .compat-badge { cursor: help; }
+.bk-cards { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.bk-card { text-align: left; padding: 8px; width: 300px; background: #fff; }
+.bk-card.on { border-color: var(--accent); box-shadow: 0 0 0 2px #cfe0ff; }
+.bk-card .good { color: var(--ok); } .bk-card .bad { color: var(--bad); }
+table.compat { width: 100%; margin: 6px 0; } table.compat ul { margin: 0; padding-left: 16px; } table.compat tr.bad td { background: #fff5f5; }
+table.compat th { background: #f1f3f6; }
+.backendws, .coveragews { overflow: auto; padding: 10px 14px; }
+.bknote { background: #eef4ff; border: 1px solid #c9d8f5; border-radius: 4px; padding: 6px 10px; margin: 6px 0 10px; line-height: 1.45; }
+.topbar { overflow-x: auto; white-space: nowrap; }

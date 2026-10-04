@@ -168,13 +168,13 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
 - Experiment board: tags, notes, search/filter of runs, smoothing, x-axes other than step (model graphs keep the pin + two-run compare; tabular/model sweeps have the Experiments board above).
 - Auth, multi-user; image-folder datasets are server-side folders (tabular graphs can read connected sources).
 - Dependency lock, data manifest, project bundle export (only graph + UI files are saved).
-- Milestones 5-8 (RL, other backends, serving), A09, A17-A20, A25-A27, A34, A38+ not listed above (Milestone 3 and 4 rows are above).
+- Milestones 7-8 (serving, registry), A09, A17-A20, A25-A27, A34, A38+ not listed above (Milestone 3 and 4 rows are above).
 - Broadcasting, ops beyond the 14 listed, dtype casts, multi-input/output training graphs, losses other than
   CrossEntropy in the worker, schedulers, gradient clipping/accumulation, mixed precision, GPU.
 - Model/parameter policies (initialization, freezing, sharing, regularization), conv data type/device placement.
 - Data: image folders and (tabular graphs) local CSV files only.
 - Loss and optimizer inspectors, response curves; optimizer state beyond checkpoints.
-- Other backends (Keras, JAX, ...), RL, serving, registry.
+- Serving and registry; Keras/JAX worker training runs (see Milestone 6a: only forward, loss, gradients and one SGD step exist there).
 
 ## Milestone 5: reinforcement and unsupervised research (A51-A55)
 
@@ -192,3 +192,39 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
 
 Known gaps: PPO and other algorithms, continuous actions, async vector envs, exact mid-episode resume, UMAP, offline/multi-agent RL, frames only from environment 0, prioritized replay, recurrent policies
 (the reset contract is tested with a stateful stand-in, not a recurrent network), unsupervised: no self-supervised/contrastive workflows, no density-based anomaly block beyond the GMM log-density column.
+
+## Milestone 6a: additional backends, compatibility reports, coverage ledger (A06, A18, A19)
+
+Design record: `docs/adr/0010-additional-backends-compatibility-and-coverage.md`. The generated, per-operation ledger is `docs/COVERAGE.md` (`python -m backends.coverage --write`; also `GET /api/coverage` and the editor's Coverage tab).
+Pinned and installed here (macOS arm64, CPython 3.13.12): tensorflow 2.21.0, keras 3.15.1 (TensorFlow backend), jax 0.11.2 / jaxlib 0.11.2; **all three backends are available**. Vision, NLP and speech domain workflows are 6b and are not implemented.
+
+| Capability | Where | Test |
+|---|---|---|
+| Portable subset on TensorFlow/Keras 3 and JAX: tensor input, conv2d (stride, explicit/same/valid padding, dilation, groups, bias), relu, max_pool2d, adaptive (global) average pooling, flatten, linear, cross-entropy (mean/sum/none), sub, add, square, scalar_mul, sum, mean | `python/backends/` | `test_backend_conformance.py` (42 single-op cases x 3 backends vs handwritten native PyTorch: outputs, input and parameter gradients, one SGD update) |
+| Reference CNN (VISION 8.1) and the A22 MSE fixture and A34 step on every backend with identical copied weights: shapes, logits, loss, gradients, one SGD update match PyTorch within the declared tolerances; residual CNN (expanded modules), conv-flatten-linear (layout), shared parameters | `backends/workloads.py` | `test_backend_workloads.py` |
+| Explicit layout handling (NCHW graph vs NHWC Keras), weight layout (OIHW <-> HWIO, `(out,in)` <-> `(in,out)`), padding semantics, declared initialization differences; every conversion listed per node | `keras_spec.py`, `jax_spec.py` | `test_keras_layout_and_weight_layout_conversions_are_listed_per_node`, `test_flatten_after_spatial_maps_keeps_graph_order`, `test_init_differences_are_declared_and_real` |
+| Compatibility report per graph and backend (supported / converted / unsupported with stable code and reason; facets: layout, dtype, padding, randomness, gradients, serialization, hardware, init; sharing groups; availability) | `backends/compat.py`, `POST /api/backends/compat` | `test_backend_api.py`, `test_backend_workloads.py` |
+| **A18** selecting a backend with an unsupported feature fails before execution (`E_BACKEND_UNSUPPORTED_PADDING_MODE`, `_DILATION`, `_CONFIG`, `_DTYPE`, `_OP`, `E_BACKEND_OP`), in `validate`, `compile_graph`, `export_code`, `lower_graph`; the graph is unchanged | `graph_core/validate.py` | `test_a18_*`, `test_unsupported_*`, conformance refusal cases |
+| Parameter sharing preserved on every backend (one set of tensors, gradients accumulated, one update moves both call sites) or the graph is refused | `plan.py`, runtimes | `test_shared_parameters_stay_shared_on_every_backend`, `test_exports_keep_the_sharing_visible` |
+| Explicit backend-specific nodes: `keras.layers.separable_conv2d`, `jax.lax.cumsum`; each rejected on other backends (`E_BACKEND_OP`) | `operations/backend_ops.py` | `test_backend_specific_nodes.py` |
+| Native code export (Keras `Model` class, JAX `init_params`/`apply`), deterministic, `# node:` source map, generated without the framework installed; executed in a separate Python process and matched | `keras_spec.py`, `jax_spec.py`, `POST /api/export` | `test_backend_export.py` |
+| Coverage ledger generated from code; stale file fails the suite; API + editor view | `backends/coverage.py`, `docs/COVERAGE.md` | `test_coverage_ledger.py`, `test_coverage_endpoint_serves_the_generated_ledger` |
+| **A19** benchmark: graph-lowered vs handwritten native per backend, forward and train step, cold vs warm, 5 fresh-process repetitions, environment captured, raw JSON committed | `benchmarks/` | `benchmarks/results/m6a_raw.json`, `m6a_summary.md` (a measurement, not a test). Measured on this M4 Pro laptop (CPU, batch 16, 5 fresh processes x 50 calls): lowered/native median ratios for the reference CNN **train step** 0.994 (PyTorch), 1.044 (Keras, tf.function; it also pays the NCHW->NHWC transposes native Keras avoids), 1.011 (JAX, jit); **forward** 1.008 / 1.077 / 1.012; spreads across processes 2-11%. The 3-element MSE graph costs +0.005 / +0.030 / +0.000 ms forward. Cold start, RSS and the method are in the summary; no GPU, no larger models, threads requested but the JAX setting unverified |
+| Editor: backend selector, per-node compatibility badges (module instances show the worst child), Backend tab (report, facets, conversions, export), Export code per backend, Coverage tab, training panel labelled PyTorch-only | `apps/editor/src` | `pnpm -C apps/editor build`, `tsc --noEmit`; real Chrome check with a throwaway puppeteer-core script (not in the repo) |
+
+Declared tolerances (`python/backends/tolerances.py`; |a - b| <= atol + rtol |b|, against PyTorch CPU with copied weights) and the worst difference measured on the reference CNN (batch 8, 5 seeds, `Keras` and `JAX` alike):
+
+| Quantity | float32 declared (atol, rtol) Keras / JAX | measured worst | float64 declared (PyTorch / Keras) |
+|---|---|---|---|
+| forward (logits and every activation) | 2e-5, 1e-4 | 1.8e-6 | 1e-12, 1e-10 / 1e-10, 1e-9 |
+| loss | 2e-5, 1e-4 | 2.4e-7 | same as forward |
+| gradients (parameters, inputs) | 5e-5, 1e-3 | 1.4e-5 (relative up to 2.6e-2 on near-zero elements) | same as forward |
+| one SGD update (lr 0.1) | 5e-6, 1e-4 | 1.5e-8 | same as forward |
+
+PyTorch graph-lowered vs handwritten PyTorch: 1e-6 (A06 unchanged). JAX has no float64 entry: it is refused.
+
+Known gaps (6a): only the 14-op portable subset (`tensor.*`, `diag.*`, `code.block`, transformer blocks are PyTorch-only and reported unsupported elsewhere); Keras zero padding only, no max-pool padding/dilation/ceil_mode, no dilation with stride; JAX no float64,
+no max-pool dilation, adaptive pooling only when the size divides; no worker training runs, checkpoints or run history on Keras/JAX (forward, loss, gradients and one SGD step only); no cross-backend checkpoint conversion or optimizer-state transfer;
+no GPU/accelerator support or measurement; multi-backend pipelines joined by artifact contracts are not implemented; max-pool gradient tie-breaking may differ between frameworks (continuous random fixtures have no ties); probes, the debugger,
+recorded reruns and attention inspection are PyTorch-only (activation capture exists on all three); the coverage ledger's "tests" column counts conformance cases/workloads and test files that mention an op id literally (a static scan, not a mutation of coverage);
+architecture templates and pretrained weights are tracked separately (none provided); the benchmark covers one CNN and a 3-element MSE graph on CPU only, with threads requested but the JAX thread setting unverified.
