@@ -333,10 +333,15 @@ class Services:
 
 
 # ---------------------------------------------------------------------------------------- app
-def create_app(workbench: str | Path | None = None) -> FastAPI:
+def create_app(workbench: str | Path | None = None, api_token: str | None = None) -> FastAPI:
     wb = Path(workbench or os.environ.get("VOID_WORKBENCH", ".workbench")).resolve()
     sv = Services(wb)
     app = FastAPI(title="Project Void control service", version="1.0.0")
+    token = api_token if api_token is not None else (os.environ.get("VOID_API_TOKEN") or None)
+    sv.api_token = token
+    if token:
+        from .auth import TokenAuth, check_token
+        app.add_middleware(TokenAuth, token=check_token(token))  # checked now: middleware is only built on the first request
     app.state.services = sv
 
     @app.exception_handler(SourceError)

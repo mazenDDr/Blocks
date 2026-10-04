@@ -9,6 +9,7 @@ import copy
 import json
 import time
 import uuid
+import os
 import httpx
 import pandas as pd
 from connectors.localtest import LocalPostgres
@@ -23,7 +24,7 @@ def journey(base,namespace="m8-connected"):
             db.execute('CREATE TABLE synthetic_sensors (id integer, signal double precision, background double precision, label integer)')
             with db.cursor() as cur:
                 cur.executemany('INSERT INTO synthetic_sensors VALUES(%s,%s,%s,%s)',[(i,float(r.signal),float(r.background),int(r.label)) for i,r in df.iterrows()])
-        with httpx.Client(base_url=loopback(base),timeout=40,trust_env=False) as c:
+        with httpx.Client(headers=({'Authorization': 'Bearer ' + os.environ['VOID_API_TOKEN']} if os.environ.get('VOID_API_TOKEN') else {}), base_url=loopback(base),timeout=40,trust_env=False) as c:
             def call(method,path,**kw):
                 r=c.request(method,path,**kw);r.raise_for_status();return r.json()
             connection='m8-'+uuid.uuid4().hex[:8]

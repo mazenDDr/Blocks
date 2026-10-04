@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import time
 import uuid
+import os
 import httpx
 from scale.common import loopback
 
@@ -12,7 +13,7 @@ from scale.common import loopback
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--base',default='http://127.0.0.1:8768');ap.add_argument('--worker',default='http://127.0.0.1:8778');ap.add_argument('--token-env',default='VOID_WORKER_TOKEN');ap.add_argument('--output');a=ap.parse_args()
     records=[]
-    with httpx.Client(base_url=loopback(a.base),timeout=100,trust_env=False) as c:
+    with httpx.Client(headers=({'Authorization': 'Bearer ' + os.environ['VOID_API_TOKEN']} if os.environ.get('VOID_API_TOKEN') else {}), base_url=loopback(a.base),timeout=100,trust_env=False) as c:
         def call(method,path,**kw):
             r=c.request(method,path,**kw);r.raise_for_status();return r.json()
         graph=call('GET','/api/examples/production_sensors')['graph']

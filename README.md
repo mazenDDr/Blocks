@@ -326,3 +326,13 @@ The same Production flow serves **model-graph image classifiers** (for example t
 Completed RL runs appear as "greedy DQN policy (PyTorch)" candidates. The served policy is the final Q-network's argmax (no exploration). **Load replay-buffer observations** fills a request. Ground truth, if you have it, is your own reference actions (agreement only); environment return stays in the run's evaluation report. See ADR 0019. `.venv/bin/pytest -q tests/test_production_rl.py` was run.
 
 Unsupervised k-means, Gaussian mixture and PCA nodes (for example in `unsupervised_cells`) are captured for serving as well. DBSCAN and t-SNE are refused because they cannot map new points. Optional external labels give ARI/NMI, never accuracy; PCA shows reconstruction error. See ADR 0020. `.venv/bin/pytest -q tests/test_production_unsup.py` was run.
+
+## Optional access token
+
+Set the same `VOID_API_TOKEN` (16+ characters) for the backend and the editor dev server. The editor's proxy adds the header, so the token is not shipped to the browser. Every request without it gets 401. Scripts in `examples/` read the variable too. This is one shared secret, not user accounts, and not encryption: use a TLS proxy before exposing the service. See ADR 0021.
+
+```bash
+VOID_API_TOKEN=<secret> VOID_WORKBENCH=<dir> .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8778
+VOID_API_TOKEN=<secret> VOID_API=http://127.0.0.1:8778 pnpm -C apps/editor dev --host 127.0.0.1 --port 5303
+.venv/bin/pytest -q tests/test_auth.py
+```

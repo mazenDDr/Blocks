@@ -371,3 +371,11 @@ Not implemented: continuous-action, image-observation or recurrent policies; onl
 | External agreement (ARI/NMI, never accuracy) from supplied labels; PCA label-free reconstruction error; feature and assignment drift | `production/monitor.py` | `test_production_unsup.py` |
 
 Not implemented: serving with fitted preprocessing before the estimator; out-of-sample DBSCAN/t-SNE.
+
+## Optional bearer token (ADR 0021)
+
+| Capability | Where | Tests |
+|---|---|---|
+| `VOID_API_TOKEN` enables a constant-time bearer check on every request (401 + `WWW-Authenticate` otherwise); weak tokens refused at start-up; editor proxy injects the header server-side; traffic generator and example scripts authenticate | `services/control/auth.py`, `services/control/app.py`, `apps/editor/vite.config.ts`, `production/traffic.py` | `test_auth.py` |
+
+Not implemented: user accounts, roles, per-user audit, TLS termination (deploy behind a TLS proxy before exposing the service).
