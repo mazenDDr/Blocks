@@ -31,6 +31,7 @@ from graph_core.schema import Graph, ProjectDocument
 from graph_core.validate import ExecutionBlocked, validate
 from worker.process import RunHandle, submit_run
 from worker.agent_run import AgentRunConfig
+from worker.rl_run import RLRunConfig
 from worker.procedure_run import ProcedureRunConfig
 from worker.tabular_run import TabularRunConfig
 from worker.train import RunConfig, UnsupportedGraph, _io_contract
@@ -114,6 +115,11 @@ def validation_json(graph: Graph) -> dict[str, Any]:
         from .agent_api import agent_validation
 
         j.update(agent_validation(graph, report))
+    elif graph.graphKind == "rl":
+        from .rl_api import rl_validation
+
+        j["nodes"] = node_view(graph, report)
+        j["rl"] = rl_validation(graph, report)
     elif graph.graphKind == "model":
         v = views(graph, report)
         j["nodes"], j["flat"], j["instances"] = v["nodes"], v["flat"], v["instances"]
@@ -182,8 +188,8 @@ class Services:
     def launch(self, graph: Graph, cfg_dict: dict[str, Any]) -> str:
         """Start one run for a study trial (same checks as POST /api/runs). Raises HTTPException with the reason when it cannot start."""
         with self.lock:
-            if graph.graphKind == "tabular":
-                cfg = TabularRunConfig.model_validate(cfg_dict)
+            if graph.graphKind in ("tabular", "rl"):
+                cfg = (RLRunConfig if graph.graphKind == "rl" else TabularRunConfig).model_validate(cfg_dict)
                 report = validate(graph)
                 if not report.ok:
                     raise _err(422, "the graph has errors and cannot run", [d.to_json() for d in report.errors], "execution_blocked")
@@ -241,6 +247,17 @@ class Services:
                 "progress": {"nodesDone": sum(1 for n in nodes if n["status"] == "finished"), "nodes": len(order)},
                 "sources": sources, "snapshots": snaps, "runSeed": seeded, "splits": splits, "failure": failure, "libraries": libs}
 
+    def rl_summary(self, row: dict[str, Any]) -> dict[str, Any]:
+        rid, cfg = row["id"], row["config"]
+        started = self.store.last_event(rid, "run_started")
+        up = self.store.last_event(rid, "train_update")
+        ep = self.store.last_event(rid, "episode_end")
+        ev = self.store.last_event(rid, "eval")
+        return {"kind": "rl", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": cfg, "createdAt": row["created_at"],
+                "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "seed": cfg.get("seed"), "algorithm": started["data"]["algorithm"] if started else None,
+                "totalSteps": started["data"]["totalSteps"] if started else None, "envSteps": (ep["data"]["tick"] if ep else 0), "updates": (up["data"]["update"] if up else 0),
+                "lastEval": ({k: ev["data"][k] for k in ("tick", "final", "taskReturn", "return", "successRate")} if ev else None), "trial": cfg.get("trial")}
+
     def agent_summary(self, row: dict[str, Any]) -> dict[str, Any]:
         rid, cfg = row["id"], row["config"]
         fin = self.store.last_event(rid, "run_finished")
@@ -273,6 +290,8 @@ class Services:
         rid = row["id"]
         if row["config"].get("kind") == "tabular":
             return self.tabular_summary(row)
+        if row["config"].get("kind") == "rl":
+            return self.rl_summary(row)
         if row["config"].get("kind") == "procedure":
             return self.procedure_summary(row)
         if row["config"].get("kind") == "agent":
@@ -404,7 +423,8 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
             graph = load_project(path).graph
         else:
             graph = req.graph
-        tabular = graph.graphKind == "tabular"
+        tabular = graph.graphKind in ("tabular", "rl")   # typed-wire graph kinds: validate, then submit (their config models differ below)
+        rl = graph.graphKind == "rl"
         agent = graph.graphKind == "agent"
         procedure = graph.graphKind == "model" and req.config.get("kind") == "procedure"
         try:
@@ -415,6 +435,8 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
                 body = {**req.config}
                 body["procedure"] = body.get("procedure") or graph.training or {}
                 cfg = ProcedureRunConfig.model_validate({**body, "project_id": req.projectId or body.get("project_id")})
+            elif rl:
+                cfg = RLRunConfig.model_validate({**req.config, "project_id": req.projectId or req.config.get("project_id")})
             elif tabular:
                 cfg = TabularRunConfig.model_validate({**req.config, "project_id": req.projectId or req.config.get("project_id")})
             else:
@@ -591,10 +613,12 @@ def create_app(workbench: str | Path | None = None) -> FastAPI:
     def infer(req: InferRequest):
         return insp.infer(sv.run_data(req.runId), req.checkpointStep, req.sample, req.imageBase64)
 
-    from . import agent_api, connections_api, m3_api, studies_api
+    from . import agent_api, connections_api, m3_api, rl_api, studies_api, unsup_api
 
     agent_api.register(app, sv)
     connections_api.register(app, sv)
     studies_api.register(app, sv)
     m3_api.register(app, sv)
+    rl_api.register(app, sv)
+    unsup_api.register(app, sv)
     return app

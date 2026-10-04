@@ -1,0 +1,236 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "tabular",
+  "backend": "python",
+  "nodes": [
+    {
+      "id": "cells",
+      "type": "tabular.csv_source",
+      "version": "1.0.0",
+      "config": {
+        "path": "examples/fixtures/synthetic_cells.csv"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "kmeans",
+      "type": "sklearn.kmeans",
+      "version": "1.0.0",
+      "config": {
+        "features": [
+          "area_um2",
+          "intensity",
+          "granularity",
+          "elongation"
+        ],
+        "n_clusters": 3,
+        "seed": 0
+      },
+      "stateRef": null
+    },
+    {
+      "id": "km_diag",
+      "type": "sklearn.cluster_diagnostics",
+      "version": "1.0.0",
+      "config": {
+        "labels_column": "true_group",
+        "k_min": 2,
+        "k_max": 8,
+        "stability_runs": 8,
+        "resample": "subsample"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "gmm",
+      "type": "sklearn.gaussian_mixture",
+      "version": "1.0.0",
+      "config": {
+        "features": [
+          "area_um2",
+          "intensity",
+          "granularity",
+          "elongation"
+        ],
+        "n_components": 3,
+        "covariance_type": "full",
+        "seed": 0
+      },
+      "stateRef": null
+    },
+    {
+      "id": "gmm_diag",
+      "type": "sklearn.cluster_diagnostics",
+      "version": "1.0.0",
+      "config": {
+        "labels_column": "true_group",
+        "k_min": 2,
+        "k_max": 6,
+        "stability_runs": 6
+      },
+      "stateRef": null
+    },
+    {
+      "id": "pca",
+      "type": "sklearn.pca",
+      "version": "1.0.0",
+      "config": {
+        "features": [
+          "area_um2",
+          "intensity",
+          "granularity",
+          "elongation"
+        ],
+        "n_components": 2
+      },
+      "stateRef": null
+    },
+    {
+      "id": "pca_diag",
+      "type": "sklearn.cluster_diagnostics",
+      "version": "1.0.0",
+      "config": {
+        "stability_runs": 10
+      },
+      "stateRef": null
+    },
+    {
+      "id": "tsne",
+      "type": "sklearn.projection",
+      "version": "1.0.0",
+      "config": {
+        "features": [
+          "area_um2",
+          "intensity",
+          "granularity",
+          "elongation"
+        ],
+        "perplexity": 30,
+        "seed": 0
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "kind": "table",
+      "from": {
+        "node": "cells",
+        "port": "table"
+      },
+      "to": {
+        "node": "kmeans",
+        "port": "table"
+      }
+    },
+    {
+      "id": "e1",
+      "kind": "unsup_model",
+      "from": {
+        "node": "kmeans",
+        "port": "model"
+      },
+      "to": {
+        "node": "km_diag",
+        "port": "model"
+      }
+    },
+    {
+      "id": "e2",
+      "kind": "table",
+      "from": {
+        "node": "cells",
+        "port": "table"
+      },
+      "to": {
+        "node": "km_diag",
+        "port": "table"
+      }
+    },
+    {
+      "id": "e3",
+      "kind": "table",
+      "from": {
+        "node": "cells",
+        "port": "table"
+      },
+      "to": {
+        "node": "gmm",
+        "port": "table"
+      }
+    },
+    {
+      "id": "e4",
+      "kind": "unsup_model",
+      "from": {
+        "node": "gmm",
+        "port": "model"
+      },
+      "to": {
+        "node": "gmm_diag",
+        "port": "model"
+      }
+    },
+    {
+      "id": "e5",
+      "kind": "table",
+      "from": {
+        "node": "cells",
+        "port": "table"
+      },
+      "to": {
+        "node": "gmm_diag",
+        "port": "table"
+      }
+    },
+    {
+      "id": "e6",
+      "kind": "table",
+      "from": {
+        "node": "cells",
+        "port": "table"
+      },
+      "to": {
+        "node": "pca",
+        "port": "table"
+      }
+    },
+    {
+      "id": "e7",
+      "kind": "unsup_model",
+      "from": {
+        "node": "pca",
+        "port": "model"
+      },
+      "to": {
+        "node": "pca_diag",
+        "port": "model"
+      }
+    },
+    {
+      "id": "e8",
+      "kind": "table",
+      "from": {
+        "node": "cells",
+        "port": "table"
+      },
+      "to": {
+        "node": "pca_diag",
+        "port": "table"
+      }
+    },
+    {
+      "id": "e9",
+      "kind": "table",
+      "from": {
+        "node": "cells",
+        "port": "table"
+      },
+      "to": {
+        "node": "tsne",
+        "port": "table"
+      }
+    }
+  ]
+}

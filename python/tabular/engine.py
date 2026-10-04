@@ -8,7 +8,7 @@ from graph_core import registry
 from graph_core.schema import Graph
 from graph_core.validate import Report
 
-from .core import ExecCtx, ExecutionError, FitState, FittedModel, Plain, Table, clean, dumps, schema_of
+from .core import ExecCtx, ExecutionError, FitState, FittedModel, Plain, Table, UnsupModel, clean, dumps, schema_of
 
 
 class NodeFailed(Exception):
@@ -63,6 +63,8 @@ def describe_value(v: Any) -> dict[str, Any]:
         return {"valueKind": "fit_state", "transform": v.transform, "columns": v.columns}
     if isinstance(v, FittedModel):
         return {"valueKind": "model", "task": v.task, "features": v.features, "target": v.target}
+    if isinstance(v, UnsupModel):
+        return {"valueKind": "unsup_model", "method": v.method, "features": v.features}
     if isinstance(v, Plain):
         return {"valueKind": v.kind}
     return {"valueKind": type(v).__name__}
@@ -71,7 +73,7 @@ def describe_value(v: Any) -> dict[str, Any]:
 def artifact_bytes(v: Any) -> bytes:
     if isinstance(v, Table):
         return v.df.to_csv(index=True, index_label="row_id").encode()
-    if isinstance(v, (FitState, FittedModel)):
+    if isinstance(v, (FitState, FittedModel, UnsupModel)):
         return dumps(v.details).encode()
     if isinstance(v, Plain):
         return dumps(v.data).encode()

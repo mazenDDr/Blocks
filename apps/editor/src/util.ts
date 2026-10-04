@@ -71,6 +71,7 @@ export function runLabel(r: AnyRun): string {
   if (r.kind === "procedure") return `${r.id} · ${r.status} · step ${r.progress.step}${r.validation?.val_loss != null ? ` · val loss ${r.validation.val_loss.toFixed(3)}` : ""}${r.rerunOf ? " · rerun" : ""}`;
   if (r.kind === "sandbox") return `${r.id} · sandbox of ${r.parent} step ${r.step}`;
   if (r.kind === "tabular") return `${r.id} · ${r.status} · ${r.progress.nodesDone}/${r.progress.nodes} nodes`;
+  if (r.kind === "rl") return `${r.id} · ${r.status} · ${fmtInt(r.envSteps)}${r.totalSteps ? `/${fmtInt(r.totalSteps)}` : ""} steps · seed ${r.seed}`;
   if (r.kind === "agent") return `${r.id} · ${r.status} · thread ${r.threadId}${r.fixtureCalls ? " · FIXTURE" : ""}`;
   return `${r.id} · ${r.status}${r.final ? ` · val acc ${(r.final.val_acc * 100).toFixed(0)}%` : ""}`;
 }

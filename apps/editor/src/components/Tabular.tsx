@@ -3,6 +3,7 @@ import { useInspect } from "../hooks";
 import { isTensorType, type DensityPlot, type Explain, SummaryResult, TabProvenance, TabUnavailable, TablePage, WireType } from "../types";
 import { fmtInt, fmtNum, fmtP, shortHash } from "../util";
 import { NotRecorded } from "./Provenance";
+import { ClusterReportView, ClusteringView, PcaView, ProjectionView } from "./UnsupViews";
 import { DensityOnly, DensityTailPlot, Histogram, ScatterPlot, StripPlot } from "./StatsPlot";
 
 // ---------------------------------------------------------------------------------------- shared
@@ -294,6 +295,7 @@ export const VIEW_LABEL: Record<string, string> = {
   source: "Source", profile: "Profile", split: "Partition", fit_state: "Fitted state", coefficients: "Coefficients", metrics: "Metrics",
   test_result: "Test", distribution: "Distribution", tail: "Tail probability", number: "Value", step: "Changes",
   connector_source: "Source & snapshot", join: "Join report",
+  clustering: "Clusters", pca: "Components", projection: "Projection", cluster_report: "Diagnostics",
 };
 
 export function NodeResultView({ kind, runId, node }: { kind: string; runId: string | null; node: string }) {
@@ -308,6 +310,10 @@ export function NodeResultView({ kind, runId, node }: { kind: string; runId: str
     case "distribution": return <DistributionView runId={runId} node={node} />;
     case "tail": return <TailView runId={runId} node={node} />;
     case "number": return <NumberView runId={runId} node={node} />;
+    case "clustering": return <ClusteringView runId={runId} node={node} />;
+    case "pca": return <PcaView runId={runId} node={node} />;
+    case "projection": return <ProjectionView runId={runId} node={node} />;
+    case "cluster_report": return <ClusterReportView runId={runId} node={node} />;
     default: return <StepView runId={runId} node={node} />;
   }
 }

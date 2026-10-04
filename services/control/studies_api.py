@@ -60,7 +60,7 @@ def register(app: FastAPI, sv: "app_mod.Services") -> None:
                 app_mod.model_preflight(graph, base)
             except HTTPException:
                 raise
-        bad = smetrics.check_spec("tabular" if graph.graphKind == "tabular" else "model", req.objective.metric, report, graph)
+        bad = smetrics.check_spec(graph.graphKind if graph.graphKind in ("tabular", "rl") else "model", req.objective.metric, report, graph)
         if bad:
             raise _err(422, "objective_invalid", bad)
         return graph, report, None

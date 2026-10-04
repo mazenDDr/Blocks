@@ -15,6 +15,7 @@ from graph_core.schema import Graph
 from graph_core.validate import require_executable
 
 from .agent_run import AgentRunConfig, run_agent
+from .rl_run import RLRunConfig, run_rl
 from .procedure_run import ProcedureRunConfig, run_procedure
 from .tabular_run import TabularRunConfig, run_tabular
 from .train import RunConfig, run_training
@@ -29,6 +30,8 @@ def _child(graph_json: dict, cfg_json: dict, root: str, run_id: str, cancel_even
     graph = Graph.model_validate(graph_json)
     if graph.graphKind == "agent":
         run_agent(graph, AgentRunConfig.model_validate(cfg_json), store, run_id, should_cancel, resume)
+    elif graph.graphKind == "rl":
+        run_rl(graph, RLRunConfig.model_validate(cfg_json), store, run_id, should_cancel)
     elif graph.graphKind == "tabular":
         run_tabular(graph, TabularRunConfig.model_validate(cfg_json), store, run_id, should_cancel)
     elif cfg_json.get("kind") == "procedure":
@@ -57,7 +60,7 @@ class RunHandle:
         return self.process.is_alive()
 
 
-def submit_run(graph: Graph, cfg: RunConfig | TabularRunConfig | ProcedureRunConfig | AgentRunConfig, workbench: str | Path = ".workbench", run_id: str | None = None) -> RunHandle:
+def submit_run(graph: Graph, cfg: RunConfig | TabularRunConfig | ProcedureRunConfig | AgentRunConfig | RLRunConfig, workbench: str | Path = ".workbench", run_id: str | None = None) -> RunHandle:
     """Validate (raises ExecutionBlocked), record the run and its exact graph, and start the worker process."""
     require_executable(graph)
     store = ArtifactStore(workbench)

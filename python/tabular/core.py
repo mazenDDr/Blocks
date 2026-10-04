@@ -19,7 +19,9 @@ REPO = Path(__file__).resolve().parents[2]
 # Value kinds (= edge kinds). A table wire and a statistical-result wire never mean the same thing.
 TABLE, FIT_STATE, MODEL, METRICS, DISTRIBUTION, NUMBER, TAIL, TEST_RESULT = (
     "table", "fit_state", "model", "metrics", "distribution", "number", "tail", "test_result")
-VALUE_KINDS = (TABLE, FIT_STATE, MODEL, METRICS, DISTRIBUTION, NUMBER, TAIL, TEST_RESULT)
+# Milestone 5 (unsupervised): a fitted clustering / decomposition / projection (no target), and its diagnostics report
+UNSUP_MODEL, CLUSTER_REPORT = "unsup_model", "cluster_report"
+VALUE_KINDS = (TABLE, FIT_STATE, MODEL, METRICS, DISTRIBUTION, NUMBER, TAIL, TEST_RESULT, UNSUP_MODEL, CLUSTER_REPORT)
 
 
 # ------------------------------------------------------------------------------------------------ static types
@@ -99,6 +101,17 @@ class FittedModel:
     target: str
     fitted_on: dict[str, Any]
     details: dict[str, Any]
+
+
+@dataclass
+class UnsupModel:
+    method: str  # kmeans | gmm | dbscan | pca | tsne
+    estimator: Any  # the fitted scikit-learn object
+    scaler: Any  # fitted StandardScaler or None (fitted on the same rows as the estimator: there is no target, so no train/validation ownership)
+    features: list[str]
+    fitted_on: dict[str, Any]
+    details: dict[str, Any]
+    extra: dict[str, Any] = field(default_factory=dict)  # e.g. dbscan neighbour counts, t-SNE embedding
 
 
 @dataclass

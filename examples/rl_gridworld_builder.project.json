@@ -1,0 +1,274 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "rl",
+  "backend": "gymnasium",
+  "nodes": [
+    {
+      "id": "reward",
+      "type": "rl.reward",
+      "version": "1.0.0",
+      "config": {
+        "components": []
+      },
+      "stateRef": null
+    },
+    {
+      "id": "env",
+      "type": "rl.environment",
+      "version": "1.0.0",
+      "config": {
+        "env_id": "Void/GridWorld-v0",
+        "kwargs": {
+          "width": 6,
+          "height": 5,
+          "walls": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              2,
+              2
+            ],
+            [
+              4,
+              2
+            ],
+            [
+              4,
+              3
+            ],
+            [
+              4,
+              4
+            ]
+          ],
+          "start": [
+            0,
+            0
+          ],
+          "goal": [
+            5,
+            4
+          ],
+          "random_start": false,
+          "observation": "onehot"
+        },
+        "max_episode_steps": 60,
+        "seed": 0
+      },
+      "stateRef": null
+    },
+    {
+      "id": "qnet",
+      "type": "rl.q_network",
+      "version": "1.0.0",
+      "config": {
+        "network": {
+          "schemaVersion": "1.0.0",
+          "graphKind": "model",
+          "backend": "pytorch",
+          "nodes": [
+            {
+              "id": "obs",
+              "type": "core.tensor_input",
+              "version": "1.0.0",
+              "config": {
+                "shape": [
+                  "N",
+                  30
+                ],
+                "dtype": "float32",
+                "layout": "NF"
+              }
+            },
+            {
+              "id": "fc1",
+              "type": "pytorch.nn.linear",
+              "version": "1.0.0",
+              "config": {
+                "in_features": "infer",
+                "out_features": 64,
+                "bias": true
+              }
+            },
+            {
+              "id": "act1",
+              "type": "pytorch.nn.relu",
+              "version": "1.0.0",
+              "config": {}
+            },
+            {
+              "id": "q",
+              "type": "pytorch.nn.linear",
+              "version": "1.0.0",
+              "config": {
+                "in_features": "infer",
+                "out_features": 4,
+                "bias": true
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "e0",
+              "kind": "tensor",
+              "from": {
+                "node": "obs",
+                "port": "value"
+              },
+              "to": {
+                "node": "fc1",
+                "port": "input"
+              }
+            },
+            {
+              "id": "e1",
+              "kind": "tensor",
+              "from": {
+                "node": "fc1",
+                "port": "output"
+              },
+              "to": {
+                "node": "act1",
+                "port": "input"
+              }
+            },
+            {
+              "id": "e2",
+              "kind": "tensor",
+              "from": {
+                "node": "act1",
+                "port": "output"
+              },
+              "to": {
+                "node": "q",
+                "port": "input"
+              }
+            }
+          ]
+        }
+      },
+      "stateRef": null
+    },
+    {
+      "id": "replay",
+      "type": "rl.replay_buffer",
+      "version": "1.0.0",
+      "config": {
+        "capacity": 5000
+      },
+      "stateRef": null
+    },
+    {
+      "id": "learner",
+      "type": "rl.dqn_learner",
+      "version": "1.0.0",
+      "config": {
+        "total_steps": 6000,
+        "learning_starts": 200,
+        "eps_decay_steps": 3000,
+        "target_update_interval": 100,
+        "lr": 0.001,
+        "batch_size": 64
+      },
+      "stateRef": null
+    },
+    {
+      "id": "evaluation",
+      "type": "rl.evaluation",
+      "version": "1.0.0",
+      "config": {
+        "seeds": [
+          1000,
+          1001,
+          1002,
+          1003,
+          1004,
+          1005,
+          1006,
+          1007
+        ]
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "kind": "reward_spec",
+      "from": {
+        "node": "reward",
+        "port": "reward"
+      },
+      "to": {
+        "node": "env",
+        "port": "reward"
+      }
+    },
+    {
+      "id": "e1",
+      "kind": "env",
+      "from": {
+        "node": "env",
+        "port": "env"
+      },
+      "to": {
+        "node": "qnet",
+        "port": "env"
+      }
+    },
+    {
+      "id": "e2",
+      "kind": "env",
+      "from": {
+        "node": "env",
+        "port": "env"
+      },
+      "to": {
+        "node": "replay",
+        "port": "env"
+      }
+    },
+    {
+      "id": "e3",
+      "kind": "network",
+      "from": {
+        "node": "qnet",
+        "port": "network"
+      },
+      "to": {
+        "node": "learner",
+        "port": "network"
+      }
+    },
+    {
+      "id": "e4",
+      "kind": "buffer",
+      "from": {
+        "node": "replay",
+        "port": "buffer"
+      },
+      "to": {
+        "node": "learner",
+        "port": "buffer"
+      }
+    },
+    {
+      "id": "e5",
+      "kind": "learner",
+      "from": {
+        "node": "learner",
+        "port": "learner"
+      },
+      "to": {
+        "node": "evaluation",
+        "port": "learner"
+      }
+    }
+  ]
+}

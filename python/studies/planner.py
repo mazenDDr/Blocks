@@ -19,6 +19,7 @@ from graph_core import registry
 from graph_core.hashing import semantic_hash
 from graph_core.schema import Graph
 from graph_core.validate import validate
+from worker.rl_run import RLRunConfig
 from worker.tabular_run import TabularRunConfig
 from worker.train import RunConfig
 
@@ -32,7 +33,7 @@ class PlanError(Exception):
 
 
 def run_config_model(graph: Graph):
-    return TabularRunConfig if graph.graphKind == "tabular" else RunConfig
+    return {"tabular": TabularRunConfig, "rl": RLRunConfig}.get(graph.graphKind, RunConfig)
 
 
 def run_fields(graph: Graph) -> set[str]:

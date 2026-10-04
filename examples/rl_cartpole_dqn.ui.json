@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "reward": {
+      "x": 0,
+      "y": 0
+    },
+    "env": {
+      "x": 300,
+      "y": 0
+    },
+    "qnet": {
+      "x": 600,
+      "y": 0
+    },
+    "replay": {
+      "x": 600,
+      "y": 190
+    },
+    "learner": {
+      "x": 900,
+      "y": 0
+    },
+    "evaluation": {
+      "x": 1200,
+      "y": 0
+    }
+  },
+  "description": "DQN on Gymnasium CartPole-v1 (installed Gymnasium 1.3.0): a simulator, not measured data. Press Run in the RL workspace; an untrained greedy policy balances about 10 steps, and the evaluation (10 fixed seeds, separate environments) shows the learner's return, length and termination vs truncation. Open the Transition trace tab after the run.",
+  "synthetic": false
+}

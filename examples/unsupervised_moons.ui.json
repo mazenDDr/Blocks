@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "moons": {
+      "x": 0,
+      "y": 0
+    },
+    "kmeans": {
+      "x": 300,
+      "y": 0
+    },
+    "km_diag": {
+      "x": 600,
+      "y": 0
+    },
+    "dbscan": {
+      "x": 300,
+      "y": 190
+    },
+    "db_diag": {
+      "x": 600,
+      "y": 190
+    }
+  },
+  "description": "SYNTHETIC two-moons data. k-means gets a respectable silhouette on the wrong partition; DBSCAN recovers the shapes. Internal metrics assume convex clusters; the external agreement with true_shape (which was not used for fitting) shows the difference.",
+  "synthetic": true
+}

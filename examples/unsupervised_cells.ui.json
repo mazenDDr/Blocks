@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "cells": {
+      "x": 0,
+      "y": 0
+    },
+    "kmeans": {
+      "x": 300,
+      "y": 0
+    },
+    "km_diag": {
+      "x": 600,
+      "y": 0
+    },
+    "gmm": {
+      "x": 300,
+      "y": 190
+    },
+    "gmm_diag": {
+      "x": 600,
+      "y": 190
+    },
+    "pca": {
+      "x": 300,
+      "y": 380
+    },
+    "pca_diag": {
+      "x": 600,
+      "y": 380
+    },
+    "tsne": {
+      "x": 300,
+      "y": 570
+    }
+  },
+  "description": "SYNTHETIC cell measurements with three generating groups (true_group). k-means, a Gaussian mixture, PCA and a t-SNE view with method-appropriate diagnostics and stability. The t-SNE embedding is a non-metric projection: its separation is not evidence of clusters. true_group is an EXTERNAL label, not used for fitting.",
+  "synthetic": true
+}

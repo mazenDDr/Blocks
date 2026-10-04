@@ -93,6 +93,7 @@ def study_view(ss: StudyStore, rs: ArtifactStore, sid: str, running: bool) -> di
     return {"id": sid, "name": spec["name"], "hypothesis": spec["hypothesis"], "notes": spec["notes"], "state": "running" if running else st["state"],
             "createdAt": st["created_at"], "updatedAt": st["updated_at"], "graphKind": kind, "graphHash": spec["graphHash"], "projectId": spec.get("projectId"),
             "objective": {**spec["objective"], "semantics": ("single evaluation after fitting; no steps" if kind == "tabular" else
+                                                             "final greedy evaluation on the declared evaluation seeds (separate environment instances), after training" if kind == "rl" else
                                                              f"{mspec.select} over epoch-end evaluations (value, step and epoch are recorded per trial)")},
             "search": spec["search"], "repeats": spec["repeats"], "limits": spec["limits"], "runConfig": spec["run_config"],
             "plan": spec["planSummary"], "baseline": base, "counts": counts, "trials": rows, "groups": groups,

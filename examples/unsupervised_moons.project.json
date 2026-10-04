@@ -1,0 +1,141 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "tabular",
+  "backend": "python",
+  "nodes": [
+    {
+      "id": "moons",
+      "type": "tabular.csv_source",
+      "version": "1.0.0",
+      "config": {
+        "path": "examples/fixtures/synthetic_moons.csv"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "kmeans",
+      "type": "sklearn.kmeans",
+      "version": "1.0.0",
+      "config": {
+        "features": [
+          "x",
+          "y"
+        ],
+        "n_clusters": 2,
+        "seed": 0
+      },
+      "stateRef": null
+    },
+    {
+      "id": "km_diag",
+      "type": "sklearn.cluster_diagnostics",
+      "version": "1.0.0",
+      "config": {
+        "labels_column": "true_shape",
+        "k_min": 2,
+        "k_max": 6,
+        "stability_runs": 8
+      },
+      "stateRef": null
+    },
+    {
+      "id": "dbscan",
+      "type": "sklearn.dbscan",
+      "version": "1.0.0",
+      "config": {
+        "features": [
+          "x",
+          "y"
+        ],
+        "eps": 0.2,
+        "min_samples": 5,
+        "scale": "none"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "db_diag",
+      "type": "sklearn.cluster_diagnostics",
+      "version": "1.0.0",
+      "config": {
+        "labels_column": "true_shape",
+        "stability_runs": 8
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "kind": "table",
+      "from": {
+        "node": "moons",
+        "port": "table"
+      },
+      "to": {
+        "node": "kmeans",
+        "port": "table"
+      }
+    },
+    {
+      "id": "e1",
+      "kind": "unsup_model",
+      "from": {
+        "node": "kmeans",
+        "port": "model"
+      },
+      "to": {
+        "node": "km_diag",
+        "port": "model"
+      }
+    },
+    {
+      "id": "e2",
+      "kind": "table",
+      "from": {
+        "node": "moons",
+        "port": "table"
+      },
+      "to": {
+        "node": "km_diag",
+        "port": "table"
+      }
+    },
+    {
+      "id": "e3",
+      "kind": "table",
+      "from": {
+        "node": "moons",
+        "port": "table"
+      },
+      "to": {
+        "node": "dbscan",
+        "port": "table"
+      }
+    },
+    {
+      "id": "e4",
+      "kind": "unsup_model",
+      "from": {
+        "node": "dbscan",
+        "port": "model"
+      },
+      "to": {
+        "node": "db_diag",
+        "port": "model"
+      }
+    },
+    {
+      "id": "e5",
+      "kind": "table",
+      "from": {
+        "node": "moons",
+        "port": "table"
+      },
+      "to": {
+        "node": "db_diag",
+        "port": "table"
+      }
+    }
+  ]
+}

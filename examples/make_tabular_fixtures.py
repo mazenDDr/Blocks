@@ -7,6 +7,8 @@ Everything here is generated from fixed seeds; none of it is measured data.
 - synthetic_churn.csv          binary classification (logistic regression)
 - synthetic_enzyme_two_group.csv   independent two-group comparison: enzyme activity of control vs inhibitor-treated tubes
 - synthetic_enzyme_paired.csv  paired comparison: the same specimens before and after treatment
+- synthetic_cells.csv          unsupervised (Milestone 5): three generating groups of "cells" with features on very different scales; `true_group` is the generating label
+- synthetic_moons.csv          unsupervised (Milestone 5): two interleaving half-moons (non-convex clusters); `true_shape` is the generating label
 """
 from __future__ import annotations
 
@@ -66,8 +68,33 @@ def enzyme_paired() -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["specimen", "timepoint", "activity_u_per_mg"])
 
 
+def cells() -> pd.DataFrame:
+    rng = np.random.default_rng(2024)
+    spec = [("A", 140, [90.0, 0.30, 12.0, 1.1], [8.0, 0.05, 2.0, 0.08]), ("B", 140, [140.0, 0.55, 20.0, 1.4], [10.0, 0.06, 2.5, 0.10]), ("C", 80, [148.0, 0.60, 24.0, 1.62], [12.0, 0.07, 3.0, 0.12])]
+    rows = []
+    for g, n, mu, sd in spec:
+        x = rng.normal(mu, sd, size=(n, 4))
+        rows.append(pd.DataFrame({"area_um2": x[:, 0].round(2), "intensity": x[:, 1].round(4), "granularity": x[:, 2].round(3), "elongation": x[:, 3].round(4), "true_group": g}))
+    df = pd.concat(rows, ignore_index=True).sample(frac=1.0, random_state=5).reset_index(drop=True)
+    df.insert(0, "cell_id", np.arange(1, len(df) + 1))
+    return df
+
+
+def moons() -> pd.DataFrame:
+    rng = np.random.default_rng(77)
+    n = 150
+    t = rng.uniform(0, np.pi, n)
+    a = np.c_[np.cos(t), np.sin(t)]
+    b = np.c_[1 - np.cos(t), 0.5 - np.sin(t)]
+    pts = np.r_[a, b] + rng.normal(0, 0.06, (2 * n, 2))
+    df = pd.DataFrame({"x": pts[:, 0].round(4), "y": pts[:, 1].round(4), "true_shape": ["upper"] * n + ["lower"] * n})
+    df = df.sample(frac=1.0, random_state=3).reset_index(drop=True)
+    df.insert(0, "point_id", np.arange(1, len(df) + 1))
+    return df
+
+
 FIXTURES = {"synthetic_housing.csv": housing, "synthetic_churn.csv": churn, "synthetic_enzyme_two_group.csv": enzyme_two_group,
-            "synthetic_enzyme_paired.csv": enzyme_paired}
+            "synthetic_enzyme_paired.csv": enzyme_paired, "synthetic_cells.csv": cells, "synthetic_moons.csv": moons}
 
 
 def main(out: Path = OUT) -> None:

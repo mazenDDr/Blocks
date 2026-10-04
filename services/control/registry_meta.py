@@ -97,4 +97,18 @@ META: dict[str, tuple[str, str, str]] = {
     "agent.human_interrupt": ("Human input", "Control", "Pauses the thread with a pending-input form (approve / reject / edit); resumes from the checkpoint."),
     "agent.memory_select": ("Memory selection", "Memory", "Applies a visual memory policy (retrieve, filter, rank, deduplicate, token budget, summarize) and records every record's decision."),
     "agent.memory_write": ("Memory write", "Memory", "Writes to the thread's conversation or the long-term store with validation, scope, evidence and an audit entry; optionally behind an accept/reject stage."),
+    # ---- rl graph kind (Milestone 5)
+    "rl.reward": ("Reward components", "Reinforcement learning", "Per-component weights and switches on top of the environment's separate raw reward components."),
+    "rl.environment": ("Environment", "Reinforcement learning", "A tested Gymnasium environment: id and version, time limit, wrappers, seed and autoreset mode; spaces are shown typed."),
+    "rl.q_network": ("Q-network", "Reinforcement learning", "A model graph mapping an observation to one Q-value per discrete action (the same lowering as every model graph)."),
+    "rl.replay_buffer": ("Replay buffer", "Reinforcement learning", "Uniform replay with a global transition id, episode, step, policy version and the true next observation for every transition."),
+    "rl.dqn_learner": ("DQN learner", "Reinforcement learning", "Target-network DQN: y = r + gamma (1 - terminated) max Q_target(s', a'); Huber or squared TD loss; epsilon-greedy collection."),
+    "rl.evaluation": ("Evaluation", "Reinforcement learning", "Greedy episodes on separate environment instances with declared seeds; return, length, termination vs truncation, success."),
+    # ---- unsupervised nodes (tabular graph kind, Milestone 5)
+    "sklearn.kmeans": ("K-means", "Unsupervised", "Lloyd / k-means++ clustering with inertia, per-cluster objective contributions and assignment distances."),
+    "sklearn.gaussian_mixture": ("Gaussian mixture", "Unsupervised", "Soft clustering by EM; log-likelihood, BIC / AIC, responsibilities."),
+    "sklearn.dbscan": ("DBSCAN", "Unsupervised", "Density-based clustering with core / border / noise status; noise is not a cluster."),
+    "sklearn.pca": ("PCA", "Unsupervised", "Principal components of the centered features: explained variance, loadings, reconstruction error."),
+    "sklearn.projection": ("2-D projection (non-metric)", "Unsupervised", "t-SNE embedding for viewing only; distances and cluster separation in it are not evidence."),
+    "sklearn.cluster_diagnostics": ("Cluster diagnostics", "Unsupervised", "Method-appropriate internal metrics, elbow, seed / bootstrap stability, and external metrics only when labels are declared."),
 }

@@ -80,6 +80,8 @@ export interface Validation {
   flat?: Record<string, NodeView>; instances?: Record<string, InstanceInfo>; modules?: ModuleSummary[]; procedure?: ProcedureCheck;
   /** agent graphs */
   agent?: import("./components/agent/types").AgentAnalysis; order?: string[];
+  /** rl graphs */
+  rl?: import("./components/rl/types").RLValidation;
 }
 
 export interface RunSummary {
@@ -147,7 +149,13 @@ export interface ProcedureRunSummary {
   last: { step: number; loss: number; lr: number; grad_norm: number | null } | null; validation: Record<string, number> | null; stoppedBy: string | null; checkpoints: number; captures: number[];
 }
 export interface SandboxRunSummary { kind: "sandbox"; id: string; status: string; parent: string; step: number; createdAt: number; updatedAt: number; graphHash: string; config: Record<string, any> }
-export type AnyRun = RunSummary | TabularRunSummary | ProcedureRunSummary | SandboxRunSummary | import("./components/agent/types").AgentRunSummary;
+export interface RLRunSummary {
+  kind: "rl"; id: string; status: string; error: string | null; graphHash: string; createdAt: number; updatedAt: number; maxSeq: number; config: { kind: string; project_id: string | null; seed: number; trial?: Record<string, unknown> | null };
+  seed: number; algorithm: string | null; totalSteps: number | null; envSteps: number; updates: number;
+  lastEval: { tick: number; final: boolean; taskReturn: { mean: number | null }; return: { mean: number | null }; successRate: number | null } | null; trial?: Record<string, unknown> | null;
+}
+export type AnyRun = RunSummary | TabularRunSummary | ProcedureRunSummary | SandboxRunSummary | RLRunSummary | import("./components/agent/types").AgentRunSummary;
+export const isRLRun = (r: AnyRun): r is RLRunSummary => r.kind === "rl";
 export const isTabularRun = (r: AnyRun): r is TabularRunSummary => r.kind === "tabular";
 export const isProcedureRun = (r: AnyRun): r is ProcedureRunSummary => r.kind === "procedure";
 export const isSandboxRun = (r: AnyRun): r is SandboxRunSummary => r.kind === "sandbox";

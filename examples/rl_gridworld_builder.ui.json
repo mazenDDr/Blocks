@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "reward": {
+      "x": 0,
+      "y": 0
+    },
+    "env": {
+      "x": 300,
+      "y": 0
+    },
+    "qnet": {
+      "x": 600,
+      "y": 0
+    },
+    "replay": {
+      "x": 600,
+      "y": 190
+    },
+    "learner": {
+      "x": 900,
+      "y": 0
+    },
+    "evaluation": {
+      "x": 1200,
+      "y": 0
+    }
+  },
+  "description": "A grid world defined visually (size, walls, start, goal) with the reward declared as three separate components (goal, step, bump) that can be re-weighted or switched off. The environment is a custom Gymnasium environment (Void/GridWorld-v0); frames are real renders of rollouts.",
+  "synthetic": false
+}

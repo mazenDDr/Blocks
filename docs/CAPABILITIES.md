@@ -175,3 +175,20 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
 - Data: image folders and (tabular graphs) local CSV files only.
 - Loss and optimizer inspectors, response curves; optimizer state beyond checkpoints.
 - Other backends (Keras, JAX, ...), RL, serving, registry.
+
+## Milestone 5: reinforcement and unsupervised research (A51-A55)
+
+| Capability | Where | Test |
+|---|---|---|
+| `rl` graph kind, typed wires, six nodes, compatibility codes decided from real Gymnasium spaces (CartPole, GridWorld verified; MountainCar, Acrobot, Pendulum, FrozenLake space-contract only) | `python/rl/`, ADR 0009 | `test_rl_api.py::test_incompatible_*`, `test_rl_core.py` |
+| Native torch DQN (target network, replay, epsilon schedule, Huber/MSE), update equal to a handwritten step | `rl/dqn.py` | `test_update_equals_a_handwritten_reference_step` |
+| **A52** bootstrap fixture 2.98 / 1 against the learner's real target function; truncation does not cut the bootstrap | `rl/dqn.py:bootstrap_target` | `test_a52_*` |
+| **A53** vector env autoreset (NextStep and SameStep, Gymnasium 1.3.0): true final next-obs stored, reset step excluded, episode-start flags | `rl/collector.py` | `test_a53_*` |
+| **A51** bounded transition-to-update trace: transition, buffer slot/eviction, minibatches, TD target/loss/gradient, policy version, recomputed in tests | `rl/trace.py`, `/api/rl/runs/{id}/transitions/{tid}` | `test_a51_*` |
+| Visual grid-world builder (size, walls, start, goal), separate reward components, schematic + real rendered frames | `rl/gridworld.py`, EnvPanel | `test_gridworld_*`, `test_grid_builder_preview_*` |
+| **A54** reward/policy variants as study trials; multi-seed evaluation on separate envs/seeds, mean + t-CI across runs, per-component, length, termination vs truncation | `rl/compare.py`, `studies/` | `test_a54_*` |
+| RL workspace: environment/spaces/reward/learner equation, live unsmoothed curves, rollout scrubber, buffer browser, trace view, eval report, variants | `components/rl/` | Chrome check (README) |
+| **A55** k-means, GMM, DBSCAN, PCA, t-SNE (non-metric), diagnostics (inertia/elbow, silhouette, Davies-Bouldin, BIC/AIC, explained variance), stability (ARI seeds/resamples), external metrics only with labels | `operations/unsup_ops.py` | `tests/test_unsup.py` |
+
+Known gaps: PPO and other algorithms, continuous actions, async vector envs, exact mid-episode resume, UMAP, offline/multi-agent RL, frames only from environment 0, prioritized replay, recurrent policies
+(the reset contract is tested with a stateful stand-in, not a recurrent network), unsupervised: no self-supervised/contrastive workflows, no density-based anomaly block beyond the GMM log-density column.

@@ -18,15 +18,16 @@ from .core import TabularOperation, VType
 BACKEND = "python"
 
 
-def validate_tabular(graph: Graph) -> Report:
+def validate_tabular(graph: Graph, kind: str = "tabular", backend: str = BACKEND) -> Report:
+    """Typed-wire validation shared by the graph kinds whose wires carry typed values (`tabular`, `rl`): `kind` selects the allowed operations."""
     r = Report()
     diag = r.diagnostics
 
     def add(code, msg, node=None, port=None, path="", fixes=None, severity="error"):
         diag.append(Diagnostic(code, msg, severity, node, port, path, fixes or []))
 
-    if graph.backend != BACKEND:
-        add("E_UNSUPPORTED_BACKEND", f"Tabular graphs use backend '{BACKEND}' (pandas, scikit-learn, SciPy), got '{graph.backend}'.", path="/backend")
+    if graph.backend != backend:
+        add("E_UNSUPPORTED_BACKEND", f"{kind.capitalize()} graphs use backend '{backend}', got '{graph.backend}'.", path="/backend", fixes=[Fix(f"Set backend to '{backend}'", None, "backend", backend)])
     if graph.schemaVersion.split(".")[0] != SCHEMA_VERSION.split(".")[0]:
         add("E_UNSUPPORTED_SCHEMA", f"Schema version {graph.schemaVersion} is not supported.", path="/schemaVersion")
 
@@ -47,8 +48,8 @@ def validate_tabular(graph: Graph) -> Report:
             add("E_UNKNOWN_OP", f"Operation '{n.type}' is not available. The node is preserved but cannot execute until it is resolved.",
                 n.id, path=npath, fixes=[Fix("Replace the node with a supported operation")])
             continue
-        if op.graph_kind != "tabular":
-            add("E_OP_GRAPH_KIND", f"'{n.type}' belongs to a '{op.graph_kind}' graph and cannot appear in a 'tabular' graph.", n.id, path=npath)
+        if op.graph_kind != kind:
+            add("E_OP_GRAPH_KIND", f"'{n.type}' belongs to a '{op.graph_kind}' graph and cannot appear in a '{kind}' graph.", n.id, path=npath)
             continue
         if n.version != op.version:
             add("E_UNSUPPORTED_VERSION", f"'{n.type}' version {n.version} is not available (have {op.version}).", n.id, path=npath)
