@@ -428,3 +428,5 @@ table.compat th { background: #f1f3f6; }
 .domain-models table { border-collapse: collapse; margin: 14px 0; }
 .domain-models th, .domain-models td { padding: 5px 12px; border-bottom: 1px solid #ddd; text-align: left; }
 .domain-models img { image-rendering: pixelated; }
+.badge.cache-hit { background: #e6f6ea; border-color: #b6dfc1; } .badge.cache-miss { background: #eef2f7; }
+.cachetable { margin-top: 6px; } .cachetable table { font-size: 12px; } .cachetable td { vertical-align: top; }

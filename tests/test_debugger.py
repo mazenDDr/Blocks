@@ -18,7 +18,7 @@ from graph_core.build import GraphBuilder, ModuleBuilder
 from graph_core.hashing import semantic_hash
 from graph_core.lower import lower_graph
 from graph_core.validate import validate
-from training.spec import (AccumulationSpec, Breakpoint, CaptureSpec, ClipSpec, DataSpec, OptimizerSpec, ProbeSpec, ProcedureSpec, SchedulerSpec, WatchSpec)
+from training.spec import (AccumulationSpec, Breakpoint, CaptureSpec, ClipSpec, DataSpec, LossSpec, OptimizerSpec, ProbeSpec, ProcedureSpec, SchedulerSpec, WatchSpec)
 from training.trainer import Trainer
 from worker.procedure_run import ProcedureRunConfig, run_procedure
 from test_training_procedure import seq_model
@@ -97,15 +97,31 @@ def test_probe_in_a_run_records_values_without_changing_the_trajectory(tmp_path)
 
 
 # ------------------------------------------------------------------------------------------------ conditional breakpoints
+def overflow_regression_model():
+    """Dense -> tanh -> dense regression model. Under MSE, one SGD step at lr=1e30 leaves every weight finite (gradients are O(1) and the
+    hidden activations are bounded by tanh), but the next prediction is ~1e30 and its square overflows float32 (max ~3.4e38) by ~20 orders
+    of magnitude. The first non-finite loss is therefore at optimizer step 2 on any platform, with finite weights before it."""
+    g = GraphBuilder()
+    g.input("x", ["N", 4])
+    g.node("hid", "tensor.dense", out_features=8)
+    g.node("act", "tensor.tanh")
+    g.node("head", "tensor.dense", out_features=2)
+    g.wire("x", "hid.input")
+    g.chain("hid", "act", "head")
+    return g.build()
+
+
 def test_conditional_breakpoint_is_labelled_execution_changing_and_stops_resumably(tmp_path):
-    g = seq_model()
-    store, spec, status = make_run(tmp_path, g, optimizer=OptimizerSpec(kind="sgd", lr=1e30),
+    g = overflow_regression_model()
+    store, spec, status = make_run(tmp_path, g, optimizer=OptimizerSpec(kind="sgd", lr=1e30), loss=LossSpec(kind="mse"),
+                                   data=DataSpec(kind="synthetic_regression", features=4, outputs=2, n_train=64, n_val=16, batch_size=8),
                                    breakpoints=[Breakpoint(id="bad_loss", kind="nonfinite_loss")])
     assert status == "completed"
     hit = store.events("r1", -1, ("breakpoint_hit",))
     assert len(hit) == 1 and hit[0]["data"]["execution_changing"] is True and hit[0]["data"]["breakpoint"] == "bad_loss"
     assert store.events("r1", -1, ("run_finished",))[0]["data"]["stopped_by"] == "breakpoint:bad_loss"
     step = hit[0]["data"]["step"]
+    assert step == 2                                                              # finite after one update, overflowing on the next forward
     ck = [c for c in store.artifacts("r1", "checkpoint") if c["meta"].get("tag") == "breakpoint"]
     assert ck and ck[-1]["step"] == step - 1                                      # the state BEFORE the offending step is what was kept
     st = Trainer.read_state(store.read_artifact(ck[-1]["sha256"]))

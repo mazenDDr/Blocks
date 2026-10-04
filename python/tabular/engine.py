@@ -27,11 +27,13 @@ class NodeOutcome:
     type: str
     outs: dict[str, Any]
     summary: dict[str, Any]
+    cache: dict[str, Any] | None = None  # the cache decision when the run uses the node cache (tabular.cache)
 
 
 def run_graph(graph: Graph, report: Report, *, run_id: str | None = None, graph_hash: str | None = None,
               on_start: Callable[[str, str], None] | None = None, on_finish: Callable[[NodeOutcome], None] | None = None,
-              should_cancel: Callable[[], bool] = lambda: False, store: Any = None, pins: dict[str, str] | None = None) -> dict[str, NodeOutcome]:
+              should_cancel: Callable[[], bool] = lambda: False, store: Any = None, pins: dict[str, str] | None = None,
+              cache: Any = None) -> dict[str, NodeOutcome]:
     types = {n.id: n.type for n in graph.nodes}
     src = {(e.to.node, e.to.port): (e.from_.node, e.from_.port) for e in graph.edges}
     done: dict[str, NodeOutcome] = {}
@@ -43,13 +45,29 @@ def run_graph(graph: Graph, report: Report, *, run_id: str | None = None, graph_
         if on_start:
             on_start(nid, types[nid])
         ins = {p: done[src[(nid, p)][0]].outs[src[(nid, p)][1]] for p in op.inputs}
-        try:
-            outs, summary = op.execute(cfg, ins, ExecCtx(nid, run_id, graph_hash, store, dict(pins or {})))
-        except ExecutionError as e:
-            raise NodeFailed(nid, e.code, e.message) from e
-        except Exception as e:  # noqa: BLE001  (library errors are reported against the node, not swallowed)
-            raise NodeFailed(nid, "E_RUNTIME", f"{type(e).__name__}: {e}") from e
-        done[nid] = NodeOutcome(nid, types[nid], outs, summary)
+        decision = cache.decide(nid, op, cfg, {p: src[(nid, p)] for p in op.inputs}) if cache is not None else None
+        loaded = cache.load(decision) if decision is not None and decision.status == "hit" else None
+        if decision is not None and decision.status == "hit" and loaded is None:
+            decision.status, decision.entry, decision.changed = "miss", None, []
+            decision.reason = "The recorded result failed its integrity check; executed the node instead."
+        if loaded is not None:
+            outs, summary = loaded
+        else:
+            try:
+                outs, summary = op.execute(cfg, ins, ExecCtx(nid, run_id, graph_hash, store, dict(pins or {})))
+            except ExecutionError as e:
+                raise NodeFailed(nid, e.code, e.message) from e
+            except Exception as e:  # noqa: BLE001  (library errors are reported against the node, not swallowed)
+                raise NodeFailed(nid, "E_RUNTIME", f"{type(e).__name__}: {e}") from e
+        record = None
+        if decision is not None:
+            record = decision.record()
+            if decision.status == "miss" and run_id is not None:
+                problem = cache.store_result(decision, run_id, nid, types[nid], outs, summary)
+                if problem:
+                    record["stored"] = problem
+            cache.set_identity(nid, decision, outs)
+        done[nid] = NodeOutcome(nid, types[nid], outs, summary, record)
         if on_finish:
             on_finish(done[nid])
     return done

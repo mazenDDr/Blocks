@@ -281,3 +281,18 @@ VOID_API=http://127.0.0.1:8769 pnpm -C apps/editor dev --host 127.0.0.1 --port 5
 ```
 
 Vision inference expects base64 RGB PNG **after explicit geometry** at the pinned size; NLP expects original text; speech expects finite normalized PCM channels with the pinned sample rate. These are bounded local CPU inference endpoints, independent of the tabular production release/monitoring adapter. Existing older domain runs have no checkpoint and require a new training run. See ADR 0014 and HANDOFF for verification and remaining limits.
+
+## Dependency-scoped node cache (A09)
+
+Tabular runs can reuse recorded node results. Tick **Reuse unchanged node results (cache)** in the Run panel, or submit `{"config": {"cache": "reuse"}}` to `POST /api/runs`. A node is reused only when its operation, settings, inputs, implementation files and native environment all match a recorded result. Editing a node re-executes that node and everything downstream of it; sources are always re-read and hashed. The Run record's **Node cache** table says which nodes were reused (and from which run), which ran, and what changed. The default (`"off"`) runs every node and records nothing. See ADR 0015.
+
+Commands actually run (Linux x86_64 cloud container, CPython 3.13):
+
+```bash
+.venv/bin/pip install --extra-index-url https://download.pytorch.org/whl/cpu -r python/requirements.txt && .venv/bin/pip install -e . --no-deps
+python3.13 -m venv .venv-trackers && .venv-trackers/bin/pip install -r python/tracking/requirements.txt
+.venv/bin/python -m connectors.install_pgserver
+.venv/bin/pytest -q tests/test_node_cache.py -o faulthandler_timeout=240
+VOID_WORKBENCH=<scratch dir> .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8770
+VOID_API=http://127.0.0.1:8770 pnpm -C apps/editor dev --host 127.0.0.1 --port 5295
+```

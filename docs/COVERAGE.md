@@ -336,7 +336,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `domain.vision_source` | domain | python | yes | vision_data | 1 |
 | `domain.vision_transform` | domain | python | yes | vision_transform | 1 |
 | `dvc.csv_source` | tabular | dvc | yes | connector_source | 1 |
-| `postgres.query` | tabular | postgresql | yes | connector_source | 3 |
+| `postgres.query` | tabular | postgresql | yes | connector_source | 4 |
 | `rl.dqn_learner` | rl | gymnasium | yes | rl_learner | 1 |
 | `rl.environment` | rl | gymnasium | yes | rl_environment | 1 |
 | `rl.evaluation` | rl | gymnasium | yes | rl_evaluation | 1 |
@@ -360,7 +360,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `sklearn.pca` | tabular | scikit-learn | yes | pca | 0 |
 | `sklearn.projection` | tabular | scikit-learn | yes | projection | 0 |
 | `tabular.apply_transform` | tabular | scikit-learn | yes | step | 3 |
-| `tabular.csv_source` | tabular | pandas | yes | source | 4 |
+| `tabular.csv_source` | tabular | pandas | yes | source | 5 |
 | `tabular.drop_missing` | tabular | pandas | yes | step | 2 |
 | `tabular.duplicates` | tabular | pandas | yes | step | 2 |
 | `tabular.fit_impute` | tabular | scikit-learn | yes | fit_state | 1 |
@@ -368,7 +368,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `tabular.fit_standardize` | tabular | scikit-learn | yes | fit_state | 2 |
 | `tabular.join` | tabular | pandas | yes | join | 1 |
 | `tabular.predictions_export` | tabular | scikit-learn | yes | step | 1 |
-| `tabular.profile` | tabular | pandas | yes | profile | 1 |
+| `tabular.profile` | tabular | pandas | yes | profile | 2 |
 | `tabular.select_columns` | tabular | pandas | yes | step | 2 |
 | `tabular.train_validation_split` | tabular | pandas | yes | split | 3 |
 

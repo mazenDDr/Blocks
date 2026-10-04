@@ -131,11 +131,13 @@ export interface InferResult {
 export interface RunEvent { run_id: string; seq: number; ts: number; type: string; graph_hash: string; node_id: string | null; data: any }
 
 // ---- tabular graph kind -------------------------------------------------------------------------------
-export interface TabularNodeStatus { node: string; type?: string; status: "pending" | "running" | "finished" | "failed"; rows?: Record<string, number> }
+export interface NodeCacheDecision { status: "hit" | "miss" | "bypass"; key: string | null; reason: string; changed: string[]; fromRun?: string; fromNode?: string; entrySha256?: string; stored?: string }
+export interface TabularNodeStatus { node: string; type?: string; status: "pending" | "running" | "finished" | "failed"; rows?: Record<string, number>; cache?: NodeCacheDecision }
 export type TabularRunSummary = (NodeRunSummary & { kind: "tabular" }) | (NodeRunSummary & { kind: "domain" });
 interface NodeRunSummary {
   id: string; status: string; error: string | null; graphHash: string; createdAt: number; updatedAt: number; maxSeq: number;
-  config: { kind: string; project_id: string | null; seed?: number | null; source_pins?: Record<string, string>; trial?: Record<string, unknown> | null };
+  config: { kind: string; project_id: string | null; seed?: number | null; source_pins?: Record<string, string>; trial?: Record<string, unknown> | null; cache?: "off" | "reuse" };
+  cache?: { mode: "off" } | { mode: "reuse"; implementationSha256: string; environmentSha256: string; format: string } | null;
   snapshots?: { node: string; connector: string; mode: string; snapshotId: string; kind: string; contentSha256: string | null; rows: number; reproducibility: { level: string; limited: boolean } }[];
   nodes: TabularNodeStatus[]; progress: { nodesDone: number; nodes: number };
   sources: { node: string; path: string; sha256: string; bytes: number; rows: number }[];

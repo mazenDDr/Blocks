@@ -314,3 +314,36 @@ This release is committed on `master` and pushed to the existing private origin 
 Next scope: integrate supported domain models into real registry/release/trace/monitoring contracts, expand dataset importers, or improve editor/inspection/worker recovery per user direction. This release is **not** domain registry rollout/production monitoring, intermediate checkpoint cadence, mid-node pause/cancel/recovery, portable checkpoint upload/import/migration, raw-image geometry inference, GPU/cross-version exactness, or cloud/team deployment. Models pin the implementation/environment; editing those files can intentionally make earlier manifests unavailable until migration/rerun. No cost, model-quality or security guarantee follows from the small local fixture proof. A09/A44 and the other ACCEPTANCE/CAPABILITIES gaps remain.
 
 Continue without subagents. Read ADR 0014 before extending checkpoint semantics; inspect Git/status/remote and preserve user work. Update handoff/capabilities, verify §4, commit and push to the existing private origin. Never stop port 8000, and stop every temporary server/browser you start.
+
+## 11. A09 dependency-scoped node cache — Claude, 2026-10-04
+
+The user asked Claude to continue Codex's work using this handoff. Starting point: clean `90d6721`. This session ran in a **Linux x86_64 cloud container** (not the macOS machine in §3), on branch `claude/laughing-bell-la46nd`, which was pushed to the private origin. Port 8000 / Ollama do not exist here. Scope chosen from the remaining ACCEPTANCE gaps: **A09**. A44 remains not implemented.
+
+### Implementation
+
+- `python/tabular/cache.py` (new): per-node cache keys over operation type/version, node id, resolved config (after run seed override), SHA of every tabular implementation file, Python/native library versions, and input identities. Cacheable producers pass their key downstream. Sources pass a content hash of what they actually read, so editing a node invalidates it and its dependents only. Explicit allowlist of deterministic tabular/sklearn/scipy/unsupervised ops. CSV/connector sources, joins, code blocks, plugins and `domain` nodes always run (`bypass`). Miss explanations name `settings`, `implementation`, `environment` or `input <port> (from <node>)` against the node's latest entry in the same project.
+- `artifact_store/store.py`: `node_cache` SQLite index (written only by the local worker; no import/upload path). Entries are pickles in the CAS store, SHA-, format- and key-verified before loading; failures become a miss and the node runs. 64 MiB entry cap.
+- `tabular/engine.py`, `worker/tabular_run.py`: `TabularRunConfig.cache: "off" | "reuse"` (default off: unchanged behavior, nothing recorded). `run_started.cache` records the mode and hashes; `node_finished.cache` records the decision. Hits still record ordinary node_output/summary artifacts in the new run.
+- `services/control/app.py` run summary exposes `cache` per run and node. Editor `TabularPanels.tsx`: **Reuse unchanged node results (cache)** checkbox, reused/ran badges, and a **Node cache** explanation table in the Run record.
+- ADR **0015**; CAPABILITIES, ACCEPTANCE (A09 → bounded evidence), README updated; COVERAGE regenerated.
+- `tests/test_node_cache.py` (9 cases): first-run misses, identical-rerun hits, byte-identical outputs vs original and vs uncached execution, single-node edit invalidates exactly dependents, late edits, revert reuse, changed source bytes, run seed override, implementation/environment change, corrupted entry, cache-off unchanged, non-cacheable/domain bypass, HTTP API summary and 422 for an invalid mode.
+- `tests/test_scale.py` acceptance assertion: A44 must still be `not implemented`; A09 must now be `bounded evidence` citing `tests/test_node_cache.py` (strengthened, not weakened).
+
+### Portability fixes found on Linux
+
+- `connectors/install_pgserver.py`: the compound manylinux tag was passed as one `--platform` value, which pip rejects. It now passes one `--platform` per tag part. Installed and verified here.
+- `tests/test_debugger.py` conditional-breakpoint test: on Linux x86 the CE/`seq_model` fixture at lr=1e30 never produced a non-finite loss (losses ~1e29, bounded by tanh and stable log-softmax). It also failed on the base commit. Replaced the fixture with a dense→tanh→dense MSE regression model, where one step leaves weights finite and the next squared prediction overflows float32 by ~20 orders of magnitude. All original assertions are kept, plus `step == 2`. Debugger file: 19 passed; repeated 3× stable.
+
+### Verification (this container)
+
+- Environment set up from scratch: `.venv` (CPython 3.13.x, `pip install --extra-index-url https://download.pytorch.org/whl/cpu -r python/requirements.txt`, `pip install -e . --no-deps`), `.venv-trackers` from `python/tracking/requirements.txt`, `python -m connectors.install_pgserver`.
+- `.venv/bin/pytest -q -o faulthandler_timeout=240`: **939 passed, 1 skipped, 6 deselected, 1 failed** (961 s). The single failure was the debugger test fixed afterwards (not rerun in a whole-suite pass after the fix; `tests/test_debugger.py` alone: 19 passed). The skip is Anthropic without a key. An earlier full run before the trackers venv/pgserver existed had environment-only failures; that run is not accepted evidence.
+- `pytest -m live`: **not run**: no Ollama in this container.
+- `pnpm -C apps/editor build` and `exec tsc --noEmit`: exit 0 (existing large-chunk warning). `backends.coverage --write`/`--check`: current.
+- Curl smoke on a temporary backend at 127.0.0.1:8770: the tabular_regression example ran with `cache: reuse`. Then `sc_fit` was edited: 10 upstream nodes reused, `sc_fit` + 6 dependents executed with exact `changed` reasons, `housing` bypassed.
+- Real headless Chromium (Playwright, `/opt/pw-browsers`; script in scratchpad, outside the repo) against editor 5295 on a fresh workbench: open example → tick cache → Run (0 reused / 16 executed / 1 always run) → untick `fit_intercept` on `ols` in the form → Run (**13 reused / 3 executed / 1 always run**), explanation table rendered. The only console error was the browser's automatic `/favicon.ico` 404, which predates this change (no API errors).
+- Temporary backend/editor were stopped and confirmed absent.
+
+### Next
+
+A44 (pinned repository code import) is the last unimplemented acceptance row. Other gaps: cache retention/GC, caching for other graph kinds, and the §5/§9/§10 limits. Keep using a separate branch per session if the harness requires it; `master` was not changed by this session.
