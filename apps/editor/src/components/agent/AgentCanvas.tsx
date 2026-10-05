@@ -1,6 +1,6 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
-  Background, Controls, Handle, MarkerType, Position, ReactFlow, applyNodeChanges, type Connection, type Edge, type Node, type NodeChange, type NodeProps,
+  Background, Controls, Handle, MarkerType, Position, ReactFlow, applyNodeChanges, useUpdateNodeInternals, type Connection, type Edge, type Node, type NodeChange, type NodeProps,
 } from "@xyflow/react";
 import type { Diagnostic, GNode, Graph, OpInfo, UiDoc, Validation } from "../../types";
 import { nextId } from "../../util";
@@ -98,6 +98,13 @@ export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNo
   const taken = useMemo(() => new Set((trace?.steps ?? []).filter((s) => s.route).map((s) => `route:${s.route!.route}:${s.route!.taken}`)), [trace]);
 
   const positions = ui.positions;
+  const updateNodeInternals = useUpdateNodeInternals();
+  const membership = JSON.stringify(graph.nodes.map(n => [n.id, n.type, n.version]));
+  useEffect(() => {
+    // Undo can reuse unchanged DOM cards after internal node records lose measurements.
+    // Request actual DOM/handle measurement; never guess sizes or store them in the draft.
+    updateNodeInternals(["START", ...JSON.parse(membership).map((node: string[]) => node[0]), "END"]);
+  }, [membership, updateNodeInternals]);
   const pos = (id: string, i: number) => positions[id] ?? { x: 40 + (i % 4) * 280, y: 60 + Math.floor(i / 4) * 170 };
   const nodes: AgentFlowNode[] = useMemo(() => {
     const routed = new Set(spec.routes.map((r) => r.from));

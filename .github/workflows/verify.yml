@@ -5,6 +5,11 @@ on:
     branches: [master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      browser_only:
+        description: 'Run only actual browser journeys for diagnosis (not full release verification)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -15,6 +20,7 @@ concurrency:
 
 jobs:
   verify:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.browser_only }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
