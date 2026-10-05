@@ -585,3 +585,16 @@ Controlled canvases preserve their actual DOM measurements through draft undo/re
 validation updates. These sizes remain page-local; saved graph/layout data is unchanged.
 Initial loading cancels disposed requests so a stale startup response cannot replace
 a newly opened draft. Verification details and remaining work are in HANDOFF §32.
+
+### Arrange graph nodes
+
+Open Arrange graph nodes on model/tabular/domain canvases or inside a module. Select
+2–100 cards for edge/center alignment or 3–100 for equal-gap distribution. Distribution
+keeps the end cards fixed and refuses when there is insufficient space; alignment
+can overlap cards. Collapse expanded module frames before arranging the root graph.
+Only selected layout positions change, with one Undo/Redo; model configuration and
+connections remain unchanged. Actual commands run:
+
+```sh
+.venv/bin/python tools/editor_arrangement_smoke.py --output /private/tmp/void-arrangement-all-families
+```

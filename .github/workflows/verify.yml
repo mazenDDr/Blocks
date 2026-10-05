@@ -88,6 +88,9 @@ jobs:
       - name: Real browser structured graph outline
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_outline_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-outline-smoke
+      - name: Real browser measured graph arrangement
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .venv/bin/python tools/editor_arrangement_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-arrangement-smoke
       - name: Real browser, backup and restored native state journey
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/recovery_smoke.py --trackers --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
@@ -119,5 +122,9 @@ jobs:
             /tmp/void-ci-outline-smoke/evidence.json
             /tmp/void-ci-outline-smoke/*.log
             /tmp/void-ci-outline-smoke/*.png
+            /tmp/void-ci-arrangement-smoke/runner.json
+            /tmp/void-ci-arrangement-smoke/evidence.json
+            /tmp/void-ci-arrangement-smoke/*.log
+            /tmp/void-ci-arrangement-smoke/*.png
           if-no-files-found: warn
           retention-days: 7

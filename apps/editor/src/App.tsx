@@ -43,6 +43,8 @@ import { ResearchRecords } from "./components/ResearchRecords";
 import { GraphClipboardTools } from "./components/GraphClipboardTools";
 import { GraphOutline } from "./components/GraphOutline";
 import { useFlowMeasurements } from "./useFlowMeasurements";
+import { GraphArrangementTools } from "./components/GraphArrangementTools";
+import { arrangeGraphNodes, type Arrangement } from "./graphArrangement";
 import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
@@ -472,6 +474,22 @@ function Workbench() {
     if (view === "graph" && !agent && !rl) updateNodeInternals(ids);
   }, [flowMembership, projectId, scope.length, view, agent, rl, pruneMeasurements, updateNodeInternals]);
 
+  const arrangementBlocked = expandedGroups.length ? "Collapse expanded modules before arranging this root layout."
+    : selNodes.some(id => cur.nodes.some(n => n.id === id) && !measurements[id]) ? "Waiting for actual selected-card dimensions." : null;
+  const arrangeSelection = (operation: Arrangement) => {
+    if (arrangementBlocked) { setMessage(arrangementBlocked); return; }
+    try {
+      const positions = arrangeGraphNodes(cur.nodes.flatMap((node, i) => {
+        if (!selNodes.includes(node.id)) return [];
+        const p = basePos(node.id, i), measured = measurements[node.id];
+        return [{ id: node.id, key: posKey(node.id), ...p, width: measured?.width ?? NaN, height: measured?.height ?? NaN }];
+      }), operation);
+      setUi(old => Object.entries(positions).every(([id, p]) => old.positions[id]?.x === p.x && old.positions[id]?.y === p.y) ? old
+        : { ...old, positions: { ...old.positions, ...positions } });
+      setMessage("Arranged selected nodes. Model configuration and connections are unchanged.");
+    } catch (error) { setMessage(errorText(error)); }
+  };
+
   const rfEdges: Edge[] = useMemo(() => {
     const base = cur.edges.map((e) => {
       const t = v?.nodes[e.from.node]?.outputShapes?.[e.from.port];
@@ -635,6 +653,8 @@ function Workbench() {
       {ui.description && <div className={`notice-inline ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic / teaching data. </b>}{ui.description}</div>}
       <KeyboardGraphTools graph={cur} ops={opsByType} selectedNode={selNodes[0] ?? ""} selectedWire={selEdges[0] ?? ""} onNode={(id) => { setSelNodes(id ? [id] : []); setSelEdges([]); }} onWire={(id) => { setSelEdges(id ? [id] : []); setSelNodes([]); }} onConnect={connect} />
       <GraphClipboardTools key={`${projectId}:${scope.length}`} graph={graph} selected={selNodes} clipboard={clipboard} inModule={!!def} onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onCopy={copySelection} onPaste={pasteSelection} onClear={() => { setClipboard(null); setPasteCount(0); }} />
+      <GraphArrangementTools key={`arrangement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={arrangementBlocked}
+        onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onArrange={arrangeSelection} onCollapse={expandedGroups.length ? () => setExpanded([]) : undefined} />
       <GraphOutline key={`${projectId}:${scope.map(s => `${s.module}@${s.version}`).join("/")}`} graph={cur} ops={opsByType} validation={v ?? null} pending={validation.pending} error={validation.error} selected={selNodes} scope={def ? `Module ${def.id}@${def.version}` : `Root project ${projectId}`}
         onInspect={id => { setSelNodes([id]); setSelEdges([]); }} onCenter={id => { setSelNodes([id]); setSelEdges([]); void fitView({ nodes: [{ id }], padding: 0.4, maxZoom: 1, duration: 0 }); }} onOpenModule={openInstance} />
       </div>

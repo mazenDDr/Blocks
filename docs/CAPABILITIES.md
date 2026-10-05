@@ -160,7 +160,7 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
 - Editor: large graphs can be small at initial fit; durable real Chrome tests now exist (ADR0026 onward).
 
 - Gradients tab and captured gradient information (VISION 8.3), saliency, activation distributions over training.
-- Editor: copy/paste, richer grouping/auto-layout, comments, structured outline view, multi-select move as a unit,
+- Editor: richer grouping/auto-layout, comments, multi-select move as a unit,
   insertion into an existing connection, interactive convolution teaching mode (8.4), partial-weight transfer (8.5.6),
   resource estimates, "resume compatible checkpoint". Bounded draft undo/redo is implemented below (ADR0031).
 - General pause/heartbeats/leases and orphaned-worker recovery; supported model checkpoint resume and domain completed-epoch child continuation exist. Cancellation cannot forcibly terminate a native call stuck inside a batch.
@@ -600,3 +600,22 @@ job passes all four journeys; its native job is pending at the limit handoff. HA
 Linux native1204/build/typecheck/Node14/coverage and clipboard/recovered journeys pass,
 but history failed; initial e0765ef remeasure-only diagnosis also failed. Neither is a
 whole-workflow success. Large-graph/platform/browser coverage remains separate work.
+
+
+Previous final18ae842 hosted verification now passes completely: native1209/1skip,
+Node17/build/typecheck/coverage and all browser journeys, exact evidence in HANDOFF§33.
+
+### Explicit measured graph alignment/distribution (ADR0036)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Root model/tabular/domain and module-definition edge/center alignment using actual card dimensions | `graphArrangement.ts`, existing transient DOM measurements and scoped position keys | Actual Chrome all-eight-action edge/center/gap invariants; native20,042params/hash and exact graph/config/wire equality |
+| Equal-gap horizontal/vertical distribution fixes endpoints; insufficient span refuses without editing | Measured rectangle geometry, stable E_LAYOUT_OVERLAP | Actual measured crowded fixture refusal and disabled Undo; no negative gaps |
+| One whole-draft layout Undo/Redo and unchanged-repeat no-op | Existing history/setUi; graph never modified | Exact saved graph/UI metadata, unselected/root/module keys and native all-family/module reports retained |
+
+2–100cards for alignment,3–100distribution. Root expanded frames must collapse first;
+generated interiors are excluded, module boundary cards only affect definition layout.
+Alignment can overlap. No guessed/stored DOM dimensions, native pin/schema/dependency
+changes. Agent/RL arrangement, grid/guides/auto-layout and large-graph/platform benchmarks
+remain. Final full/live/hosted state is recorded in HANDOFF§33; Mac1209native/12live/17Node/build/typecheck/coverage and actual all-family Chrome/curl/
+recovery pass; hosted verification of this arrangement scope is pending.
