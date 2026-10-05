@@ -39,6 +39,7 @@ import {
 } from "./types";
 import { fmtInt, fmtShape, nextId, shortName } from "./util";
 import { useDocumentHistory } from "./useDocumentHistory";
+import { ResearchRecords } from "./components/ResearchRecords";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
 const EMPTY_AGENT: Graph = { schemaVersion: "1.0.0", graphKind: "agent", backend: "langgraph", nodes: [], edges: [], agent: { state: [{ name: "question", type: "text", reducer: { kind: "replace" }, scope: "turn" }], routes: [], joins: [], limits: { maxSteps: 25 }, indexes: [], policies: [] } };
@@ -48,7 +49,7 @@ const EMPTY_UI: UiDoc = { schemaVersion: "1.0.0", positions: {} };
 const LAST_KEY = "void.lastProject";
 const nodeTypes = { card: OpNodeCard, group: GroupCard };
 type AnyNode = CardNode | GroupNode;
-type View = "graph" | "data" | "experiments" | "training" | "debug" | "attention" | "backends" | "coverage" | "domain" | "production" | "scale";
+type View = "graph" | "data" | "experiments" | "training" | "debug" | "attention" | "backends" | "coverage" | "domain" | "production" | "scale" | "records";
 interface Scope { module: string; version: string; via: string }
 
 const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -160,7 +161,7 @@ function Workbench() {
     const key = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       if (target?.closest('input, textarea, select, [contenteditable], .cm-editor') || event.altKey || !(event.metaKey || event.ctrlKey)
-          || view === "production" || view === "scale") return;
+          || view === "production" || view === "scale" || view === "records") return;
       const direction = event.key.toLowerCase() === "z" ? (event.shiftKey ? "redo" : "undo") : event.key.toLowerCase() === "y" && event.ctrlKey ? "redo" : null;
       if (!direction) return;
       event.preventDefault();
@@ -537,6 +538,7 @@ function Workbench() {
         <span className="viewtabs" role="tablist" aria-label="workspace">
           <button role="tab" aria-selected={view === "scale"} className={view === "scale" ? "on" : ""} onClick={() => setView("scale")}>Integrations</button>
           <button role="tab" aria-selected={view === "production"} className={view === "production" ? "on" : ""} onClick={() => setView("production")}>Production</button>
+          <button role="tab" aria-selected={view === "records"} className={view === "records" ? "on" : ""} onClick={() => setView("records")}>Records</button>
           {(domain ? [["domain", "Domain workspace"], ["graph", "Graph"], ["coverage", "Coverage"]] as [View, string][] : rl ? [["graph", "RL lab"]] as [View, string][] : agent ? [["graph", "Agent"], ["data", "Data"]] as [View, string][] : [["graph", "Graph"], ["data", "Data"], ["experiments", "Experiments"], ...(tabular ? [] : [["training", "Training"], ["debug", "Debug"], ["attention", "Attention"], ["backends", "Backend"]]), ["coverage", "Coverage"]] as [View, string][]).map(([k, label]) => (
             <button key={k} role="tab" aria-selected={view === k} className={view === k ? "on" : ""} onClick={() => setView(k)}>{label}</button>))}
         </span>
@@ -587,6 +589,10 @@ function Workbench() {
       {view === "debug" && !tabular && (
         <div className="fullws"><DebuggerWorkspace graph={graph} validation={rv ?? null} runs={procRuns} runId={debugRun} setRunId={setDebugRun} setMessage={setMessage} onEditProcedure={() => setView("training")} /></div>
       )}
+      {view === "records" && <ResearchRecords key={projectId} projectId={projectId} onOpenRun={record => {
+        if (record.projectId !== projectId) { setMessage("Open the recorded project first, then select its original run from Records."); return; }
+        openRun(record.runId);
+      }} />}
       {view === "attention" && !tabular && <div className="fullws"><AttentionWorkspace graph={graph} runs={procRuns} setMessage={setMessage} /></div>}
       {view === "graph" && !agent && !rl && <>
       <KeyboardGraphTools graph={cur} ops={opsByType} selectedNode={selNodes[0] ?? ""} selectedWire={selEdges[0] ?? ""} onNode={(id) => { setSelNodes(id ? [id] : []); setSelEdges([]); }} onWire={(id) => { setSelEdges(id ? [id] : []); setSelNodes([]); }} onConnect={connect} />

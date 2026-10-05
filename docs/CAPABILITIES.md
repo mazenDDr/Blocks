@@ -164,7 +164,7 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
   insertion into an existing connection, interactive convolution teaching mode (8.4), partial-weight transfer (8.5.6),
   resource estimates, "resume compatible checkpoint". Bounded draft undo/redo is implemented below (ADR0031).
 - General pause/heartbeats/leases and orphaned-worker recovery; supported model checkpoint resume and domain completed-epoch child continuation exist. Cancellation cannot forcibly terminate a native call stuck inside a batch.
-- Experiment board: tags, notes, search/filter of runs, smoothing, x-axes other than step (model graphs keep the pin + two-run compare; tabular/model sweeps have the Experiments board above).
+- Experiment board: smoothing and x-axes other than step remain; authored run notes/tags and catalogue search now exist (ADR0032). Model graphs keep pin + two-run compare; tabular/model sweeps use the Experiments board.
 - User accounts, roles and multi-user audit; an optional shared bearer token exists (ADR 0021). Image-folder datasets are server-side folders (tabular graphs can read connected sources).
 - Automatic installation/migration of exported environments and portable trained-artifact import. Inert graph/UI packages with exact operation requirements and optional CSV snapshots are implemented in Milestone 8; native domain checkpoint and manifest downloads are documented below.
 - Behaviors outside the documented bounds in the A01–A64 acceptance checklist; later Milestone 7/8 and domain checkpoint sections are authoritative for their implemented scope.
@@ -536,3 +536,19 @@ work is separate. Exact verification is recorded in HANDOFF §28.
 
 
 Recovery/discovery hosted verification passed on d0bdafa, [run37308500924](https://github.com/mazenDDr/project-void/actions/runs/37308500924):1152 native tests pass,1 skip, build/typecheck/coverage and recovered real Chrome discovery/tracker journey pass; downloaded JUnit has0failures/errors. Historical restoration/editor draft history have final Mac acceptance1176pass/1skip plus12live and5Node tests, actual dedicated/integrated Chrome and curl. Their next hosted run remains pending; see HANDOFF §28.
+
+### Authored research run notes, tags and search (ADR0032)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Per-run current note/tags/author/server time and paged earlier revisions, independent of measured execution data | `research/records.py`, additive `research.sqlite`, control research API | `test_research_records.py`: actual native run state/events/artifacts/status unchanged, absent/current/cleared/history/restart evidence |
+| Reviewed graph/revision, atomic concurrent updates and durable identical mutation retries | Native SQLite revision/current/receipt transaction | Stale graph/revision, one concurrent winner, conflicting ID, rollback and malformed/missing revision refusal |
+| Bounded literal Unicode-casefold search and exact tag/project/family/status filters over actual run metadata | Read-only attached execution metadata;25/default,100/max lexical run-ID pages | Unicode/percent/underscore/exact tags and keyset pages; no artifact/provider reads |
+| Actual editable Records workspace, existing original inspector and restored authored records | `ResearchRecords.tsx`, source/recovered Chrome journey | Two authored revisions/search/original completed native run, physical source deletion and exact restored note/tags/history |
+
+This is shared-token local metadata: author labels are unauthenticated; notes are not
+measured results. Earlier revisions/receipts remain after clearing; no privacy erasure,
+automatic retention or signed audit guarantee. Original run navigation requires its
+project currently open. No semantic/full-text index, global snapshot/total count or
+large-catalogue performance claim. No native pin/dependency changes. Final checks in
+HANDOFF §29 supersede earlier experiment-board notes/tags/search gaps.

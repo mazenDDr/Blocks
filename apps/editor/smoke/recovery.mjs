@@ -64,6 +64,7 @@ const turn = async (question, expected) => {
 try {
   await page.goto(process.env.VOID_SMOKE_URL);
   await page.waitForSelector('select[aria-label="open project"]');
+  await page.waitForFunction(() => document.querySelector('input[aria-label="project id"]').value === 'reference_cnn' && document.querySelectorAll('.react-flow__node').length > 0);
   await page.waitForFunction(() => [...document.querySelector('select[aria-label="open project"]').options].some(o => o.value === 'example:serving_state'));
   await page.select('select[aria-label="open project"]','example:serving_state');
   await page.waitForSelector('.aworkspace');
@@ -203,6 +204,24 @@ try {
   assert.deepEqual((await (await pending).json()).sessions,[]);
   await text('No recorded conversations match this scope and prefix.');
   evidence.discovery = {initialSessions,firstPage,secondPage,selectedSession,seededSessions:sessionSeeds.length,otherUserEmpty:true};
+  await click('Records');
+  await fill('input[aria-label="research search text"]','STRASSE');
+  await fill('input[aria-label="research exact tag"]','teaching-recovery');
+  pending = response('/api/research/runs','GET');
+  await click('Search recorded runs');
+  const foundRecord = await (await pending).json();
+  assert.deepEqual(foundRecord.runs.map(r => r.runId),[seed.sourceRun]);
+  assert.deepEqual(foundRecord.runs[0].annotation,seed.research.revised.annotation);
+  pending = response('/api/research/runs/'+seed.sourceRun,'GET');
+  await page.click(`[aria-label="inspect research ${seed.sourceRun}"]`);
+  const record = await (await pending).json();
+  assert.deepEqual(record.annotation,seed.research.revised.annotation);
+  pending = response('/annotation/history','GET');
+  await click('Read annotation revisions');
+  const revisions = await (await pending).json();
+  assert.deepEqual(revisions,seed.research.revisions);
+  await capture('restored-research-records');
+  evidence.research = {record,revisions,foundRecord};
   if (process.env.VOID_RECOVERY_TRACKERS) {
     const trackerSeed = JSON.parse(fs.readFileSync(process.env.VOID_RECOVERY_TRACKERS, 'utf8'));
     pending = response('/api/integrations', 'GET');

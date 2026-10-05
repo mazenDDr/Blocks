@@ -51,6 +51,7 @@ const capture = file => page.screenshot({path: path.join(output,file+'.png'), fu
 try {
   await page.goto(process.env.VOID_SMOKE_URL);
   await page.waitForSelector('select[aria-label="open project"]');
+  await page.waitForFunction(() => document.querySelector('input[aria-label="project id"]').value === 'reference_cnn' && document.querySelectorAll('.react-flow__node').length > 0);
   await page.waitForFunction(() => [...document.querySelector('select[aria-label="open project"]').options].some(o => o.value === 'example:serving_state'));
   await page.select('select[aria-label="open project"]','example:serving_state');
   await page.waitForSelector('.aworkspace');
@@ -162,6 +163,45 @@ try {
   assert.equal(monitor.labelBasedQuality.available,false);
   evidence.monitor = monitor;
   await capture('monitor');
+  // User-authored metadata is separate from the measured native run.
+  await click('Records');
+  pending = response('/api/research/runs','GET');
+  await click('Search recorded runs');
+  const catalogue = await (await pending).json();
+  assert(catalogue.runs.some(r => r.runId === source.runId && r.kind === 'agent' && r.status === 'completed'));
+  pending = response('/api/research/runs/'+source.runId,'GET');
+  await page.click(`[aria-label="inspect research ${source.runId}"]`);
+  const initialRecord = await (await pending).json();
+  assert.equal(initialRecord.annotation.revision,0);
+  assert.equal(initialRecord.graphHash,source.graphHash);
+  await fill('input[aria-label="research annotation author"]','SYNTHETIC native smoke researcher');
+  await fill('textarea[aria-label="research annotation note"]','SYNTHETIC counter run observation; actual native source retained.');
+  await fill('textarea[aria-label="research annotation tags"]','teaching-recovery\nStraße');
+  pending = response('/annotation','PUT');
+  await click('Save reviewed annotation');
+  const noted = await (await pending).json();
+  assert.equal(noted.annotation.revision,1);
+  await fill('textarea[aria-label="research annotation note"]','SYNTHETIC revised observation; authored metadata, no model-quality claim.');
+  pending = response('/annotation','PUT');
+  await click('Save reviewed annotation');
+  const revised = await (await pending).json();
+  assert.equal(revised.annotation.revision,2);
+  pending = response('/annotation/history','GET');
+  await click('Read annotation revisions');
+  const revisions = await (await pending).json();
+  assert.deepEqual(revisions.revisions,[noted.annotation,revised.annotation]);
+  await fill('input[aria-label="research search text"]','STRASSE');
+  await fill('input[aria-label="research exact tag"]','teaching-recovery');
+  pending = response('/api/research/runs','GET');
+  await click('Search recorded runs');
+  const found = await (await pending).json();
+  assert.deepEqual(found.runs.map(r => r.runId),[source.runId]);
+  assert.deepEqual(found.runs[0].annotation,revised.annotation);
+  evidence.research = {noted,revised,revisions,found};
+  await capture('research-records');
+  await click('Open original run');
+  await page.waitForFunction(r => [...document.querySelectorAll('.rundetail h3')].some(h => h.innerText.includes(r) && h.innerText.includes('completed')), {},source.runId);
+  await text('The run reached END.');
   assert.deepEqual(evidence.runtimeErrors,[]);
   assert.deepEqual(evidence.apiErrors,[]);
   // Preserve known initial CNN warnings, but never silently discard unexpected console errors.

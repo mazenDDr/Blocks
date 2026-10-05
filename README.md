@@ -523,3 +523,22 @@ JSON history; older entries evict. Actual commands run:
 node --test apps/editor/tests/documentHistory.test.mjs
 .venv/bin/python tools/editor_history_smoke.py --output /private/tmp/void-undo-editor-smoke-final2
 ```
+
+### Research run records
+
+Open Records to search recorded run/project IDs, graph hashes and current notes/tags.
+Filters include exact tag, project, graph family and status. Inspect a record to edit
+its author label, note and tags; saving compares the reviewed revision and graph identity.
+A competing edit requires reloading and reviewing the stored values. Read annotation
+revisions preserves earlier notes, including when current metadata is cleared. Open
+original run uses its existing inspector when that project is currently open.
+
+These are authored observations, separate from measured results. Shared-token holders
+can edit them; an author label is not an authenticated account. The additive SQLite
+file is included in offline backup/restore. It does not provide privacy erasure or
+automatic retention. Actual commands run:
+
+```sh
+.venv/bin/pytest -q tests/test_research_records.py
+.venv/bin/python tools/recovery_smoke.py --trackers --output /private/tmp/void-records-recovery-smoke-final
+```
