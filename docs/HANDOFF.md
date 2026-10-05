@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §38 — selected-group movement 5d53468 Mac accepted and pushed; new default CI pending.** Module-definition clipboard transfer is Mac accepted; separate diagnostic helper draft is unintegrated. Read §38 before older notes; preserve active hosted native/browser jobs.
+> **Latest continuation: §39 — movement5d53468 pushed; module clipboard2350ff8 Mac accepted/committed locally, awaits active movement CI.** Native diagnostic scope navigation is Mac accepted; local commit follows. Read §39 before older notes.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0041`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0042`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -68,7 +68,8 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Explicit typed-wire insertion | Mac and default Linux native/browser/recovery verified §35–§37 | 3e428bc |
 | Searchable existing editor commands | Mac verified; default Linux active §36–§37 | d406884 |
 | Selected-group layout movement | Mac verified; new default Linux pending §37–§38 | 5d53468 |
-| Module-definition clipboard transfer | Mac native/live/browser/curl/recovery verified §38 | local verified commit follows |
+| Module-definition clipboard transfer | Mac native/live/browser/curl/recovery verified §38–§39; hosted pending | 2350ff8 local |
+| Native diagnostic scope navigation | Mac native/live/browser/curl/recovery verified §39 | local verified commit follows |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -1225,3 +1226,32 @@ Independent next scope **unintegrated draft only**: diagnosticNavigation.ts plus
 Required full **1216passed,1skipped,12deselected1941warnings491.41s** (`/private/tmp/void-module-clipboard-full.log`), actual live **12passed,1217deselected26.04s**. Final27Node135.279ms/274module build/typecheck/coveragecurrent/diffcheck/16nativeidentity+store/dependency audit pass. Final post-full focused provenance/numerical2pass2.28s and final actual Chrome/native API bounds journey7.7126s above pass; all exact native/graph/UI/Undo assertions retained. Six curl cases and all8original browser regressions plus source-deletion58-file/10DB/confirmedtrackers recovery pass, strict runtime/API/console arrays empty/allownservices stopped. No native/modelpin/schema/dependency changes, no retraining/reinstall.
 
 Module scope Mac accepted; selective commit follows, excluding the independent diagnosticNavigation.ts/test draft. Preserve movement default37365491225 native job (installing at checkpoint; browser queued) before next master push. NextADR0042. User8000 untouched; no full VISION-finalization claim. Current broader remaining work: exact nested error/AgentRL outline/transfer/platform/performance/onboarding; persistent groups/automaticlayout; native production agents retrieval/memory/tools/effects/interrupt/structured/providers/streaming; wider serving/cache/import/privacyretention/GC/migration/recovery; realuserdatasets/qualitybenchmark; roles/TLS/encryption/hostilecode isolation and actual GPU/cloud/distributed/infrastructure. Anthropic/online trackers await credentials, none supplied. Continue alone until usage reserve.
+
+
+## 39. Native diagnostic scope navigation — 2026-10-05 (draft under verification)
+
+Module clipboard **2350ff8 committed locally, not pushed**. Movement default37365491225 on5d53468 native job installing/browser queued; preserve both jobs before next push. Native command d406884 job proof and never-started browser cancellation are §38; no whole-workflow command claim.
+
+Diagnostic helper/tests now integrated in App/GraphOutline (ADR0042). Actual current native diagnostic path resolves uniquely to stored root or shared module node; composite/nested/repeat itN/both select branches/current-module local scope. Explicit keyboard-able action appears only for resolvable targets, guards current pending/unavailable reports at activation; no guessed harness/pseudo/missing/ambiguous/recursive target. Repeats default2/max64 read from native composite.py; prior32 draft cap corrected before integration. Navigation changes transient scope/selection only, original graph/UI/native hash/history unchanged; native module hash/inspector values remain actual. No runtime state/iteration checkpoint/learned activation claim; shared-definition effects labelled. Agent/RL remain specialized unimplemented.
+
+New labelled SYNTHETIC examples/make_diagnostic_fixture.py declares intentionally missing constructor.b contracts, no data/training. Focused **3native tests pass2.05s** actual native missing-input paths, stored scopes/both branches/unchangedgraph;2Node105.499ms/typecheck pass. Required `/private/tmp/void-diagnostic-navigation-full.log` and live log running; generated ledger written/check current. Initial real Chrome `/private/tmp/void-diagnostic-navigation-editor-smoke` running. No final browser/native/curl/recovery acceptance yet. Native pin/store/dependencies unchanged. Current account67%five-hour/71%weekly; no reset credit consumed. Continue alone until reserve, nextADR0043 after scope. User8258/8000 untouched; whole-VISION remains bounded evidence plus broader §32 gaps.
+
+
+Diagnostic initial actual Chrome `/private/tmp/void-diagnostic-navigation-editor-smoke` **passes8.8233s**,51969/51986/52005 stopped(-15/143/0), strict errors empty. Native root/module hashes, both repeated/nested/select branches, exact inspector/breadcrumb/savedgraph/UI/history all pass; existing edit remains one Undo after navigation. Live **12pass1220deselected23.82s**, final29Node135.076ms/build275/typecheck/ledgercurrent/diffcheck pass; required full native still running. Additional final browser pending-state guard now holds then releases the actual /api/validate request (no invented response/data), requires old diagnostic controls absent while current validation pending, and screenshots each actual module inspector. `/private/tmp/void-diagnostic-navigation-editor-pending-guard` running. All original regressions/recovery also in progress.
+
+
+Final pending guard Chrome `/private/tmp/void-diagnostic-navigation-editor-pending-guard` **passes9.5332s**,52828/52867/52897 stopped(-15/143/0), real held/released native request with no substituted values; old diagnostic controls absent during pending, exact module/currentroot/history checks retained. Screenshots visually inspected actual otherwise definition/constructor error/provenance. Curl `/private/tmp/void-diagnostic-curl/evidence.json` **passes3savedcases/6native module validations**, exact browser reports and graph/UI/hash match;52349/port64451 stopped-15.
+
+Original8journeys history6.2810s/clipboard5.6818s/outline6.5005s/arrangement12.4721s/comments9.4855s/insertion7.7123s/commands6.7797s/movement8.9197s pass unchanged. **Module clipboard regression fails5.8646s** only at exact pre-copy seeded UI preservation: same project ID/disabledUndo were already true before async load completed, so the baseline save captured old UI while the actual load later adopted the intended seeded UI. Services52824/52841/52863 stopped(-15/143/1), strict errors empty. No product/copy metadata mutated. Fix setup to wait actual visible Loaded-project receipt after native GET/adopt; module and movement also independently require baseline exact equality with declared seed. Identical same-ID helper corrected in new diagnostic journey. Exact original assertions retained; repeat all3 affected journeys in `/private/tmp/void-diagnostic-{module-clipboard,movement, navigation}-load-complete` (actual diagnostic prefix void-diagnostic-navigation-load-complete). No final scope acceptance until reruns/full/native/pin checks complete.
+
+
+Stronger load-receipt/module baseline assertions **pass**: `/private/tmp/void-diagnostic-module-clipboard-load-complete`7.3215s54594/54619/54638 stopped(-15/143/0); movement9.0411s54679/54681/54700 stopped; final diagnostic+actualpendingguard9.3143s54729/54731/54750 stopped. Strict errors empty; original exact assertions plus declared seed equality retained. Actual Load receipt prevents old same-ID document capture, no product data/state behavior changed. Integrated `/private/tmp/void-diagnostic-integrated-recovery` **passes58files/10DBs/3links/1explicitomission**, sourceDeletedtrue; seed11.3190s/restored8.9418s, restored53008/53011/53031 stopped, all original actual sessions/history/discovery/research/comments/confirmedtrackers retained; manifesta2e19ddf6eb55cab9d54f7a6ee746afc9421a19f2e655b67cb9a2249ef929737. All own services stopped; required full suite finishing, actual final count pending.
+
+Hosted movement37365491225 **browser cancelled before any step**, again not requested by this agent; native suite still active. No Linux browser/wholeworkflow claim. Finish/preserve native evidence then publish accepted module/diagnostic scopes; next default retains all browser checks. Account73%five-hour/72%weekly, nextADR0043. Proposed next useful work: specialized agent graph outline/keyboard inspector with actual reads/writes/effects/control routes/native identity, no provider calls or runtime-value inference. Not implemented yet.
+
+
+### Final Mac diagnostic navigation acceptance
+
+Required native **1219passed,1skipped,12deselected1941warnings489.54s** (`/private/tmp/void-diagnostic-navigation-full.log`), live **12passed,1220deselected23.82s**.29Node135.076ms/build275/typecheck/ledgercurrent/diffcheck/16identity-source plus store/dependency audit pass. All native path assertions and final actual Chrome9.3143s including real held-request pending guard, exact new native provenance/otherwise selection/no-edit/history, strict3curlcases/6module reports, all9original browser journeys (module async-load setup repaired without weakening assertion) and source-deleted58-file native tracker recovery pass. Screenshots inspected, arrays empty, all own service groups stopped. No native backend/schema/pin/dependency/model invalidation changes. User8258/8000 untouched.
+
+Diagnostic plus test-setup readiness correction accepted on Mac; commit locally now, push after active movement native CI completes (its browser cancelled before starting). No wholeLinux workflow/browser proof. NextADR0043, agent specialized outline proposed only. Continue alone toward remaining VISION until usage reserve, credentials/infrastructure gaps remain unimplemented.

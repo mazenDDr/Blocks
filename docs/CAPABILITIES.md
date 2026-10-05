@@ -708,3 +708,18 @@ Full1216native/1skip/12deselected plus12actualOllama/27Node/274module build/type
 current ledger/pin audit pass. Focused2native cases also verify actual module harness
 identity. Strict Chrome/6curlcases/alloriginal journeys/58-file recovery pass; hosted
 verification remains separate.
+
+
+### Native diagnostic scope navigation (ADR0042; Mac accepted, hosted pending, HANDOFF§39)
+
+Current native outline diagnostics resolve to uniquely identified stored root/module
+nodes, including composite/repeat iteration paths and exact then/otherwise branches.
+Explicit keyboard-able action opens the actual shared-definition breadcrumb/inspector
+without graph/UI/hash/history edits. Pending/unavailable reports withhold prior values
+and controls; invalid/missing/ambiguous/recursive/harness-only targets are not guessed.
+Root model/tabular/domain and local module scopes; Agent/RL and runtime checkpoint/
+iteration stepping remain separate. No learned activation or platform/performance claim.
+Full1219native/1skip/12deselected plus12actualOllama/29Node/275module build/typecheck/
+ledger/pin audit pass. Strict current-report/held-real-request Chrome,3curlcases/6module
+reports/alloriginal journeys/58-file recovery pass. No native pin/backend/schema/dependency
+change; hosted scope remains separate.

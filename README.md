@@ -677,3 +677,20 @@ commands run:
 node --test apps/editor/tests/moduleClipboard.test.mjs
 .venv/bin/python tools/editor_module_clipboard_smoke.py --output /private/tmp/void-module-clipboard-editor-ready-picker
 ```
+
+
+## Open a native diagnostic in its module
+
+In **Structured graph outline**, **Open diagnostic node** selects the actual stored node
+and opens the correct shared module breadcrumb, including nested definitions, repeat
+iterations and either select branch. Pending/unavailable native reports supply no action.
+Missing/ambiguous/harness-only targets have no guessed destination. Navigation changes
+no graph/UI/history; editing the shared definition affects every instance. Inspector
+contracts come from actual native module validation, with no recorded execution state
+selected. Mac acceptance is recorded in HANDOFF§39. Actual commands run:
+
+```bash
+.venv/bin/pytest -q tests/test_diagnostic_navigation.py
+node --test apps/editor/tests/diagnosticNavigation.test.mjs
+.venv/bin/python tools/editor_diagnostic_smoke.py --output /private/tmp/void-diagnostic-navigation-editor-smoke
+```

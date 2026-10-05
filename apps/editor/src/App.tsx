@@ -55,6 +55,7 @@ import { NodeComments } from "./components/NodeComments";
 import { removeAnnotation, renameAnnotation, saveAnnotation } from "./nodeAnnotations";
 import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
 import { copyModuleNodes, pasteModuleNodes } from "./moduleClipboard";
+import { diagnosticTarget } from "./diagnosticNavigation";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
 const own = <T,>(values: Record<string, T> | null | undefined, id: string): T | undefined => values && Object.hasOwn(values, id) ? values[id] : undefined;
@@ -608,6 +609,14 @@ function Workbench() {
     onShare: (t) => setShare(selNode.id, t), onEditCode: (id, version) => setCodeEdit({ id, version }),
   } : undefined;
   const instUsed = def ? (rv?.modules?.find((m) => m.id === def.id && m.version === def.version)?.usedBy ?? []) : [];
+  const canInspectDiagnostic = (id: string) => !!diagnosticTarget(graph, id, def ? { id: def.id, version: def.version } : null);
+  const inspectDiagnostic = (id: string) => {
+    if (validation.pending || validation.error || !v) { setMessage("Wait for current native validation before opening a diagnostic node.");return; }
+    const target = diagnosticTarget(graph, id, def ? { id: def.id, version: def.version } : null);
+    if (!target) { setMessage("This diagnostic does not resolve to a uniquely identified stored node in the current graph.");return; }
+    setScope([...(def ? scope : []), ...target.scopes]);setSelNodes([target.node]);setSelEdges([]);setCodeEdit(null);setExpanded([]);setView("graph");
+    setMessage(target.scopes.length || def ? `Opened '${id}' in its shared module definition; edits affect every instance. No recorded execution values were selected.` : `Opened native diagnostic node '${id}'.`);
+  };
 
   const unusedNote = !tabular && graph.modules && graph.modules.length > 0 && !graph.nodes.some((n) => ["core.composite", "core.repeat", "core.select"].includes(n.type));
   const copySelection = async () => {
@@ -728,7 +737,8 @@ function Workbench() {
       <GraphMovementTools key={`movement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={movementBlocked}
         onSelect={ids => { setSelNodes(ids);setSelEdges([]); }} onMove={moveSelection} onCollapse={!def && expanded.length ? () => setExpanded([]) : undefined} />
       <GraphOutline key={`${projectId}:${scope.map(s => `${s.module}@${s.version}`).join("/")}`} graph={cur} ops={opsByType} validation={v ?? null} pending={validation.pending} error={validation.error} selected={selNodes} scope={def ? `Module ${def.id}@${def.version}` : `Root project ${projectId}`}
-        onInspect={id => { setSelNodes([id]); setSelEdges([]); }} onCenter={id => { setSelNodes([id]); setSelEdges([]); void fitView({ nodes: [{ id }], padding: 0.4, maxZoom: 1, duration: 0 }); }} onOpenModule={openInstance} />
+        onInspect={id => { setSelNodes([id]); setSelEdges([]); }} onCenter={id => { setSelNodes([id]); setSelEdges([]); void fitView({ nodes: [{ id }], padding: 0.4, maxZoom: 1, duration: 0 }); }} onOpenModule={openInstance}
+        canInspectDiagnostic={canInspectDiagnostic} onDiagnostic={inspectDiagnostic} />
       <NodeComments key={`comments:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} value={ui.nodeComments} prefix={def ? `${modKey(def)}/` : ""}
         identity={!validation.pending && !validation.error && v ? { kind: def ? "module" : "graph", hash: v.graphHash } : null} pending={validation.pending}
         onSelect={id => { setSelNodes([id]); setSelEdges([]); }}
