@@ -109,6 +109,9 @@ jobs:
       - name: Real browser native diagnostic scope navigation
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_diagnostic_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-diagnostic-smoke
+      - name: Real browser specialized native agent outline
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .venv/bin/python tools/editor_agent_outline_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-agent-outline-smoke
       - name: Real browser, backup and restored native state journey
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/recovery_smoke.py --trackers --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
@@ -168,5 +171,9 @@ jobs:
             /tmp/void-ci-diagnostic-smoke/evidence.json
             /tmp/void-ci-diagnostic-smoke/*.log
             /tmp/void-ci-diagnostic-smoke/*.png
+            /tmp/void-ci-agent-outline-smoke/runner.json
+            /tmp/void-ci-agent-outline-smoke/evidence.json
+            /tmp/void-ci-agent-outline-smoke/*.log
+            /tmp/void-ci-agent-outline-smoke/*.png
           if-no-files-found: warn
           retention-days: 7

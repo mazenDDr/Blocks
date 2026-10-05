@@ -707,7 +707,7 @@ function Workbench() {
       {view === "coverage" && !rl && !agent && <CoverageView />}
       {view === "data" && !rl && <DataWorkspace onAddSource={addSource} tabular={tabular} />}
       {view === "graph" && agent && (
-        <AgentWorkspace projectId={projectId} graph={graph} setGraph={setGraph} ui={ui} setUi={setUi} validation={rv ?? null} ops={ops} allRuns={allRuns} reloadRuns={reloadRuns} setMessage={setMessage} requestedRunId={ctx.runId} />
+        <AgentWorkspace projectId={projectId} graph={graph} setGraph={setGraph} ui={ui} setUi={setUi} validation={rv ?? null} validationPending={rootValidation.pending} validationError={rootValidation.error} ops={ops} allRuns={allRuns} reloadRuns={reloadRuns} setMessage={setMessage} requestedRunId={ctx.runId} />
       )}
       {view === "experiments" && !rl && <Experiments graph={graph} validation={rv ?? null} projectId={projectId} ops={opsByType} ensureSaved={ensureSaved} onOpenRun={openRun} />}
       {view === "training" && !tabular && (

@@ -694,3 +694,19 @@ selected. Mac acceptance is recorded in HANDOFF§39. Actual commands run:
 node --test apps/editor/tests/diagnosticNavigation.test.mjs
 .venv/bin/python tools/editor_diagnostic_smoke.py --output /private/tmp/void-diagnostic-navigation-editor-smoke
 ```
+
+
+## Inspect agent structure with the keyboard
+
+In an agent **Canvas**, open **Structured agent outline**. Search declared control routes/
+joins and actual native reads/writes/effects/diagnostics, filter errors, or open an actual
+node inspector with keyboard controls. The current native validation hash identifies
+contracts; no runtime value or taken route is inferred. Pending/unavailable analysis
+withholds prior values; START/END remain terminal references. Search input is bounded
+to200characters and rows to50/page. Inspect/search/paging change no graph/UI/history.
+Mac acceptance is recorded in HANDOFF§40. Actual commands run:
+
+```bash
+node --test apps/editor/tests/agentOutline.test.mjs
+.venv/bin/python tools/editor_agent_outline_smoke.py --output /private/tmp/void-agent-outline-editor-wire-search
+```

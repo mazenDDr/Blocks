@@ -723,3 +723,18 @@ Full1219native/1skip/12deselected plus12actualOllama/29Node/275module build/type
 ledger/pin audit pass. Strict current-report/held-real-request Chrome,3curlcases/6module
 reports/alloriginal journeys/58-file recovery pass. No native pin/backend/schema/dependency
 change; hosted scope remains separate.
+
+
+### Specialized native agent outline (ADR0043; Mac verified, HANDOFF§40)
+
+Agent Canvas has declared fixed control wires/conditional routes/joins, actual current
+native reads/writes/effects/diagnostics/hash, literal200unit search/50row paging/errors
+filter and keyboard selection of its existing inspector. No graph/UI/history edit,
+recorded runtime/model value/taken route inferred or provider call. Current pending/
+unavailable reports withhold prior native analysis; valid constructor IDs use own-property
+view/position/trace lookups. START/END remain explicit terminal references. RL outline,
+agent clipboard/groups and performance/platform/accessibility certification stay separate.
+Full1219native/1skip/12deselected plus12actualOllama/31Node/277module build/typecheck/
+ledger/pin audit pass. Strict current-report/held-real-request Chrome,4curlcases/native
+serving baseline/all10original editor journeys/58-file source-deleted recovery pass.
+No native pin/backend/schema/dependency change; hosted scope remains separate.

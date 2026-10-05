@@ -63,6 +63,7 @@ function AgentCard({ data, selected }: NodeProps<AgentFlowNode>) {
   );
 }
 const nodeTypes = { acard: AgentCard };
+const own = <T,>(values: Record<string, T>, key: string): T | undefined => Object.hasOwn(values, key) ? values[key] : undefined;
 
 const AUTO_FIELDS: Record<string, [string, string, string?][]> = {
   "agent.prompt": [["output_field", "list"]], "agent.chat_model": [["messages_field", "list"], ["output_field", "text"]],
@@ -92,7 +93,7 @@ export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNo
   const setSpec: SetSpec = (fn) => setGraph((g) => ({ ...g, agent: fn(specOf(g)) as unknown as Record<string, unknown> }));
 
   const ranInfo = useMemo(() => {
-    const m: Record<string, { count: number; last?: number; replay: boolean }> = {};
+    const m: Record<string, { count: number; last?: number; replay: boolean }> = Object.create(null);
     for (const s of trace?.steps ?? []) { const r = m[s.node] ?? { count: 0, replay: false }; r.count++; r.last = s.durationMs; r.replay = r.replay || s.replay; m[s.node] = r; }
     return m;
   }, [trace]);
@@ -108,14 +109,14 @@ export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNo
     const ids = ["START", ...JSON.parse(membership).map((node: string[]) => node[0]), "END"];
     pruneMeasurements(ids); updateNodeInternals(ids);
   }, [membership, updateNodeInternals, pruneMeasurements]);
-  const pos = (id: string, i: number) => positions[id] ?? { x: 40 + (i % 4) * 280, y: 60 + Math.floor(i / 4) * 170 };
+  const pos = (id: string, i: number) => own(positions, id) ?? { x: 40 + (i % 4) * 280, y: 60 + Math.floor(i / 4) * 170 };
   const nodes: AgentFlowNode[] = useMemo(() => {
     const routed = new Set(spec.routes.map((r) => r.from));
     const out: AgentFlowNode[] = [
       { id: "START", type: "acard", position: positions["START"] ?? { x: 0, y: 60 }, data: { gnode: { id: "START", type: "START", version: "", config: {} }, routed: false, terminal: "START" }, deletable: false },
       ...graph.nodes.map((n, i) => ({
         id: n.id, type: "acard" as const, position: pos(n.id, i + 1), selected: selNode === n.id,
-        data: { gnode: n, op: opsByType[n.type], view: views[n.id], ran: ranInfo[n.id], paused: trace?.status === "paused" && trace.pendingInterrupt?.node === n.id, routed: routed.has(n.id) },
+        data: { gnode: n, op: opsByType[n.type], view: own(views, n.id), ran: own(ranInfo, n.id), paused: trace?.status === "paused" && trace.pendingInterrupt?.node === n.id, routed: routed.has(n.id) },
       })),
       { id: "END", type: "acard", position: positions["END"] ?? { x: 40 + 4 * 280, y: 60 }, data: { gnode: { id: "END", type: "END", version: "", config: {} }, routed: false, terminal: "END" }, deletable: false },
     ];
@@ -198,7 +199,7 @@ export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNo
   };
 
   const sel = selNode ? graph.nodes.find((n) => n.id === selNode) : undefined;
-  const selView = sel ? views[sel.id] : undefined;
+  const selView = sel ? own(views, sel.id) : undefined;
   const route = sel ? spec.routes.find((r) => r.from === sel.id) : undefined;
   const lastStep = sel && trace ? [...trace.steps].reverse().find((s) => s.node === sel.id) : undefined;
   const diags: Diagnostic[] = validation?.diagnostics.filter((d) => !d.nodeId) ?? [];

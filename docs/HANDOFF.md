@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §39 — movement5d53468 pushed; module clipboard2350ff8 Mac accepted/committed locally, awaits active movement CI.** Native diagnostic scope navigation is Mac accepted; local commit follows. Read §39 before older notes.
+> **Latest continuation: §40 final acceptance — movement, module clipboard, diagnostic navigation and specialized agent outline pass all required Mac checks.** Latest hosted movement native job passed; its browser job was cancelled before starting. Publication/current CI and next steps are at the end of §40; read that before historical draft notes.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0042`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0043`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -66,10 +66,11 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Measured graph arrangement | Mac and default Linux native/browser verified; current-DOM repair §35–§37 | af31a76/7de4667/3e428bc |
 | Scoped authored node comments | Mac and default Linux native/browser/recovery verified §34–§37 | 536dd33/3e428bc |
 | Explicit typed-wire insertion | Mac and default Linux native/browser/recovery verified §35–§37 | 3e428bc |
-| Searchable existing editor commands | Mac verified; default Linux active §36–§37 | d406884 |
-| Selected-group layout movement | Mac verified; new default Linux pending §37–§38 | 5d53468 |
+| Searchable existing editor commands | Mac verified; Linux native passes, browser never-started cancelled §36–§40 | d406884 |
+| Selected-group layout movement | Mac verified; Linux native passes, browser never-started cancelled §37–§40 | 5d53468 |
 | Module-definition clipboard transfer | Mac native/live/browser/curl/recovery verified §38–§39; hosted pending | 2350ff8 local |
-| Native diagnostic scope navigation | Mac native/live/browser/curl/recovery verified §39 | local verified commit follows |
+| Native diagnostic scope navigation | Mac native/live/browser/curl/recovery verified §39–§40; hosted pending | b3029c8 local |
+| Specialized native agent outline | Mac native/live/browser/curl/recovery verified §40; hosted pending | current release |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -1255,3 +1256,28 @@ Hosted movement37365491225 **browser cancelled before any step**, again not requ
 Required native **1219passed,1skipped,12deselected1941warnings489.54s** (`/private/tmp/void-diagnostic-navigation-full.log`), live **12passed,1220deselected23.82s**.29Node135.076ms/build275/typecheck/ledgercurrent/diffcheck/16identity-source plus store/dependency audit pass. All native path assertions and final actual Chrome9.3143s including real held-request pending guard, exact new native provenance/otherwise selection/no-edit/history, strict3curlcases/6module reports, all9original browser journeys (module async-load setup repaired without weakening assertion) and source-deleted58-file native tracker recovery pass. Screenshots inspected, arrays empty, all own service groups stopped. No native backend/schema/pin/dependency/model invalidation changes. User8258/8000 untouched.
 
 Diagnostic plus test-setup readiness correction accepted on Mac; commit locally now, push after active movement native CI completes (its browser cancelled before starting). No wholeLinux workflow/browser proof. NextADR0043, agent specialized outline proposed only. Continue alone toward remaining VISION until usage reserve, credentials/infrastructure gaps remain unimplemented.
+
+
+## 40. Specialized native agent outline — 2026-10-05 (draft under verification)
+
+Diagnostic **b3029c8 committed locally**, module2350ff8 local; wait movement default37365491225 native completion before publishing. Movement browser cancelled before starting, no actual Linux browser/wholeworkflow claim. User8258/8000 untouched.
+
+Current uncommitted AgentOutline/agentOutline, AgentWorkspace/App integration,2pureNode tests and owned runner/journey. Actual current native reads/writes/effects/diagnostics/hash, declared control wires/routes/joins, literal200unit query/50row pages/error filter; keyboard actual AgentCanvas inspector selection, no graph/UI/native hash/history edit. START/END are declared terminal references, no fake editable node. Pending/unavailable reports withhold earlier analysis/diagnostics; native field absent explicitly not returned, actual empty list none. No taken route/runtime state/model-call/quality/performance inference; typed route JSON is declared configuration. Native constructor-safe AgentCanvas view/position/trace lookup prevents inherited object properties being read as native records. No native identity/backend/modelpin/schema/dependency change. RL specialized outline remains unimplemented.
+
+2pure tests113.531ms/typecheck pass. Integrated31Node140.013ms/build277/typecheck pass. Required `/private/tmp/void-agent-outline-full.log` and live log running; existing count1219native before this frontend-only scope. Actual `/private/tmp/void-agent-outline-editor-smoke` running: model-free native serving_state contracts, declared conditional route fixture/native missingfield refusal, real held/released pending request, valid constructor and75native state nodes/50+25pages. No substituted native/model values. Full/live/browser/curl/alloriginal/recovery/ledger/pin/docs/ADR0043 required before acceptance. Continue alone until reserve, accountlast73%five-hour/72%weekly; no reset credit used. NextADR0044 after scope. Broader §32 gaps remain; no whole-VISION finalization claim.
+
+
+Agent initial Chrome `/private/tmp/void-agent-outline-editor-smoke` fails6.2077s before outline assertions because the teaching route used unsupported predicate opgt. Actual capture rerun `/private/tmp/void-agent-outline-editor-native-diagnostic` fails5.7059s and records native E_PREDICATE_OP Unknown operatorgt. Local agent/spec.py CMP_OPS uses literal>; fixture/pure declaration corrected, nativevalidity assertion retained. No product validator/backend change. Services55334/55351/55377 and55485/55498/55517 stopped(-15/143/1); strict runtime/API/console arrays empty. Error-only filter is explicitly cleared before inspecting pending constructor fixture; no hidden prior-filter assumptions. Actual repeat `/private/tmp/void-agent-outline-editor-native-route` running. Live **12pass1220deselected22.10s**. Account78%five-hour/73%weekly; finish verification/publish/handoff before reserve, do not begin a new large scope. Full native/alloriginal/nativebaseline/recovery still active.
+
+
+### Final Mac agent outline acceptance and completed hosted movement evidence
+
+This supersedes the §40 draft/pending notes. Required full `.venv/bin/pytest -q -o faulthandler_timeout=240` **1219passed,1skipped,12deselected,1941warnings494.91s**, `/private/tmp/void-agent-outline-full.log`. Actual `.venv/bin/pytest -q -m live` **12passed,1220deselected22.10s**, `/private/tmp/void-agent-outline-live.log`. Final editor build277modules/typecheck/31Node180.389417ms/coverage write+check/diffcheck pass. Logs `/private/tmp/void-agent-outline-{build,types,node}-final.log`. Syntax checked;16native identity-source union (including artifact_store/store.py), schema and dependency pins unchanged against5d53468. No saved-model invalidation/retraining/reinstall.
+
+Final owned Chrome `/private/tmp/void-agent-outline-editor-wire-search` **passes6.9803s**, backend57481/editor57567/browser57588 stopped(-15/143/0). Actual model-free native state/control/hash/contracts, declared route search, keyboard existing inspector, exact saved graph/UI/hash/disabledUndo, native undeclared-field diagnostics/error filter, real held/released validation pending suppression, valid constructor node and75native nodes/50+25pages/back/search reset pass. No API/model response substituted; declared fixture structure remains SYNTHETIC. Screenshot visually inspected: actual native contracts/current identity beside existing canvas/inspector. Prior route rerun6.4395s failed only because node_074 also matches node_073's actual outgoing wire. Test now requires both real matching rows and disabledPrevious after search page reset, then exact node_074 inspector. Native validator/product search unchanged, original no-edit/history/native assertions retained. Services55658/55675/55694 stopped; earlier unsupportedgt fixture failures above remain recorded.
+
+Actual curl `/private/tmp/void-agent-outline-curl/evidence.json` **passes4savedcases**, exact native saved graph/UI/hash and full reports matching Chrome: baseline, intentionally undeclared field, native constructor and75nodes. Backend57976/port60140 stopped-15. Original native serving/research/comments baseline11.2073s plus all10editor regressions **pass**: history5.8592s/rootclipboard5.8513s/outline6.4195s/arrangement12.2825s/comments9.5611s/insertion8.2233s/commands6.6157s/movement9.4090s/moduleclipboard7.3568s/diagnostic9.0753s (`/private/tmp/void-agent-outline-*-regression`). All original assertions retained, runtime/API/console arrays empty and every recorded owned group stopped.
+
+Integrated `/private/tmp/void-agent-outline-integrated-recovery` **passes58files/10DBs/3internal-links/1explicitdiagnosticomission**, physical source deletion verified. Seed11.0342s/restored8.6313s, restored57912/57915/57934 stopped(-15/143/0). All original native conversations/checkpoints/historical restore/discovery/research/authored comments and confirmed local MLflow/offlineW&B exports retained. Manifest83f40390c123e5e2d08a9a45dd5f4b13d099f837f252f395091a1719f595fbd6. Evidence-only files uploaded by CI; raw temporary fixtures/workbench/CAS/weights/browser profiles/tokens excluded from Git. Process audit shows no owned verification services; user8258/port8000 is still running and untouched.
+
+Hosted movement [37365491225](https://github.com/mazenDDr/project-void/actions/runs/37365491225) on5d53468 **overall failure solely because browser was cancelled before any step** (not requested by this agent). Native job111949481480 **success**:1214passed,1skipped,12deselected1941warnings1071.18s;273module build/typecheck/24Node789.235351ms/coverage current. Artifact `/private/tmp/void-movement-ci-native/void-pytest.xml` independently parsed1215cases/0failures/0errors/1skip1071.151s; native-only log `/private/tmp/void-movement-ci-native.log`. No Linux browser/whole-workflow acceptance claim. This job does not verify later module/diagnostic/agent scopes. It has completed, so all three accepted local scopes can now be published without cancelling active verification. Next default keeps every original browser journey plus movement/module/diagnostic/agent and source-deletion recovery. Agent outline Mac accepted; commit/push follows. NextADR0044.

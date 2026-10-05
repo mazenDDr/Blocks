@@ -3,6 +3,7 @@ import type { Graph, OpInfo, UiDoc, Validation } from "../../types";
 import { isAgentRun } from "../../types";
 import type { AnyRun } from "../../types";
 import { AgentCanvas } from "./AgentCanvas";
+import { AgentOutline } from "./AgentOutline";
 import { ContextTab } from "./ContextInspector";
 import { IndexesTab } from "./IndexesPanel";
 import { MemoryTab } from "./MemoryPanel";
@@ -14,9 +15,10 @@ import type { AgentRunSummary, Trace } from "./types";
 type Tab = "canvas" | "state" | "run" | "context" | "memory" | "indexes";
 
 /** The agent graph workspace (VISION 4, 12): canvas, state schema and routes, run + trace, context inspector, memory, indexes. */
-export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validation, ops, allRuns, reloadRuns, setMessage, requestedRunId }: {
+export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validation, validationPending, validationError, ops, allRuns, reloadRuns, setMessage, requestedRunId }: {
   projectId: string; graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; ui: UiDoc; setUi: (f: (u: UiDoc) => UiDoc, dragging?: boolean) => void; validation: Validation | null; ops: OpInfo[];
   allRuns: AnyRun[]; reloadRuns: () => void; setMessage: (m: string) => void; requestedRunId?: string | null;
+  validationPending: boolean; validationError: string | null;
 }) {
   const [tab, setTab] = useState<Tab>("canvas");
   const [selNode, setSelNode] = useState<string | null>(null);
@@ -25,6 +27,7 @@ export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validati
   const [focusRecord, setFocusRecord] = useState<string | null>(null);
   const runs = useMemo(() => allRuns.filter(isAgentRun) as AgentRunSummary[], [allRuns]);
   const agentOps = useMemo(() => ops.filter((o) => o.graphKind === "agent"), [ops]);
+  const opsByType = useMemo(() => Object.fromEntries(agentOps.map(op => [op.type, op])), [agentOps]);
   useEffect(() => { setRunId(null); setCallId(null); setSelNode(null); }, [projectId]);
   useEffect(() => {
     if (requestedRunId) { setRunId(requestedRunId); setCallId(null); setTab("run"); }
@@ -52,7 +55,8 @@ export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validati
       </div>
       {ui.description && <div className={`notice-inline ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic data. </b>}{ui.description}</div>}
       <div className="atabbody">
-        {tab === "canvas" && <AgentCanvas graph={graph} setGraph={setGraph} ui={ui} setUi={setUi} validation={validation} ops={agentOps} selNode={selNode} setSelNode={setSelNode} trace={trace.data} setMessage={setMessage} runValues={runValues} />}
+        {tab === "canvas" && <><AgentOutline key={`agent-outline:${projectId}`} graph={graph} ops={opsByType} validation={validation} pending={validationPending} error={validationError} selected={selNode} onInspect={setSelNode} />
+          <AgentCanvas graph={graph} setGraph={setGraph} ui={ui} setUi={setUi} validation={validation} ops={agentOps} selNode={selNode} setSelNode={setSelNode} trace={trace.data} setMessage={setMessage} runValues={runValues} /></>}
         {tab === "state" && <div className="scroll pad"><StateTab graph={graph} setGraph={setGraph} analysis={validation?.agent} writes={writes} /></div>}
         {tab === "run" && <div className="scroll pad"><AgentRunTab projectId={projectId} graph={graph} ui={ui} validation={validation} runs={runs} reloadRuns={reloadRuns} runId={runId} setRunId={setRunId}
           selectNode={(id) => { setSelNode(id); setTab("canvas"); }} openCall={(r, c) => { setRunId(r); setCallId(c); setTab("context"); }} setMessage={setMessage} /></div>}
