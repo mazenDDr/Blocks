@@ -93,5 +93,5 @@ try{
   assert.deepEqual(evidence.consoleWarnings.filter(m=>m.type==='error'),[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS add/settings/layout → whole-document undo/redo → grouped drag → new-edit invalidation → project reset/text focus');
-}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);evidence.viewport=await page.evaluate(()=>({transform:document.querySelector('.react-flow__viewport')?.style.transform,canvas:document.querySelector('.react-flow')?.getBoundingClientRect().toJSON(),nodes:[...document.querySelectorAll('.react-flow__node')].map(n=>({id:n.dataset.id,style:n.getAttribute('style'),rect:n.getBoundingClientRect().toJSON()}))})).catch(()=>null);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}

@@ -43,19 +43,51 @@ jobs:
           pnpm -C apps/editor exec tsc --noEmit
           node --test apps/editor/tests/*.test.mjs
           .venv/bin/python -m backends.coverage --check
+      - name: Preserve native test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-test-evidence
+          path: /tmp/void-pytest.xml
+          if-no-files-found: warn
+          retention-days: 7
+
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '25.9.0'
+      - name: Install pinned environments
+        id: install
+        run: |
+          npm install --global pnpm@10.33.0
+          python -m venv .venv
+          .venv/bin/pip install --extra-index-url https://download.pytorch.org/whl/cpu -r python/requirements.txt
+          .venv/bin/pip install -e . --no-deps
+          .venv/bin/python -m connectors.install_pgserver
+          python -m venv .venv-trackers
+          .venv-trackers/bin/pip install -r python/tracking/requirements.txt
+          pnpm -C apps/editor install --frozen-lockfile
       - name: Real browser graph draft history
         run: .venv/bin/python tools/editor_history_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-history-smoke
       - name: Real browser graph clipboard
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_clipboard_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-clipboard-smoke
       - name: Real browser, backup and restored native state journey
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/recovery_smoke.py --trackers --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
       - name: Preserve actual test evidence on success or failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: native-and-browser-evidence
+          name: browser-evidence
           path: |
-            /tmp/void-pytest.xml
             /tmp/void-ci-recovery-smoke/recovery.json
             /tmp/void-ci-recovery-smoke/trackers.json
             /tmp/void-ci-recovery-smoke/seed/runner.json
