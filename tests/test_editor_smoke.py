@@ -52,9 +52,14 @@ def test_stop_terminates_only_owned_group_including_real_child(tmp_path):
         assert owned.poll() is not None
         assert unrelated.poll() is None
         deadline = time.monotonic()+5
-        while time.monotonic()<deadline and psutil.pid_exists(child) and psutil.Process(child).status()!=psutil.STATUS_ZOMBIE:
+        def child_running():
+            try:
+                return psutil.Process(child).status() != psutil.STATUS_ZOMBIE
+            except psutil.NoSuchProcess:
+                return False
+        while time.monotonic()<deadline and child_running():
             time.sleep(.02)
-        assert not psutil.pid_exists(child) or psutil.Process(child).status()==psutil.STATUS_ZOMBIE
+        assert not child_running()
     finally:
         smoke.stop(owned)
         smoke.stop(unrelated)

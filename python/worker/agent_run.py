@@ -66,8 +66,8 @@ def run_agent(graph: Graph, cfg: AgentRunConfig, store: ArtifactStore, run_id: s
         em.emit("run_queued", config=cfg.model_dump())
 
     def finish(status: str, error: str | None = None, **data) -> str:
-        store.set_status(run_id, status, error)
         em.emit("run_finished", status=status, error=error, **data)
+        store.set_status(run_id, status, error)
         return status
 
     try:
@@ -114,8 +114,8 @@ def run_agent(graph: Graph, cfg: AgentRunConfig, store: ArtifactStore, run_id: s
             if store.get_run(run_id)["status"] != "cancelling":
                 store.set_status(run_id, "cancelling")
             em.emit("cancel_acknowledged")
-            store.set_status(run_id, "cancelled")
             em.emit("run_finished", status="cancelled", error=None)
+            store.set_status(run_id, "cancelled")
             return "cancelled"
         except NodeFailure as e:
             em.emit("node_failed", None, code=e.code, message=e.message)
