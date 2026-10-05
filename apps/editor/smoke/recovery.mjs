@@ -114,6 +114,65 @@ try {
   assert.equal(evidence.monitor.health.requests,6);
   assert.equal(evidence.monitor.health.errors,0);
   await capture('restored-monitor');
+  // Discovery lists committed metadata; checkpoint inspection is explicit.
+  await click('Requests','.production-workspace');
+  pending = response('/conversations','GET');
+  await click('Discover conversations');
+  const initialSessions = await (await pending).json();
+  evidence.discovery = {initialSessions};
+  assert.deepEqual(initialSessions.sessions.map(x => x.session),['alternative','investigation']);
+  assert.equal(initialSessions.readOnly,true);
+  assert.equal(initialSessions.versionId,seed.version);
+  assert(await page.$eval('[aria-label="conversation discovery"]', section => section.scrollWidth <= section.clientWidth));
+  evidence.stage = 'inspect discovered branch';
+  pending = response('/conversation','GET');
+  await click('Inspect alternative');
+  const discoveredBranch = await (await pending).json();
+  evidence.stage = 'seed native discovery sessions';
+  assert.equal(discoveredBranch.state.n,4);
+  assert.deepEqual(discoveredBranch.head,initialSessions.sessions[0].head);
+  // Seed actual successful native turns for pagination; no placeholder rows.
+  const sessionSeeds = await page.evaluate(async release => {
+    const traces = [];
+    for (let i=0;i<27;i++) {
+      const session = 'discovery-'+String(i).padStart(2,'0');
+      const question = 'SYNTHETIC discovery '+i;
+      const response = await fetch('/api/serve/local/native-browser-smoke/predict',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({requestId:crypto.randomUUID(),records:[{question}],user:'local-user',session,expectedRelease:release})});
+      if (!response.ok) throw Error('Native discovery seed refused: '+response.status);
+      traces.push(await response.json());
+    }
+    return traces;
+  },seed.release);
+  assert(sessionSeeds.every(x => x.result.agent.modelCalls === 0 && x.conversationState.revision === 1));
+  await fill('input[aria-label="conversation session prefix"]','discovery-');
+  pending = response('/conversations','GET');
+  await click('Discover conversations');
+  const firstPage = await (await pending).json();
+  assert.equal(firstPage.sessions.length,25);
+  assert.equal(firstPage.sessions[0].session,'discovery-00');
+  assert.equal(firstPage.nextAfter,'discovery-24');
+  pending = response('/conversations','GET');
+  await click('Next conversations');
+  const secondPage = await (await pending).json();
+  assert.deepEqual(secondPage.sessions.map(x => x.session),['discovery-25','discovery-26']);
+  assert.equal(secondPage.nextAfter,null);
+  pending = response('/conversations','GET');
+  await click('Previous conversations');
+  assert.deepEqual((await (await pending).json()).sessions,firstPage.sessions);
+  pending = response('/conversation','GET');
+  await click('Inspect discovery-00');
+  const selectedSession = await (await pending).json();
+  assert.equal(selectedSession.state.n,1);
+  assert.equal(selectedSession.session,'discovery-00');
+  assert.deepEqual(selectedSession.head,firstPage.sessions[0].head);
+  await capture('restored-discovery');
+  await labelFill('User namespace','other-user');
+  pending = response('/conversations','GET');
+  await click('Discover conversations');
+  assert.deepEqual((await (await pending).json()).sessions,[]);
+  await text('No recorded conversations match this scope and prefix.');
+  evidence.discovery = {initialSessions,firstPage,secondPage,selectedSession,seededSessions:sessionSeeds.length,otherUserEmpty:true};
   if (process.env.VOID_RECOVERY_TRACKERS) {
     const trackerSeed = JSON.parse(fs.readFileSync(process.env.VOID_RECOVERY_TRACKERS, 'utf8'));
     pending = response('/api/integrations', 'GET');

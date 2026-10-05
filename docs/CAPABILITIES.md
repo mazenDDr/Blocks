@@ -495,3 +495,13 @@ This supersedes ADR0027's W&B-link refusal **only with explicit v2 policy**. Def
 | Real tracker recovery browser flow and CI source | `tools/recovery_smoke.py --trackers`, `tracker_recovery_seed.py`, existing restored journey | Actual native synthetic training/export and restored Chrome confirmed mappings/reconnect; HANDOFF §25 |
 
 Limits remain offline/trusted/same-native-environment/new-destination. Link traversal/security is bounded by that administrative trust/quiescence requirement, not a hostile-filesystem guarantee. Only internal relative direct ordinary targets are admitted; omitted diagnostic logs are not restored. MLflow/W&B immutable absolute paths are not rewritten; new-root tracker relocation/live resume is not claimed. External files/services/credentials remain external. No online snapshot, general migration, encryption/signing, scheduling/retention/GC or disk crash guarantee. Broader DVC/import/repository/cache native recovery remains unverified. No pinned execution implementation or dependency changes; no new retraining.
+
+### Read-only serving conversation discovery (ADR0029)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Bounded per-release/caller-user session metadata, literal prefixes and keyset pages25/default,100/max; no state loading/model call | `production/discovery.py`, GET release `/conversations` | `test_conversation_discovery.py`: real native successful/reset/forked/capture-off heads, ordered pages/prefix/user/release/restart; primary-key query plan and read-only CAS/event/head evidence |
+| Existing explicit checkpoint inspection from a discovered session; busy/error/scope changes guarded, wrapped labelled table | `ConversationDiscovery.tsx`, Production Requests | Actual Chrome27 native session seeds,25+2 next/previous pages, exact selected checkpoint and other-user empty list; build/typecheck |
+| Optional shared-token protection and strict query/stateless/integrity refusal | Existing middleware/control API | Native HTTP token/invalid query/stateless and damaged metadata tests |
+
+Discovery is metadata, not a checkpoint-integrity or provider-availability claim. Existing explicit inspection verifies the selected actual checkpoint; pages are current reads, not a frozen historical catalog. Caller user keys remain unauthenticated isolation scopes. No historical restore/import/migration, privacy erasure/retention/GC, roles/ownership, streaming or broader native serving dependencies. No model pin/dependency/DB migration changes. Exact Mac/hosted status is recorded in HANDOFF §26.

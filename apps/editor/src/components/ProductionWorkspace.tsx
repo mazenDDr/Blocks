@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api, ApiError, errorText } from "../api";
 import { usePolling } from "../hooks";
 import { ConversationActions, type ConversationSnapshot } from "./ConversationActions";
+import { ConversationDiscovery } from "./ConversationDiscovery";
 import { AgentTurnInspection } from "./AgentTurnInspection";
 
 interface Candidate { runId: string; node: string; pipelineSha256: string; graphHash: string; adapter?: "tabular" | "domain" | "model" | "rl" | "unsup" | "agent" | "conversation"; family?: string }
@@ -139,6 +140,11 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
       <p className="provenance">Current request {requestId || "not sent"}</p>
       <button disabled={!requestId || trace?.requestId === requestId} onClick={() => api.post(`/api/production/requests/${requestId}/cancel`, { user }).then(() => setNotice("Cancellation requested; state commit will be refused.")).catch((e) => setError(errorText(e)))}>Cancel in-flight request</button>
       {release?.config.sessionMode === "conversation" && <>
+        <ConversationDiscovery key={`${release.id}:${user}`} releaseId={release.id} user={user} disabled={!!busy}
+          onInspect={selected => act("Reading selected native conversation checkpoint", async () => {
+            setSession(selected); setConversation(null);
+            setConversation(await api.get<ConversationSnapshot>(`/api/production/releases/${release.id}/conversation?user=${encodeURIComponent(user)}&session=${encodeURIComponent(selected)}`));
+          })} />
         <button disabled={!!busy} onClick={() => act("Reading native conversation checkpoint", async () => setConversation(await api.get<ConversationSnapshot>(`/api/production/releases/${release.id}/conversation?user=${encodeURIComponent(user)}&session=${encodeURIComponent(session)}`)))}>Inspect conversation checkpoint</button>
         {inspectedConversation != null && <>
           <ConversationActions key={`${inspectedConversation.releaseId}:${inspectedConversation.user}:${inspectedConversation.session}:${inspectedConversation.head?.revision}`} snapshot={inspectedConversation} disabled={!!busy}

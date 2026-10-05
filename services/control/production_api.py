@@ -242,6 +242,14 @@ def register(app: FastAPI, sv):
         ps.add_labels(req.user, id_, req.labels)
         return {"recorded": True, "requestId": id_, "rows": len(req.labels)}
 
+    @app.get("/api/production/releases/{rid}/conversations")
+    def conversations(rid: str, user: str = Query("local-user", pattern=r"^[A-Za-z0-9_-]{1,64}$"),
+                      limit: int = Query(25, ge=1, le=100),
+                      after: str | None = Query(None, pattern=r"^[A-Za-z0-9_-]{1,64}$"),
+                      prefix: str = Query("", pattern=r"^[A-Za-z0-9_-]{0,64}$")):
+        from production.discovery import discover
+        return discover(ps, rid, user, limit=limit, after=after, prefix=prefix)
+
     @app.get("/api/production/releases/{rid}/conversation")
     def conversation(rid: str, user: str = Query("local-user", pattern=r"^[A-Za-z0-9_-]{1,64}$"),
                      session: str = Query(..., pattern=r"^[A-Za-z0-9_-]{1,64}$")):

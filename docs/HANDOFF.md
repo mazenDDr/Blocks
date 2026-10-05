@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest verified continuation: §25 — explicit W&B link recovery and durable native resource tests (Mac verified; hosted CI pending).** Read §25 first for current work and the uncommitted conversation-discovery continuation. §24 records verified whole-workbench recovery; §23 the Mac/hosted Linux browser baseline. §22 records reviewed conversation reset/fork, §21 persistent conversations, §20 isolated agent serving, §19 domain imports. §17–§18 and §11–§16 record earlier cloud work.
+> **Latest verified continuation: §26 — read-only native conversation discovery (Mac verified; push/hosted CI pending).** §25 explicit W&B/native recovery is pushed and Mac verified; hosted CI is running. Read §26 first, then §25. §24 records whole-workbench recovery; §23 the browser baseline. §22 reset/fork, §21 persistent conversations, §20 isolated agent serving, §19 domain imports. Earlier cloud work is recorded in §11–§18.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0028`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0029`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -57,6 +57,7 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Reproducible native editor smoke and CI baseline | verified Mac arm64 and hosted Linux x86_64 (§23, ADR0026) | 6d50d6c; docs follow-up records CI |
 | Offline whole-workbench backup/recovery | verified Mac arm64 and hosted Linux x86_64 (§24, ADR0027) | 9d3b810; docs follow-up records CI |
 | Explicit offline W&B links/native resource recovery | verified Mac, hosted CI pending, see §25/ADR0028 | this continuation |
+| Read-only native conversation discovery | verified Mac, push/hosted CI pending, see §26/ADR0029 | this continuation |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -833,3 +834,27 @@ Continue alone, next ADR0027; keep verified code and detailed handoff pushed. Ne
 3. Wider production agent retrieval/memory/tools/effects/interrupt/structured/multiple-provider/streaming serving; broader model serving/real data benchmarks/editor/cache/repository/research. Credentials for Anthropic/online tracking and actual GPU/cloud/distributed infrastructure are unavailable unless user supplies them. Accounts/roles/ownership, production deployment, outside-user onboarding/accessibility and wider platform/browser matrix remain.
 
 Continue autonomously alone, reserve enough usage for verified push/handoff, next new design after this release ADR0029. Do not finalize just because a small task finished; the user asked for continuous work.
+
+## 26. Read-only native serving conversation discovery — 2026-10-05
+
+### Current implementation and compatibility
+
+- §25 recovery release committed/pushed **d6a9d907829a012e572dd047d5b5e50326765f93**. Hosted workflow **37305715111** is running: https://github.com/mazenDDr/project-void/actions/runs/37305715111. Do not mark it Linux verified until actual completion/evidence review. No divergence at fetch; next discovery changes remain local until full verification passes.
+- Added `python/production/discovery.py`, `tests/test_conversation_discovery.py`, `ConversationDiscovery.tsx`, additive `/api/production/releases/{rid}/conversations` endpoint/Requests UI, wrapped CSS, ADR0029. Expanded recovered browser journey with actual session discovery. No existing native pin-bearing file, dependency or database schema/index migration. Existing model versions remain compatible.
+- Read-only metadata list per release/caller-declared user, literal ASCII prefix (underscore not wildcard), page25/default100/max and keyset `after`. Canonical scope primary-key ranges bound query and avoid loading/scanning other-user state; at mostlimit+1 result rows. Native successful/reset/forked heads listed, no content/model/provider checks/defaults/timestamps invented. Checkpoint content integrity is separate explicit inspection. Keyset ordering is stable; pages are not a frozen catalog under concurrent changes.
+- Working explicit discovery/prefix/next/previous/selected-checkpoint controls, scope remounts and prefix edits clear old pages, failed reads clear stale rows, labels/caption/headers/native keyboard controls. React best-practices skill applied for event fetching, scoped state and bounded rendering; no new library/Next/Vercel dependency. Caller-declared keys still are not authenticated ownership.
+
+### Accepted checks so far and required completion
+
+- Focused discovery11 tests pass3.69s; combined discovery + existing conversations/actions **40 passed,14.89s**. Covers actual native/reset/fork/capture-off/restart, primary-key plan, metadata-only read even when checkpoint bytes corrupt, CAS/head/events unchanged, token/query/stateless/malformed-scope refusal. No weakened tests/providers.
+- Browser first attempt exposed real clipped table: native discovery GET succeeded, but an inspect button was outside its card. Fixed with scoped fixed table layout/word wrapping; no native semantics changed. Accepted final real Chrome `tools/recovery_smoke.py --trackers --output /private/tmp/void-discovery-recovery-smoke-final` **passes**; restored duration7.0905s, source deleted, original identities retained. Two actual existing sessions discovered; branch state n4 inspected;27 actual successful model-free serving turns seed25+2 pages, next/back exact rows, selected discovery-00 state n1/head exact, another caller-user list empty. All values are native records; no placeholder rows/provider. Tracker confirmed reconnect still passes after discovery. Runtime/API/console messages empty. Restored screenshot reviewed: controls within panel and long hashes wrapped. Own services closed (restored backend3890 exit-15); no user service stopped.
+- Final `.venv/bin/pytest -q -o faulthandler_timeout=240`: **1150 passed,1 skipped,11 deselected,1941 warnings,472.92s**, `/private/tmp/void-discovery-full-pytest.log`. `.venv/bin/pytest -q -m live`: **11 passed,1151 deselected,22.14s**, `/private/tmp/void-discovery-live-pytest.log`, actual local Ollama. Existing Anthropic skip/no key. Build/typecheck/coverage/diffcheck pass; no ledger change and existing large chunk warning. All16 native agent identity files unchanged.
+- Explicit curl: owned restored backend4368/port51422; primary-key page after discovery-01 returns discovery-02/03, another user empty, actual discovery-00 checkpoint n1. All200, stopped exit-15; evidence `/private/tmp/void-discovery-curl/evidence.json`. Source/root are synthetic/owned. User8258/8000 unchanged.
+- Discovery commit is ready after freshorigin0/0; defer pushing briefly while §25 hosted run finishes, because existing workflow cancels an earlier in-progress run on a new master push. Continue independent historical-restore work meanwhile; do not discard local changes. Keep §25 CI result in handoff once known. CI uploaded artifacts exclude native workbenches/backups/weights/tokens; existing evidence-only policy unchanged. All own processes need clean teardown; user8258/8000 is off limits. Account limits last checked five-hour19%/weekly50% used; continue, retaining cleanup/push reserve.
+
+### Next independent scope and remaining work
+
+1. Reviewed **historical checkpoint restoration** within the same release/user/session: select an actual successful request's committed checkpoint (including capture-off), inspect source state/provenance, require reviewed current head/revision plus selected checkpoint/trace identity, serialize with turns/actions, create a fresh native thread preserving whole historical state, monotonic serving revision, atomic head/receipt/lifecycle and idempotent retry. No arbitrary upload/direct SHA, no cross-user/session/release/version migration, no model invocation during restoration. Test stale source/target, failed/incomplete requests, cancellation/deadline, transaction rollback/crash and independent continued native history. Design/implementation **not started**; next ADR0030. Audit existing action commit path before extending, never rewrite old receipts/artifacts/pins.
+2. Physical privacy deletion/retention/GC and upgrades/migrations; production native retrieval/memory/tools/effects/interrupt/structured/multiple-provider/streaming; wider serving/real datasets/benchmarks/editor/cache/repository/research. Accounts/roles/ownership and production deployments remain separate. Credentials/infrastructure-dependent work remains as §25. No finalization claim while these remain.
+
+User asked continuous work until approaching usage limits, not one-task stops. Continue alone, keep each verified release/handoff pushed and preserve enough usage for final cleanup/push/handoff. Current active Codex goal spans these releases; do not mark it complete yet.

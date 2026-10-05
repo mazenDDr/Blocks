@@ -472,3 +472,16 @@ Default v1 creation still refuses links. Explicit `--links internal` creates v2 
 ```
 
 Use new output paths on another run. CI now uses the tracker recovery smoke: actual native MLflow/W&B exports, source deletion, restored conversations and confirmed export reconnect through Chrome. Native SDK bytes/internal links survive; immutable absolute tracker paths are unchanged. MLflow artifact downloads require the original absent root to be restored; relocated metadata/history remain readable. W&B confirmed-directory provenance still names its original path; this is offline export recovery, not live resume/upload. [Recovery runbook](docs/RECOVERY.md) explains external requirements and supported restore paths. No new retraining requirement; HANDOFF §25 records verification.
+
+### Find recorded serving conversations (ADR0029)
+
+In Production → Requests, select a conversation release and user namespace, then **Discover conversations**. A literal session prefix filters recorded session keys; next/previous pages list up to25 committed heads. **Inspect [session]** selects that Session and reads its actual native checkpoint through the existing verified inspector/reset/fork controls. Empty/reset heads show no live checkpoint. Discovery lists metadata only, makes no model calls and changes no state. User namespaces remain caller-declared isolation keys, not authenticated accounts. Pages reflect current reads rather than a frozen historical catalog.
+
+These commands ran; the browser recovery check seeds27 actual native sessions and checks25+2 pages, back navigation, selected checkpoint and another user’s empty scope:
+
+```bash
+.venv/bin/pytest -q tests/test_conversation_discovery.py tests/test_production_conversation.py tests/test_conversation_actions.py -o faulthandler_timeout=240
+.venv/bin/python tools/recovery_smoke.py --trackers --output /private/tmp/void-discovery-recovery-smoke-final
+```
+
+No model source pins or dependencies changed. Historical checkpoint restore, privacy deletion, retention and authenticated ownership remain unavailable. See HANDOFF §26.
