@@ -150,7 +150,7 @@ Activation capture on Keras/JAX returns every node's value in graph layout (NCHW
 |---|---|---|---|---|
 | `code.block` | - | - | - | 2 |
 | `core.add` | 1 conformance, 2 workload | 1 conformance, 2 workload | 1 conformance, 2 workload | 1 |
-| `core.composite` | - | - | - | 3 |
+| `core.composite` | - | - | - | 4 |
 | `core.mean` | 3 conformance, 1 workload | 3 conformance, 1 workload | 2 conformance, 1 refusal, 1 workload | 5 |
 | `core.repeat` | - | - | - | 2 |
 | `core.scalar_mul` | 1 conformance, 2 workload | 1 conformance, 2 workload | 1 conformance, 2 workload | 3 |

@@ -658,3 +658,22 @@ pnpm -C apps/editor exec tsc --noEmit
 .venv/bin/python -m backends.coverage --write
 .venv/bin/python -m backends.coverage --check
 ```
+
+
+## Copy and paste module-internal draft nodes
+
+In a PyTorch shared module definition, open **Copy and paste graph nodes** and select
+internal nodes. The snapshot displays its actual native module hash; input/output and
+generated cards are excluded. Paste into a compatible root or module: fresh identities
+reserve existing orphan notes/layout, internal wires stay connected and omitted boundary
+wires stay disconnected. Native missing-input errors remain visible. Target interfaces,
+existing wires and original authored notes stay intact. A module paste changes the shared
+definition used by all instances; one Undo/Redo restores the documents. No weights or
+opaque module-local state are transferred. Mac acceptance is recorded in HANDOFF§38. Actual
+commands run:
+
+```bash
+.venv/bin/pytest -q tests/test_module_clipboard.py
+node --test apps/editor/tests/moduleClipboard.test.mjs
+.venv/bin/python tools/editor_module_clipboard_smoke.py --output /private/tmp/void-module-clipboard-editor-ready-picker
+```

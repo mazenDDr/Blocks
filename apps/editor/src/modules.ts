@@ -91,9 +91,9 @@ export function resolveDefTarget(g: Graph, path: string, inst: Record<string, In
 /** Simple layered layout (left to right by dependency depth). Used for canvas views that have no stored positions. */
 export function autoLayout(g: Graph, gx = 250, gy = 130, ox = 40, oy = 40): Record<string, { x: number; y: number }> {
   const ids = new Set(g.nodes.map((n) => n.id));
-  const srcs: Record<string, string[]> = {};
+  const srcs: Record<string, string[]> = Object.create(null);
   for (const e of g.edges) if (ids.has(e.from.node) && ids.has(e.to.node)) (srcs[e.to.node] ??= []).push(e.from.node);
-  const depth: Record<string, number> = {};
+  const depth: Record<string, number> = Object.create(null);
   const visiting = new Set<string>();
   const d = (n: string): number => {
     if (depth[n] !== undefined) return depth[n];
@@ -104,7 +104,7 @@ export function autoLayout(g: Graph, gx = 250, gy = 130, ox = 40, oy = 40): Reco
     return depth[n];
   };
   const rows: Record<number, number> = {};
-  const out: Record<string, { x: number; y: number }> = {};
+  const out: Record<string, { x: number; y: number }> = Object.create(null);
   for (const n of g.nodes) {
     const c = d(n.id);
     const r = rows[c] ?? 0;

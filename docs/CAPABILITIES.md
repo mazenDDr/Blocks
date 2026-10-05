@@ -690,3 +690,21 @@ Ollama tests,273module build/typecheck/coverage/pin audit and actual browser/cur
 original journeys/58-file source-deletion recovery pass. Native graph/API coordinates
 are compared exactly; browser CSS geometry within0.01 layout units accounts for actual
 Chrome serialization precision. Hosted verification remains separate; see HANDOFF§37.
+
+
+### Module-definition clipboard transfer (ADR0041; Mac accepted, hosted pending, HANDOFF§38)
+
+Actual native module hash/source project/module version for stored PyTorch definition
+internal nodes; compatible root/module paste preserves existing interfaces/params/$in
+wires/root structure and merges exact dependency closure. Boundary wires stay omitted
+and counted; real E_MISSING_INPUT remains visible. Module-local opaque state is refused.
+Scoped layout/source-only authored notes/unknown UI retained; root/module orphan keys
+reserve new identities, exact single Undo/Redo and repeated/cross-scope transfer.
+Valid constructor topology fallback uses null-prototype dictionaries. Page-memory and
+existing100node/100definition/512KiB bounds remain; generated/Agent/RL/OS clipboard/
+weights/automatic boundary inference/platform/performance work stays separate.
+
+Full1216native/1skip/12deselected plus12actualOllama/27Node/274module build/typecheck/
+current ledger/pin audit pass. Focused2native cases also verify actual module harness
+identity. Strict Chrome/6curlcases/alloriginal journeys/58-file recovery pass; hosted
+verification remains separate.

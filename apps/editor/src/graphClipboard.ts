@@ -5,6 +5,7 @@ export interface GraphClipboard {
   nodes: GNode[]; edges: GEdge[]; modules: ModuleDef[]; codeBlocks: CodeBlockDef[];
   positions: UiDoc["positions"]; omittedBoundaryEdges: number;
   packageDependencies: Record<string, unknown>[];
+  sourceScope?: { kind: "module"; id: string; version: string };
 }
 export class ClipboardError extends Error {
   code: string;
@@ -36,14 +37,14 @@ function references(nodes: GNode[]) {
   }
   return { modules, blocks };
 }
-function bounded(clipboard: GraphClipboard) {
+export function checkClipboardBounds(clipboard: GraphClipboard) {
   if (clipboard.nodes.length > 100 || clipboard.modules.length + clipboard.codeBlocks.length > 100 || JSON.stringify(clipboard).length * 2 > 512 * 1024)
     fail("E_CLIPBOARD_BOUNDS", "Copy at most 100 nodes/100 definitions within 512 KiB estimated JSON size.");
 }
 export function copyGraphNodes(graph: Graph, ui: UiDoc, selected: string[], sourceProject: string, sourceGraphHash: string): GraphClipboard {
   if (!["model", "tabular", "domain"].includes(graph.graphKind)) fail("E_CLIPBOARD_KIND", "Copy supports root model, tabular and domain graphs.");
   const ids = new Set(selected);
-  if (!ids.size || ids.size > 100 || selected.some(id => !graph.nodes.some(n => n.id === id))) fail("E_CLIPBOARD_SELECTION", "Select 1–100 actual root graph nodes; generated/module boundary nodes cannot be copied.");
+  if (!ids.size || ids.size > 100 || ids.size !== selected.length || selected.some(id => graph.nodes.filter(n => n.id === id).length !== 1)) fail("E_CLIPBOARD_SELECTION", "Select 1–100 uniquely identified actual graph nodes; generated/module boundary nodes cannot be copied.");
   const nodes = graph.nodes.filter(n => ids.has(n.id));
   for (const node of nodes) {
     if (node.stateRef && node.stateRef !== `model/${node.id}`) fail("E_CLIPBOARD_STATE_REF", "Opaque state references cannot be rebound safely; only the declared model/<this-node-id> draft convention is rebound.");
@@ -75,9 +76,9 @@ export function copyGraphNodes(graph: Graph, ui: UiDoc, selected: string[], sour
   };
   collect(nodes);
   const clipboard = clone({ graphKind: graph.graphKind, backend: graph.backend, sourceProject, sourceGraphHash, nodes, edges, modules, codeBlocks, packageDependencies: graph.packageDependencies ?? [],
-    positions: Object.fromEntries(nodes.map(node => [node.id, ui.positions[node.id] ?? { x: 60 + graph.nodes.indexOf(node) * 260, y: 120 }])),
+    positions: Object.fromEntries(nodes.map(node => [node.id, (Object.hasOwn(ui.positions, node.id) ? ui.positions[node.id] : undefined) ?? { x: 60 + graph.nodes.indexOf(node) * 260, y: 120 }])),
     omittedBoundaryEdges: graph.edges.filter(e => ids.has(e.from.node) !== ids.has(e.to.node)).length });
-  bounded(clipboard); return clipboard;
+  checkClipboardBounds(clipboard); return clipboard;
 }
 function fresh(id: string, taken: Set<string>) {
   let base = id.replace(/[^A-Za-z0-9_]/g, "_").slice(0, 48);
@@ -98,8 +99,10 @@ function merge<T extends { id: string; version: string }>(target: T[] | undefine
 }
 export function pasteGraphNodes(graph: Graph, ui: UiDoc, clipboard: GraphClipboard, offset = 80) {
   if (graph.graphKind !== clipboard.graphKind || graph.backend !== clipboard.backend) fail("E_CLIPBOARD_KIND", "Paste requires the same graph kind and backend as the copied snapshot.");
-  bounded(clipboard);
-  const taken = new Set(graph.nodes.map(n => n.id));
+  checkClipboardBounds(clipboard);
+  // Reserve authored orphan keys, so pasting never silently attaches a note to a new node.
+  const taken = new Set([...graph.nodes.map(n => n.id), ...Object.keys(ui.positions),
+    ...(ui.nodeComments && typeof ui.nodeComments === "object" && !Array.isArray(ui.nodeComments) ? Object.keys(ui.nodeComments) : [])]);
   const mapping = Object.fromEntries(clipboard.nodes.map(n => [n.id, fresh(n.id, taken)]));
   const nodes = clipboard.nodes.map(original => {
     const node = clone(original); node.id = mapping[original.id];

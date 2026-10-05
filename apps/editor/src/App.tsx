@@ -54,6 +54,7 @@ import { arrangeGraphNodes, type Arrangement } from "./graphArrangement";
 import { NodeComments } from "./components/NodeComments";
 import { removeAnnotation, renameAnnotation, saveAnnotation } from "./nodeAnnotations";
 import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
+import { copyModuleNodes, pasteModuleNodes } from "./moduleClipboard";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
 const own = <T,>(values: Record<string, T> | null | undefined, id: string): T | undefined => values && Object.hasOwn(values, id) ? values[id] : undefined;
@@ -612,15 +613,16 @@ function Workbench() {
   const copySelection = async () => {
     try {
       const snapshot = structuredClone(graph); const layout = structuredClone(ui); const selection = [...selNodes]; const source = projectId;
-      const result = await api.validate(snapshot);
-      setClipboard(copyGraphNodes(snapshot, layout, selection, source, result.graphHash)); setPasteCount(0);
+      const definition = def ? structuredClone(def) : null;
+      const result = definition ? await api.post<{ moduleHash: string }>("/api/modules/validate", { graph: snapshot, moduleId: definition.id, version: definition.version }) : await api.validate(snapshot);
+      setClipboard(definition ? copyModuleNodes(snapshot, layout, definition, selection, source, result.moduleHash) : copyGraphNodes(snapshot, layout, selection, source, result.graphHash)); setPasteCount(0);
       setMessage(`Copied ${selection.length} draft nodes from '${source}'. Native validation remains required after paste.`);
     } catch (error) { setMessage(errorText(error)); }
   };
   const pasteSelection = () => {
-    if (!clipboard || def) return;
+    if (!clipboard) return;
     try {
-      const result = pasteGraphNodes(graph, ui, clipboard, 80 * (pasteCount + 1));
+      const result = def ? pasteModuleNodes(graph, ui, def, clipboard, 80 * (pasteCount + 1)) : pasteGraphNodes(graph, ui, clipboard, 80 * (pasteCount + 1));
       setGraph(result.graph); setUi(result.ui); setSelNodes(result.selected); setSelEdges([]); setPasteCount(n => n + 1);
       setCtx({ runId: null, step: null, sample: null });
       setMessage(`Pasted ${result.selected.length} draft nodes with fresh IDs. ${clipboard.omittedBoundaryEdges} boundary wires remain disconnected; inspect validation before running.`);
@@ -718,7 +720,9 @@ function Workbench() {
       <GraphInsertionTools key={`insertion:${projectId}:${def ? modKey(def) : "root"}`} graph={cur} ops={ops} selectedWire={selEdges.length === 1 ? selEdges[0] : ""}
         blocked={def && selEdges.length === 1 && !def.edges.some(e => e.id === selEdges[0]) ? "E_INSERT_SCOPE: Output-interface links are edited through the module interface." : null}
         onWire={id => { setSelEdges(id ? [id] : []); setSelNodes([]); }} onInsert={insertBlock} />
-      <GraphClipboardTools key={`${projectId}:${scope.length}`} graph={graph} selected={selNodes} clipboard={clipboard} inModule={!!def} onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onCopy={copySelection} onPaste={pasteSelection} onClear={() => { setClipboard(null); setPasteCount(0); }} />
+      <GraphClipboardTools key={`clipboard:${projectId}:${def ? modKey(def) : "root"}`} graph={def ? { ...graph, nodes: def.nodes, edges: def.edges } : graph} selected={selNodes} clipboard={clipboard} inModule={!!def}
+        blocked={def && (graph.graphKind !== "model" || graph.backend !== "pytorch") ? "E_CLIPBOARD_SCOPE: Module transfer requires a PyTorch model graph." : null}
+        onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onCopy={copySelection} onPaste={pasteSelection} onClear={() => { setClipboard(null); setPasteCount(0); }} />
       <GraphArrangementTools key={`arrangement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={arrangementBlocked}
         onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onArrange={arrangeSelection} onCollapse={expandedGroups.length ? () => setExpanded([]) : undefined} />
       <GraphMovementTools key={`movement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={movementBlocked}
