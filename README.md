@@ -440,4 +440,22 @@ pnpm -C apps/editor install --frozen-lockfile
 
 For subsequent clones, install from the lockfile; the `add` command above records the original dependency addition. Omit `--output` for an automatically chosen temporary directory. A supplied output must be new and outside the repository; it is never overwritten. Chrome is discovered on macOS/Linux, or supply `--chrome` with its executable path. No browser or LLM is downloaded. Evidence includes actual traces/receipts, screenshots, runtime/API/console messages, service logs, runner status and cleanup outcomes. Run with the project Python environment, Node/pnpm and Chrome installed. Failure returns a nonzero exit code and retains available evidence.
 
-`.github/workflows/verify.yml` defines the offline native suite, editor build/typecheck, coverage and this Chrome baseline on GitHub. Hosted outcomes are recorded in HANDOFF §23; live Ollama remains independently verified on the Mac. This is one bounded UI flow, not all-domain/browser-platform coverage, deployment or backup/restore. See ADR0026.
+`.github/workflows/verify.yml` defines the offline native suite, editor build/typecheck, coverage and this Chrome baseline on GitHub. Hosted outcomes are recorded in HANDOFF §23; live Ollama remains independently verified on the Mac. This is one bounded UI flow, not all-domain/browser-platform coverage or deployment. ADR0027 extends the CI browser journey with offline recovery below. See ADR0026.
+
+### Offline workbench backup and recovery (ADR0027)
+
+Stop **all** control, worker, tracker, repository and other writers to the source workbench before creating a backup. `--offline` is your explicit attestation; the command cannot detect an idle server or stop it for you. Never back up the user's running port-8000 workbench as an offline source. These commands were run against a new isolated, stopped SYNTHETIC workbench:
+
+```bash
+.venv/bin/python tools/recovery_smoke.py --output /private/tmp/void-recovery-smoke-mac-final
+.venv/bin/python -m workbench_backup create /private/tmp/void-recovery-smoke-mac-final/recovered /private/tmp/void-backup-cli-snapshot --offline
+.venv/bin/python -m workbench_backup verify /private/tmp/void-backup-cli-snapshot
+.venv/bin/python -m workbench_backup restore /private/tmp/void-backup-cli-snapshot /private/tmp/void-backup-cli-restored --trusted-local
+.venv/bin/pytest -q tests/test_workbench_backup.py -o faulthandler_timeout=240
+```
+
+Use new destination paths on another run; existing directories are refused. Backup contains `manifest.json` and `data/`. All file sizes/hashes, native SQLite integrity, CAS contents and direct database references are verified. Committed WAL pages are copied through SQLite's native backup API; transient sidecars are omitted. Empty directories and ordinary bytes are retained; links/special files are refused. Output records a manifest SHA256, usable with `verify`/`restore --manifest-sha256` when separately retained. Restore requires trusted provenance because native artifacts may execute code when later loaded; checksums do not authenticate a backup. There is no web upload interface.
+
+Absolute paths and saved native identities remain unchanged. External datasets, secret files/env values, provider runtimes, repository code and dependencies are not bundled. Root-relative CAS/store recovery works in the same pinned environment; source-dependent continuation/tracking may need original external paths or new reviewed configuration/runs. Existing checks still refuse incompatible upgrades; no migration is implemented. Backup contains unredacted data, stored with directories 0700/files 0600; executable bits are removed. No encryption, scheduling/retention or online/power-loss recovery guarantee.
+
+The recovery smoke runs the original browser journey, closes owned services, backs up/verifies, deletes only its generated source workbench, restores, then checks the same route/version/checkpoints, independent conversation continuations, old replay and monitoring through a fresh editor/Chrome session. CI runs the same two-stage journey; it uploads only logs/JSON/screenshots/JUnit, never backup/model/workbench contents. See HANDOFF §24 for actual results and remaining scope.

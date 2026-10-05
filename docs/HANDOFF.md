@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest completed continuation: §23 — reproducible editor smoke and CI baseline (Mac and hosted Linux verified).** Read §23 for current work, verification, cleanup and remaining scope. §22 records reviewed conversation reset/fork. §21 records persistent native agent conversations. §20 records isolated native agent serving. §19 records domain imports and their earlier checkpoint compatibility effects. §18 verified the cloud merges; §17 records their earlier compatibility effects/priorities. §11–§16 record the cloud implementation.
+> **Latest completed continuation: §24 — offline whole-workbench backup/recovery (Mac verified; hosted CI pending).** Read §24 for current work, verification, cleanup and remaining scope. §23 records the completed Mac/hosted Linux smoke baseline. §22 records reviewed conversation reset/fork. §21 records persistent native agent conversations. §20 records isolated native agent serving. §19 records domain imports and their earlier checkpoint compatibility effects. §18 verified the cloud merges; §17 records their earlier compatibility effects/priorities. §11–§16 record the cloud implementation.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0026`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0027`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -55,6 +55,7 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Persistent native agent conversations | done, verified on Mac arm64 (see §21, ADR 0024) | c7e1f18 |
 | Reviewed native conversation reset/fork | done, verified on Mac arm64 (see §22, ADR 0025) | ad36e42 |
 | Reproducible native editor smoke and CI baseline | verified Mac arm64 and hosted Linux x86_64 (§23, ADR0026) | 6d50d6c; docs follow-up records CI |
+| Offline whole-workbench backup/recovery | verified Mac arm64; hosted CI pending (§24, ADR0027) | see §24 Git outcome |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -79,6 +80,8 @@ After persistent native conversations: full suite → **1064 passed, 1 skipped, 
 After reviewed conversation reset/fork: full suite → **1082 passed, 1 skipped, 10 deselected**, **457.54 s**; live Ollama → **10 passed, 1083 deselected**, **18.09 s**. Final native/HTTP/installed Chrome, transactional crash/restart, compatibility and cleanup evidence is in §22.
 
 After reproducible editor smoke baseline: Mac full suite → **1086 passed, 1 skipped, 10 deselected**, **462.88 s**; live Ollama → **10 passed, 1087 deselected**, **20.56 s**. Hosted Linux full suite → **1086 passed, 1 skipped, 10 deselected**, **1069.98 s**, build and real Chrome pass on run 37255947744. Build/curl/strict real Chrome, owned timeout cleanup and CI outcome are recorded in §23.
+
+After offline whole-workbench recovery: final Mac full suite → **1116 passed, 1 skipped, 10 deselected**, **456.39 s**; live Ollama → **10 passed, 1117 deselected**, **21.41 s**. Build/typecheck/coverage, real Chrome backup/source deletion/restore and curl pass. Hosted outcome is pending in §24.
 
 ### Check for in-progress work first
 Run `git status`. If there are uncommitted files, a previous session was cut off mid-milestone: inspect them with `git diff`, do **not** discard them, finish that milestone, verify (§4), then commit.
@@ -116,7 +119,7 @@ Run `git status`. If there are uncommitted files, a previous session was cut off
 
 ## 5. Remaining work
 
-> **Superseded: the current remaining-work list is §23, supplemented by §18 and the unfinished items in §17.4.** The entries below are the historical milestone acceptance references, all completed.
+> **Superseded: the current remaining-work list is §24, supplemented by §18 and the unfinished items in §17.4.** The entries below are the historical milestone acceptance references, all completed.
 
 ### 6b — completed domain scope (VISION §9.7, §9.8, §23 Milestone 6 "Domain evidence", A56, A57, A58)
 
@@ -762,3 +765,32 @@ User “continue” authorizes the first remaining §22 priority. Continued alon
 3. Wider serving, real user datasets/benchmarks, editor/cache/repository/research, authenticated roles/ownership/encryption, credential-dependent Anthropic/online tracking and actual GPU/cloud/distributed infrastructure remain the existing §18/§19/§22 bounded gaps. Large editor chunk remains; initial React Flow warning must be assessed across broader flows before declaring universally fixed. All A01–A64 bounded evidence still does not imply general production readiness.
 
 Continue alone, next ADR0027; keep verified code and detailed handoff pushed. Never stop/restart user port 8000 without authorization.
+
+
+## 24. Offline workbench backup/recovery — 2026-10-05 (Mac verified; hosted CI pending)
+
+### Current work and compatibility
+
+- User asked to continue, alone, maintaining HANDOFF and pushing verified work. Started from clean synced c622698, fetched origin (no new changes). Added workbench_backup/{core,__main__,__init__}.py, tests/test_workbench_backup.py, tools/recovery_smoke.py, apps/editor/smoke/recovery.mjs and ADR0027. Existing editor_smoke.run now accepts internal runner overrides; original baseline semantics unchanged. CI now runs the seed + offline backup/verify/source deletion/restore + fresh editor recovery journey and uploads only evidence, never backups/CAS/weights/tokens.
+- Offline attestation and trust are explicit CLI flags. Hold all discovered SQLite write reservations together, incorporate WAL through native backup readers, snapshot-copy DELETE mode, omit source sidecars, preserve ordinary bytes/empty directories, SHA/size/inventory/SQLite/CAS/direct-reference checks, new destination only, restrictive permissions, caught staging failure cleanup. Absolute references and immutable native identity bytes remain unchanged. No native pinned source changes, no new dependencies, no retraining caused by this release.
+- Limits: every writer must already be stopped; idle control/new DB/filesystem writers are not detected. No online/power-loss/distributed recovery claim. Symlinks/special files including tracker latest-run links refused; executable bits removed. External datasets/credentials/services/repo code/dependencies not bundled or relocated. No signing/encryption/archive uploads/scheduling/retention/GC/migration. Native tracker/FAISS/DVC broad recovery matrix is not claimed. Upgrade refusal after recovery is tested; cross-version upgrade migration remains unavailable.
+
+### Accepted Mac verification and cleanup
+
+- Latest focused native tests: 30 passed in 6.01 s. Real WAL row recovered after source deletion; all eight owned DB locations + nested tracker fixture, library/index/repo/import/dataset/project bytes preserved; busy/active/corrupted/changing/escaping/missing/extra/linked data refused; opaque SQLite CAS unchanged. Actual fitted scikit-learn and all three domain models recover identical predictions/lineage, native research saver resumes; conversation/fork/reset/old head/idempotent receipts/traces survive source deletion. A changed native environment is still refused.
+- Installed Chrome recovery runner passes at /private/tmp/void-recovery-smoke-mac-final: verified snapshot27files/eight databases; source deleted; fresh recovered route/version/heads, branch n3→4, fresh n1→2, old replay n2 with current head unchanged, monitor6requests/0errors/0modelcalls; runtime/API/console errors empty. All owned services closed. Screenshots reviewed. Earlier browser test timed out because version select was populated after selecting; fixed the wait for actual options, no product/native semantics changed.
+- CLI create/verify/restore also actually ran on the stopped recovered tree: 31files/eight DBs into /private/tmp/void-backup-cli-snapshot and /private/tmp/void-backup-cli-restored; manifest aa9641ea897cdd7f4f3cadb74ef56cb918cca5606a328458064141a31bf899d1. Backup/recovery files outside Git; no user workbench accessed/stopped.
+- Final `.venv/bin/pytest -q -o faulthandler_timeout=240`: **1116 passed, 1 skipped, 10 deselected, 1941 warnings, 456.39 s (7:36)**, log `/private/tmp/void-backup-final-pytest.log`. An earlier collected-before-final-test run passed 1115 tests; final run supersedes it. `.venv/bin/pytest -q -m live`: **10 passed, 1117 deselected, 21.41 s**, real local Ollama, log `/private/tmp/void-backup-live-pytest.log`. Existing Anthropic skip (no API key); no tests weakened or providers replaced.
+- `pnpm -C apps/editor build`: **252 modules**, pass; `pnpm -C apps/editor exec tsc --noEmit`: pass. `.venv/bin/python -m backends.coverage --write`/`--check`: current, no ledger diff (no operation identity changed). `git diff --check`: pass. Known editor large chunk and native dependency deprecations remain.
+- Explicit curl on reopened CLI-restored workbench: owned backend **89954**, port **55458**, production overview, original native-browser-smoke route health and recorded requests all **200**. Health original version `a54d9d3f2b77a38bb8e8140cd157dcb58f14663e4a8262785c69140f4342dffd`, release `dfb63a8a923a54039c8533afc074ee7c64531c0e1fe4c599f834625c8549e969`, ready. Backend stopped exit-15; report `/private/tmp/void-backup-curl.json`. Ephemeral labelled SYNTHETIC token; no user credentials.
+- Accepted Chrome **154.0.8037.93**: seed backend/editor/browser **88059/88067/88086**, restored **88182/88187/88206**, all cleaned by owning runner. Original source root physically deleted; restored revision4 head SHA `bc60305b52222945add51d51f7349c33b2feb95060f3faef320918ea9ae3da7f` preserved, branch/fresh native thread IDs retained. Actual seed/restored durations **10.0597 s / 6.1964 s**, all runtime/API/console messages empty. Review/replay/monitor screenshots outside Git; reviewed review and monitor. User **8258/port8000** remains untouched and running.
+- Actual new-runner failure check: tools/recovery_smoke.py --timeout1 with new /private/tmp/void-recovery-smoke-owned-timeout returns1, refuses to create any backup after failed seed, records failure and cleans its owned browser90111 (bounded force exit-9), editor90087 and backend90073. No Chrome profile/owned service remains; user8258 still listening8000. Uncatchable host/process death remains outside the guarantee.
+### Git and hosted verification
+
+- This implementation is committed/pushed after the accepted Mac checks, following the user's standing instruction to keep code and HANDOFF in the private repository. Hosted Linux CI will run the full suite/build/typecheck/coverage plus both browser stages; **pending until actual success is observed**. Record the implementation SHA/run/JUnit/browser/cleanup result here in a docs-only [skip ci] follow-up after observing it; no hosted pass is assumed from the Mac. Temporary backup/workbench/scripts/screens/logs are excluded from Git and CI uploads. Next ADR0028. Continue alone. Never stop/restart user port8000 without authorization.
+
+### Remaining scope after this bounded release
+
+1. Broader native tracker/FAISS/DVC/import/cache/repository recovery and browser journeys; external-path recovery/runbook matrix, explicit migration preview/backups if actual migrations are designed. Online snapshots, signed/encrypted/backups/retention/disk crash durability remain unimplemented. Do not rewrite immutable records/pins or introduce placeholder controls.
+2. Existing §22/§23 conversation discovery/privacy deletion/retention/GC/historical checkpoint restore/cross-version migration and native retrieval/memory/tools/effects/interrupt/structured-provider/streaming serving extensions remain. Pick a bounded next scope after this verification.
+3. Wider serving/real user datasets/benchmarks, authenticated roles/ownership, credential-dependent Anthropic/online tracking, actual GPU/cloud/distributed infrastructure, broader browser/platform CI and production deployment remain as recorded in §18–§23.

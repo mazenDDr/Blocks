@@ -78,7 +78,7 @@ def wait_ready(url, process, headers=None, timeout=45):
     raise RuntimeError(f"Service readiness exceeded {timeout}s: {url}")
 
 
-def run(args):
+def run(args, *, workbench=None, journey=None, extra_env=None):
     chrome = chrome_path(args.chrome)
     node, pnpm = shutil.which("node"), shutil.which("pnpm")
     if not node or not pnpm:
@@ -97,7 +97,8 @@ def run(args):
     while editor_port == backend_port:
         editor_port = free_port()
     base = f"http://127.0.0.1:{backend_port}"
-    env.update(VOID_WORKBENCH=str(out / "workbench"), VOID_API_TOKEN=token, VOID_API=base)
+    env.update(VOID_WORKBENCH=str(workbench or out / "workbench"), VOID_API_TOKEN=token, VOID_API=base)
+    env.update(extra_env or {})
     processes, logs = [], []
     result = {"status": "failed", "fixture": "SYNTHETIC native model-free state workflow",
               "backend": base, "editor": f"http://127.0.0.1:{editor_port}", "chrome": chrome,
@@ -124,7 +125,7 @@ def run(args):
         editor = start("editor", [pnpm, "dev", "--host", "127.0.0.1", "--port", str(editor_port), "--strictPort"], EDITOR)
         wait_ready(result["editor"]+"/api/production", editor)
         script = out / "journey.mjs"
-        shutil.copyfile(EDITOR / "smoke/journey.mjs", script)
+        shutil.copyfile(journey or EDITOR / "smoke/journey.mjs", script)
         env.update(VOID_SMOKE_URL=result["editor"], VOID_SMOKE_OUTPUT=str(out), VOID_SMOKE_CHROME=chrome,
                    VOID_SMOKE_PUPPETEER=module)
         browser = start("browser", [node, str(script)], out)

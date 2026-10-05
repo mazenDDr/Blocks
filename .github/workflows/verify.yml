@@ -42,8 +42,8 @@ jobs:
           pnpm -C apps/editor build
           pnpm -C apps/editor exec tsc --noEmit
           .venv/bin/python -m backends.coverage --check
-      - name: Real browser and native state journey
-        run: .venv/bin/python tools/editor_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-editor-smoke
+      - name: Real browser, backup and restored native state journey
+        run: .venv/bin/python tools/recovery_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
       - name: Preserve actual test evidence on success or failure
         if: always()
         uses: actions/upload-artifact@v4
@@ -51,9 +51,14 @@ jobs:
           name: native-and-browser-evidence
           path: |
             /tmp/void-pytest.xml
-            /tmp/void-ci-editor-smoke/runner.json
-            /tmp/void-ci-editor-smoke/evidence.json
-            /tmp/void-ci-editor-smoke/*.log
-            /tmp/void-ci-editor-smoke/*.png
+            /tmp/void-ci-recovery-smoke/recovery.json
+            /tmp/void-ci-recovery-smoke/seed/runner.json
+            /tmp/void-ci-recovery-smoke/seed/evidence.json
+            /tmp/void-ci-recovery-smoke/seed/*.log
+            /tmp/void-ci-recovery-smoke/seed/*.png
+            /tmp/void-ci-recovery-smoke/check/runner.json
+            /tmp/void-ci-recovery-smoke/check/evidence.json
+            /tmp/void-ci-recovery-smoke/check/*.log
+            /tmp/void-ci-recovery-smoke/check/*.png
           if-no-files-found: warn
           retention-days: 7
