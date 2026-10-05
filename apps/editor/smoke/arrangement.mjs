@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {pathToFileURL} from 'node:url';
 const {default:puppeteer}=await import(pathToFileURL(process.env.VOID_SMOKE_PUPPETEER).href);
 const output=process.env.VOID_SMOKE_OUTPUT;
+const fixturePaths=JSON.parse(process.env.VOID_ARRANGEMENT_FIXTURES);
 const evidence={status:'failed',fixture:'SYNTHETIC native measured graph arrangement',runtimeErrors:[],apiErrors:[],consoleWarnings:[]};
 const browser=await puppeteer.launch({executablePath:process.env.VOID_SMOKE_CHROME,headless:true,
   args:process.platform==='linux'?['--no-sandbox']:[],defaultViewport:{width:1600,height:1100}});
@@ -120,11 +121,13 @@ try{
     await fill('input[aria-label="project id"]','SYNTHETIC_arrangement');const familySource=await save();
     const familyIds=familySource.graph.nodes.slice(0,3).map(n=>n.id);assert.equal(familyIds.length,3);
     const familyUi={...familySource.ui,positions:{...familySource.ui.positions,...Object.fromEntries(familyIds.map((id,i)=>[id,{x:120+i*700,y:60+i*350}]))}};
-    await page.evaluate(async data=>{const r=await fetch('/api/projects/SYNTHETIC_arrangement',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw Error('Seed family '+r.status);},{graph:familySource.graph,ui:familyUi});
+    const sourceType={vision_segmentation_synthetic:'domain.vision_source',nlp_token_classification:'domain.nlp_source',speech_ctc_tones:'domain.audio_source'}[example];
+    const familyGraph=sourceType?{...familySource.graph,nodes:familySource.graph.nodes.map(n=>n.type===sourceType?{...n,config:{...n.config,path:fixturePaths[example]}}:n)}:familySource.graph;
+    await page.evaluate(async data=>{const r=await fetch('/api/projects/SYNTHETIC_arrangement',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw Error('Seed family '+r.status);},{graph:familyGraph,ui:familyUi});
     await page.select('select[aria-label="open project"]','project:SYNTHETIC_arrangement');await page.waitForFunction(()=>document.querySelector('button[aria-label="undo draft edit"]').disabled);
     for(const h of await page.$$('button[role="tab"]'))if(await h.evaluate(e=>e.textContent.trim()==='Graph')){await h.click();break;}
-    const familyBaseline=await save();await select(familyIds);await click('Align bottom');const familyDimensions=await boxes(familyIds);const familyMoved=await save();
-    checkGeometry(familyBaseline,familyMoved,familyIds,familyDimensions,'Align bottom');const familyValidation=await native(familyMoved.graph);assert(familyValidation.ok);assert.equal(familyValidation.graphHash,familyMoved.graphHash);
+    const familyBaseline=await save();const baselineValidation=await native(familyBaseline.graph);evidence.currentFamily={example,baseline:familyBaseline,validation:baselineValidation};assert(baselineValidation.ok);await select(familyIds);await click('Align bottom');const familyDimensions=await boxes(familyIds);const familyMoved=await save();
+    checkGeometry(familyBaseline,familyMoved,familyIds,familyDimensions,'Align bottom');const familyValidation=await native(familyMoved.graph);assert(familyValidation.ok);assert.deepEqual(familyValidation,baselineValidation);assert.equal(familyValidation.graphHash,familyMoved.graphHash);
     await click('Undo');assert.deepEqual((await save()).ui,familyBaseline.ui);evidence.families.push({example,baseline:familyBaseline,moved:familyMoved,dimensions:familyDimensions,validation:familyValidation});
   }
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);

@@ -41,3 +41,9 @@ Agent/RL arrangements, grid snapping, alignment guides, general groups/automatic
 layout, command menus, comments, sequence insertion/move and measured large-graph
 performance remain separate work. This is current-page geometry, not a saved-width
 guarantee across fonts, native validators or other platforms.
+
+Hosted all-family verification must generate its own labelled domain fixtures outside
+the checkout. Ignored Mac vision/speech files are not available in a fresh Linux
+browser job. The runner uses the existing fixture generator and explicit owned source
+paths, retains all native .ok assertions, and compares whole native before/after reports.
+No missing-data error is hidden or replaced. Exact failed/repaired evidence is in §34.
