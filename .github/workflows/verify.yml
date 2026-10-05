@@ -1,0 +1,59 @@
+name: Native checks and editor smoke
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '25.9.0'
+      - name: Install pinned environments
+        run: |
+          npm install --global pnpm@10.33.0
+          python -m venv .venv
+          .venv/bin/pip install --extra-index-url https://download.pytorch.org/whl/cpu -r python/requirements.txt
+          .venv/bin/pip install -e . --no-deps
+          .venv/bin/python -m connectors.install_pgserver
+          python -m venv .venv-trackers
+          .venv-trackers/bin/pip install -r python/tracking/requirements.txt
+          pnpm -C apps/editor install --frozen-lockfile
+      - name: Native suite (live Ollama is separately verified on the Mac)
+        run: .venv/bin/pytest -q -o faulthandler_timeout=240 --junitxml=/tmp/void-pytest.xml
+      - name: Editor build and coverage
+        run: |
+          pnpm -C apps/editor build
+          pnpm -C apps/editor exec tsc --noEmit
+          .venv/bin/python -m backends.coverage --check
+      - name: Real browser and native state journey
+        run: .venv/bin/python tools/editor_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-editor-smoke
+      - name: Preserve actual test evidence on success or failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-and-browser-evidence
+          path: |
+            /tmp/void-pytest.xml
+            /tmp/void-ci-editor-smoke/runner.json
+            /tmp/void-ci-editor-smoke/evidence.json
+            /tmp/void-ci-editor-smoke/*.log
+            /tmp/void-ci-editor-smoke/*.png
+          if-no-files-found: warn
+          retention-days: 7

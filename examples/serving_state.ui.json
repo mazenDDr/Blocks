@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "START": {
+      "x": 40,
+      "y": 40
+    },
+    "tick": {
+      "x": 300,
+      "y": 40
+    },
+    "answer": {
+      "x": 560,
+      "y": 40
+    },
+    "END": {
+      "x": 820,
+      "y": 40
+    }
+  },
+  "synthetic": true,
+  "description": "SYNTHETIC native state teaching workflow. Integer counters and declared text templates execute through LangGraph; no language model, learned answer or model-quality claim."
+}

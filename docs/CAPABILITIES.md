@@ -449,3 +449,17 @@ Reviewed live-checkpoint reset/fork is implemented separately in ADR 0025 (below
 Reset is logical, **not physical deletion/privacy erasure**. Conversation state/history and old CAS/trace evidence remain retained even if trace capture is off. Empty/reset heads report state=null; future defaults are not shown as measured state. Fork is from the inspected **current** successful checkpoint, under the same registered release/user; preserving a historical generated message’s original call/thread provenance is intentional. A fork revision starts at 1, while native thread state can already contain several turns. Reset increments the existing revision; the next success increments it again. Neither action invokes a model. Existing native serving-family/code/environment pins are unchanged, so no retraining or re-registration is required.
 
 Not implemented: physical deletion, retention/GC, historical checkpoint picker/restore/import, cross-release/version migration, authenticated ownership/roles, broader session discovery, long-term memory/retrieval/tool/effect serving, streaming or distributed replicas. One owning control process. Immutable orphan bytes are possible after failed transactions.
+
+
+## Reproducible native editor verification (ADR0026)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Owned loopback backend/editor/installed Chrome, fresh workbench/output, ephemeral shared token, inherited app/provider settings excluded | `tools/editor_smoke.py` | Real accepted/failed/timeout journeys and native runner tests; HANDOFF §23 |
+| Versioned browser source executed as a temporary copy, pinned Puppeteer Core, actual traces/receipts/screenshots/logs and failure status | `apps/editor/smoke/journey.mjs`, editor lockfile | Strict runtime/API/console errors, reviewed screenshots, cleanup outcomes |
+| Real native model-free thread counters/history/defaults and UI source→registry→serve→fork/reset→historical replay→monitor | `examples/serving_state.*` | Independent native worker reducer test; actual Chrome baseline; zero LLM calls, SYNTHETIC text templates |
+| Owned process-group teardown on pass/failure/timeout, readiness and actual child cleanup | smoke runner | Real child-group/unrelated-process test; successful run and forced browser timeout; user port8000 unchanged |
+| GitHub workflow for offline suite/build/coverage/real browser with bounded evidence retention | `.github/workflows/verify.yml` | Hosted outcome is recorded separately in HANDOFF §23; local tests do not imply a hosted pass |
+| Editor favicon served without browser console 404 | `apps/editor/public/void.svg`, `index.html` | Actual Chrome zero-console-error journey and explicit curl |
+
+This is a representative native conversation smoke, not all-domain browser coverage or model-quality testing. No provider is substituted: the graph contains no LLM node. Real Ollama tests remain separately required and run on the Mac. Services use the existing development proxy, not a deployed production bundle server. SIGTERM/deadline failures clean up owned groups with bounded force fallback; uncatchable runner/host death is not covered. Workbench contents can include synthetic native records; generated evidence stays outside Git and CI uploads only logs/JUnit/screenshots/JSON evidence, not CAS/model weights/tokens. Existing native serving identities remain unchanged. Broader browser matrix/live hosted providers, branch protections, backup/restore/upgrade, accounts and deployment remain future work.

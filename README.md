@@ -425,3 +425,19 @@ pnpm -C apps/editor exec tsc --noEmit
 .venv/bin/python -m backends.coverage --write
 .venv/bin/python -m backends.coverage --check
 ```
+
+
+## Repeatable native editor smoke
+
+This command starts its own backend, editor and installed Chrome, uses a new temporary workbench and ephemeral shared token, exercises the real picker/source Run/registry/release/conversation/fork/reset/replay/monitoring controls, then stops its services. It never connects to the existing port-8000 server. `serving_state` uses real native counters/reducers and declared text templates, labelled SYNTHETIC; it makes zero model calls and measures no answer accuracy.
+
+```bash
+pnpm -C apps/editor add -D --save-exact puppeteer-core@25.12.0
+pnpm -C apps/editor install --frozen-lockfile
+.venv/bin/python tools/editor_smoke.py --output /private/tmp/void-ci-baseline-smoke-final
+.venv/bin/pytest -q tests/test_editor_smoke.py -o faulthandler_timeout=240
+```
+
+For subsequent clones, install from the lockfile; the `add` command above records the original dependency addition. Omit `--output` for an automatically chosen temporary directory. A supplied output must be new and outside the repository; it is never overwritten. Chrome is discovered on macOS/Linux, or supply `--chrome` with its executable path. No browser or LLM is downloaded. Evidence includes actual traces/receipts, screenshots, runtime/API/console messages, service logs, runner status and cleanup outcomes. Run with the project Python environment, Node/pnpm and Chrome installed. Failure returns a nonzero exit code and retains available evidence.
+
+`.github/workflows/verify.yml` defines the offline native suite, editor build/typecheck, coverage and this Chrome baseline on GitHub. Hosted outcomes are recorded in HANDOFF §23; live Ollama remains independently verified on the Mac. This is one bounded UI flow, not all-domain/browser-platform coverage, deployment or backup/restore. See ADR0026.

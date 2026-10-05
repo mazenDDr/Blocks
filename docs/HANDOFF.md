@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest completed continuation: §22 — reviewed conversation reset/fork.** Read §22 for current work, verification, cleanup and remaining scope. §21 records persistent native agent conversations. §20 records isolated native agent serving. §19 records domain imports and their earlier checkpoint compatibility effects. §18 verified the cloud merges; §17 records their earlier compatibility effects/priorities. §11–§16 record the cloud implementation.
+> **Latest completed continuation: §23 — reproducible editor smoke and CI baseline (Mac verified; hosted outcome below).** Read §23 for current work, verification, cleanup and remaining scope. §22 records reviewed conversation reset/fork. §21 records persistent native agent conversations. §20 records isolated native agent serving. §19 records domain imports and their earlier checkpoint compatibility effects. §18 verified the cloud merges; §17 records their earlier compatibility effects/priorities. §11–§16 record the cloud implementation.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0025`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0026`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -53,7 +53,8 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Bounded local COCO / CoNLL / WAV dataset imports | done, verified on Mac arm64 (see §19, ADR 0022) | 3b639e2 |
 | Isolated native agent serving; worker cancellation race fix | done, verified on Mac arm64 (see §20, ADR 0023) | bfc503a |
 | Persistent native agent conversations | done, verified on Mac arm64 (see §21, ADR 0024) | c7e1f18 |
-| Reviewed native conversation reset/fork | done, verified on Mac arm64 (see §22, ADR 0025) | this release; `git log -1` |
+| Reviewed native conversation reset/fork | done, verified on Mac arm64 (see §22, ADR 0025) | ad36e42 |
+| Reproducible native editor smoke and CI baseline | Mac verified; hosted result in §23 (ADR0026) | this release; `git log -1` |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -76,6 +77,8 @@ After isolated agent serving and the worker cancellation fix: full suite → **1
 After persistent native conversations: full suite → **1064 passed, 1 skipped, 9 deselected**, **447.84 s**; live Ollama → **9 passed, 1065 deselected**, **16.38 s**. Final build/curl/installed Chrome, crash/real restart and earlier stateless version compatibility evidence are in §21.
 
 After reviewed conversation reset/fork: full suite → **1082 passed, 1 skipped, 10 deselected**, **457.54 s**; live Ollama → **10 passed, 1083 deselected**, **18.09 s**. Final native/HTTP/installed Chrome, transactional crash/restart, compatibility and cleanup evidence is in §22.
+
+After reproducible editor smoke baseline: full suite → **1086 passed, 1 skipped, 10 deselected**, **462.88 s**; live Ollama → **10 passed, 1087 deselected**, **20.56 s**. Build/curl/strict real Chrome, owned timeout cleanup and CI outcome are recorded in §23.
 
 ### Check for in-progress work first
 Run `git status`. If there are uncommitted files, a previous session was cut off mid-milestone: inspect them with `git diff`, do **not** discard them, finish that milestone, verify (§4), then commit.
@@ -107,13 +110,13 @@ Run `git status`. If there are uncommitted files, a previous session was cut off
   pnpm -C apps/editor build
   pnpm -C apps/editor exec tsc --noEmit
   ```
-  Then run a curl smoke against a backend you start, and a real-browser check (puppeteer-core with the installed Chrome; keep scripts outside the repo).
+  Then run a curl smoke against a backend you start, and a real-browser check (puppeteer-core with the installed Chrome). Keep ad hoc scripts and generated evidence outside the repo. The durable ADR0026 smoke source is versioned; its runner copies the executed browser script/evidence outside the repo.
 - **Commit after each verified milestone.** Use the message style of `git log`, ending with a co-author line naming your own model.
 - Update `docs/CAPABILITIES.md`, `README.md` and add an ADR under `docs/adr/` for notable decisions.
 
 ## 5. Remaining work
 
-> **Superseded: the current remaining-work list is §22, supplemented by §18 and the unfinished items in §17.4.** The entries below are the historical milestone acceptance references, all completed.
+> **Superseded: the current remaining-work list is §23, supplemented by §18 and the unfinished items in §17.4.** The entries below are the historical milestone acceptance references, all completed.
 
 ### 6b — completed domain scope (VISION §9.7, §9.8, §23 Milestone 6 "Domain evidence", A56, A57, A58)
 
@@ -719,3 +722,38 @@ User “continue” authorizes the next bounded scope from §21. Continued alone
 4. Existing large editor chunk and initial React Flow fallback warnings remain frontend follow-ups. Anthropic and online tracking are credential-dependent; real GPU/cloud/encrypted cross-machine/distributed infrastructure and broader RL/onboarding/certification scope remain unimplemented without measured infrastructure. Unrelated local work needs no external credentials.
 
 Continue alone, next ADR0026; verify §4 and keep completed work plus detailed handoff pushed. Do not stop/restart the user’s port-8000 server without authorization.
+
+
+## 23. Reproducible editor smoke and CI baseline — Codex, 2026-10-05 (Mac verified release)
+
+User “continue” authorizes the first remaining §22 priority. Continued alone from clean pushed **ad36e42**, fetched upstream master and confirmed it matched. No subagents or native Python dependency/pinned execution file changes. Added editor dev dependency **puppeteer-core 25.12.0**, matching the already-used temporary browser tooling, with complete pnpm lockfile. Existing Node **25.9.0**, pnpm **10.33.0**, installed Chrome **154.0.8037.93**. No browser/provider downloads or credentials. Existing registered versions retain their source/environment identity; earlier §19 domain rule remains. User **8258 / port 8000** untouched.
+
+### Implementation and files
+
+- `tools/editor_smoke.py`: executable project-Python CLI, discovered installed Chrome or explicit --chrome, node/pnpm/module preflight; auto-selected loopback ports; new external evidence directory/workbench, never overwrite; ephemeral shared token; inherited VOID/provider/tracker settings dropped. Own backend/editor/node process groups only, readiness/180 s browser deadline (configurable 1–600 s), signal/finally SIGTERM teardown and bounded SIGKILL fallback. No port-owner lookup/kill, existing user server/profile/workbench/token reuse or browser download. Runner JSON records actual success/failure/error/service PIDs/cleanup codes/timing. Logs and native synthetic workbench remain external for investigation. Uncatchable host/runner kill is not cleanup coverage.
+- `apps/editor/smoke/journey.mjs`: durable source copied to the external evidence directory before execution, imports locked Puppeteer via its actually resolved absolute installed path. Actual picker→source worker→whole-native conversation registry→warmup/deploy→two turns→whole checkpoint→reason/destination and disabled reset checkbox→fork→independent branch→reset/null head→original-turn list selection/captured historical replay→fresh thread→recorded monitor. Assertions concern actual native state/predictions/revisions/threads/receipts, zero model calls and zero runtime/API/console errors. Records warning text instead of silently suppressing it, captures review/reset/monitor screens and failure screen/visible page text when available. This is development-proxy smoke; editor production build verified separately.
+- `examples/serving_state.project.json` / `.ui.json`: native LangGraph set-state counter/history reducers, turn reset and declared output template, labelled SYNTHETIC, **no LLM node/provider substitute/learned-answer claim**. Independent source remains n1; native serving turns produce actual declared first1/1, second2/1, forkbranch3/1 and resetfresh1/1. The existing generated agent_* fixture namespace remains unchanged.
+- `tests/test_editor_smoke.py`: **4 cases**: actual independent native worker whole-state/history/turn-window and zero contexts/model calls, inherited app/provider/tracker environment isolation, actual process-group teardown including child plus a separate live unrelated process, real exited-service/readiness timeout. Browser itself separately verifies UI/runtime/backend; no weakened existing tests or fake browser/API results.
+- `.github/workflows/verify.yml`: pushmaster/PR/manual workflow, Ubuntu 24.04, Python 3.13, Node 25.9.0, pnpm 10.33.0; locked main/native dependencies, existing PostgreSQL installer and isolated trackers. Ordinary offline native suite (JUnit), editor build/typecheck/coverage-current and actual installed-Chrome model-free journey. Read-only contents permission, same-ref concurrency cancellation,35-minute bound and seven-day actual JSON/log/screens/JUnit evidence on pass/fail. No workbench/CAS/weights/token/profile upload. Live Ollama remains separately required on the Mac; no hosted live-provider claim. GitHub Actions enabled, allowed_actions=all, workflow YAML parsed. Hosted result must be read after this first workflow push; local checks alone are not hosted evidence.
+- `apps/editor/index.html` / `public/void.svg`: fix the existing missing favicon 404 discovered by the strict console-error assertion; keep strict errors rather than ignore 404. ADR0026, README/CAPABILITIES and current coverage ledger updated. Next ADR **0027**. The §4 external-script rule now distinguishes durable test source from externally copied/executed ad hoc script/evidence.
+
+### Verification evidence
+
+- `.venv/bin/pytest -q -o faulthandler_timeout=240`: **1086 passed, 1 skipped, 10 deselected, 1941 warnings, 462.88 s (7:42)**, exit 0 (`/private/tmp/void-ci-baseline-full-pytest.log`). Required suite uses actual local PostgreSQL/S3/DVC/native workers. No implementation/test edits after it started. Existing missing-key Anthropic skip and native deprecations remain. No existing tests weakened.
+- Final `.venv/bin/pytest -q -m live`: **10 passed,1087 deselected,20.56s**, exit0 (`/private/tmp/void-ci-baseline-live-final.log`). Actual local Ollama, unchanged qwen/native identities, no downloads or credentials. Focused new runner tests **4 passed,2.07s** (`/private/tmp/void-ci-baseline-focused.log`).
+- Final editor build/typecheck exit0, **252 modules**, existing large chunk warning (`/private/tmp/void-ci-baseline-build-final.log`); frozen-lockfile install succeeds without rewriting pins. Coverage write/check current, diff whitespace clean. Workflow YAML parsed with expected triggers/job.
+- First actual owned smoke completed the entire native journey but correctly **failed** strict console check due to the existing missing favicon. Runner retained actual failure evidence and closed its own services: backend **83719**, editor **83720**, browser-node **83739**. Added actual served icon. Final smoke **passes,9.9167s**, source **4efbbf359e1e**, version `9938ae4930ce…`, release `af42be6da425…`; fork receipt `b6e6558c9f64…`, reset receipt `7d201beccaf8…`. Four actual recorded serving predictions match declared templates, original-source native state and branch/reset isolation verified; monitor 4 requests / 0 errors / 0 model calls, no reference labels/semantic quality. **Zero runtime/API/console messages** in the final Chrome evidence. Native checkpoint head source2→reset3/null→fresh4, independent branch1→2. Review/reset/monitor screens visually inspected. `/private/tmp/void-ci-baseline-smoke-final/{runner,evidence}.json` and logs/screens retain observations; actual executed script is outside Git.
+- Intentional `--timeout 1` smoke **fails nonzero**, no false pass; SIGTERM closes Chrome and browser-node uses bounded SIGKILL fallback after 8 s, editor/backend groups stop; actual runner evidence `/private/tmp/void-ci-baseline-smoke-timeout/runner.json`, owned **84003/84007/84026** absent afterward. Postfailure ps confirms no owned Chrome/profile/backend/editor remains and user8000 still running. This is actual process failure evidence, not a mocked teardown test.
+- Required explicit curl against reopened temporary workbench backend **8781**, editor **5303**: native-browser-smoke readiness verifies exact original version/release and persisted records; registry proxy200; actual `/void.svg`200. Only a labelled SYNTHETIC test token used. Reopened backend **84111**, editorpnpm **84122** / vite **84141** stopped afterward; clean backend shutdown. Automated accepted smoke backend **83850**, editor **83851**, browser-node **83870** all closed by runner. No manually killed user services. Native test processes clean their own resources. Generated workbenches/logs/screens/browser/restart scripts are external/uncommitted.
+
+### Hosted CI and Git
+
+Hosted workflow outcome pending the first verified release push. Read actual run/check results; do not claim green from a local pass. If platform/dependency/native differences fail, preserve the actual logs and correct the specific issue without bypassing pins or weakening tests. Source/tests/example/docs/this handoff are published together after all required Mac checks; local/remote equality and clean tree are checked after push. Use git log -1 for the release commit. No generated evidence/secret/weights committed.
+
+### Remaining work
+
+1. Next independent scope after this baseline: explicit backup/restore/upgrade/recovery evidence, preserving all SQLite/CAS/native model and conversation identities. Broader browser journeys/domain/import/cache/repository coverage and hosted platforms/live providers remain beyond this representative smoke. Production web serving/auth/branch-protection policy/browser pinning are separate decisions.
+2. Conversation discovery/physical deletion/privacy erasure/retention/GC/historical restore/cross-version migration and native retrieval/memory/tool/effect/interrupt/structured-provider/streaming extensions remain from §22. Do not bypass source/environment integrity or edit old artifacts.
+3. Wider serving, real user datasets/benchmarks, editor/cache/repository/research, authenticated roles/ownership/encryption, credential-dependent Anthropic/online tracking and actual GPU/cloud/distributed infrastructure remain the existing §18/§19/§22 bounded gaps. Large editor chunk remains; initial React Flow warning must be assessed across broader flows before declaring universally fixed. All A01–A64 bounded evidence still does not imply general production readiness.
+
+Continue alone, next ADR0027; keep verified code and detailed handoff pushed. Never stop/restart user port 8000 without authorization.
