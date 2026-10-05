@@ -568,3 +568,18 @@ declarations are retained conservatively, no implicit dependency installation. R
 training/global settings are retained from the target. Agent/RL/module-editor transfer,
 OS/serialized clipboard, cross-backend conversion and large-graph benchmarks remain.
 Final environment-specific verification and hosted status are in HANDOFF §30.
+
+### Structured model/tabular/domain and module graph outline (ADR0034)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Actual nodes, typed wire endpoints, module/shared references, literal search and 50-row pages | `graphOutline.ts`, `GraphOutline.tsx`, scoped existing graph tools | Pure Node checks, real 75-node native teaching graph pages50+25/back/search reset in Chrome |
+| Exact current native port contracts/counts/hash/diagnostics; stale reports withheld | Existing root/module validation responses, nearest visible diagnostic ownership | Native API→actual TS helper compares CNN/residual/tabular/NLP contracts; real nested error routing and pending-state refusal |
+| Inspect/center/root-to-module navigation without graph/layout edits | Existing inspector, zero-duration fit and module editor/breadcrumbs | Actual Chrome saved byte equality, real invalid config/native codes, original Undo, exact module hash and inspection |
+
+No native values are guessed when a contract is unavailable. Outline content describes
+structure and native validation; learned activations remain in recorded inspectors.
+Agent/RL outlines, deeper cross-scope navigation, command menus, comments, alignment,
+performance benchmarks, onboarding and formal accessibility certification remain.
+Synthetic description now uses tools layout flow so it cannot cover those controls.
+No model pin/dependency/schema change. Final verification is recorded in HANDOFF §31.

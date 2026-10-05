@@ -561,3 +561,22 @@ node --test apps/editor/tests/*.test.mjs
 .venv/bin/pytest -q tests/test_graph_clipboard.py
 .venv/bin/python tools/editor_clipboard_smoke.py --output /private/tmp/void-clipboard-editor-smoke-final
 ```
+
+### Structured graph outline
+
+Open Structured graph outline beside Keyboard graph tools on model/tabular/domain
+canvases or inside a module. Search nodes, operations, wires, module references or
+native errors. Inspect selects the existing inspector; Center fits that node without
+changing saved positions; Open module enters its existing definition editor. Native
+contracts and diagnostics show the exact validation identity and disappear while a
+new validation is pending. This view describes structure, not learned activations.
+
+The list renders at most 50 nodes per page. Search/filter/navigation leave graph and
+layout unchanged. Agent/RL outlines and broader editor navigation remain separate.
+Actual commands run:
+
+```sh
+node --test apps/editor/tests/graphOutline.test.mjs
+.venv/bin/pytest -q tests/test_graph_outline.py
+.venv/bin/python tools/editor_outline_smoke.py --output /private/tmp/void-outline-editor-release
+```

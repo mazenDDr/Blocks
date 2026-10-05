@@ -85,6 +85,9 @@ jobs:
       - name: Real browser graph clipboard
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_clipboard_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-clipboard-smoke
+      - name: Real browser structured graph outline
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .venv/bin/python tools/editor_outline_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-outline-smoke
       - name: Real browser, backup and restored native state journey
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/recovery_smoke.py --trackers --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
@@ -112,5 +115,9 @@ jobs:
             /tmp/void-ci-clipboard-smoke/evidence.json
             /tmp/void-ci-clipboard-smoke/*.log
             /tmp/void-ci-clipboard-smoke/*.png
+            /tmp/void-ci-outline-smoke/runner.json
+            /tmp/void-ci-outline-smoke/evidence.json
+            /tmp/void-ci-outline-smoke/*.log
+            /tmp/void-ci-outline-smoke/*.png
           if-no-files-found: warn
           retention-days: 7

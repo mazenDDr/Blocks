@@ -41,6 +41,7 @@ import { fmtInt, fmtShape, nextId, shortName } from "./util";
 import { useDocumentHistory } from "./useDocumentHistory";
 import { ResearchRecords } from "./components/ResearchRecords";
 import { GraphClipboardTools } from "./components/GraphClipboardTools";
+import { GraphOutline } from "./components/GraphOutline";
 import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
@@ -575,7 +576,6 @@ function Workbench() {
           {rv && <small> · graph {rv.graphHash.slice(0, 8)}</small>}
         </span>
       </header>
-      {view === "graph" && !agent && !rl && ui.description && <div className={`notice ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic / teaching data. </b>}{ui.description}</div>}
       {message && <div className="toast" role="status" onClick={() => setMessage(null)}>{message} <small>(click to dismiss)</small></div>}
 
       {view === "production" && <ProductionWorkspace onOpenRun={openRun} />}
@@ -617,8 +617,11 @@ function Workbench() {
       {view === "attention" && !tabular && <div className="fullws"><AttentionWorkspace graph={graph} runs={procRuns} setMessage={setMessage} /></div>}
       {view === "graph" && !agent && !rl && <>
       <div className="graph-tools">
+      {ui.description && <div className={`notice-inline ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic / teaching data. </b>}{ui.description}</div>}
       <KeyboardGraphTools graph={cur} ops={opsByType} selectedNode={selNodes[0] ?? ""} selectedWire={selEdges[0] ?? ""} onNode={(id) => { setSelNodes(id ? [id] : []); setSelEdges([]); }} onWire={(id) => { setSelEdges(id ? [id] : []); setSelNodes([]); }} onConnect={connect} />
       <GraphClipboardTools key={`${projectId}:${scope.length}`} graph={graph} selected={selNodes} clipboard={clipboard} inModule={!!def} onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onCopy={copySelection} onPaste={pasteSelection} onClear={() => { setClipboard(null); setPasteCount(0); }} />
+      <GraphOutline key={`${projectId}:${scope.map(s => `${s.module}@${s.version}`).join("/")}`} graph={cur} ops={opsByType} validation={v ?? null} pending={validation.pending} error={validation.error} selected={selNodes} scope={def ? `Module ${def.id}@${def.version}` : `Root project ${projectId}`}
+        onInspect={id => { setSelNodes([id]); setSelEdges([]); }} onCenter={id => { setSelNodes([id]); setSelEdges([]); void fitView({ nodes: [{ id }], padding: 0.4, maxZoom: 1, duration: 0 }); }} onOpenModule={openInstance} />
       </div>
       <aside className="left">
         {!tabular && (

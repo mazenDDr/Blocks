@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §30 — graph clipboard release checks running; §29 research records Mac verified and pushed3bdfe53, followed by canvas/browser repair8c197a7.** Hosted run37315549500 is pending. Earlier restore/editor history Mac acceptance is in §27–§28; failed hosted37311914629/repair are retained in §29. Recovery/discovery passed hosted Linux on d0bdafa/run37308500924. Read §30 first, then §29 and the preceding scope you change. Earlier progressive status notes are superseded by these final outcomes; do not invent completion from a pending run.
+> **Latest continuation: §31 — structured graph outline Mac verified; final1209native/12live/17Node checks.** Clipboard2c20cd5 and CI diagnostics833e133 are pushed to master; research records3bdfe53 are pushed. Measurement repair e0765ef is localmaster/temporarycodex branch, browser-only37319989637 pending. Master37318781451 native job pending; its clipboard/recovered Chrome passed, history viewport failed with measured cause recorded below. Read §31, then §30; older progressive notes are superseded by final outcomes. No Linux full acceptance claim before actual native/browser results.
 
 ## 1. What this project is
 
@@ -61,7 +61,8 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Reviewed historical native checkpoint restore | Mac verified, hosted rerun pending, §27/ADR0030 | 5d2f732 |
 | Bounded editor whole-draft history | Mac verified, hosted rerun pending, §28/ADR0031 | a49bd85/8c197a7 |
 | Revisioned research run notes/tags/search | Mac verified, hosted pending, §29/ADR0032 | 3bdfe53 |
-| Root model/tabular/domain graph clipboard | final checks running, uncommitted §30/ADR0033 | draft |
+| Root model/tabular/domain graph clipboard | Mac verified, pushed; Linux clipboard browser pass/native pending §30/ADR0033 | 2c20cd5 |
+| Structured root/module graph outline | Mac verified, selective commit/push pending §31/ADR0034 | this continuation |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -964,7 +965,7 @@ User asked continuous work until approaching usage limits, not one-task stops. C
 - Run37315549500 on8c197a7 **failed** at agent browser viewport/drag again. Native **1196 passed,1 skipped,12 deselected,1941 warnings,1021.01s**, build/typecheck/Node5/coverage pass. Recovery stage skipped; no Linux whole-journey acceptance claim. Actual log `/private/tmp/void-records-ci.log`, evidence `/private/tmp/void-records-ci-evidence`. Agent workspace now fills height, but before real drag-target capture the fitted nodes leave the viewport. Additional failure diagnostics record only owned synthetic node boxes/styles/canvas/transform, no browser secrets.
 - CI draft separates native verification and owned browser journeys into independent jobs (same pinned installation) for faster Linux feedback. Subsequent browser journeys run even if an earlier one fails, preserving each real outcome rather than hiding it; no assertions weakened. Browser evidence-only upload policy retained. This is a verification change, not a Linux pass claim. Push committed2c20cd5 with this selective diagnostics/workflow repair next; outline implementation remains an independent uncommitted scope.
 
-## 31. Structured graph outline — 2026-10-05 (final checks running)
+## 31. Structured graph outline — 2026-10-05 (Mac verified; push/hosted pending)
 
 Clipboard2c20cd5 and independent CI diagnostics833e133 are pushed. Current hosted run37318781451 on833e133 has separate native and browser jobs; do not claim success before actual outcomes. The predecessor37315549500 native1196/build pass but viewport browser failed is retained in §30. This Mac outline scope is still uncommitted; preserve it if interrupted. Continue alone; user8258/8000 remains untouched.
 
@@ -981,3 +982,13 @@ Integrated source-deletion/recovery/trackers `/private/tmp/void-outline-integrat
 - Completed browser job111792206949/run37318781451: clipboard and source-deletion/recovery/tracker/records/restore journeys **pass**; draft-history fails before dragging. Native job still running. Downloaded `/private/tmp/void-clipboard-ci-browser`: finite canvas930×1010 and sane transform/node boxes, but every card has `visibility:hidden`. This is retained node measurement state after undo membership changes, not an off-screen/NaN position. Earlier suspicion in §30 is superseded by these actual diagnostics.
 - AgentCanvas now calls the installed `useUpdateNodeInternals` after node ID/type/version membership changes (including undo/redo), requesting actual DOM and handle measurements. No guessed dimensions, graph/UI mutations or native pin edits. Mac original history journey `/private/tmp/void-measurement-history-smoke` **passes6.3814s**, errors empty; backend21496/editor21501/browser21520 closed(-15/143/0). Final build/typecheck/Node checks pass, no original browser assertion weakened.
 - A manual `browser_only` workflow input is added for fast diagnosis; default push/PR/manual still run the full native suite/build/coverage and all real browser journeys. Browser-only success is explicitly not full release acceptance. Plan selective repair commit, temporarily push `codex/measurement-repair`, dispatch its browser-only run so the active master native verification can finish without cancellation, then push verified master continuation. Temporary branch is solely owned CI diagnosis, remove after evidence review/master push. Outline remains independent uncommitted scope. Record actual run/commit/outcomes before final handoff.
+
+- Outline final all-Node **17 passed124.73ms**, build/typecheck**261modules**, coveragewrite/checkcurrent and diffcheck pass. Integrated `/private/tmp/void-outline-integrated-recovery` **passes**56files/tenDBs/threeinternallinks/oneomitteddiagnostic; sourcegone; seed10.7635s/restored8.1373s, recoveredbackend19717/editor19719/browser19738 closed(-15/143/0), errors empty, manifest6872d7c7fdbb83621068fa8ab64284034fcc0a8dfbe8c467457ad94e721442cc.
+- Actual final curl `/private/tmp/void-outline-curl/evidence.json` **passes** root save/readexact20,042params/nativehash, identical nativeinvaliddiagnostics, exact moduleHash/contractJSON against realChrome modulevalidation. Owned backend20020/port51639 stopped-15, all200. No nativemodel/environment/schema change; currentnativepins unchanged (repeatgitdiffauditbeforecommit).
+- Measurement repair **e0765ef79dd1f9c5fdc9a97c2cb63e2a726d50f0** is localmaster and temporary remote`codex/measurement-repair`; notyetorigin/master. Manual browser-only diagnostic run **37319989637** started: https://github.com/mazenDDr/project-void/actions/runs/37319989637. Default-nativejob intentionallyskipped onlyinthismanualdiagnosis; nofullLinuxacceptancefromit. Existingmaster37318781451 nativejobcontinues. Final outlinefull/live outcomes stillpending; no fullsuiteclaimbefore actualcompletion. NextADR0035.
+
+### Final Mac outline acceptance
+
+Full `.venv/bin/pytest -q -o faulthandler_timeout=240`: **1209 passed,1 skipped,12 deselected,1941 warnings,487.92s**, `/private/tmp/void-outline-full.log`. Real local Ollama live **12 passed,1210 deselected,24.86s**, `/private/tmp/void-outline-live.log`. Node17/build261modules/typecheck/coverage/diff/pin audits pass. Final dedicated/integrated real Chrome/curl evidence above passes with exact native identities and owned cleanup. The subsequent agent-card measurement repair also passes the original Mac history browser; it edits frontend native DOM measurement only. No existing assertions weakened.
+
+Outline is Mac accepted and ready for selective commit, followed by master push after active37318781451 native job finishes. Independent manual browser-only37319989637 verifies measurement repair on temporarybranch. Keep actual pending/failure distinctions; do not call the whole project finalized. Next ADR0035. All own services are stopped; tests leave their owned native fixtures only in temporary directories.
