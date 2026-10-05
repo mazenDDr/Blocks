@@ -1,4 +1,4 @@
-"""Reviewed native conversation reset/fork, serialized with production turns (ADR 0025)."""
+"""Reviewed native reset/fork/historical restore, serialized with production turns."""
 from __future__ import annotations
 
 import base64
@@ -15,6 +15,8 @@ from .pipeline import ProductionError, read_verified
 
 
 def action(runtime, release_id, operation, req):
+    if operation not in ("reset", "fork", "restore"):
+        raise ProductionError("E_SESSION_ACTION", "Unsupported conversation action.")
     ps = runtime.ps
     release = ps.get('release', release_id)
     if release['config']['sessionMode'] != 'conversation':
@@ -43,18 +45,26 @@ def action(runtime, release_id, operation, req):
         if duplicate:
             return duplicate
         head = ps.conversation(source)
-        if not head or not head['checkpointSha256']:
+        if not head or (not head['checkpointSha256'] and operation != 'restore'):
             raise ProductionError('E_SESSION_EMPTY', 'Inspect a session with a committed native checkpoint first.', 409)
         if (head['revision'], head['checkpointSha256']) != (req.expectedRevision, req.expectedCheckpointSha256):
             raise ProductionError('E_SESSION_CONFLICT', 'Reviewed checkpoint changed; inspect it again before applying this action.', 409)
         # Verify decoded state with the original adapter, without changing its pinned source bytes.
-        pipeline.checkpoint_state(head['checkpointSha256'])
+        if head['checkpointSha256']:
+            pipeline.checkpoint_state(head['checkpointSha256'])
+        selected = head['checkpointSha256']
+        if operation == 'restore':
+            from .history import inspect_history
+            historical = inspect_history(runtime, release_id, req.user, req.session, req.sourceRequestId, pipeline=pipeline)
+            if (historical['sourceTraceSha256'], historical['sourceCheckpointSha256']) != (req.sourceTraceSha256, req.sourceCheckpointSha256):
+                raise ProductionError('E_SESSION_HISTORY_CONFLICT', 'Reviewed historical source differs; inspect it again.', 409)
+            selected = historical['sourceCheckpointSha256']
         checkpoint = None
         thread = None
-        if operation == 'fork':
-            if ps.conversation(target) is not None:
+        if operation in ('fork', 'restore'):
+            if operation == 'fork' and ps.conversation(target) is not None:
                 raise ProductionError('E_SESSION_DESTINATION', 'Destination session already exists; it is never overwritten.', 409)
-            payload = json.loads(read_verified(runtime.store, head['checkpointSha256']))
+            payload = json.loads(read_verified(runtime.store, selected))
             saver = InMemorySaver()
             native = saver.serde.loads_typed((payload['type'], base64.b64decode(payload['data'], validate=True)))
             thread = uuid.uuid4().hex
@@ -63,7 +73,7 @@ def action(runtime, release_id, operation, req):
             payload.update(threadId=thread, type=typ, data=base64.b64encode(raw).decode())
             encoded = dumps(payload).encode()
             if len(encoded) > 131_072:
-                raise ProductionError('E_AGENT_CHECKPOINT_BOUNDS', 'Fork snapshot exceeds 128 KiB; no session created.', 413)
+                raise ProductionError('E_AGENT_CHECKPOINT_BOUNDS', 'Cloned snapshot exceeds 128 KiB; no session changed.', 413)
             checkpoint = runtime.store.put_bytes(encoded)
         return ps.commit_conversation_action(data, fingerprint, source, target, head, checkpoint, thread, deadline)
     finally:

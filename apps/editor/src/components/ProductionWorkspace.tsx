@@ -3,6 +3,7 @@ import { api, ApiError, errorText } from "../api";
 import { usePolling } from "../hooks";
 import { ConversationActions, type ConversationSnapshot } from "./ConversationActions";
 import { ConversationDiscovery } from "./ConversationDiscovery";
+import { ConversationHistory, type HistoricalSnapshot } from "./ConversationHistory";
 import { AgentTurnInspection } from "./AgentTurnInspection";
 
 interface Candidate { runId: string; node: string; pipelineSha256: string; graphHash: string; adapter?: "tabular" | "domain" | "model" | "rl" | "unsup" | "agent" | "conversation"; family?: string }
@@ -155,6 +156,22 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
               setNotice(`${operation === "fork" ? "Fork created" : "Conversation reset"}; immutable action receipt ${result.actionSha256}`);
             })} />
           <details><summary>Inspected native checkpoint/state</summary><Recorded value={inspectedConversation} /></details>
+          <ConversationHistory key={`${inspectedConversation.releaseId}:${inspectedConversation.user}:${inspectedConversation.session}:${inspectedConversation.head?.revision}:${trace?.requestId}`}
+            snapshot={inspectedConversation} disabled={!!busy}
+            sourceRequestId={trace?.status === 200 && trace?.releaseId === release.id && trace?.user === user && trace?.session === session && trace?.conversationState?.checkpointSha256 ? trace.requestId : null}
+            onPreview={async sourceRequest => {
+              let result: HistoricalSnapshot | null = null;
+              await act("Verifying historical native checkpoint", async () => {
+                result = await api.get<HistoricalSnapshot>(`/api/production/releases/${release.id}/conversation/history/${encodeURIComponent(sourceRequest)}?user=${encodeURIComponent(user)}&session=${encodeURIComponent(session)}`);
+              });
+              return result;
+            }}
+            onRestore={body => act("Restoring reviewed historical checkpoint", async () => {
+              const result = await api.post<any>(`/api/production/releases/${release.id}/conversation/restore`, body);
+              setConversationAction(result);
+              setConversation(await api.get<ConversationSnapshot>(`/api/production/releases/${release.id}/conversation?user=${encodeURIComponent(user)}&session=${encodeURIComponent(session)}`));
+              setNotice(`Historical state restored; immutable action receipt ${result.actionSha256}`);
+            })} />
         </>}
         {conversationAction != null && <details open><summary>Recorded conversation action and lineage</summary><Recorded value={conversationAction} /></details>}
       </>}

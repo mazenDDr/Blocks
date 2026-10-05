@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest verified continuation: §26 — read-only native conversation discovery (Mac verified; push/hosted CI pending).** §25 explicit W&B/native recovery is pushed and Mac verified; first hosted Linux run failed two timing races (see §27). Read §26 first, then §25. §24 records whole-workbench recovery; §23 the browser baseline. §22 reset/fork, §21 persistent conversations, §20 isolated agent serving, §19 domain imports. Earlier cloud work is recorded in §11–§18.
+> **Latest verified continuation: §27 — reviewed historical restoration (Mac verified; commit/push pending); draft editor history is in progress.** §25 explicit W&B/native recovery is pushed and Mac verified; first hosted Linux run failed two timing races (see §27). Read §26 first, then §25. §24 records whole-workbench recovery; §23 the browser baseline. §22 reset/fork, §21 persistent conversations, §20 isolated agent serving, §19 domain imports. Earlier cloud work is recorded in §11–§18.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0029`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0030`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -869,3 +869,17 @@ User asked continuous work until approaching usage limits, not one-task stops. C
 - Discovery is locally committed c83adff, Mac verified (§26). Push with the verified race repair and rerun hosted workflow; record actual result. No credentials/raw workbench/CAS/weights committed.
 - **Historical restore draft (uncommitted, not accepted yet):** new `production/history.py`, `tests/test_conversation_history.py`; additive API models/GET historical preview/POSTrestore; extend `production/conversations.py` action and `store.py` atomic transaction. Exact successful request/release/user/session/version source; reviewed current head plus source trace/checkpoint identity, original native serializer clone/fresh thread, monotonic revision, source-pointer recheck, immutable receipt/audit, no model invocation. Source capture-off supported. Focused draft + old action tests30 pass12.99s. UI, live test, broader failure/concurrency/crash tests, full/browser verification, ADR0030/docs/commit remain. Preserve draft if interrupted; never edit native pinned files or historical evidence.
 - Next independent remaining work after restoration is privacy retention/deletion/GC and migrations, broader recovery and production agent retrieval/memory/tools/effects/interrupt/structured/provider/streaming, wider serving/datasets/benchmarks/editor/cache/import/platform/security. Accounts/GPU/cloud/distributed/infrastructure still require real integration; do not invent them or call project finalized.
+
+
+### Historical restoration progress (still awaiting full acceptance)
+
+- Final native focused restore24 pass9.09s after stricter completed-request identity checks; previous combined history/actions/terminal42 pass16.59s. Live actual Ollama12 pass,1175 deselected24.21s (before two additional offline refusal/deadline tests, live code unchanged). Final full suite **1176 passed,1 skipped,12 deselected,1941 warnings,470.84s** in `/private/tmp/void-history-full.log`.
+- Real Chrome `/private/tmp/void-history-recovery-smoke` passes: actual backup/source deletion/restoration and confirmed trackers, prior discovery, plus earlier request preview, disabled-until-confirmed action, fresh native historical thread/revision6, whole source state equality, next actual turn n2/revision7. All runtime/API/console errors empty. Final stricter core validation was added afterward and preserves valid-flow semantics; Explicit curl also passed on the final stricter core: owned backend7582/port54303, preview actual first state n1 against current revision7, restore revision8, identical retry and whole state/head match. Stopped-15; `/private/tmp/void-history-curl/evidence.json`. No owned service left running.
+- UI `ConversationHistory.tsx`, native/live/failure/crash tests and ADR0030/docs now exist. Build/typecheck passed254 modules; existing chunk warning. Restore code is now Mac accepted and ready for selective commit, push after current hosted run completes. Coverage regenerated/check current, diffcheck pass. All16 native identity files unchanged. No pinned execution source/dependency/schema changes.
+- Discovery c83adff and race repair d0bdafa7bbe30fd15e3ab36f8fd9de7b5ea123c4 pushed to master; fresh hosted run37308500924 in progress, no Linux pass claim. Repair focused17 tests20.52s. Earlier failure is retained above. Avoid pushing while this fresh run is in progress (cancel-in-progress workflow).
+
+
+### Independent editor draft-history work now in progress (not yet accepted)
+
+- New `apps/editor/src/documentHistory.ts`, `useDocumentHistory.ts`, `apps/editor/tests/documentHistory.test.mjs`; App draft state uses paired graph/layout history, project load resets, toolbar Undo/Redo and focus-aware shortcuts. Agent/main canvas drag grouping passes real dragging flags; same-event graph+position setters share an edit. No run/artifact/production-action rollback. Bounded100 prior snapshots/8MiB estimated JSON history (oversize current draft still editable, history evicts); no persistence across reload.
+- Pure Node tests4 pass, build/typecheck pass after union narrowing correction. Actual Chrome runner `tools/editor_history_smoke.py`/`smoke/history.mjs` in progress: first attempt incorrectly waited for POST save instead of existing PUT route; browser script corrected, rerun still required. Preserve all draft files; no accepted undo claim yet. Next ADR0031. Does not affect native Python full-suite result above. Existing recovery/restore implementation remains selective commit scope.

@@ -157,22 +157,34 @@ class ProductionStore:
                 raise ProductionError("E_SESSION_CONFLICT", "Reviewed checkpoint changed before action commit.", 409)
             if data["operation"] == "fork" and db.execute("SELECT 1 FROM agent_sessions WHERE scope=?", (target,)).fetchone():
                 raise ProductionError("E_SESSION_DESTINATION", "Destination already exists; no overwrite.", 409)
+            if data["operation"] == "restore":
+                historical = db.execute("SELECT trace,state,release FROM requests WHERE user=? AND id=?", (data["user"], data["sourceRequestId"])).fetchone()
+                if not historical or tuple(historical) != (data["sourceTraceSha256"], "completed", data["releaseId"]):
+                    raise ProductionError("E_SESSION_HISTORY_CONFLICT", "Historical request changed before restore commit.", 409)
+                read_verified(self.artifacts, data["sourceTraceSha256"])
+                read_verified(self.artifacts, data["sourceCheckpointSha256"])
             revision = 1 if data["operation"] == "fork" else current["revision"]+1
             head = {"revision": revision, "checkpointSha256": checkpoint, "lastRequestId": None}
             result = {**data, "versionId": self.get("release", data["releaseId"])["versionId"],
                       "sourceHead": expected, "head": head, "threadId": thread, "recordedAt": time.time(),
-                      "policy": "reset changes only the live head; fork clones the reviewed native END checkpoint into a new thread; old traces/snapshots retained; caller-declared user is not authenticated"}
+                      "policy": ("restore clones the reviewed historical request checkpoint into a fresh native thread in this session; monotonic revision; all earlier evidence retained; caller-declared user is not authenticated"
+                                 if data["operation"] == "restore" else "reset changes only the live head; fork clones the reviewed native END checkpoint into a new thread; old traces/snapshots retained; caller-declared user is not authenticated")}
             sha = self.artifacts.put_bytes(dumps(result).encode())
             if time.perf_counter() >= deadline:
                 raise ProductionError("E_REQUEST_TIMEOUT", "Action deadline passed before commit; no head changed.", 504)
             if data["operation"] == "fork":
                 db.execute("INSERT INTO agent_sessions VALUES(?,?,?,NULL)", (target, revision, checkpoint))
+            elif data["operation"] == "restore":
+                db.execute("UPDATE agent_sessions SET revision=?,checkpoint=?,last=NULL WHERE scope=?", (revision, checkpoint, source))
             else:
                 db.execute("UPDATE agent_sessions SET revision=?,checkpoint=NULL,last=NULL WHERE scope=?", (revision, source))
             db.execute("INSERT INTO conversation_actions VALUES(?,?,?,?)", (data["user"], data["actionId"], fingerprint, sha))
-            self.event(db, "conversation_"+data["operation"], {"actionId": data["actionId"], "actionSha256": sha, "releaseId": data["releaseId"],
+            event_data = {"actionId": data["actionId"], "actionSha256": sha, "releaseId": data["releaseId"],
                                                             "user": data["user"], "session": data["session"], "destinationSession": data.get("destinationSession"),
-                                                            "sourceHead": expected, "head": head, "reason": data["reason"]})
+                                                            "sourceHead": expected, "head": head, "reason": data["reason"]}
+            if data["operation"] == "restore":
+                event_data.update({key: data[key] for key in ("sourceRequestId", "sourceTraceSha256", "sourceCheckpointSha256")})
+            self.event(db, "conversation_"+data["operation"], event_data)
         return {**result, "actionSha256": sha, "idempotentReplay": False}
 
     def finish_request(self, user, id_, trace, scope=None, *, conversation=None, deadline=None):

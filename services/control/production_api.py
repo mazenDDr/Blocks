@@ -44,6 +44,13 @@ class ConversationFork(ConversationReset):
     destinationSession: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
 
 
+class ConversationRestore(ConversationReset):
+    expectedCheckpointSha256: str | None = Field(..., pattern=r"^[0-9a-f]{64}$")
+    sourceRequestId: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    sourceTraceSha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    sourceCheckpointSha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
 def register(app: FastAPI, sv):
     rt = ProductionRuntime(sv.store)
     traffic = TrafficRunner(rt, getattr(sv, "api_token", None))
@@ -272,6 +279,18 @@ def register(app: FastAPI, sv):
     def fork_conversation(rid: str, req: ConversationFork):
         from production.conversations import action
         return action(rt, rid, "fork", req)
+
+    @app.get("/api/production/releases/{rid}/conversation/history/{request_id}")
+    def historical_checkpoint(rid: str, request_id: str,
+                              user: str = Query("local-user", pattern=r"^[A-Za-z0-9_-]{1,64}$"),
+                              session: str = Query(..., pattern=r"^[A-Za-z0-9_-]{1,64}$")):
+        from production.history import inspect_history
+        return inspect_history(rt, rid, user, session, request_id)
+
+    @app.post("/api/production/releases/{rid}/conversation/restore")
+    def restore_conversation(rid: str, req: ConversationRestore):
+        from production.conversations import action
+        return action(rt, rid, "restore", req)
 
     @app.post("/api/production/requests/{id_}/replay")
     def investigate(id_: str, req: User):

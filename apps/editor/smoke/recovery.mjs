@@ -116,6 +116,36 @@ try {
   await capture('restored-monitor');
   // Discovery lists committed metadata; checkpoint inspection is explicit.
   await click('Requests','.production-workspace');
+  // Historical restoration requires separately reviewed current and source state.
+  const target = await inspect('investigation');
+  const first = seed.traces[0];
+  await page.waitForFunction(id => [...document.querySelectorAll('.prod-list button')].some(b => b.textContent.includes(id)), {},first.requestId.slice(0,12));
+  for (const h of await page.$$('.prod-list button')) if (await h.evaluate((e,id) => e.textContent.includes(id),first.requestId.slice(0,12))) { await h.click(); break; }
+  pending = response('/history/'+first.requestId,'GET');
+  await click('Preview historical checkpoint');
+  const historical = await (await pending).json();
+  assert.equal(historical.readOnly,true);
+  assert.equal(historical.sourceTraceSha256,first.traceSha256);
+  assert.equal(historical.sourceCheckpointSha256,first.conversationState.checkpointSha256);
+  assert.equal(historical.state.n,1);
+  await fill('input[aria-label="conversation restoration reason"]','SYNTHETIC restored earlier continuation');
+  assert(await page.$eval('[aria-label="historical conversation restore"]', section => [...section.querySelectorAll('button')].find(b => b.textContent === 'Restore reviewed historical checkpoint').disabled));
+  await page.click('input[aria-label="confirm historical restoration"]');
+  pending = response('/restore');
+  await click('Restore reviewed historical checkpoint');
+  const restored = await (await pending).json();
+  assert.deepEqual(restored.sourceHead,target.head);
+  assert.equal(restored.head.revision,6);
+  assert.notEqual(restored.threadId,first.conversationState.threadId);
+  await text(restored.actionSha256);
+  const restoredHead = await inspect('investigation');
+  assert.deepEqual(restoredHead.state,historical.state);
+  assert.deepEqual(restoredHead.head,restored.head);
+  await capture('restored-history');
+  const historicalNext = await turn('SYNTHETIC restored historical next','SYNTHETIC restored historical next: 2/1');
+  assert.equal(historicalNext.conversationState.revision,7);
+  assert.equal(historicalNext.conversationState.threadId,restored.threadId);
+  evidence.historicalRestore = {historical,target,restored,restoredHead,historicalNext};
   pending = response('/conversations','GET');
   await click('Discover conversations');
   const initialSessions = await (await pending).json();

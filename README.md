@@ -484,4 +484,25 @@ These commands ran; the browser recovery check seeds27 actual native sessions an
 .venv/bin/python tools/recovery_smoke.py --trackers --output /private/tmp/void-discovery-recovery-smoke-final
 ```
 
-No model source pins or dependencies changed. Historical checkpoint restore, privacy deletion, retention and authenticated ownership remain unavailable. See HANDOFF §26.
+No model source pins or dependencies changed. Historical checkpoint restore is described below; privacy deletion, retention and authenticated ownership remain unavailable. See HANDOFF §26.
+
+### Restore an earlier native conversation turn
+
+In Production → Requests, inspect the current conversation, then select a successful
+recorded request from that same release/user/session. Preview historical checkpoint
+shows its verified state and source trace/checkpoint hashes. Supply a reason, confirm
+the reviewed replacement and restore. The next turn continues from that earlier
+state in a fresh native thread; serving revisions keep increasing. Earlier records
+remain available, including captured replay. A session logically reset to an empty
+head can also be restored. Preview/restore themselves make no model call.
+
+Actual verification commands:
+
+```sh
+.venv/bin/pytest -q tests/test_conversation_history.py
+.venv/bin/python tools/recovery_smoke.py --trackers --output /private/tmp/void-history-recovery-smoke
+```
+
+This requires the original native code/environment/provider identity and exact
+scope. It does not import arbitrary checkpoints or erase historical data. See
+HANDOFF §27 and ADR0030 for receipt/concurrency/recovery limits and final checks.

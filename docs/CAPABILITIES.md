@@ -505,3 +505,17 @@ Limits remain offline/trusted/same-native-environment/new-destination. Link trav
 | Optional shared-token protection and strict query/stateless/integrity refusal | Existing middleware/control API | Native HTTP token/invalid query/stateless and damaged metadata tests |
 
 Discovery is metadata, not a checkpoint-integrity or provider-availability claim. Existing explicit inspection verifies the selected actual checkpoint; pages are current reads, not a frozen historical catalog. Caller user keys remain unauthenticated isolation scopes. No historical restore/import/migration, privacy erasure/retention/GC, roles/ownership, streaming or broader native serving dependencies. No model pin/dependency/DB migration changes. Exact Mac/hosted status is recorded in HANDOFF §26.
+
+### Reviewed historical conversation restoration (ADR0030)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Read-only whole native END state from a successful request in the exact release/user/session/version; trace/checkpoint/thread provenance verified | `production/history.py`, GET `/conversation/history/{request_id}` | `test_conversation_history.py`: capture-on/off, native state/reference, source scope/status/thread/refusal; no inference |
+| Explicit current revision/SHA and source request/trace/checkpoint review; fresh native thread, monotonic serving revision, atomic head/receipt/audit | Existing conversation action/store transaction, POST `/conversation/restore` | Stale source/target, active/competing turns, reset/null head, rollback, actual process death/restart, deadlines and immutable retries |
+| Selected request → verified preview → reason/confirmation → actual restored continuation | `ConversationHistory.tsx`, Production Requests; recovered Chrome journey | Actual earlier state/fresh thread/revision and native next turn, no fabricated data; source workbench physically removed |
+| Native local Ollama continuation includes exactly the selected checkpoint's earlier messages | Existing pinned adapter/provider | Live test records provider contexts/usage and original message provenance; restore creates no prediction/model call |
+
+Bounds: same native environment/code/provider and exact scope; no arbitrary SHA/upload,
+failed or incomplete checkpoint, cross-version migration, privacy erasure/GC, authenticated
+ownership or distributed replica guarantee. Earlier traces/snapshots stay retained. No
+new model pins/dependencies/migrations. Final acceptance is recorded in HANDOFF §27.
