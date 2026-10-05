@@ -402,4 +402,26 @@ pnpm -C apps/editor exec tsc --noEmit
 .venv/bin/python -m backends.coverage --check
 ```
 
-No conversation reset/delete/fork/migration API, long-term memory/retrieval/tool effects, streaming, remote/distributed serving or semantic-answer benchmark is implemented. Use one owning control process.
+Reviewed reset/fork is documented below. Physical deletion/migration, long-term memory/retrieval/tool effects, streaming, remote/distributed serving and semantic-answer benchmarks remain unimplemented. Use one owning control process.
+
+
+## Review, fork or reset a serving conversation
+
+In Production → Requests, select a conversation release, user and session, then **Inspect conversation checkpoint**. Management controls target that exact revision/SHA. Fork creates an unused destination session under the same release/user, preserves native history and gives future turns an independent thread. Reset requires the review checkbox, clears only the live head and starts its next successful turn fresh. Earlier snapshots/traces and captured replay are retained. Both actions record an immutable receipt, reject changed checkpoints and make no model call. Serving revisions remain monotonic through reset; fork begins at revision 1 with inherited native state.
+
+Reset does not physically delete data. These are caller-declared isolation keys, with shared-token protection when configured; authenticated ownership and privacy-erasure APIs remain unimplemented. Existing registered versions keep their original identity. See ADR 0025 and HANDOFF §22 for limits, crash/restart evidence and remaining work.
+
+Commands run on the Mac against a separate temporary workbench:
+
+```bash
+VOID_WORKBENCH=/private/tmp/void-session-actions-smoke .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8780
+VOID_API=http://127.0.0.1:8780 pnpm -C apps/editor dev --host 127.0.0.1 --port 5302 --strictPort
+.venv/bin/python examples/conversation_actions_journey.py --base http://127.0.0.1:8780 --namespace session-actions-cli
+.venv/bin/pytest -q tests/test_conversation_actions.py tests/test_production_conversation.py tests/test_production_agent.py tests/test_production.py -o faulthandler_timeout=240
+.venv/bin/pytest -q -o faulthandler_timeout=240
+.venv/bin/pytest -q -m live
+pnpm -C apps/editor build
+pnpm -C apps/editor exec tsc --noEmit
+.venv/bin/python -m backends.coverage --write
+.venv/bin/python -m backends.coverage --check
+```

@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS lifecycle(seq INTEGER PRIMARY KEY AUTOINCREMENT, ts R
 CREATE TABLE IF NOT EXISTS requests(user TEXT, id TEXT, fingerprint TEXT, release TEXT, state TEXT, cancelled INTEGER, trace TEXT, created REAL, PRIMARY KEY(user,id));
 CREATE TABLE IF NOT EXISTS sessions(scope TEXT PRIMARY KEY, count INTEGER, last TEXT);
 CREATE TABLE IF NOT EXISTS agent_sessions(scope TEXT PRIMARY KEY, revision INTEGER, checkpoint TEXT, last TEXT);
+CREATE TABLE IF NOT EXISTS conversation_actions(user TEXT, id TEXT, fingerprint TEXT, result TEXT, PRIMARY KEY(user,id));
 CREATE TABLE IF NOT EXISTS labels(user TEXT, request TEXT, labels TEXT, ts REAL, PRIMARY KEY(user,request));
 """
 
@@ -131,8 +132,48 @@ class ProductionStore:
         rows = self.query("SELECT revision,checkpoint,last FROM agent_sessions WHERE scope=?", (scope,))
         if not rows:
             return None
-        read_verified(self.artifacts, rows[0]["checkpoint"])
+        if rows[0]["checkpoint"] is not None:
+            read_verified(self.artifacts, rows[0]["checkpoint"])
         return {"revision": rows[0]["revision"], "checkpointSha256": rows[0]["checkpoint"], "lastRequestId": rows[0]["last"]}
+
+    def conversation_action(self, user, id_, fingerprint):
+        rows = self.query("SELECT fingerprint,result FROM conversation_actions WHERE user=? AND id=?", (user, id_))
+        if not rows:
+            return None
+        if rows[0]["fingerprint"] != fingerprint:
+            raise ProductionError("E_SESSION_ACTION_CONFLICT", "Action id already belongs to another operation/input/release.", 409)
+        return {**json.loads(read_verified(self.artifacts, rows[0]["result"])), "actionSha256": rows[0]["result"], "idempotentReplay": True}
+
+    def commit_conversation_action(self, data, fingerprint, source, target, expected, checkpoint, thread, deadline):
+        with self.lock, closing(self.db()) as db, db:
+            db.execute("BEGIN IMMEDIATE")
+            duplicate = db.execute("SELECT fingerprint,result FROM conversation_actions WHERE user=? AND id=?", (data["user"], data["actionId"])).fetchone()
+            if duplicate:
+                if duplicate["fingerprint"] != fingerprint:
+                    raise ProductionError("E_SESSION_ACTION_CONFLICT", "Action id conflicts with a recorded operation.", 409)
+                return {**json.loads(read_verified(self.artifacts, duplicate["result"])), "actionSha256": duplicate["result"], "idempotentReplay": True}
+            current = db.execute("SELECT revision,checkpoint FROM agent_sessions WHERE scope=?", (source,)).fetchone()
+            if not current or (current["revision"], current["checkpoint"]) != (expected["revision"], expected["checkpointSha256"]):
+                raise ProductionError("E_SESSION_CONFLICT", "Reviewed checkpoint changed before action commit.", 409)
+            if data["operation"] == "fork" and db.execute("SELECT 1 FROM agent_sessions WHERE scope=?", (target,)).fetchone():
+                raise ProductionError("E_SESSION_DESTINATION", "Destination already exists; no overwrite.", 409)
+            revision = 1 if data["operation"] == "fork" else current["revision"]+1
+            head = {"revision": revision, "checkpointSha256": checkpoint, "lastRequestId": None}
+            result = {**data, "versionId": self.get("release", data["releaseId"])["versionId"],
+                      "sourceHead": expected, "head": head, "threadId": thread, "recordedAt": time.time(),
+                      "policy": "reset changes only the live head; fork clones the reviewed native END checkpoint into a new thread; old traces/snapshots retained; caller-declared user is not authenticated"}
+            sha = self.artifacts.put_bytes(dumps(result).encode())
+            if time.perf_counter() >= deadline:
+                raise ProductionError("E_REQUEST_TIMEOUT", "Action deadline passed before commit; no head changed.", 504)
+            if data["operation"] == "fork":
+                db.execute("INSERT INTO agent_sessions VALUES(?,?,?,NULL)", (target, revision, checkpoint))
+            else:
+                db.execute("UPDATE agent_sessions SET revision=?,checkpoint=NULL,last=NULL WHERE scope=?", (revision, source))
+            db.execute("INSERT INTO conversation_actions VALUES(?,?,?,?)", (data["user"], data["actionId"], fingerprint, sha))
+            self.event(db, "conversation_"+data["operation"], {"actionId": data["actionId"], "actionSha256": sha, "releaseId": data["releaseId"],
+                                                            "user": data["user"], "session": data["session"], "destinationSession": data.get("destinationSession"),
+                                                            "sourceHead": expected, "head": head, "reason": data["reason"]})
+        return {**result, "actionSha256": sha, "idempotentReplay": False}
 
     def finish_request(self, user, id_, trace, scope=None, *, conversation=None, deadline=None):
         # CAS writes may leave orphan bytes after cancellation/crash; heads never reference them.

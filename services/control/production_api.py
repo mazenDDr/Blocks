@@ -32,6 +32,18 @@ class Labels(User):
     labels: list[Any] = Field(min_length=1, max_length=128)
 
 
+class ConversationReset(User):
+    actionId: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    session: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    expectedRevision: int = Field(ge=1)
+    expectedCheckpointSha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class ConversationFork(ConversationReset):
+    destinationSession: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+
+
 def register(app: FastAPI, sv):
     rt = ProductionRuntime(sv.store)
     traffic = TrafficRunner(rt, getattr(sv, "api_token", None))
@@ -240,8 +252,18 @@ def register(app: FastAPI, sv):
         p = rt.pipeline(release["versionId"])
         head = ps.conversation(dumps([rid, user, session]))
         return {"releaseId": rid, "versionId": release["versionId"], "user": user, "session": session, "head": head,
-                "state": p.checkpoint_state(head["checkpointSha256"]) if head else None,
+                "state": p.checkpoint_state(head["checkpointSha256"]) if head and head["checkpointSha256"] else None,
                 "persistencePolicy": "Native checkpoint/history persists even when trace capture is off. User/session are caller-declared isolation keys, not authenticated identities."}
+
+    @app.post("/api/production/releases/{rid}/conversation/reset")
+    def reset_conversation(rid: str, req: ConversationReset):
+        from production.conversations import action
+        return action(rt, rid, "reset", req)
+
+    @app.post("/api/production/releases/{rid}/conversation/fork", status_code=201)
+    def fork_conversation(rid: str, req: ConversationFork):
+        from production.conversations import action
+        return action(rt, rid, "fork", req)
 
     @app.post("/api/production/requests/{id_}/replay")
     def investigate(id_: str, req: User):

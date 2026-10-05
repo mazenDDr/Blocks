@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, ApiError, errorText } from "../api";
 import { usePolling } from "../hooks";
+import { ConversationActions, type ConversationSnapshot } from "./ConversationActions";
 import { AgentTurnInspection } from "./AgentTurnInspection";
 
 interface Candidate { runId: string; node: string; pipelineSha256: string; graphHash: string; adapter?: "tabular" | "domain" | "model" | "rl" | "unsup" | "agent" | "conversation"; family?: string }
@@ -36,7 +37,8 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
   const [session, setSession] = useState("investigation");
   const [requestId, setRequestId] = useState("");
   const [trace, setTrace] = useState<any>(null);
-  const [conversation, setConversation] = useState<unknown>(null);
+  const [conversation, setConversation] = useState<ConversationSnapshot | null>(null);
+  const [conversationAction, setConversationAction] = useState<unknown>(null);
   const [replay, setReplay] = useState<unknown>(null);
   const [labels, setLabels] = useState("[]");
   const [trafficPayloads, setTrafficPayloads] = useState("[]");
@@ -52,6 +54,7 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
   const candidate = candidates.find((c) => `${c.runId}:${c.node}` === candidateKey) ?? candidates.at(-1);
   const version = data?.versions.find((v) => v.id === versionId);
   const release = data?.releases.find((r) => r.id === releaseId);
+  const inspectedConversation = conversation?.releaseId === release?.id && conversation?.user === user && conversation?.session === session ? conversation : null;
   const route = release ? data?.routes.find((r) => r.target === release.config.target && r.namespace === release.config.namespace) : undefined;
   const requests = usePolling<{ requests: any[] }>(tab === "Requests" && release ? `/api/production/requests?release=${release.id}` : null, 1500);
   const job = usePolling<any>(jobId ? `/api/production/traffic/${jobId}` : null, 1000);
@@ -132,12 +135,22 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
       <label>Records (JSON array matching the release schema)<textarea className="prod-json" aria-label="prediction records" value={payload} onChange={(e) => setPayload(e.target.value)} /></label>
       {reference != null && <details><summary>Payload provenance</summary><Recorded value={reference} /></details>}
       <label>User namespace <input disabled={!!busy} value={user} onChange={(e) => { setUser(e.target.value); setConversation(null); }} /></label><label>Session <input disabled={!!busy} value={session} onChange={(e) => { setSession(e.target.value); setConversation(null); }} /></label>
-      <button disabled={!!busy || !release || route?.release !== release.id} onClick={() => act("Running pinned inference", async () => { const id = crypto.randomUUID(); setRequestId(id); setReplay(null); const req = { requestId: id, records: JSON.parse(payload), user, session: ["counter", "conversation"].includes(release?.config.sessionMode ?? "") ? session : null, expectedRelease: release?.id }; try { const t = await api.post<any>(`/api/serve/${release!.config.target}/${release!.config.namespace}/predict`, req); setTrace(t); } catch (e) { const t = await api.get<any>(`/api/production/requests/${id}?user=${encodeURIComponent(user)}`); setTrace(t); throw e; } requests.reload(); })}>Send prediction request</button>
+      <button disabled={!!busy || !release || route?.release !== release.id} onClick={() => act("Running pinned inference", async () => { const id = crypto.randomUUID(); setRequestId(id); setReplay(null); const req = { requestId: id, records: JSON.parse(payload), user, session: ["counter", "conversation"].includes(release?.config.sessionMode ?? "") ? session : null, expectedRelease: release?.id }; try { const t = await api.post<any>(`/api/serve/${release!.config.target}/${release!.config.namespace}/predict`, req); setTrace(t); setConversation(null); } catch (e) { const t = await api.get<any>(`/api/production/requests/${id}?user=${encodeURIComponent(user)}`); setTrace(t); throw e; } requests.reload(); })}>Send prediction request</button>
       <p className="provenance">Current request {requestId || "not sent"}</p>
       <button disabled={!requestId || trace?.requestId === requestId} onClick={() => api.post(`/api/production/requests/${requestId}/cancel`, { user }).then(() => setNotice("Cancellation requested; state commit will be refused.")).catch((e) => setError(errorText(e)))}>Cancel in-flight request</button>
       {release?.config.sessionMode === "conversation" && <>
-        <button disabled={!!busy} onClick={() => act("Reading native conversation checkpoint", async () => setConversation(await api.get(`/api/production/releases/${release.id}/conversation?user=${encodeURIComponent(user)}&session=${encodeURIComponent(session)}`)))}>Inspect conversation checkpoint</button>
-        {conversation != null && <Recorded value={conversation} />}
+        <button disabled={!!busy} onClick={() => act("Reading native conversation checkpoint", async () => setConversation(await api.get<ConversationSnapshot>(`/api/production/releases/${release.id}/conversation?user=${encodeURIComponent(user)}&session=${encodeURIComponent(session)}`)))}>Inspect conversation checkpoint</button>
+        {inspectedConversation != null && <>
+          <ConversationActions key={`${inspectedConversation.releaseId}:${inspectedConversation.user}:${inspectedConversation.session}:${inspectedConversation.head?.revision}`} snapshot={inspectedConversation} disabled={!!busy}
+            onApply={(operation, body) => act("Applying reviewed conversation action", async () => {
+              const result = await api.post<any>(`/api/production/releases/${release.id}/conversation/${operation}`, body);
+              setConversationAction(result);
+              setConversation(await api.get<ConversationSnapshot>(`/api/production/releases/${release.id}/conversation?user=${encodeURIComponent(inspectedConversation.user)}&session=${encodeURIComponent(inspectedConversation.session)}`));
+              setNotice(`${operation === "fork" ? "Fork created" : "Conversation reset"}; immutable action receipt ${result.actionSha256}`);
+            })} />
+          <details><summary>Inspected native checkpoint/state</summary><Recorded value={inspectedConversation} /></details>
+        </>}
+        {conversationAction != null && <details open><summary>Recorded conversation action and lineage</summary><Recorded value={conversationAction} /></details>}
       </>}
       <h4>Recorded requests for this release</h4><div className="prod-list">{requests.data?.requests.map((t) => <button key={`${t.user}:${t.requestId}`} onClick={() => { setTrace(t); setReplay(null); }}>{t.status} · {short(t.requestId)} · {t.totalMs == null ? "latency not recorded" : `${t.totalMs.toFixed(2)} ms`} · {t.user}</button>)}</div>
     </section><section className="prod-card"><h3>Prediction → release → run → source → preprocessing</h3>
