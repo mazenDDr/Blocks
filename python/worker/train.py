@@ -179,8 +179,9 @@ def run_training(graph: Graph, cfg: RunConfig, store: ArtifactStore, run_id: str
 
 
 def _cancel(store, em, run_id, model, opt, step, epoch, graph_hash) -> str:
-    if store.get_run(run_id)["status"] != "cancelling":
-        store.set_status(run_id, "cancelling")
+    # The control process can win this transition after the worker's batch-boundary
+    # check. Reuse the guarded transition; only an already-cancelling row is accepted.
+    _advance(store, run_id, "cancelling")
     em.emit("cancel_acknowledged", step=step)
     art = store.add_artifact(run_id, "checkpoint", _checkpoint_bytes(model, opt, step, epoch, graph_hash, run_id, "partial"),
                              "partial", step, {"epoch": epoch, "graph_hash": graph_hash, "reason": "cancelled"})

@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §19 — bounded domain dataset imports.** Read §19 for delivered files, final Mac/browser verification, checkpoint compatibility, cleanup and next work. §18 verified the cloud merges; §17 records their earlier compatibility effects/priorities. §11–§16 record the cloud implementation.
+> **Latest continuation: §20 — isolated native agent serving.** Read §20 for current work, verification, cleanup and remaining scope. §19 records domain imports and their earlier checkpoint compatibility effects. §18 verified the cloud merges; §17 records their earlier compatibility effects/priorities. §11–§16 record the cloud implementation.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0021`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0023`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -31,7 +31,7 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | `examples/` | example projects and fixture generators |
 | `tests/` | pytest suite |
 
-## 2. Status (as of 2026-10-04)
+## 2. Status (as of 2026-10-05)
 
 | Milestone | State | Commit |
 |---|---|---|
@@ -50,7 +50,8 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Production serving for domain, CNN, RL, unsupervised; run-status race fix | done, verified on Linux x86 and Mac arm64 (see §14, §18) | PR #2 → 6c39878 |
 | Multi-file repository imports | done, verified on Linux x86 and Mac arm64 (see §15, §18) | PR #3 → 14b7b27 |
 | Optional bearer token | done, verified on Linux x86 and Mac arm64 (see §16, §18) | PR #4 → 1f5d026 |
-| Bounded local COCO / CoNLL / WAV dataset imports | done, verified on Mac arm64 (see §19, ADR 0022) | this continuation; `git log -1` |
+| Bounded local COCO / CoNLL / WAV dataset imports | done, verified on Mac arm64 (see §19, ADR 0022) | 3b639e2 |
+| Isolated native agent serving; worker cancellation race fix | done, verified on Mac arm64 (see §20, ADR 0023) | this release; `git log -1` |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -67,6 +68,8 @@ After the Claude cloud sessions (§11–§16, Linux x86_64 container, not the Ma
 After pulling the cloud merges to Mac `37368c5`: full suite → **1000 passed, 1 skipped, 6 deselected**, **438.09 s**; live Ollama → **6 passed, 1001 deselected**, **16.96 s**. Final editor/curl/Chrome evidence and scope are in §18.
 
 After bounded domain imports: full suite → **1032 passed, 1 skipped, 6 deselected**, **447.24 s**; live Ollama → **6 passed, 1033 deselected**, **16.33 s**. Final build/curl/installed Chrome evidence is in §19.
+
+After isolated agent serving and the worker cancellation fix: full suite → **1053 passed, 1 skipped, 8 deselected**, **444.45 s**; live Ollama → **8 passed, 1054 deselected**, **16.72 s**. Final build/curl/installed Chrome evidence and remaining scope are in §20.
 
 ### Check for in-progress work first
 Run `git status`. If there are uncommitted files, a previous session was cut off mid-milestone: inspect them with `git diff`, do **not** discard them, finish that milestone, verify (§4), then commit.
@@ -104,7 +107,7 @@ Run `git status`. If there are uncommitted files, a previous session was cut off
 
 ## 5. Remaining work
 
-> **Superseded: the current remaining-work list is §19, supplemented by §18 and the unfinished items in §17.4.** The entries below are the historical milestone acceptance references, all completed.
+> **Superseded: the current remaining-work list is §20, supplemented by §18 and the unfinished items in §17.4.** The entries below are the historical milestone acceptance references, all completed.
 
 ### 6b — completed domain scope (VISION §9.7, §9.8, §23 Milestone 6 "Domain evidence", A56, A57, A58)
 
@@ -606,3 +609,37 @@ The implemented import bounds are in ADR 0022/CAPABILITIES: 2–256 records, 64 
 4. Anthropic and online MLflow/W&B remain credential-dependent; GPU/cloud/encrypted cross-machine/distributed and other infrastructure scope stays unimplemented until real infrastructure and measured evidence exist. Do not require those credentials for unrelated local work.
 
 Continue alone, preserve user changes, read this handoff and ADR 0022, verify §4, stop only your own servers, commit/push the verified release and keep the handoff current.
+
+
+## 20. Isolated native agent serving — Codex, 2026-10-05 (verified, published with this release)
+
+User “continue work” authorizes the next scope from §19. Worked alone from clean pushed `3b639e2`, no subagents. This is a bounded single-turn production adapter; persistent conversation serving remains future work. No dependencies installed or database migrations/historical artifact edits. Libraries already installed: LangGraph **1.2.12**, checkpoint **4.2.0**, LangChain Core **1.6.6**, LangChain Ollama **1.1.0**, Ollama Python **0.6.3**, Pydantic **2.13.5**, HTTPX **0.28.1**. Domain and existing serving-family pinned files are unchanged, so no retraining is needed. Verification also exposed and fixed the existing CNN-worker cancellation race described below. Other serving-family identities remain unchanged. Never restart the user's **PID 8258 / port 8000** without their authorization.
+
+### Implementation
+
+- New `python/production/agent_adapter.py`: register a whole completed agent graph under `__agent_graph__`, require END rather than partial budget completion; allow native prompt/set_state/one chat node, local Ollama or model-free StateGraph only. Existing native compiler/blocks own reducers, parallel joins, routing and loops. Source/config/final-state/reference membership, package/platform/source identities and currently installed Ollama digest/runtime are pinned and verified before/after each turn. Source research runs did not capture model digests; pin time is explicitly registration. No retrospective model-identity claim.
+- Shared production runtime/API integration: real isolated warmup, immutable versions/releases, route CAS and rollback, existing bounded admission, idempotency, cancellation/deadline discard and restart semantics. Agent maxBatch=1/stateless; source/reference input fields must be 1–4 declared text values. Provider HTTP timeouts narrow to remaining serving time and actual resolved settings are recorded. Fresh random execution/thread ID and temporary native store/in-memory saver per request; no research checkpoint/session/effect mutations. Full native state checked between supersteps; recursion/budget/state/context limits fail serving requests. Complete exact bounds are in ADR 0023/CAPABILITIES.
+- Capture policy: successful response text, native state/event hashes, context hashes/usage/latency and execution/source/provider identities retained. Full state/events/exact sent context and source segments only under captureInputs=true; captured context bytes copied to CAS and embedded in trace. Capture off is not response redaction (output can quote inputs). Temporary execution stores are removed. Interrupted captured calls can leave unreferenced CAS bytes; broader retention/GC stays unimplemented.
+- Monitoring reads recorded warmup/requests and never invokes an LLM; single-reference character-length KS is descriptive, provider usage covers successful serving calls only, and independently supplied strings measure literal exact agreement, not semantic correctness. Warmup/replay/failed-call usage and the separate Ollama process/device/resource cost are not measured here. Replay makes a new isolated native model call, may differ, never updates original state/route.
+- Editor Production workspace lists native whole-agent candidates, pins/budgets, one-turn release policy, source-input reference and exact recorded contexts/state/events; new `AgentTurnInspection.tsx` provides actual call selection. React best-practices skill reviewed labels, stable call selection and read-only inspection; no placeholder controls. Real Ollama device is managed by its runtime, not falsely labelled CPU-only.
+- New picker example `examples/serving_agent.project.json` / `.ui.json`: SYNTHETIC teaching prompts, real qwen3.5:2b. New `agent_serving_journey.py` performs source run→register→warmup→serve/context→idempotency→independent reference string→isolated replay→bounded real HTTP traffic→rollout/rollback. Historical `agent_*` generator prefix retained.
+- New offline `tests/test_production_agent.py` has 20 native model-free cases (reducers/parallel joins, concurrent fresh-state isolation, idempotency/restart, source/config/schema refusals, capture, no-call monitoring, integrity, cancellation/deadlines, native recursion and state growth). New `test_production_agent_live.py` has 2 actual Ollama cases (exact sent context/source segments/provider token counts/CAS, original thread unchanged, fresh replay, digest mismatch and capture-off bytes absent). Existing tests unchanged. Verification also fixed a reproduced `worker/train.py` read/write cancellation race by using its existing guarded transition; new `test_worker_cancel_race.py` forces the actual control/worker SQLite interleaving and verifies one genuine partial checkpoint. ADR 0023, CAPABILITIES/README and regenerated COVERAGE updated. Next ADR **0024**.
+
+### Final verification evidence
+
+- Final `.venv/bin/pytest -q -o faulthandler_timeout=240`: **1053 passed, 1 skipped, 8 deselected, 1941 warnings, 444.45 s (7:24)**, exit 0 (`/private/tmp/void-agent-full-accepted-pytest.log`). Final `.venv/bin/pytest -q -m live`: **8 passed, 1054 deselected, 16.72 s**, exit 0 (`/private/tmp/void-agent-live-final-pytest.log`), after the worker fix. Existing missing-key Anthropic skip only; native deprecation warnings remain. Earlier focused agent/coverage run **25 passed, 3.72 s** (`/private/tmp/void-agent-focused.log`).
+- Final build/typecheck exit 0: **251 modules**, existing large-chunk warning. Coverage write/check current; diff whitespace clean. Curl backend 8777 Production and editor 5300 registry proxy succeed.
+- First real CLI run `f69a1130b0c3` served **“Blue”**, provider **48 input / 2 output tokens**, exact agreement **0** against independently supplied **“red”**. Ollama qwen3.5:2b digest `324d162be6ca5629ae4517c8710434d0bd2d665bc94dbad46e9af8fbf8a2f0df`, runtime **0.33.3**. Isolated replay, bounded traffic and rollback passed; evidence `/private/tmp/void-agent-cli.json`. Final renamed-example journey **passes**, run **260b029e6c94**, version `c9635332d12a…`, release `94354b1d9299…`, same measured “Blue” / 48 input / 2 output tokens / exact agreement 0. Two real bounded closed-loop HTTP requests succeed, zero errors; native rollback verified (`/private/tmp/void-agent-cli-final.json`).
+- Initial full suite stopped with SIGINT after **357 pass / 1 failure**: existing test reserves exactly ten generated `agent_*.json` files. Corrected only the new example's name to `serving_agent`; did not weaken that test or rewrite its generator. The next full suite finished **1051 pass / 1 failure / 1 skip / 8 deselected, 446.79 s**: existing worker cancellation failed with **IllegalTransition: cancelling → cancelling**, reproduced standalone too. Read/check/write in `_cancel` races with the control writer. Fixed by calling existing `_advance`, which accepts only the already-cancelling state and retains other transition errors. Added a deterministic real-writer interleaving test. **35 focused tests pass in 14.87 s**, including all unchanged worker tests and new agent cases (`/private/tmp/void-agent-worker-focused.log`). The final acceptance run above passes, including the unchanged original process-cancellation test and the new regression. No tests weakened. This worker fix changes no pinned files of existing registered serving families.
+- First temporary Chrome script selected the picker before its options loaded; wait timed out without runtime/API errors. Fixed script to wait for the existing initial CNN canvas and actual new picker option before selecting; no app workaround. A second script attempt filled the request before asynchronous reference loading completed; reference then overwrote that edit. Fixed only the temporary script to wait for the reference response and actual DOM payload before entering the new question. Final installed Chrome journey **passes, zero runtime/API errors** (`/private/tmp/void-agent-browser-source-accepted.log`, `/private/tmp/void-agent-browser-evidence.json`); source run **131f111a2494**, version `bf004693c4bd…`, release `4e751b958817…`, request `76e3a7d8-d38a-4304-a491-8d8463e84e2d`. Final UI review also connected App-selected source-run identity into AgentWorkspace: Open source run now opens that exact run and its trace instead of silently selecting the latest. Chrome created a genuinely later native source run, then confirmed the registry button opens the older pinned source. This UI-only correction is covered by final build/typecheck/Chrome; native execution-source hashes are unchanged. Actual response “Blue”, provider 49 input / 2 output tokens, exact agreement 0 against independent “red”. Actual model-call selector, exact sent segments/context, final state/control events, isolated replay and monitoring verified. Both final screenshots visually reviewed (`/private/tmp/void-agent-browser-inspection.png`, `…-monitoring.png`). Script stays outside repo and closes Chrome in finally.
+- Cleanup complete: temporary backend **PID 73143**, then final **PID 77134 / port 8777**, and editor **PID 73159**, then final **PID 77152 / port 5300** stopped with SIGTERM; `ps` confirms all absent. Final curl verified `/api/serve/local/agent-cli-final/health` and editor registry proxy before shutdown. User **8258 / port 8000** still running and untouched. All Chrome sessions close in finally. Workbench `/private/tmp/void-agent-serving-smoke`, logs/screenshots temporary and uncommitted.
+- Git: fetched upstream without changing local work; upstream master matched starting `3b639e2`. Source/tests/docs/this handoff are published together in the verified release; use `git log -1` for its exact commit. No generated workbench, model weights, secret, screenshot or temporary browser script is committed. Resume from master after a safe pull and read this section; do not follow the already-completed next-build entry in §19.
+
+### Remaining work
+
+1. Next agent scope: persistent conversations require explicit native checkpoint/turn commits atomic with successful request/cancellation handling, per-release/user/session isolation and replay/crash evidence. Pinned retrieval/index/memory dependencies and tool/interrupt side effects are separate extensions, not supported in this release.
+2. Wider serving from §17/§18: Keras/JAX, multi-input/non-classifier models, procedure sequence models, continuous/image RL, fitted preprocessing before unsupervised estimators and larger domain monitoring references.
+3. Repository-owned browser smoke/CI and backup/restore/upgrade/recovery evidence; compatibility/migration design for strict domain code identities; user-supplied real datasets/benchmarks within §19 bounds; broader editor/cache/repository/research scope in §18.
+4. Anthropic and online tracking remain credential-dependent; roles/team security and real GPU/cloud/encrypted cross-machine/distributed infrastructure scope stay unimplemented without measured infrastructure. No credentials needed for unrelated local work.
+
+Continue alone; preserve local work, native semantics and existing tests. Keep the handoff and completed verified changes pushed.

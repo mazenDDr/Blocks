@@ -43,6 +43,15 @@ class ProductionRuntime:
 
     def pipeline(self, version_id):
         version = self.ps.get("version", version_id)
+        if version.get("adapter") == "agent":
+            from .agent_adapter import AgentPipeline, verify
+            if json.loads(read_verified(self.store, version["pipelineSha256"])) != version["manifest"]:
+                raise ProductionError("E_AGENT_SOURCE", "Agent version differs from its pinned manifest.", 409)
+            verify(self.store, version["manifest"])
+            with self.lock:
+                if version_id not in self.pipelines:
+                    self.pipelines[version_id] = AgentPipeline(self.store, version["manifest"])
+                return self.pipelines[version_id]
         if version.get("adapter") in ("model", "rl", "unsup"):
             from . import model_adapter, rl_adapter, unsup_adapter
             mod, cls = {"model": (model_adapter, model_adapter.ModelGraphPipeline), "rl": (rl_adapter, rl_adapter.PolicyPipeline),
@@ -74,6 +83,12 @@ class ProductionRuntime:
         row = self.store.get_run(req.runId)
         if row is None or row["status"] != "completed":
             raise ProductionError("E_REGISTER_RUN", "Registration requires a completed recorded run.")
+        if row["config"].get("kind") == "agent":
+            from .agent_adapter import build_manifest
+            manifest = build_manifest(self.store, req.runId, req.node)
+            sha = self.store.put_bytes(dumps(manifest).encode())
+            return self.ps.save("version", {**req.model_dump(), "adapter": "agent", "family": "agent_turn",
+                                            "pipelineSha256": sha, "manifest": manifest})
         arts = [a for a in self.store.artifacts(req.runId, "inference_pipeline") if a["meta"]["node"] == req.node]
         domain = [a for a in self.store.artifacts(req.runId, "domain_model") if a["meta"].get("node") == req.node and a["meta"].get("internalDomainModel")]
         from . import unsup_adapter
@@ -115,7 +130,12 @@ class ProductionRuntime:
         v = self.ps.resolve_version(req.versionId)
         p = self.pipeline(v["id"])
         domain = v.get("adapter") == "domain"
-        if v.get("adapter") in ("model", "rl", "unsup"):
+        agent = v.get("adapter") == "agent"
+        if agent:
+            if req.config.maxBatch != 1 or req.config.sessionMode != "stateless":
+                raise ProductionError("E_RELEASE_CONFIG", "Agent releases require maxBatch=1 and stateless mode; conversation sessions are not implemented.")
+            records = p.reference_records()
+        elif v.get("adapter") in ("model", "rl", "unsup"):
             records = p.reference_records(1)
         elif domain:
             if req.config.maxBatch > 4:
@@ -127,12 +147,12 @@ class ProductionRuntime:
             import pandas as pd
             records = pd.read_csv(io.BytesIO(refs)).astype(object).where(lambda x: x.notna(), None).head(1).to_dict("records")
         p.validate_records(records, req.config.maxBatch)
-        result, timing = p.predict(records)
+        result, timing = p.predict(records, deadline=time.perf_counter()+req.config.timeoutSeconds) if agent else p.predict(records)
         r = self.ps.save("release", {"versionId": v["id"], "pipelineSha256": v["pipelineSha256"], "config": req.config.model_dump(),
-                                     "adapter": f"local FastAPI / native PyTorch {v['family']} CPU" if v.get("adapter") in ("domain", "model", "rl") else "local FastAPI / native scikit-learn CPU",
+                                     "adapter": "local FastAPI / native LangGraph / local Ollama" if agent else f"local FastAPI / native PyTorch {v['family']} CPU" if v.get("adapter") in ("domain", "model", "rl") else "local FastAPI / native scikit-learn CPU",
                                      "replicas": 1, "mode": "real local endpoint",
                                      "compatibility": {"ok": True, "warmupResultSha256": self.store.put_bytes(dumps(result).encode()), "timings": timing},
-                                     "resources": {"placement": "same local control process, CPU", "autoscaling": "not implemented", "cost": "not measured"}})
+                                     "resources": {"placement": "local control process; model device managed by Ollama, not measured" if agent else "same local control process, CPU", "autoscaling": "not implemented", "cost": "not measured"}})
         return r
 
     def activate(self, rid, expected, rollback=False):
@@ -181,7 +201,11 @@ class ProductionRuntime:
             trace["lineage"] = {"runId": p.manifest["runId"], "node": p.manifest["node"], "graphHash": p.manifest["graphHash"],
                                 "graphSha256": p.manifest["graphSha256"], "pipelineSha256": release["pipelineSha256"], "modelSha256": p.manifest["modelSha256"],
                                 "source": p.manifest["source"], "fitArtifacts": p.manifest["fitArtifacts"], "evaluationArtifacts": p.manifest["evaluationArtifacts"]}
-            result, timing = p.predict(req.records)
+            if self.ps.get("version", release["versionId"]).get("adapter") == "agent":
+                result, timing = p.predict(req.records, capture=cfg["captureInputs"], deadline=deadline,
+                                          cancelled=lambda: self.ps.cancelled(req.user, req.requestId))
+            else:
+                result, timing = p.predict(req.records)
             if not cfg["captureInputs"]:
                 timing.pop("transformedFeatures", None)
             trace.update(result=result, timings=timing)

@@ -358,3 +358,24 @@ VOID_API=http://127.0.0.1:8776 pnpm -C apps/editor dev --host 127.0.0.1 --port 5
 ```
 
 Run the servers in separate terminals. The journey creates three projects, imports/verifies fixture bytes, trains native models for two epochs and predicts from their persisted checkpoints. This verifies import mechanics, not real-world model accuracy. License/status assertions are user supplied; original CoNLL whitespace and speech timestamps cannot be recovered. Larger/streamed datasets, crowd/box-only COCO and browser uploads remain outside this release.
+
+
+## Serve isolated native agent turns
+
+Open **serving_agent** in the picker, use **Run & trace** with a teaching question, then choose its whole-graph candidate in **Production**. Register, review the graph/model digest/budgets, preview a stateless single-turn release and deploy it to a local namespace. Enable capture explicitly to inspect the exact sent model context, source segments and native state/control events in Requests. Each request gets a fresh LangGraph checkpoint; research threads stay intact. Replay makes a new model call and may give a different answer. Monitoring makes no model calls; supplied reference strings measure only exact agreement. See ADR 0023 and HANDOFF §20.
+
+Only bounded prompt/set_state/one chat-model graphs using local Ollama are accepted; persistent conversations, retrieval/memory/tools/interrupts and API providers are outside this serving release. The example uses real qwen3.5:2b already installed locally, with SYNTHETIC teaching prompts. No dependency install or domain retraining is needed for these changes. Ollama chooses the model device; device utilization and cost are not measured.
+
+Commands actually run on the Mac against an isolated temporary workbench:
+
+```bash
+VOID_WORKBENCH=/private/tmp/void-agent-serving-smoke .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8777
+VOID_API=http://127.0.0.1:8777 pnpm -C apps/editor dev --host 127.0.0.1 --port 5300 --strictPort
+.venv/bin/python examples/agent_serving_journey.py --base http://127.0.0.1:8777 --namespace agent-cli-final
+.venv/bin/pytest -q tests/test_production_agent.py tests/test_coverage_ledger.py -o faulthandler_timeout=240
+.venv/bin/pytest -q -m live tests/test_production_agent_live.py
+```
+
+Run the servers in separate terminals. The journey submits a native source run, registers/warms a release, serves and inspects a real response, verifies idempotency, records an independent reference string, replays, runs bounded HTTP traffic and checks rollout/rollback. These small teaching journeys verify mechanics, not answer quality or general serving capacity.
+
+Final verification: **1053 passed, 1 skipped**, plus **8 live Ollama tests passed**; editor build/typecheck and real Chrome serving/context/source-navigation journeys pass. The full suite exposed an existing control/worker cancellation race, fixed with its guarded transition and a deterministic native SQLite regression; existing tests were kept intact. See HANDOFF §20 for exact commands/results, compatibility, cleanup and remaining work.

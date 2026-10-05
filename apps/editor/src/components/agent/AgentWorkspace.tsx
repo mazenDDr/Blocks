@@ -14,9 +14,9 @@ import type { AgentRunSummary, Trace } from "./types";
 type Tab = "canvas" | "state" | "run" | "context" | "memory" | "indexes";
 
 /** The agent graph workspace (VISION 4, 12): canvas, state schema and routes, run + trace, context inspector, memory, indexes. */
-export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validation, ops, allRuns, reloadRuns, setMessage }: {
+export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validation, ops, allRuns, reloadRuns, setMessage, requestedRunId }: {
   projectId: string; graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; ui: UiDoc; setUi: (f: (u: UiDoc) => UiDoc) => void; validation: Validation | null; ops: OpInfo[];
-  allRuns: AnyRun[]; reloadRuns: () => void; setMessage: (m: string) => void;
+  allRuns: AnyRun[]; reloadRuns: () => void; setMessage: (m: string) => void; requestedRunId?: string | null;
 }) {
   const [tab, setTab] = useState<Tab>("canvas");
   const [selNode, setSelNode] = useState<string | null>(null);
@@ -26,7 +26,10 @@ export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validati
   const runs = useMemo(() => allRuns.filter(isAgentRun) as AgentRunSummary[], [allRuns]);
   const agentOps = useMemo(() => ops.filter((o) => o.graphKind === "agent"), [ops]);
   useEffect(() => { setRunId(null); setCallId(null); setSelNode(null); }, [projectId]);
-  useEffect(() => { if (!runId && runs.length) setRunId(runs[runs.length - 1].id); }, [runs, runId]);
+  useEffect(() => {
+    if (requestedRunId) { setRunId(requestedRunId); setCallId(null); setTab("run"); }
+  }, [requestedRunId]);
+  useEffect(() => { if (!runId && !requestedRunId && runs.length) setRunId(runs[runs.length - 1].id); }, [runs, runId, requestedRunId]);
   const run = runs.find((r) => r.id === runId);
   const live = !!run && ["queued", "preparing", "running", "paused", "cancelling"].includes(run.status);
   const trace = usePolling<Trace>(runId ? `/api/agent/runs/${runId}/trace` : null, live ? 1200 : 0, [run?.status, run?.maxSeq]);

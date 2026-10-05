@@ -216,11 +216,59 @@ def unsup_monitoring(runtime, release, version, pipeline, traces):
                   "interpretation": "Feature and assignment changes are descriptive; no automatic refit or rollback."})
 
 
+def agent_monitoring(runtime, release, version, pipeline, traces):
+    """Read recorded turns and the immutable warmup; monitoring never calls an LLM."""
+    m = pipeline.manifest
+    ok = [t for t in traces if t["status"] == 200]
+    ref = pipeline.reference_records()[0]
+    captured = [r for t in ok if t.get("records") for r in t["records"]]
+    drift = {f"{k}.characters": distribution_compare([len(ref[k])], [len(r[k]) for r in captured]) if captured else
+             {"available": False, "reason": "No captured successful input; enable capture in a new release."} for k in m["inputFields"]}
+    from .pipeline import read_verified
+    warm = json.loads(read_verified(runtime.store, release["compatibility"]["warmupResultSha256"]))
+    preds = [p for t in ok for p in t["result"]["predictions"]]
+    output_drift = distribution_compare([len(p) for p in warm["predictions"]], [len(p) for p in preds])
+    output_drift["unit"] = "output text characters (descriptive, single warmup reference)"
+    labels = {(r["user"], r["request"]): r for r in runtime.ps.query("SELECT * FROM labels")}
+    pairs, ids, delays = [], [], []
+    for t in ok:
+        row = labels.get((t["user"], t["requestId"]))
+        if row:
+            pairs.extend(zip(t["result"]["predictions"], json.loads(row["labels"])))
+            ids.append({"user": t["user"], "requestId": t["requestId"], "traceSha256": t["traceSha256"]})
+            delays.append(row["ts"]-t["receivedAt"])
+    q = {"available": bool(pairs), "labelledRecords": len(pairs), "labelledRequests": len(ids), "evidence": ids,
+         "reason": None if pairs else "No reference strings supplied; agreement is not measured.",
+         "meanLabelDelaySeconds": float(np.mean(delays)) if delays else None,
+         "values": {"exactStringAgreement": float(np.mean([p == y for p, y in pairs]))} if pairs else None,
+         "method": "literal string equality against supplied reference text; not semantic accuracy or an LLM judge"}
+    lat = [t["totalMs"] for t in traces if t.get("totalMs") is not None]
+    fail = [t for t in traces if t["status"] != 200]
+    calls = [c for t in ok for c in t["result"]["agent"]["contexts"]]
+    provider = [c["usage"] for c in calls if c["usage"].get("source") == "provider"]
+    return clean({"releaseId": release["id"], "versionId": version["id"], "pipelineSha256": version["pipelineSha256"], "family": "agent_turn",
+                  "window": {"recordedRequests": len(traces), "maxRequests": 1000}, "mode": "recorded isolated native turns",
+                  "health": {"requests": len(traces), "errors": len(fail), "errorFraction": len(fail)/len(traces) if traces else None,
+                             "p50Ms": float(np.percentile(lat, 50)) if lat else None, "p95Ms": float(np.percentile(lat, 95)) if lat else None,
+                             "schemaErrors": sum((t.get("error") or {}).get("code") == "E_REQUEST_SCHEMA" for t in fail)},
+                  "inputDrift": drift, "predictionDrift": output_drift, "labelBasedQuality": q,
+                  "usage": {"successfulTurnModelCalls": len(calls), "providerReportedCalls": len(provider),
+                            "inputTokens": sum(u.get("inputTokens") or 0 for u in provider) if provider else None,
+                            "outputTokens": sum(u.get("outputTokens") or 0 for u in provider) if provider else None,
+                            "scope": "successful recorded turns only; failed/discarded calls and warmup/replay excluded", "cost": "not measured"},
+                  "reference": {"runId": m["runId"], "partition": m["referencePartition"], "sha256": m["referenceSha256"], "rows": 1,
+                                "warmupResultSha256": release["compatibility"]["warmupResultSha256"], "caution": "one source input/warmup; weak descriptive evidence"},
+                  "alertEvidence": [{"requestId": t["requestId"], "user": t["user"], "status": t["status"], "traceSha256": t["traceSha256"]} for t in fail[:20]],
+                  "interpretation": "Character counts/usage do not measure answer correctness; no model call, automatic retraining or rollback during monitoring."})
+
+
 def monitoring(runtime, release_id, since=0):
     ps, store = runtime.ps, runtime.store
     release = ps.get("release", release_id)
     pipeline = runtime.pipeline(release["versionId"])
     version = ps.get("version", release["versionId"])
+    if version.get("adapter") == "agent":
+        return agent_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])
     if version.get("adapter") == "unsup":
         return unsup_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])
     if version.get("adapter") == "rl":
