@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import platform
+import posixpath
 import re
 import shutil
 import sqlite3
@@ -20,12 +21,14 @@ import tempfile
 import time
 
 FORMAT = "void-offline-workbench-v1"
+LINK_FORMAT = "void-offline-workbench-v2"
 HEX = re.compile(r"[0-9a-f]{64}\Z")
 REQUIRED_DBS = {"meta.db", "production.sqlite", "connections.db", "studies.db", "integrations.sqlite",
                 "agent/checkpoints.sqlite", "agent/memory.db", "agent/embed_cache.sqlite"}
 POLICY = ("Offline trusted local backup. All writers must be stopped. Absolute paths and native identities are unchanged. "
           "External datasets, secrets, services, code and dependency environments are not bundled. "
           "Checksums detect corruption, not authenticity; no cross-version migration or online snapshot guarantee.")
+LINK_POLICY = POLICY + " Internal relative links are inventoried without traversal; explicitly omitted external W&B debug logs are recorded."
 
 
 class BackupError(Exception):
@@ -46,9 +49,9 @@ def digest(path):
     return h.hexdigest()
 
 
-def tree(root):
+def inventory(root, *, allow_links=False):
     """Never follow symlinks, including directory links. Preserve empty directories."""
-    files, dirs = {}, []
+    files, dirs, links = {}, [], {}
     for parent, names, children in os.walk(root, followlinks=False):
         for name in sorted(names + children):
             p = Path(parent) / name
@@ -58,9 +61,64 @@ def tree(root):
                 dirs.append(rel)
             elif stat.S_ISREG(mode):
                 files[rel] = p
+            elif stat.S_ISLNK(mode) and allow_links:
+                links[rel] = os.readlink(p)
             else:
                 fail("E_BACKUP_FILE_TYPE", f"Only regular files/directories are supported: {rel}.")
-    return dict(sorted(files.items())), sorted(dirs)
+    return dict(sorted(files.items())), sorted(dirs), dict(sorted(links.items()))
+
+
+def tree(root):
+    files, dirs, _ = inventory(root)
+    return files, dirs
+
+
+def external_wandb_log(rel, target):
+    """Only the native W&B export's external diagnostic log may be omitted."""
+    parts = PurePosixPath(rel).parts
+    return (len(parts) == 7 and parts[:2] == ("trackers", "wandb") and HEX.fullmatch(parts[2])
+            and parts[3] == "wandb" and parts[4].startswith("offline-run-")
+            and parts[5:] == ("logs", "debug-core.log") and target.startswith("/"))
+
+
+def link_records(raw, files, dirs, databases, *, omit_wandb_external_logs=False):
+    records, omitted = {}, {}
+    for rel, target in raw.items():
+        safe_relative(rel)
+        if not isinstance(target, str) or not target or "\\" in target or "\x00" in target:
+            fail("E_BACKUP_LINK", f"Invalid symbolic link: {rel}.")
+        if rel == "artifacts" or rel.startswith("artifacts/") or rel in REQUIRED_DBS or rel.endswith(("-wal", "-shm", "-journal")):
+            fail("E_BACKUP_LINK", f"Links cannot replace owned databases or CAS: {rel}.")
+        if target.startswith("/"):
+            if omit_wandb_external_logs and external_wandb_log(rel, target):
+                omitted[rel] = {"target": target, "reason": "external-wandb-debug-log"}
+                continue
+            fail("E_BACKUP_LINK", f"Absolute/external link refused: {rel}.")
+        resolved = posixpath.normpath(posixpath.join(posixpath.dirname(rel), target))
+        try:
+            safe_relative(resolved)
+        except BackupError:
+            fail("E_BACKUP_LINK", f"Escaping symbolic link refused: {rel}.")
+        # Normalization alone is insufficient: alias/../file would traverse
+        # alias before the '..'. Check every intermediate component lexically.
+        walked = list(PurePosixPath(rel).parent.parts)
+        for i, part in enumerate(target.split("/")):
+            if part in ("", "."):
+                continue
+            if part == "..":
+                if not walked:
+                    fail("E_BACKUP_LINK", f"Escaping symbolic link refused: {rel}.")
+                walked.pop()
+            else:
+                walked.append(part)
+            if i < len(target.split("/")) - 1 and walked and "/".join(walked) not in dirs:
+                fail("E_BACKUP_LINK", f"Link traverses a non-directory or another link: {rel}.")
+        # Membership is lexical in the no-follow inventory: chains, dangling
+        # targets and paths traversing a directory link cannot be admitted.
+        if (resolved not in files and resolved not in dirs) or resolved in databases:
+            fail("E_BACKUP_LINK", f"Link target must be an inventoried ordinary file/directory, not a database: {rel}.")
+        records[rel] = {"target": target, "resolved": resolved, "kind": "directory" if resolved in dirs else "file"}
+    return records, omitted
 
 
 def sqlite_file(path):
@@ -147,14 +205,16 @@ def publish(stage, dest):
         raise
 
 
-def create(source, destination, *, offline=False):
+def create(source, destination, *, offline=False, links="reject", omit_wandb_external_logs=False):
     if not offline:
         fail("E_BACKUP_OFFLINE", "Pass offline=True only after stopping all writers to this workbench.")
     root = Path(source).expanduser().resolve()
     if not root.is_dir() or not (root / "meta.db").is_file():
         fail("E_BACKUP_SOURCE", "Source must be a workbench containing meta.db.")
     dest = new_destination(root, destination)
-    files, dirs = tree(root)
+    if links not in ("reject", "internal") or omit_wandb_external_logs and links != "internal":
+        fail("E_BACKUP_LINK_POLICY", "Use links='internal' to preserve internal links and optionally omit external W&B debug logs.")
+    files, dirs, raw_links = inventory(root, allow_links=links == "internal")
     # CAS is opaque immutable content, even when an artifact is itself a SQLite
     # file. Never normalize its pages/journal mode and thereby change its hash.
     databases = [rel for rel, p in files.items() if not rel.startswith("artifacts/") and sqlite_file(p)]
@@ -164,6 +224,8 @@ def create(source, destination, *, offline=False):
     sidecars = {rel + suffix for rel in databases for suffix in ("-wal", "-shm", "-journal")}
     if any(rel.endswith(("-wal", "-shm", "-journal")) and rel not in sidecars for rel in files):
         fail("E_BACKUP_SQLITE", "Orphan/unrecognized SQLite sidecar; repair or remove it before backup.")
+    records, omitted = link_records(raw_links, set(files) - sidecars, dirs, databases,
+                                    omit_wandb_external_logs=omit_wandb_external_logs)
     stage = Path(tempfile.mkdtemp(prefix=".void-backup-", dir=dest.parent))
     try:
         payload = stage / "data"
@@ -199,21 +261,25 @@ def create(source, destination, *, offline=False):
                 else:
                     shutil.copyfile(p, target)
                 target.chmod(0o600)
-            after, after_dirs = tree(root)
-            if dirs != after_dirs or set(after) - sidecars != set(files) - sidecars or any(
+            after, after_dirs, after_links = inventory(root, allow_links=links == "internal")
+            if raw_links != after_links or dirs != after_dirs or set(after) - sidecars != set(files) - sidecars or any(
                     digest(after[rel]) != sha or digest(payload / rel) != sha for rel, sha in baseline.items()):
                 fail("E_BACKUP_CHANGED", "Source tree changed during backup; stop all writers and retry.")
             check_payload(payload, databases)
             copied, _ = tree(payload)
-            manifest = {"format": FORMAT, "createdAt": time.time(), "sourceRoot": str(root), "policy": POLICY,
+            policy = LINK_POLICY if links == "internal" else POLICY
+            manifest = {"format": LINK_FORMAT if links == "internal" else FORMAT, "createdAt": time.time(), "sourceRoot": str(root), "policy": policy,
                         "environment": {"python": platform.python_version(), "platform": platform.platform(),
                                         "packages": {d.metadata["Name"]: d.version for d in distributions() if d.metadata["Name"]}},
                         "directories": dirs, "databases": databases,
                         "files": {rel: {"sha256": digest(p), "size": p.stat().st_size} for rel, p in copied.items()}}
+            if links == "internal":
+                manifest.update(links=records, omittedLinks=omitted)
             write_json(stage / "manifest.json", manifest)
         publish(stage, dest)
         return {"backup": str(dest), "manifestSha256": digest(dest / "manifest.json"),
-                "files": len(manifest["files"]), "databases": databases, "policy": POLICY}
+                "files": len(manifest["files"]), "databases": databases, "policy": policy,
+                "links": len(records), "omittedLinks": omitted}
     finally:
         if stage.exists():
             shutil.rmtree(stage)
@@ -240,9 +306,10 @@ def verify(backup, *, manifest_sha256=None):
         fail("E_BACKUP_MANIFEST", "Manifest differs from the separately recorded SHA256.")
     try:
         m = json.loads(p.read_text())
-        if m["format"] != FORMAT or not isinstance(m["files"], dict) or not isinstance(m["directories"], list) or not isinstance(m["databases"], list):
+        if m["format"] not in (FORMAT, LINK_FORMAT) or not isinstance(m["files"], dict) or not isinstance(m["directories"], list) or not isinstance(m["databases"], list):
             raise ValueError()
-        if not isinstance(m["sourceRoot"], str) or not Path(m["sourceRoot"]).is_absolute() or m["policy"] != POLICY:
+        expected_policy = LINK_POLICY if m["format"] == LINK_FORMAT else POLICY
+        if not isinstance(m["sourceRoot"], str) or not Path(m["sourceRoot"]).is_absolute() or m["policy"] != expected_policy:
             raise ValueError()
         if not all(isinstance(m["environment"][key], str) for key in ("python", "platform")) or not isinstance(m["environment"]["packages"], dict):
             raise ValueError()
@@ -250,6 +317,24 @@ def verify(backup, *, manifest_sha256=None):
         directories = {safe_relative(rel) for rel in m["directories"]}
         databases = {safe_relative(rel) for rel in m["databases"]}
         if not databases <= names or "meta.db" not in databases or len(databases) != len(m["databases"]) or len(directories) != len(m["directories"]):
+            raise ValueError()
+        if names & directories:
+            raise ValueError()
+        records, omitted = m.get("links", {}), m.get("omittedLinks", {})
+        if not isinstance(records, dict) or not isinstance(omitted, dict) or m["format"] == FORMAT and (records or omitted):
+            raise ValueError()
+        link_names = {safe_relative(rel) for rel in records} | {safe_relative(rel) for rel in omitted}
+        if set(records) & set(omitted) or link_names & (names | directories):
+            raise ValueError()
+        # Every parent must be an ordinary directory. This also rejects links
+        # that would become ancestors of another payload/manifest path.
+        for rel in names | directories | link_names:
+            parent = posixpath.dirname(rel)
+            if parent and parent not in directories:
+                raise ValueError()
+        checked, checked_omitted = link_records({rel: value["target"] for rel, value in (records | omitted).items()},
+                                               names, directories, databases, omit_wandb_external_logs=True)
+        if checked != records or checked_omitted != omitted:
             raise ValueError()
         payload = root / "data"
         if set(all_files) != {"manifest.json"} | {"data/" + rel for rel in names} or set(all_dirs) != {"data"} | {"data/" + rel for rel in directories}:
@@ -278,7 +363,7 @@ def restore(backup, destination, *, trusted=False, manifest_sha256=None):
     m = verify(root, manifest_sha256=manifest_sha256)
     stage = Path(tempfile.mkdtemp(prefix=".void-restore-", dir=dest.parent))
     try:
-        for rel in m["directories"]:
+        for rel in sorted(m["directories"]):
             (stage / rel).mkdir(mode=0o700)
         for rel, info in m["files"].items():
             target = stage / rel
@@ -289,9 +374,16 @@ def restore(backup, destination, *, trusted=False, manifest_sha256=None):
         check_payload(stage, m["databases"])
         if digest(root / "manifest.json") != original_manifest:
             fail("E_BACKUP_CHANGED", "Manifest changed during restore.")
+        for rel, info in m.get("links", {}).items():
+            (stage / rel).symlink_to(info["target"], target_is_directory=info["kind"] == "directory")
+        # Links are created only after all ordinary bytes/DBs are validated.
+        _, _, restored_links = inventory(stage, allow_links=True)
+        if restored_links != {rel: info["target"] for rel, info in m.get("links", {}).items()}:
+            fail("E_BACKUP_CHANGED", "Restored link inventory differs from manifest.")
         publish(stage, dest)
-        return {"workbench": str(dest), "sourceRoot": m["sourceRoot"], "policy": POLICY,
+        return {"workbench": str(dest), "sourceRoot": m["sourceRoot"], "policy": m["policy"],
                 "manifestSha256": original_manifest, "files": len(m["files"]),
+                "links": len(m.get("links", {})), "omittedLinks": m.get("omittedLinks", {}),
                 "samePython": m["environment"]["python"] == platform.python_version(),
                 "samePlatform": m["environment"]["platform"] == platform.platform()}
     finally:

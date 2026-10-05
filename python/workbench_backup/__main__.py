@@ -13,6 +13,8 @@ def main():
     c.add_argument("source")
     c.add_argument("destination")
     c.add_argument("--offline", action="store_true", help="Attest that all control/worker/tracker/repository writers are stopped.")
+    c.add_argument("--links", choices=("reject", "internal"), default="reject", help="Opt in to v2 relative internal link preservation; backups store link metadata without traversal.")
+    c.add_argument("--omit-wandb-external-logs", action="store_true", help="With --links internal, explicitly omit native external debug-core.log links and record their targets.")
     v = sub.add_parser("verify", help="Check inventory, hashes, SQLite, CAS and direct database references.")
     v.add_argument("backup")
     v.add_argument("--manifest-sha256")
@@ -24,12 +26,14 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == "create":
-            result = create(args.source, args.destination, offline=args.offline)
+            result = create(args.source, args.destination, offline=args.offline, links=args.links,
+                            omit_wandb_external_logs=args.omit_wandb_external_logs)
         elif args.command == "restore":
             result = restore(args.backup, args.destination, trusted=args.trusted_local, manifest_sha256=args.manifest_sha256)
         else:
             m = verify(args.backup, manifest_sha256=args.manifest_sha256)
-            result = {"verified": True, "files": len(m["files"]), "databases": m["databases"], "policy": m["policy"]}
+            result = {"verified": True, "files": len(m["files"]), "databases": m["databases"], "policy": m["policy"],
+                      "links": len(m.get("links", {})), "omittedLinks": m.get("omittedLinks", {})}
         print(json.dumps(result, indent=2))
         return 0
     except (BackupError, OSError) as e:

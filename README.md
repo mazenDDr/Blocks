@@ -459,3 +459,16 @@ Use new destination paths on another run; existing directories are refused. Back
 Absolute paths and saved native identities remain unchanged. External datasets, secret files/env values, provider runtimes, repository code and dependencies are not bundled. Root-relative CAS/store recovery works in the same pinned environment; source-dependent continuation/tracking may need original external paths or new reviewed configuration/runs. Existing checks still refuse incompatible upgrades; no migration is implemented. Backup contains unredacted data, stored with directories 0700/files 0600; executable bits are removed. No encryption, scheduling/retention or online/power-loss recovery guarantee.
 
 The recovery smoke runs the original browser journey, closes owned services, backs up/verifies, deletes only its generated source workbench, restores, then checks the same route/version/checkpoints, independent conversation continuations, old replay and monitoring through a fresh editor/Chrome session. CI runs the same two-stage journey; it uploads only logs/JSON/screenshots/JUnit, never backup/model/workbench contents. See HANDOFF §24 for actual results and remaining scope.
+
+### Offline W&B links and native tracker recovery (ADR0028)
+
+Default v1 creation still refuses links. Explicit `--links internal` creates v2 with inert link metadata: relative internal ordinary-file/directory links are recreated only after restored bytes are verified. Absolute, escaping, dangling/chained links and database/CAS aliases are refused. Native W&B also links an external diagnostic log; `--omit-wandb-external-logs` explicitly omits only that link and records its target/reason in `omittedLinks`. No external target is read or bundled. These commands ran on isolated, stopped SYNTHETIC workbenches:
+
+```bash
+.venv/bin/python tools/recovery_smoke.py --trackers --output /private/tmp/void-links-recovery-smoke
+.venv/bin/python -m workbench_backup create /private/tmp/void-backup-mlflow/source /private/tmp/void-links-wandb-native-backup --offline --links internal --omit-wandb-external-logs
+.venv/bin/python -m workbench_backup verify /private/tmp/void-links-wandb-native-backup
+.venv/bin/python -m workbench_backup restore /private/tmp/void-links-wandb-native-backup /private/tmp/void-links-wandb-native-restored --trusted-local
+```
+
+Use new output paths on another run. CI now uses the tracker recovery smoke: actual native MLflow/W&B exports, source deletion, restored conversations and confirmed export reconnect through Chrome. Native SDK bytes/internal links survive; immutable absolute tracker paths are unchanged. MLflow artifact downloads require the original absent root to be restored; relocated metadata/history remain readable. W&B confirmed-directory provenance still names its original path; this is offline export recovery, not live resume/upload. [Recovery runbook](docs/RECOVERY.md) explains external requirements and supported restore paths. No new retraining requirement; HANDOFF §25 records verification.

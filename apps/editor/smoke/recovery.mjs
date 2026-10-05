@@ -114,6 +114,28 @@ try {
   assert.equal(evidence.monitor.health.requests,6);
   assert.equal(evidence.monitor.health.errors,0);
   await capture('restored-monitor');
+  if (process.env.VOID_RECOVERY_TRACKERS) {
+    const trackerSeed = JSON.parse(fs.readFileSync(process.env.VOID_RECOVERY_TRACKERS, 'utf8'));
+    pending = response('/api/integrations', 'GET');
+    await click('Integrations');
+    const integrations = await (await pending).json();
+    for (const expected of trackerSeed.exports) {
+      assert.deepEqual(integrations.exports.find(x => x.id === expected.id), expected);
+    }
+    await click('Trackers');
+    const observed = [];
+    for (const expected of trackerSeed.exports) {
+      await text(expected.adapter+' · confirmed · '+expected.runId);
+      const article = await page.evaluateHandle(adapter => [...document.querySelectorAll('article')].find(a => a.innerText.startsWith(adapter+' · confirmed')), expected.adapter);
+      const button = await article.asElement().$('button');
+      pending = response('/api/integrations/exports/'+expected.id+'/sync');
+      await button.click();
+      observed.push(await (await pending).json());
+      assert.deepEqual(observed.at(-1), expected);
+    }
+    evidence.trackerExports = observed;
+    await capture('restored-trackers');
+  }
   assert.deepEqual(evidence.runtimeErrors,[]);
   assert.deepEqual(evidence.apiErrors,[]);
   assert.deepEqual(evidence.consoleWarnings.filter(m => m.type === 'error'),[]);
