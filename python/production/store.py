@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS aliases(name TEXT PRIMARY KEY, version TEXT);
 CREATE TABLE IF NOT EXISTS lifecycle(seq INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, type TEXT, data TEXT);
 CREATE TABLE IF NOT EXISTS requests(user TEXT, id TEXT, fingerprint TEXT, release TEXT, state TEXT, cancelled INTEGER, trace TEXT, created REAL, PRIMARY KEY(user,id));
 CREATE TABLE IF NOT EXISTS sessions(scope TEXT PRIMARY KEY, count INTEGER, last TEXT);
+CREATE TABLE IF NOT EXISTS agent_sessions(scope TEXT PRIMARY KEY, revision INTEGER, checkpoint TEXT, last TEXT);
 CREATE TABLE IF NOT EXISTS labels(user TEXT, request TEXT, labels TEXT, ts REAL, PRIMARY KEY(user,request));
 """
 
@@ -126,19 +127,50 @@ class ProductionStore:
         rows = self.query("SELECT cancelled FROM requests WHERE user=? AND id=?", (user, id_))
         return bool(rows and rows[0]["cancelled"])
 
-    def finish_request(self, user, id_, trace, scope=None):
+    def conversation(self, scope):
+        rows = self.query("SELECT revision,checkpoint,last FROM agent_sessions WHERE scope=?", (scope,))
+        if not rows:
+            return None
+        read_verified(self.artifacts, rows[0]["checkpoint"])
+        return {"revision": rows[0]["revision"], "checkpointSha256": rows[0]["checkpoint"], "lastRequestId": rows[0]["last"]}
+
+    def finish_request(self, user, id_, trace, scope=None, *, conversation=None, deadline=None):
+        # CAS writes may leave orphan bytes after cancellation/crash; heads never reference them.
+        candidate_sha = None
+        if conversation and conversation[2] is not None and trace["status"] == 200:
+            candidate_sha = self.artifacts.put_bytes(dumps(conversation[2]).encode())
         with self.lock, closing(self.db()) as db, db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT cancelled FROM requests WHERE user=? AND id=?", (user, id_)).fetchone()
             if row[0] and trace["status"] == 200:
                 trace.update(status=409, error={"code": "E_REQUEST_CANCELLED", "message": "Cancelled before state commit."}, result=None)
+            trace["conversationState"], trace["sessionState"] = None, None
+            update = None
+            if conversation and trace["status"] == 200:
+                key, previous, candidate = conversation
+                head = db.execute("SELECT revision,checkpoint FROM agent_sessions WHERE scope=?", (key,)).fetchone()
+                actual = (head["revision"], head["checkpoint"]) if head else (0, None)
+                expected = (previous["revision"], previous["checkpointSha256"]) if previous else (0, None)
+                if actual != expected or candidate_sha is None:
+                    trace.update(status=409, error={"code": "E_SESSION_CONFLICT", "message": "Conversation checkpoint changed before commit."}, result=None)
+                else:
+                    update = (key, actual[0]+1, candidate_sha, id_)
+                    trace["conversationState"] = {"revision": actual[0]+1, "checkpointSha256": candidate_sha, "parentCheckpointSha256": actual[1],
+                                                  "threadId": candidate["threadId"], "lastRequestId": id_}
             if scope and trace["status"] == 200:
-                db.execute("INSERT INTO sessions VALUES(?,1,?) ON CONFLICT(scope) DO UPDATE SET count=count+1,last=excluded.last", (scope, id_))
-                state = db.execute("SELECT count,last FROM sessions WHERE scope=?", (scope,)).fetchone()
-                trace["sessionState"] = dict(state)
-            else:
-                trace["sessionState"] = None
+                head = db.execute("SELECT count FROM sessions WHERE scope=?", (scope,)).fetchone()
+                trace["sessionState"] = {"count": (head[0] if head else 0)+1, "last": id_}
             sha = self.artifacts.put_bytes(dumps(trace).encode())
+            # Check after serialization/CAS too, before any checkpoint head mutation.
+            if deadline is not None and time.perf_counter() >= deadline and trace["status"] == 200:
+                trace.update(status=504, error={"code": "E_REQUEST_TIMEOUT", "message": "Deadline passed before state commit."},
+                             result=None, conversationState=None, sessionState=None)
+                sha = self.artifacts.put_bytes(dumps(trace).encode())
+            if trace["status"] == 200:
+                if update:
+                    db.execute("INSERT INTO agent_sessions VALUES(?,?,?,?) ON CONFLICT(scope) DO UPDATE SET revision=excluded.revision,checkpoint=excluded.checkpoint,last=excluded.last", update)
+                if scope:
+                    db.execute("INSERT INTO sessions VALUES(?,1,?) ON CONFLICT(scope) DO UPDATE SET count=count+1,last=excluded.last", (scope, id_))
             state = "completed" if trace["status"] == 200 else "cancelled" if trace.get("error", {}).get("code") == "E_REQUEST_CANCELLED" else "failed"
             db.execute("UPDATE requests SET state=?,trace=? WHERE user=? AND id=?", (state, sha, user, id_))
         return {**trace, "traceSha256": sha}

@@ -267,7 +267,7 @@ def monitoring(runtime, release_id, since=0):
     release = ps.get("release", release_id)
     pipeline = runtime.pipeline(release["versionId"])
     version = ps.get("version", release["versionId"])
-    if version.get("adapter") == "agent":
+    if version.get("adapter") in ("agent", "conversation"):
         return agent_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])
     if version.get("adapter") == "unsup":
         return unsup_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])

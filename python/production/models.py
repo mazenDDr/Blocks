@@ -24,7 +24,7 @@ class ServingConfig(Strict):
     queueLimit: int = Field(8, ge=0, le=64)
     timeoutSeconds: float = Field(10, ge=0.01, le=30)
     maxBatch: int = Field(32, ge=1, le=128)
-    sessionMode: Literal["stateless", "counter"] = "stateless"
+    sessionMode: Literal["stateless", "counter", "conversation"] = "stateless"
     captureInputs: bool = False
 
 

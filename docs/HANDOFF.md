@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §20 — isolated native agent serving.** Read §20 for current work, verification, cleanup and remaining scope. §19 records domain imports and their earlier checkpoint compatibility effects. §18 verified the cloud merges; §17 records their earlier compatibility effects/priorities. §11–§16 record the cloud implementation.
+> **Latest continuation: §21 — persistent native agent conversations.** Read §21 for current work, verification, cleanup and remaining scope. §20 records isolated native agent serving. §19 records domain imports and their earlier checkpoint compatibility effects. §18 verified the cloud merges; §17 records their earlier compatibility effects/priorities. §11–§16 record the cloud implementation.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0023`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0024`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -51,7 +51,8 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Multi-file repository imports | done, verified on Linux x86 and Mac arm64 (see §15, §18) | PR #3 → 14b7b27 |
 | Optional bearer token | done, verified on Linux x86 and Mac arm64 (see §16, §18) | PR #4 → 1f5d026 |
 | Bounded local COCO / CoNLL / WAV dataset imports | done, verified on Mac arm64 (see §19, ADR 0022) | 3b639e2 |
-| Isolated native agent serving; worker cancellation race fix | done, verified on Mac arm64 (see §20, ADR 0023) | this release; `git log -1` |
+| Isolated native agent serving; worker cancellation race fix | done, verified on Mac arm64 (see §20, ADR 0023) | bfc503a |
+| Persistent native agent conversations | done, verified on Mac arm64 (see §21, ADR 0024) | this release; `git log -1` |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -70,6 +71,8 @@ After pulling the cloud merges to Mac `37368c5`: full suite → **1000 passed, 1
 After bounded domain imports: full suite → **1032 passed, 1 skipped, 6 deselected**, **447.24 s**; live Ollama → **6 passed, 1033 deselected**, **16.33 s**. Final build/curl/installed Chrome evidence is in §19.
 
 After isolated agent serving and the worker cancellation fix: full suite → **1053 passed, 1 skipped, 8 deselected**, **444.45 s**; live Ollama → **8 passed, 1054 deselected**, **16.72 s**. Final build/curl/installed Chrome evidence and remaining scope are in §20.
+
+After persistent native conversations: full suite → **1064 passed, 1 skipped, 9 deselected**, **447.84 s**; live Ollama → **9 passed, 1065 deselected**, **16.38 s**. Final build/curl/installed Chrome, crash/real restart and earlier stateless version compatibility evidence are in §21.
 
 ### Check for in-progress work first
 Run `git status`. If there are uncommitted files, a previous session was cut off mid-milestone: inspect them with `git diff`, do **not** discard them, finish that milestone, verify (§4), then commit.
@@ -107,7 +110,7 @@ Run `git status`. If there are uncommitted files, a previous session was cut off
 
 ## 5. Remaining work
 
-> **Superseded: the current remaining-work list is §20, supplemented by §18 and the unfinished items in §17.4.** The entries below are the historical milestone acceptance references, all completed.
+> **Superseded: the current remaining-work list is §21, supplemented by §18 and the unfinished items in §17.4.** The entries below are the historical milestone acceptance references, all completed.
 
 ### 6b — completed domain scope (VISION §9.7, §9.8, §23 Milestone 6 "Domain evidence", A56, A57, A58)
 
@@ -643,3 +646,37 @@ User “continue work” authorizes the next scope from §19. Worked alone from 
 4. Anthropic and online tracking remain credential-dependent; roles/team security and real GPU/cloud/encrypted cross-machine/distributed infrastructure scope stay unimplemented without measured infrastructure. No credentials needed for unrelated local work.
 
 Continue alone; preserve local work, native semantics and existing tests. Keep the handoff and completed verified changes pushed.
+
+
+## 21. Persistent native agent conversations — Codex, 2026-10-05 (verified release)
+
+The user said “continue work” after §20. Continued alone from clean pushed **bfc503a**, fetched upstream master and confirmed it matched. Scope: native persistent conversations, atomic checkpoint/request commits, isolation, replay and crash evidence. No dependencies installed; same native versions/local Ollama digest/runtime as §20. No source training algorithm or earlier pinned execution file changed. Additive `agent_sessions` table in production SQLite, automatically created at startup; no historical artifact rewrites or compatibility bypass. No retraining/re-registration needed for existing stateless agents or other families. The earlier §19 domain-retraining rule still applies to models saved before that import release. User **8258 / port 8000** remains running old code, untouched.
+
+### Implementation and files
+
+- New `python/production/conversation_adapter.py`: separate bounded `__agent_conversation__` candidate/manifest for completed END graphs with thread state and turn-scoped text inputs. The original ADR 0023 adapter is unchanged. Native compiler/blocks/reducers own execution; restore the actual native END checkpoint/channel versions/versions seen/metadata through the installed saver/serializer. Temporary native store/saver per candidate, stable conversation thread, fresh execution ID. Only internal SHA-verified native snapshots, no checkpoint uploads or pickle fallback. ADR 0023 bounds plus serialized snapshot ≤128 KiB. Research checkpoint/history never copied/mutated; defaults seed new conversations. Thread reducers own any declared history window.
+- `production/models.py`, `runtime.py`, `store.py`: explicit conversation release mode/maxBatch=1/session required. Per-release/user/session serialization and existing admission/idempotency/route rules. Immutable candidate snapshot CAS, expected parent revision/hash, cancellation and final deadline checks, then checkpoint-head and trace pointers in one SQLite transaction. Deadline check includes snapshot/trace I/O; failed/cancelled/expired/stale/integrity/transaction failures discard candidates. Restart fails unfinished requests without resuming inference; last successful head survives. Rollback resumes the older release’s isolated head. One owning control process, no distributed claim.
+- `services/control/production_api.py`, `production/monitor.py`: conversation candidates/reference/labels/health, verified read-only checkpoint state endpoint and captured replay from the selected turn’s immutable prior checkpoint, never the current live head. Warmup/replay discard their snapshots and create no conversation head. Monitoring uses immutable warmup/traces, never invokes an LLM. Existing exact-string reference-label/usage caveats stay in force; current-input length drift does not measure history or semantic answer quality. Corrected stale A50 documentation that still excluded all agent serving.
+- Production editor: conversation mode follows selected/registered native version, one-record releases, explicit session/user inputs, working Inspect conversation checkpoint, parent/new checkpoint revision/hash/thread provenance, existing exact native context/segments/state/control inspection. Clear inspected checkpoint when release/user/session changes. Reviewed React labels/state handling using the already-applied React best-practices skill. Trace capture remains optional but **conversation mode necessarily persists native state/history even with capture off**; release/API/editor/docs declare this. Caller-declared identity keys are not authentication/ownership.
+- New picker `examples/serving_conversation.project.json` / `.ui.json`: SYNTHETIC teaching prompts, actual qwen3.5:2b, native last-six-message history via existing prompt/set_state/chat blocks. Source run→register→isolated warmup→two turns→inspection→replay→traffic→rollout/rollback in new `examples/agent_conversation_journey.py`. Historical generated `agent_*.project.json` namespace unchanged.
+- New `tests/test_production_conversation.py`: **11 native offline cases**, whole-state comparison against independent research saver, turn resets/thread reducers/history window, concurrency/scoping, rollout/rollback, idempotency/restart, missing sessions/schema, cancellation after native candidate, deadline after slow CAS, stale/cross-version/hash refusals, actual SQLite rollback via failed trace trigger and real subprocess SIGKILL after candidate/before commit. New `test_production_conversation_live.py`: actual local Ollama prior-user/assistant context/segments/CAS/usage, captured-parent replay without head mutation, fresh session and restart/history window. No model substitutes or weakened existing tests. New ADR **0024**, CAPABILITIES/README/ACCEPTANCE and regenerated COVERAGE. Next ADR **0025**.
+
+### Final verification evidence
+
+- `.venv/bin/pytest -q -o faulthandler_timeout=240`: **1064 passed, 1 skipped, 9 deselected, 1941 warnings, 447.84 s (7:27)**, exit 0 (`/private/tmp/void-conversation-full-pytest.log`). Full required suite ran with actual local service access; no source implementation/test edits after it started. The new HTTP example’s polling fix is verified separately below. Existing missing-key Anthropic skip and native deprecation warnings remain.
+- `.venv/bin/pytest -q -m live`: **9 passed, 1065 deselected, 16.38 s**, exit 0 (`/private/tmp/void-conversation-live-final.log`). Actual Ollama, no downloads or credentials. Initial new live test incorrectly read segment kind at the top level; corrected it to the native `segment.source.kind`, without changing the runtime or an existing test. Focused live then **1 passed, 4.19 s**. Native focused conversation/stateless/production suite **62 passed, 11.81 s** (`/private/tmp/void-conversation-focused-accepted.log`). An earlier restricted-sandbox focused run had six unchanged loopback tests fail with `PermissionError` binding sockets, with 56 passing; reran with proper loopback access and all pass.
+- Final `pnpm -C apps/editor build` / `exec tsc --noEmit`: exit 0, **251 modules**, existing large-chunk warning (`/private/tmp/void-conversation-build-final.log`). Coverage write/check current; `git diff --check` clean. Curl backend **8779** Production and editor **5301** registry proxy pass; post-restart `/api/serve/local/conversation-cli-final/health` ready.
+- Final real CLI **passes** (`/private/tmp/void-conversation-cli-final.json`): source **8c23b96b4dda**, version `2561be013e4a…`, release `d779e83cda3f…`; second answer `You mentioned **blue**.`, real provider **89 input / 6 output tokens**, exact previous user/actual assistant/current user request verified, committed revision **2**, checkpoint `a500a62d6685…`. Exact-string agreement **0** against independently supplied **red**, not inferred ground truth. Two real closed-loop HTTP requests succeed, zero errors/timeouts, measured ~**3.53 requests/s** including drain (tiny teaching workload). Idempotency, captured-parent replay, new-release fresh state and rollback-preserved original head verified. The first CLI failed because new polling code had been accidentally dedented, leaving its loop without a job refresh; its recorded traffic actually completed two requests/zero errors in ~0.50 s. Fixed only the new example’s loop indentation, reran to completion; no timeout limits or app behavior weakened.
+- Installed Chrome **passes, zero runtime/API errors** (`/private/tmp/void-conversation-browser.log`, `…-browser-evidence.json`): source **a85f9dbdc03b**, version `baeef441d859…`, release `9e676ed99e7c…`; actual source Run→register→warmup/deploy→two turns→native exact-history/context/checkpoint inspection→captured-parent replay→fresh separate session→unchanged original head→monitoring. Second answer `You mentioned **blue**.`, actual **91 input / 6 output tokens**; revision **2**, four recorded history messages and parent `551a20d49df6…` / new `ad1d5410e8c8…`. Both screenshots visually reviewed (`/private/tmp/void-conversation-browser-inspection.png`, `…-monitoring.png`). No labels supplied there, so quality remains unavailable. Three actual successful serving calls in monitor, zero errors. Existing React Flow startup console warnings about `card` fallback on the initial CNN canvas remain; they are not runtime exceptions and were not changed by this scope. Browser script stays outside repo and closes Chrome in finally.
+- Real backend stop/restart against the same temporary workbench verified exact CLI/browser checkpoint preservation, then actual native third turn advances CLI revision **3** from the recorded parent and duplicate request returns identical checkpoint/trace without a second turn (`/private/tmp/void-conversation-restart-http.json`). Third call provider **120 input / 14 output tokens**. Checked **six previously registered ADR 0023 versions** from §20’s temporary workbench against the final implementation; all verify unchanged (`/private/tmp/void-conversation-old-version-compatibility.log`), including `bf004693c4bd…` and `c9635332d12a…`.
+- Cleanup: temporary backend **78307 / port 8779** stopped, restarted as **80253** for persistence check, then stopped; editor **78321 / port 5301** and its pnpm parent **78308** stopped. Chrome closes in finally. Final ps check confirms all temporary services are absent and **8258 / port 8000** remains running and untouched. Workbench `/private/tmp/void-conversation-smoke`, logs/screenshots/scripts/CAS models stay temporary and uncommitted. First temporary backend shutdown reported existing loky semaphore cleanup warning; final restarted backend shutdown clean. No generated artifacts, secret or external credentials are committed.
+- Git: source/tests/examples/docs and this handoff are published together on master after the checks above. Use `git log -1` for this release’s exact commit; current local/remote equality and clean tree are checked after push. Resume with a safe pull, read this section, preserve any uncommitted work and work alone.
+
+### Remaining work
+
+1. Conversation session reset/delete/fork/retention and deliberate checkpoint compatibility/migration; pinned retrieval/index/memory dependencies, tools/effects and approval semantics are separate extensions. No new placeholders or infrastructure claims. A CI/repository-owned browser smoke baseline and backup/restore/upgrade/recovery work are useful independent next scopes from §18.
+2. Wider serving remains from §17/§18: Keras/JAX, multi-input/non-classifier model graphs, procedure sequence models, continuous/image RL, fitted preprocessing before unsupervised estimators and larger domain monitoring references. Current synchronous local conversation adapter is bounded and does not close those gaps.
+3. Other editor/cache/repository/research scope and real user datasets/benchmarks remain in §18/§19. Strict domain checkpoint identity still deserves a compatibility design; do not bypass integrity or rewrite old runs. Startup React Flow fallback warnings and the existing large editor chunk remain known frontend follow-ups.
+4. Anthropic/online trackers remain credential-dependent; authenticated users/roles/ownership and actual GPU/cloud/encrypted cross-machine/distributed infrastructure remain unimplemented without measured infrastructure. No credentials are required for unrelated local work.
+
+Continue alone; keep verified work and the detailed handoff pushed. Do not stop or restart the user’s port-8000 server without authorization.

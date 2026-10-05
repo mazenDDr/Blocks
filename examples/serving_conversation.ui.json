@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "START": {
+      "x": 40,
+      "y": 40
+    },
+    "record": {
+      "x": 260,
+      "y": 40
+    },
+    "remember": {
+      "x": 480,
+      "y": 40
+    },
+    "prompt": {
+      "x": 700,
+      "y": 40
+    },
+    "reply": {
+      "x": 920,
+      "y": 40
+    },
+    "END": {
+      "x": 1140,
+      "y": 40
+    }
+  },
+  "description": "SYNTHETIC teaching prompts, real local Ollama. Native thread history keeps the last 6 messages. Run a source turn, register in Production, then serve multiple turns with one explicit session. Successful checkpoints persist; failed/cancelled turns do not. Research history is never copied.",
+  "synthetic": true
+}

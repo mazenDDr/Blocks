@@ -43,8 +43,10 @@ class ProductionRuntime:
 
     def pipeline(self, version_id):
         version = self.ps.get("version", version_id)
-        if version.get("adapter") == "agent":
-            from .agent_adapter import AgentPipeline, verify
+        if version.get("adapter") in ("agent", "conversation"):
+            from . import agent_adapter, conversation_adapter
+            adapter = conversation_adapter if version["adapter"] == "conversation" else agent_adapter
+            AgentPipeline, verify = adapter.AgentPipeline, adapter.verify
             if json.loads(read_verified(self.store, version["pipelineSha256"])) != version["manifest"]:
                 raise ProductionError("E_AGENT_SOURCE", "Agent version differs from its pinned manifest.", 409)
             verify(self.store, version["manifest"])
@@ -84,10 +86,11 @@ class ProductionRuntime:
         if row is None or row["status"] != "completed":
             raise ProductionError("E_REGISTER_RUN", "Registration requires a completed recorded run.")
         if row["config"].get("kind") == "agent":
-            from .agent_adapter import build_manifest
-            manifest = build_manifest(self.store, req.runId, req.node)
+            from . import agent_adapter, conversation_adapter
+            adapter = conversation_adapter if req.node == conversation_adapter.NODE else agent_adapter
+            manifest = adapter.build_manifest(self.store, req.runId, req.node)
             sha = self.store.put_bytes(dumps(manifest).encode())
-            return self.ps.save("version", {**req.model_dump(), "adapter": "agent", "family": "agent_turn",
+            return self.ps.save("version", {**req.model_dump(), "adapter": "conversation" if adapter is conversation_adapter else "agent", "family": "agent_turn",
                                             "pipelineSha256": sha, "manifest": manifest})
         arts = [a for a in self.store.artifacts(req.runId, "inference_pipeline") if a["meta"]["node"] == req.node]
         domain = [a for a in self.store.artifacts(req.runId, "domain_model") if a["meta"].get("node") == req.node and a["meta"].get("internalDomainModel")]
@@ -130,11 +133,14 @@ class ProductionRuntime:
         v = self.ps.resolve_version(req.versionId)
         p = self.pipeline(v["id"])
         domain = v.get("adapter") == "domain"
-        agent = v.get("adapter") == "agent"
+        agent = v.get("adapter") in ("agent", "conversation")
+        conversation = v.get("adapter") == "conversation"
         if agent:
-            if req.config.maxBatch != 1 or req.config.sessionMode != "stateless":
-                raise ProductionError("E_RELEASE_CONFIG", "Agent releases require maxBatch=1 and stateless mode; conversation sessions are not implemented.")
+            if req.config.maxBatch != 1 or req.config.sessionMode != ("conversation" if conversation else "stateless"):
+                raise ProductionError("E_RELEASE_CONFIG", "Agent releases require maxBatch=1 and their declared stateless/conversation mode.")
             records = p.reference_records()
+        elif req.config.sessionMode == "conversation":
+            raise ProductionError("E_RELEASE_CONFIG", "Native conversations require a registered conversation graph.")
         elif v.get("adapter") in ("model", "rl", "unsup"):
             records = p.reference_records(1)
         elif domain:
@@ -148,9 +154,11 @@ class ProductionRuntime:
             records = pd.read_csv(io.BytesIO(refs)).astype(object).where(lambda x: x.notna(), None).head(1).to_dict("records")
         p.validate_records(records, req.config.maxBatch)
         result, timing = p.predict(records, deadline=time.perf_counter()+req.config.timeoutSeconds) if agent else p.predict(records)
+        timing.pop("_checkpoint", None)  # isolated warmup never commits conversation state
         r = self.ps.save("release", {"versionId": v["id"], "pipelineSha256": v["pipelineSha256"], "config": req.config.model_dump(),
                                      "adapter": "local FastAPI / native LangGraph / local Ollama" if agent else f"local FastAPI / native PyTorch {v['family']} CPU" if v.get("adapter") in ("domain", "model", "rl") else "local FastAPI / native scikit-learn CPU",
                                      "replicas": 1, "mode": "real local endpoint",
+                                     "conversationPolicy": "Native state/history persists per release/user/session even when trace capture is off; only successful END turns commit; research history never copied." if conversation else None,
                                      "compatibility": {"ok": True, "warmupResultSha256": self.store.put_bytes(dumps(result).encode()), "timings": timing},
                                      "resources": {"placement": "local control process; model device managed by Ollama, not measured" if agent else "same local control process, CPU", "autoscaling": "not implemented", "cost": "not measured"}})
         return r
@@ -172,12 +180,15 @@ class ProductionRuntime:
             return {**self.ps.trace(req.user, req.requestId), "idempotentReplay": True}
         start, admitted, locked = time.perf_counter(), False, False
         deadline = start + cfg["timeoutSeconds"]
-        scope = dumps([rid, req.user, req.session]) if cfg["sessionMode"] == "counter" and req.session else None
+        scope = dumps([rid, req.user, req.session]) if cfg["sessionMode"] in ("counter", "conversation") and req.session else None
+        candidate, previous = None, None
         trace = {"requestId": req.requestId, "user": req.user, "session": req.session, "releaseId": rid, "versionId": release["versionId"],
                  "target": target, "namespace": namespace, "receivedAt": time.time(), "inputSha256": hashlib.sha256(json.dumps(req.records,sort_keys=True).encode()).hexdigest(),
                  "records": req.records if cfg["captureInputs"] else None, "capturePolicy": "inputs captured explicitly" if cfg["captureInputs"] else "input hash only; replay unavailable",
                  "batchSize": len(req.records), "status": 200, "error": None, "result": None, "queueMs": None,
                  "totalMsDefinition": "admission through inference/error handling, excluding trace/session persistence and HTTP encoding; traffic client measures end-to-end latency"}
+        if cfg["sessionMode"] == "conversation":
+            trace["capturePolicy"] += "; native conversation checkpoint/history persists independently of trace capture"
         with self.lock:
             admission = self.admissions.setdefault(rid, Admission(cfg))
             slock = self.session_locks.setdefault(scope, threading.Lock()) if scope else None
@@ -192,7 +203,7 @@ class ProductionRuntime:
             self.ps.query("UPDATE requests SET state='running' WHERE user=? AND id=?",(req.user,req.requestId))
             if self.ps.cancelled(req.user, req.requestId):
                 raise ProductionError("E_REQUEST_CANCELLED", "Cancelled before native inference.", 409)
-            if cfg["sessionMode"] == "counter" and req.session is None:
+            if cfg["sessionMode"] in ("counter", "conversation") and req.session is None:
                 raise ProductionError("E_SESSION_REQUIRED", "This release requires an explicit session identity.")
             p = self.pipeline(release["versionId"])
             t0 = time.perf_counter()
@@ -201,9 +212,16 @@ class ProductionRuntime:
             trace["lineage"] = {"runId": p.manifest["runId"], "node": p.manifest["node"], "graphHash": p.manifest["graphHash"],
                                 "graphSha256": p.manifest["graphSha256"], "pipelineSha256": release["pipelineSha256"], "modelSha256": p.manifest["modelSha256"],
                                 "source": p.manifest["source"], "fitArtifacts": p.manifest["fitArtifacts"], "evaluationArtifacts": p.manifest["evaluationArtifacts"]}
-            if self.ps.get("version", release["versionId"]).get("adapter") == "agent":
+            if self.ps.get("version", release["versionId"]).get("adapter") in ("agent", "conversation"):
+                kwargs = {}
+                if cfg["sessionMode"] == "conversation":
+                    previous = self.ps.conversation(scope)
+                    parent = previous["checkpointSha256"] if previous else None
+                    trace["conversationParent"] = {"revision": previous["revision"] if previous else 0, "checkpointSha256": parent}
+                    kwargs["checkpoint"] = parent
                 result, timing = p.predict(req.records, capture=cfg["captureInputs"], deadline=deadline,
-                                          cancelled=lambda: self.ps.cancelled(req.user, req.requestId))
+                                          cancelled=lambda: self.ps.cancelled(req.user, req.requestId), **kwargs)
+                candidate = timing.pop("_checkpoint", None)
             else:
                 result, timing = p.predict(req.records)
             if not cfg["captureInputs"]:
@@ -217,7 +235,10 @@ class ProductionRuntime:
         finally:
             trace["totalMs"] = (time.perf_counter()-start)*1000
             try:
-                finished = self.ps.finish_request(req.user, req.requestId, trace, scope)
+                finished = self.ps.finish_request(req.user, req.requestId, trace,
+                                                  scope if cfg["sessionMode"] == "counter" else None,
+                                                  conversation=(scope, previous, candidate) if cfg["sessionMode"] == "conversation" and scope else None,
+                                                  deadline=deadline)
             finally:
                 if locked:
                     slock.release()

@@ -1,0 +1,194 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "record",
+      "type": "agent.prompt",
+      "version": "1.0.0",
+      "config": {
+        "output_field": "turn_messages",
+        "items": [
+          {
+            "kind": "template",
+            "role": "user",
+            "template": "{question}"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "remember",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "history",
+            "kind": "copy",
+            "source": "turn_messages"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "prompt",
+      "type": "agent.prompt",
+      "version": "1.0.0",
+      "config": {
+        "items": [
+          {
+            "kind": "template",
+            "role": "system",
+            "template": "Answer briefly. This is a SYNTHETIC conversation teaching exercise, not a benchmark."
+          },
+          {
+            "kind": "conversation",
+            "field": "history"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "reply",
+      "type": "agent.chat_model",
+      "version": "1.0.0",
+      "config": {
+        "model": {
+          "provider": "ollama",
+          "model": "qwen3.5:2b",
+          "temperature": 0.0,
+          "max_tokens": 48,
+          "seed": 7,
+          "think": false,
+          "timeout_s": 20
+        },
+        "append_to": "history"
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "START__record",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "record",
+        "port": "in"
+      }
+    },
+    {
+      "id": "record__remember",
+      "kind": "control",
+      "from": {
+        "node": "record",
+        "port": "out"
+      },
+      "to": {
+        "node": "remember",
+        "port": "in"
+      }
+    },
+    {
+      "id": "remember__prompt",
+      "kind": "control",
+      "from": {
+        "node": "remember",
+        "port": "out"
+      },
+      "to": {
+        "node": "prompt",
+        "port": "in"
+      }
+    },
+    {
+      "id": "prompt__reply",
+      "kind": "control",
+      "from": {
+        "node": "prompt",
+        "port": "out"
+      },
+      "to": {
+        "node": "reply",
+        "port": "in"
+      }
+    },
+    {
+      "id": "reply__END",
+      "kind": "control",
+      "from": {
+        "node": "reply",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "question",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "turn_messages",
+        "type": "list",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "history",
+        "type": "messages",
+        "reducer": {
+          "kind": "keep_last_n",
+          "n": 6
+        },
+        "scope": "thread",
+        "description": "",
+        "default": []
+      },
+      {
+        "name": "prompt_messages",
+        "type": "list",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "answer",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      }
+    ],
+    "limits": {
+      "maxSteps": 8,
+      "maxModelCalls": 1,
+      "maxTokens": 1024,
+      "maxSeconds": 25
+    }
+  }
+}

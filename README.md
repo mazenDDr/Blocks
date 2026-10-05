@@ -364,7 +364,7 @@ Run the servers in separate terminals. The journey creates three projects, impor
 
 Open **serving_agent** in the picker, use **Run & trace** with a teaching question, then choose its whole-graph candidate in **Production**. Register, review the graph/model digest/budgets, preview a stateless single-turn release and deploy it to a local namespace. Enable capture explicitly to inspect the exact sent model context, source segments and native state/control events in Requests. Each request gets a fresh LangGraph checkpoint; research threads stay intact. Replay makes a new model call and may give a different answer. Monitoring makes no model calls; supplied reference strings measure only exact agreement. See ADR 0023 and HANDOFF §20.
 
-Only bounded prompt/set_state/one chat-model graphs using local Ollama are accepted; persistent conversations, retrieval/memory/tools/interrupts and API providers are outside this serving release. The example uses real qwen3.5:2b already installed locally, with SYNTHETIC teaching prompts. No dependency install or domain retraining is needed for these changes. Ollama chooses the model device; device utilization and cost are not measured.
+Only bounded prompt/set_state/one chat-model graphs using local Ollama are accepted; persistent conversations use the separate adapter below; retrieval/memory/tools/interrupts and API providers remain outside these serving adapters. The example uses real qwen3.5:2b already installed locally, with SYNTHETIC teaching prompts. No dependency install or domain retraining is needed for these changes. Ollama chooses the model device; device utilization and cost are not measured.
 
 Commands actually run on the Mac against an isolated temporary workbench:
 
@@ -379,3 +379,27 @@ VOID_API=http://127.0.0.1:8777 pnpm -C apps/editor dev --host 127.0.0.1 --port 5
 Run the servers in separate terminals. The journey submits a native source run, registers/warms a release, serves and inspects a real response, verifies idempotency, records an independent reference string, replays, runs bounded HTTP traffic and checks rollout/rollback. These small teaching journeys verify mechanics, not answer quality or general serving capacity.
 
 Final verification: **1053 passed, 1 skipped**, plus **8 live Ollama tests passed**; editor build/typecheck and real Chrome serving/context/source-navigation journeys pass. The full suite exposed an existing control/worker cancellation race, fixed with its guarded transition and a deterministic native SQLite regression; existing tests were kept intact. See HANDOFF §20 for exact commands/results, compatibility, cleanup and remaining work.
+
+
+## Native persistent conversations (local serving)
+
+Open `serving_conversation`, run a source turn, and register the completed native graph in Production. Its release uses maxBatch=1 and conversation mode. Supply an explicit session in Requests; successful turns restore and advance that release/user/session’s native checkpoint. Failed/cancelled/expired turns leave it unchanged. Inspect conversation checkpoint shows actual state and hashes; captured replay restores the selected request’s prior checkpoint without advancing the live conversation. The example retains the last six native messages and uses real local Ollama with labelled SYNTHETIC teaching prompts.
+
+Conversation mode persists native state/history **even with trace capture off**. Full trace contexts/state/events still require captureInputs. User/session values are caller-declared isolation keys; shared-token protection does not provide user accounts or ownership enforcement. Existing stateless agent and other serving-family identities are unchanged: no retraining or dependency install required. See ADR 0024 and HANDOFF §21 for bounds, crash evidence and remaining scope.
+
+Commands run on the Mac against a temporary workbench, leaving the user’s port-8000 service untouched:
+
+```bash
+VOID_WORKBENCH=/private/tmp/void-conversation-smoke .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8779
+VOID_API=http://127.0.0.1:8779 pnpm -C apps/editor dev --host 127.0.0.1 --port 5301 --strictPort
+.venv/bin/python examples/agent_conversation_journey.py --base http://127.0.0.1:8779 --namespace conversation-cli-final
+.venv/bin/pytest -q tests/test_production_conversation.py tests/test_production_agent.py tests/test_production.py -o faulthandler_timeout=240
+.venv/bin/pytest -q -o faulthandler_timeout=240
+.venv/bin/pytest -q -m live
+pnpm -C apps/editor build
+pnpm -C apps/editor exec tsc --noEmit
+.venv/bin/python -m backends.coverage --write
+.venv/bin/python -m backends.coverage --check
+```
+
+No conversation reset/delete/fork/migration API, long-term memory/retrieval/tool effects, streaming, remote/distributed serving or semantic-answer benchmark is implemented. Use one owning control process.
