@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §31 — structured graph outline Mac verified; final1209native/12live/17Node checks.** Clipboard2c20cd5 and CI diagnostics833e133 are pushed to master; research records3bdfe53 are pushed. Measurement repair e0765ef is localmaster/temporarycodex branch, browser-only37319989637 pending. Master37318781451 native job pending; its clipboard/recovered Chrome passed, history viewport failed with measured cause recorded below. Read §31, then §30; older progressive notes are superseded by final outcomes. No Linux full acceptance claim before actual native/browser results.
+> **Latest continuation: §32 — controlled canvas measurement and startup repair; §31 outline is Mac verified.** Local master includes e0765ef and outline27d0635. Prior master833e133 native Linux job passed1204 tests, clipboard/recovered browser journeys passed, but history failed. The e0765ef browser-only diagnosis also failed; actual retained DOM measurements fix that cause, with all four final Mac browser journeys passing. Final repair full/live rerun and hosted verification pending; read §32 for current evidence and remaining work. Older pending/draft notes are historical and superseded by later outcomes.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0034`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0035`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -58,11 +58,11 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Offline whole-workbench backup/recovery | verified Mac arm64 and hosted Linux x86_64 (§24, ADR0027) | 9d3b810; docs follow-up records CI |
 | Explicit offline W&B links/native resource recovery | verified Mac and Linux, see §25/§28/ADR0028 | d6a9d90/d0bdafa |
 | Read-only native conversation discovery | verified Mac and Linux, see §26/§28/ADR0029 | c83adff/d0bdafa |
-| Reviewed historical native checkpoint restore | Mac verified, hosted rerun pending, §27/ADR0030 | 5d2f732 |
-| Bounded editor whole-draft history | Mac verified, hosted rerun pending, §28/ADR0031 | a49bd85/8c197a7 |
-| Revisioned research run notes/tags/search | Mac verified, hosted pending, §29/ADR0032 | 3bdfe53 |
-| Root model/tabular/domain graph clipboard | Mac verified, pushed; Linux clipboard browser pass/native pending §30/ADR0033 | 2c20cd5 |
-| Structured root/module graph outline | Mac verified, selective commit/push pending §31/ADR0034 | this continuation |
+| Reviewed historical native checkpoint restore | Mac verified; Linux native/recovered journey pass on833e133, §27/§32 | 5d2f732 |
+| Bounded editor whole-draft history | Mac verified; Linux DOM measurement repair under verification, §28/§32 | a49bd85/8c197a7/e0765ef |
+| Revisioned research run notes/tags/search | Mac verified; Linux native/recovered journey pass on833e133, §29/§32 | 3bdfe53 |
+| Root model/tabular/domain graph clipboard | Mac verified; Linux native/clipboard browser pass on833e133, §30/§32 | 2c20cd5 |
+| Structured root/module graph outline | Mac verified; hosted pending, §31/§32/ADR0034 | 27d0635 |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -126,7 +126,7 @@ Run `git status`. If there are uncommitted files, a previous session was cut off
 
 ## 5. Remaining work
 
-> **Superseded: the current remaining-work list is §24, supplemented by §18 and the unfinished items in §17.4.** The entries below are the historical milestone acceptance references, all completed.
+> **Superseded: the current remaining-work list is §32, supplemented by scope limits in CAPABILITIES and §24.** The entries below are the historical milestone acceptance references, all completed.
 
 ### 6b — completed domain scope (VISION §9.7, §9.8, §23 Milestone 6 "Domain evidence", A56, A57, A58)
 
@@ -992,3 +992,37 @@ Integrated source-deletion/recovery/trackers `/private/tmp/void-outline-integrat
 Full `.venv/bin/pytest -q -o faulthandler_timeout=240`: **1209 passed,1 skipped,12 deselected,1941 warnings,487.92s**, `/private/tmp/void-outline-full.log`. Real local Ollama live **12 passed,1210 deselected,24.86s**, `/private/tmp/void-outline-live.log`. Node17/build261modules/typecheck/coverage/diff/pin audits pass. Final dedicated/integrated real Chrome/curl evidence above passes with exact native identities and owned cleanup. The subsequent agent-card measurement repair also passes the original Mac history browser; it edits frontend native DOM measurement only. No existing assertions weakened.
 
 Outline is Mac accepted and ready for selective commit, followed by master push after active37318781451 native job finishes. Independent manual browser-only37319989637 verifies measurement repair on temporarybranch. Keep actual pending/failure distinctions; do not call the whole project finalized. Next ADR0035. All own services are stopped; tests leave their owned native fixtures only in temporary directories.
+
+
+## 32. Controlled canvas measurements and final continuation checkpoint — 2026-10-05
+
+Continue alone under the user's until-limit instruction. Account last check82% five-hour/60% weekly; reserve capacity for actual verification, cleanup and committed/pushed handoff. Do not purchase credits or spend the reset credit. This is an ongoing project, not a full VISION finalization claim. User8258/port8000 remains untouched; restart requires user authorization because it still has old code loaded.
+
+### Actual hosted outcomes and repaired causes
+
+- [Master run37318781451](https://github.com/mazenDDr/project-void/actions/runs/37318781451) on833e133 is **overall failure**, with native job **success1204passed,1skipped,12deselected,1941warnings,1014.38s**; build/typecheck/Node14/coverage pass. Downloaded JUnit has1205cases/0failures/0errors/1skip. Clipboard and physical source-deletion/recovery/discovery/historical-restore/research-record/confirmed-tracker Chrome journeys pass. History alone fails with all cards `visibility:hidden`. Evidence `/private/tmp/void-clipboard-ci-{native,browser}`, log `/private/tmp/void-clipboard-ci.log`. Do not present the overall workflow as green.
+- [Manual browser-only37319989637](https://github.com/mazenDDr/project-void/actions/runs/37319989637) on e0765ef also **failed** history; clipboard/recovery pass, native intentionally skipped. Evidence `/private/tmp/void-measurement-ci-browser`. The initial `useUpdateNodeInternals` repair was insufficient; earlier viewport speculation is superseded by actual hidden-card diagnostics and installed React Flow semantics.
+- Installed React Flow12.12.0 rebuilds internal node `measured` from controlled user nodes. Both canvases rebuilt objects without retaining dimensions; Linux ResizeObserver did not re-emit unchanged sizes after validation/selection/undo. New `useFlowMeasurements.ts` remembers actual native dimension changes in transient React state, supplies `measured` on controlled nodes, removes absent IDs, and explicitly remeasures membership changes. Nothing is guessed or saved in graph/UI/history; exact saved graph/layout remains unchanged. No dependency/pin/schema edits.
+- Actual Mac browser runs also exposed the StrictMode duplicate async boot request adopting the example again after a user loaded/saved a draft. Boot now aborts disposed requests and checks disposal before adoption/state changes. This preserves actual project selection and makes cleanup safe. Failed pre-fix outline/clipboard runs at `/private/tmp/void-measured-cache-{outline,clipboard}` are diagnostic failures, not acceptance evidence. Owned services were stopped, including timeout cleanup.
+
+### Final repair Mac evidence
+
+All original assertions remain. Dedicated real Chrome:
+- `/private/tmp/void-measured-cache-history-final`: pass5.5235s; actual add/undo/redo full graph/UI,15-step native drag one edit, redo invalidation/load/settings/focused-text checks; backend22696/editor22697/browser22716 closed(-15/143/0).
+- `/private/tmp/void-measured-cache-outline-final`: pass6.0328s; exact graph/UI/module hash, real native invalid configuration/filter/Undo,75-node pages50+25/back/search reset; backend22546/editor22547/browser22566 closed(-15/143/0).
+- `/private/tmp/void-measured-cache-clipboard-final`: pass5.0453s; exact native graph/wires/layout20,042parameters, one-paste Undo/repeat IDs/partial missing-input/kind-clear checks; backend22598/editor22606/browser22626 closed(-15/143/0).
+- `/private/tmp/void-measured-cache-recovery-final`: pass56files/10DBs/3internal-links/1explicitly omitted external diagnostic; source physically deleted, native recovery/discovery/history/records/confirmed trackers retained. Seed10.2515s/restored7.5322s; restored backend22859/editor22860/browser22879 closed(-15/143/0). Manifest b2abaf5064a818b47249ccd10d5feaa69275b44a3bdb866b35d8e2a5388e2a65.
+- All error arrays empty. Build262modules/typecheck pass (`/private/tmp/void-measured-cache-final-{build,tsc}.log`), existing chunk warning. Node17pass124.79ms (`/private/tmp/void-measured-cache-node.log`), coverage current/diffcheck pass. Latest complete native Mac suite before this frontend-only repair:1209pass1skip12deselected487.92s; live12pass1210deselected24.86s (§31). **Required final post-repair full/live reruns now running** in `/private/tmp/void-flow-repair-{full,live}.log`; record actual final output before acceptance. Do not substitute previous counts for pending runs.
+
+### Resume / remaining work
+
+1. Finish post-repair Mac full/live, curl and native identity audit; record actual outcomes. Push final code, run both default hosted jobs and download actual evidence. Keep overall/Linux/native/browser scopes distinct. No manual browser-only pass can substitute for default verification. Remove owned temporary remote `codex/measurement-repair` after final evidence/master publication. No PR was created.
+2. Next editor work: bounded alignment/comments/command navigation, deeper cross-scope errors and agent/RL/module transfer/outline scope; large-graph performance and outside-user onboarding evidence. **Alignment implementation has not started.** Existing clipboard is page-memory/root-model-tabular-domain only; outline is those roots plus module editor.
+3. Production agents: retrieval/index/long-term memory/tools/external effects/interrupts/structured outputs/multiple providers/streaming. Broader model serving: Keras/JAX, multi-input/non-classifier image models, procedure sequences, continuous/image/recurrent RL, fitted preprocessing before unsupervised models, larger domain monitoring references.
+4. Physical privacy erasure/retention/GC/migration, stronger crash/recovery evidence, signed/encrypted/online/scheduled recovery; broader DVC/repository/import/resource relocation and additional cache families. Real-user datasets/quality/performance benchmarks remain beyond labelled teaching fixtures.
+5. Authenticated ownership/roles/TLS/hostile-code isolation and tested deployments/platform-browser matrix; actual GPU/cloud/distributed support, multi-agent RL, formal accessibility certification. Keep infrastructure claims unavailable until real integrations exist. GPU-box skill is available if choosing real GPU work; it has not been applied in this continuation.
+6. Anthropic live test and online MLflow/W&B need user credentials/accounts. None were supplied, no paid services provisioned. Local/offline tracker semantics remain verified. A01–A64 bounded evidence is not production completion of the whole VISION.
+
+No16native identity-source changes (union production agent/conversation adapters), no artifact_store/store.py edit, no retraining needed from these editor/records/recovery changes. Next ADR0036 after controlled-measurement ADR0035. Final pause/commit/remote/CI state must be added below if nearing quota; preserve pending evidence honestly.
+
+- Post-repair live Ollama **12 passed,1210 deselected,24.93s**, `/private/tmp/void-flow-repair-live.log`. Final curl `/private/tmp/void-flow-repair-curl/evidence.json` passes exact native graph/UI/hash20,042params, invalid diagnostic/module contract equality; owned backend23511/port56747 stopped-15. Native16pin/store audit and diffcheck pass. Full rerun still running; code snapshot is ready for hosted verification, not yet a final whole-workflow acceptance claim.

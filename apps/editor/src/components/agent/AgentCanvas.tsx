@@ -10,6 +10,7 @@ import { NodeForm } from "./NodeForms";
 import { RouteEditor, type SetSpec } from "./StatePanel";
 import { renderPredicate } from "./PredicateBuilder";
 import { specOf, type AgentNodeView, type AgentSpec, type Trace } from "./types";
+import { useFlowMeasurements } from "../../useFlowMeasurements";
 
 interface CardData extends Record<string, unknown> {
   gnode: GNode; op?: OpInfo; view?: AgentNodeView; ran?: { count: number; last?: number; replay: boolean }; paused?: boolean; routed: boolean; terminal?: "START" | "END";
@@ -98,13 +99,15 @@ export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNo
   const taken = useMemo(() => new Set((trace?.steps ?? []).filter((s) => s.route).map((s) => `route:${s.route!.route}:${s.route!.taken}`)), [trace]);
 
   const positions = ui.positions;
+  const { measurements, rememberDimensions, pruneMeasurements } = useFlowMeasurements();
   const updateNodeInternals = useUpdateNodeInternals();
   const membership = JSON.stringify(graph.nodes.map(n => [n.id, n.type, n.version]));
   useEffect(() => {
     // Undo can reuse unchanged DOM cards after internal node records lose measurements.
     // Request actual DOM/handle measurement; never guess sizes or store them in the draft.
-    updateNodeInternals(["START", ...JSON.parse(membership).map((node: string[]) => node[0]), "END"]);
-  }, [membership, updateNodeInternals]);
+    const ids = ["START", ...JSON.parse(membership).map((node: string[]) => node[0]), "END"];
+    pruneMeasurements(ids); updateNodeInternals(ids);
+  }, [membership, updateNodeInternals, pruneMeasurements]);
   const pos = (id: string, i: number) => positions[id] ?? { x: 40 + (i % 4) * 280, y: 60 + Math.floor(i / 4) * 170 };
   const nodes: AgentFlowNode[] = useMemo(() => {
     const routed = new Set(spec.routes.map((r) => r.from));
@@ -116,8 +119,8 @@ export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNo
       })),
       { id: "END", type: "acard", position: positions["END"] ?? { x: 40 + 4 * 280, y: 60 }, data: { gnode: { id: "END", type: "END", version: "", config: {} }, routed: false, terminal: "END" }, deletable: false },
     ];
-    return out;
-  }, [graph.nodes, positions, selNode, opsByType, views, ranInfo, trace, spec.routes]); // eslint-disable-line react-hooks/exhaustive-deps
+    return out.map(node => ({ ...node, measured: measurements[node.id] }));
+  }, [graph.nodes, positions, selNode, opsByType, views, ranInfo, trace, spec.routes, measurements]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const edges: Edge[] = useMemo(() => {
     const arrow = { type: MarkerType.ArrowClosed };
@@ -139,10 +142,11 @@ export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNo
   }, [graph.edges, spec.routes, taken]);
 
   const onNodesChange = useCallback((changes: NodeChange<AgentFlowNode>[]) => {
+    rememberDimensions(changes);
     const moved = applyNodeChanges(changes, nodes);
     for (const c of changes) if (c.type === "select" && c.selected) setSelNode(c.id === "START" || c.id === "END" ? null : c.id);
     if (changes.some((c) => c.type === "position")) setUi((u) => ({ ...u, positions: { ...u.positions, ...Object.fromEntries(moved.map((n) => [n.id, { x: n.position.x, y: n.position.y }])) } }), changes.some(c => c.type === "position" && c.dragging === true));
-  }, [nodes, setUi, setSelNode]);
+  }, [nodes, setUi, setSelNode, rememberDimensions]);
 
   const connect = (c: Connection) => {
     if (!c.source || !c.target) return;

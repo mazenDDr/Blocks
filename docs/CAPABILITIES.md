@@ -583,3 +583,19 @@ Agent/RL outlines, deeper cross-scope navigation, command menus, comments, align
 performance benchmarks, onboarding and formal accessibility certification remain.
 Synthetic description now uses tools layout flow so it cannot cover those controls.
 No model pin/dependency/schema change. Final verification is recorded in HANDOFF §31.
+
+
+### Controlled canvas measurements and safe initial adoption (ADR0035)
+
+Both controlled model/module and agent canvases retain actual React Flow DOM dimension
+changes in transient React state. Membership changes request native remeasurement;
+removed IDs are pruned. Measurements never enter saved graph/layout or Undo/Redo.
+Disposed initial-load requests are aborted and cannot adopt a stale example after a
+new draft. No guessed dimensions, native model pin/dependency/schema changes.
+
+All four final Mac actual Chrome journeys pass after this repair, retaining exact
+saved graph/layout/native identity checks. Required post-repair native rerun and final
+hosted verification are pending; HANDOFF §32 records actual outcomes. Prior833e133
+Linux native1204/build/typecheck/Node14/coverage and clipboard/recovered journeys pass,
+but history failed; initial e0765ef remeasure-only diagnosis also failed. Neither is a
+whole-workflow success. Large-graph/platform/browser coverage remains separate work.

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Background, Controls, MarkerType, ReactFlow, ReactFlowProvider, applyEdgeChanges, applyNodeChanges, useReactFlow,
+  Background, Controls, MarkerType, ReactFlow, ReactFlowProvider, applyEdgeChanges, applyNodeChanges, useReactFlow, useUpdateNodeInternals,
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from "@xyflow/react";
 import { api, errorText } from "./api";
@@ -42,6 +42,7 @@ import { useDocumentHistory } from "./useDocumentHistory";
 import { ResearchRecords } from "./components/ResearchRecords";
 import { GraphClipboardTools } from "./components/GraphClipboardTools";
 import { GraphOutline } from "./components/GraphOutline";
+import { useFlowMeasurements } from "./useFlowMeasurements";
 import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
@@ -102,6 +103,8 @@ function Workbench() {
   const [repoImport, setRepoImport] = useState(false);
   const [debugRun, setDebugRun] = useState<string | null>(null);
   const { fitView } = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
+  const { measurements, rememberDimensions, pruneMeasurements } = useFlowMeasurements();
 
   const opsByType = useMemo(() => Object.fromEntries([...ops, ...PSEUDO_OPS].map((o) => [o.type, o])), [ops]);
   const domain = graph.graphKind === "domain";
@@ -178,20 +181,25 @@ function Workbench() {
 
   // boot: registry, then the last saved project, else the reference example as an unsaved draft
   useEffect(() => {
+    let disposed = false;
+    const controller = new AbortController();
     (async () => {
       try {
-        const reg = await api.get<{ ops: OpInfo[] }>("/api/registry");
+        const reg = await api.get<{ ops: OpInfo[] }>("/api/registry", controller.signal);
+        if (disposed) return;
         setOps(reg.ops);
         refreshLists();
         const last = lsGet(LAST_KEY);
         if (last) {
-          try { const p = await api.get<any>(`/api/projects/${encodeURIComponent(last)}`); adopt(p.id, p.graph, p.ui, true); setBooted(true); return; } catch { /* fall through to the example */ }
+          try { const p = await api.get<any>(`/api/projects/${encodeURIComponent(last)}`, controller.signal); if (disposed) return; adopt(p.id, p.graph, p.ui, true); setBooted(true); return; } catch { if (disposed) return; /* fall through to the example */ }
         }
-        const ex = await api.get<any>("/api/examples/reference_cnn");
+        const ex = await api.get<any>("/api/examples/reference_cnn", controller.signal);
+        if (disposed) return;
         adopt("reference_cnn", ex.graph, ex.ui, false);
-      } catch (e) { setMessage(`Cannot reach the control service: ${errorText(e)}`); }
-      setBooted(true);
+      } catch (e) { if (!disposed) setMessage(`Cannot reach the control service: ${errorText(e)}`); }
+      if (!disposed) setBooted(true);
     })();
+    return () => { disposed = true; controller.abort(); };
   }, [adopt, refreshLists]);
 
   // show the whole graph after a project is opened or the scope changes (React Flow only fits on its first render)
@@ -455,8 +463,14 @@ function Workbench() {
           onOpen: structural ? () => openInstance(n.id) : undefined, onToggle: structural && !def && n.type !== "core.select" ? () => toggleExpand(n.id) : undefined, expanded: expandedPaths.has(n.id) },
       });
     });
-    return out;
-  }, [cur.nodes, ui.positions, selNodes, opsByType, v, rv, validation.pending, tabRun, expandedGroups, def, compatFor]); // eslint-disable-line react-hooks/exhaustive-deps
+    return out.map(node => ({ ...node, measured: measurements[node.id] }));
+  }, [cur.nodes, ui.positions, selNodes, opsByType, v, rv, validation.pending, tabRun, expandedGroups, def, compatFor, measurements]); // eslint-disable-line react-hooks/exhaustive-deps
+  const flowMembership = JSON.stringify(rfNodes.map(node => [node.id, node.type]));
+  useEffect(() => {
+    const ids = JSON.parse(flowMembership).map((node: string[]) => node[0]);
+    pruneMeasurements(ids);
+    if (view === "graph" && !agent && !rl) updateNodeInternals(ids);
+  }, [flowMembership, projectId, scope.length, view, agent, rl, pruneMeasurements, updateNodeInternals]);
 
   const rfEdges: Edge[] = useMemo(() => {
     const base = cur.edges.map((e) => {
@@ -482,11 +496,12 @@ function Workbench() {
   }, [cur.edges, selEdges, v, expandedGroups]);
 
   const onNodesChange = useCallback((changes: NodeChange<AnyNode>[]) => {
+    rememberDimensions(changes);
     const moved = applyNodeChanges(changes, rfNodes);
     const sel = changes.some((c) => c.type === "select");
     if (sel) setSelNodes(moved.filter((n) => n.selected).map((n) => n.id));
     if (changes.some((c) => c.type === "position")) setUi((u) => ({ ...u, positions: { ...u.positions, ...Object.fromEntries(moved.filter((n) => !n.parentId).map((n) => [posKey(n.id), { x: n.position.x, y: n.position.y }])) } }), changes.some(c => c.type === "position" && c.dragging === true));
-  }, [rfNodes]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rfNodes, rememberDimensions]); // eslint-disable-line react-hooks/exhaustive-deps
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
     if (changes.some((c) => c.type === "select")) setSelEdges(applyEdgeChanges(changes, rfEdges).filter((e) => e.selected).map((e) => e.id));
   }, [rfEdges]);

@@ -580,3 +580,8 @@ node --test apps/editor/tests/graphOutline.test.mjs
 .venv/bin/pytest -q tests/test_graph_outline.py
 .venv/bin/python tools/editor_outline_smoke.py --output /private/tmp/void-outline-editor-release
 ```
+
+Controlled canvases preserve their actual DOM measurements through draft undo/redo and
+validation updates. These sizes remain page-local; saved graph/layout data is unchanged.
+Initial loading cancels disposed requests so a stale startup response cannot replace
+a newly opened draft. Verification details and remaining work are in HANDOFF §32.
