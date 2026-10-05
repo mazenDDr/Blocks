@@ -626,3 +626,13 @@ Typed wire insertion verification (owned temporary services and SYNTHETIC fixtur
 
 The real Chrome journey passes. Final native/environment acceptance and retained
 failure diagnostics are recorded in docs/HANDOFF.md §35.
+
+
+Command menu verification (owned isolated Chrome/native services):
+
+```bash
+node --test apps/editor/tests/graphCommands.test.mjs
+.venv/bin/python tools/editor_commands_smoke.py --output /private/tmp/void-commands-editor-release
+```
+
+Final acceptance and retained focus-test failures are in docs/HANDOFF.md §36.

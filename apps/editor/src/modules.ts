@@ -46,7 +46,7 @@ export function viewToDef(v: Graph, d: ModuleDef): ModuleDef {
       outFrom.set(e.to.node.slice(OUT_PREFIX.length), src);
     } else if (e.from.node.startsWith(IN_PREFIX)) {
       const port = e.from.node.slice(IN_PREFIX.length);
-      edges.push({ ...e, id: `in_${port}__${e.to.node}_${e.to.port}`, from: { node: "$in", port } });
+      edges.push({ ...e, from: { node: "$in", port } });
     } else edges.push(e);
   }
   return {

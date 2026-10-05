@@ -579,7 +579,7 @@ Final environment-specific verification and hosted status are in HANDOFF §30.
 
 No native values are guessed when a contract is unavailable. Outline content describes
 structure and native validation; learned activations remain in recorded inspectors.
-Agent/RL outlines, deeper cross-scope navigation, command menus,
+Agent/RL outlines, deeper cross-scope navigation, custom command shortcuts,
 performance benchmarks, onboarding and formal accessibility certification remain.
 Synthetic description now uses tools layout flow so it cannot cover those controls.
 No model pin/dependency/schema change. Final verification is recorded in HANDOFF §31.
@@ -654,3 +654,20 @@ Agent/RL/generated-instance links and structural/code operations are excluded ex
 Sequence movement/grouping/automatic layout/drag-on-wire suggestions remain separate.
 Mac full1214pass/1skip plus12live/19Node/build/typecheck/current ledger/strict browser/curl/recovery pass; read §35 for environment scope and retained failures. Arrangement also reads current DOM dimensions after native
 readiness to repair the observed Linux card-resize race; next hosted verification pending.
+
+
+### Searchable existing editor commands (ADR0039; Mac accepted; hosted pending in HANDOFF§36)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Literal search,25result pages, native modal/keyboard/focus/disabled reasons | GraphCommandMenu/graphCommands | Actual CmdCtrlK/Tab/arrows/Enter/Escape, input-focus shortcut exclusion, paging and disabled Undo refusal |
+| Existing project-kind workspace navigation and current root/module inspectors | Shared workspace destination list and real handlers | Exact unchanged saved graph/UI/native hashes; real Agent/RL workspace destinations with generic node/create choices excluded |
+| Disconnected static block creation with native registered defaults and exact whole-draft Undo/Redo | Existing node creator/history, kind/backend scope | Real native missing-input report, unchanged original wires/interfaces, exact Undo/Redo, orphan note/layout reservation and valid constructor ID |
+| Module view roundtrip retains input wire identities/metadata | Existing converter endpoint-only correction | Actual bundled module deep equality plus real native/browser module creation |
+
+200UTF16query units,25rows/page, literal simple-lowercase search, no semantic/fuzzy search
+or large-graph performance claim. Native graph changes only on explicit creation/history
+commands; actual earlier provenance remains untouched. No dependency/native pin/schema
+or DB change. Formal accessibility certification, browser/platform matrix, user-defined
+shortcuts, Agent/RL generic creation, whole-project/remote commands remain separate.
+Required full1214native/12live/22Node/build/typecheck/ledger/current pin audit, strict Chrome/curl and58-file recovery pass; final dialog geometry and modal-history browser check passes. Read HANDOFF§36 for final outcomes.

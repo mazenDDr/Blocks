@@ -100,7 +100,7 @@ try{
   await page.evaluate(async source=>{const r=await fetch('/api/projects/SYNTHETIC_arrangement_crowded',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(source)});if(!r.ok)throw Error('Seed crowded layout '+r.status);},crowded);
   await save();await page.waitForFunction(()=>[...document.querySelector('select[aria-label="open project"]').options].some(o=>o.value==='project:SYNTHETIC_arrangement_crowded'));
   await page.select('select[aria-label="open project"]','project:SYNTHETIC_arrangement_crowded');await page.waitForFunction(()=>document.querySelector('input[aria-label="project id"]').value==='SYNTHETIC_arrangement_crowded');
-  await select(ids);await click('Distribute horizontally');await page.waitForFunction(()=>document.querySelector('[role="status"]')?.textContent.includes('E_LAYOUT_OVERLAP'));
+  await select(ids);await click('Distribute horizontally');await page.waitForFunction(()=>document.querySelector('.toast[role="status"]')?.textContent.includes('E_LAYOUT_OVERLAP'));
   assert(await page.$eval('button[aria-label="undo draft edit"]',b=>b.disabled));evidence.refused=await page.evaluate(async()=>(await fetch('/api/projects/SYNTHETIC_arrangement_crowded')).json());
   assert.deepEqual(evidence.refused.graph,baseline.graph);assert.deepEqual(evidence.refused.ui,crowded.ui);
   evidence.stage='module-scoped layout';await page.select('select[aria-label="open project"]','example:residual_cnn');await page.waitForFunction(()=>document.querySelector('input[aria-label="project id"]').value==='residual_cnn');

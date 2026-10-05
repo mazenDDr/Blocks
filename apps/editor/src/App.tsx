@@ -8,6 +8,8 @@ import { AgentWorkspace } from "./components/agent/AgentWorkspace";
 import { DomainWorkspace } from "./components/DomainWorkspace";
 import { ProductionWorkspace } from "./components/ProductionWorkspace";
 import { ScaleWorkspace } from "./components/ScaleWorkspace";
+import { GraphCommandMenu } from "./components/GraphCommandMenu";
+import { graphCommands, workspaceChoices, type GraphCommand, type WorkspaceView } from "./graphCommands";
 import { GraphInsertionTools } from "./components/GraphInsertionTools";
 import { insertOnWire } from "./graphInsertion";
 import { KeyboardGraphTools } from "./components/KeyboardGraphTools";
@@ -60,7 +62,7 @@ const EMPTY_UI: UiDoc = { schemaVersion: "1.0.0", positions: {} };
 const LAST_KEY = "void.lastProject";
 const nodeTypes = { card: OpNodeCard, group: GroupCard };
 type AnyNode = CardNode | GroupNode;
-type View = "graph" | "data" | "experiments" | "training" | "debug" | "attention" | "backends" | "coverage" | "domain" | "production" | "scale" | "records";
+type View = WorkspaceView;
 interface Scope { module: string; version: string; via: string }
 
 const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -176,7 +178,7 @@ function Workbench() {
     const key = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       if (target?.closest('input, textarea, select, [contenteditable], .cm-editor') || event.altKey || !(event.metaKey || event.ctrlKey)
-          || view === "production" || view === "scale" || view === "records") return;
+          || document.querySelector("dialog[open]") || view === "production" || view === "scale" || view === "records") return;
       const direction = event.key.toLowerCase() === "z" ? (event.shiftKey ? "redo" : "undo") : event.key.toLowerCase() === "y" && event.ctrlKey ? "redo" : null;
       if (!direction) return;
       event.preventDefault();
@@ -309,10 +311,13 @@ function Workbench() {
   };
 
   const addNode = (type: string, config: Record<string, unknown>, version = "1.0.0") => {
-    const id = nextId(type === "core.composite" ? String((config as any).module) : type === "code.block" ? String((config as any).block) : type.split(".").pop()!, new Set(cur.nodes.map((n) => n.id)));
+    const reserved = new Set(cur.nodes.map(n => n.id)), prefix = def ? `${modKey(def)}/` : "";
+    for (const values of [ui.positions, ui.nodeComments]) if (values && typeof values === "object" && !Array.isArray(values))
+      for (const key of Object.keys(values)) if (key.startsWith(prefix) && !key.slice(prefix.length).includes("/")) reserved.add(key.slice(prefix.length));
+    const id = nextId(type === "core.composite" ? String((config as any).module) : type === "code.block" ? String((config as any).block) : type.split(".").pop()!, reserved);
     const anchor = selNodes.length === 1 ? cur.nodes.find((n) => n.id === selNodes[0]) : undefined;
-    const ap = anchor ? ui.positions[posKey(anchor.id)] : undefined;
-    const maxX = Math.max(-200, ...cur.nodes.map((n) => ui.positions[posKey(n.id)]?.x ?? 0));
+    const ap = anchor ? own(ui.positions, posKey(anchor.id)) : undefined;
+    const maxX = Math.max(-200, ...cur.nodes.map((n) => own(ui.positions, posKey(n.id))?.x ?? 0));
     const pos = ap ? { x: ap.x + 260, y: ap.y } : { x: maxX + 260, y: 120 };
     edit((g) => ({ ...g, nodes: [...g.nodes, { id, type, version, config, stateRef: null }] }));
     setUi((u) => ({ ...u, positions: { ...u.positions, [posKey(id)]: pos } }));
@@ -335,6 +340,19 @@ function Workbench() {
       setSelNodes([result.id]); setSelEdges([]);
       setMessage(`Inserted ${result.id}. Configure it and inspect native validation before running.`);
     } catch (error) { setMessage(errorText(error)); }
+  };
+
+  const commandList = useMemo(() => graphCommands(graph, cur, ops, canUndo, canRedo, !!def), [graph, cur, ops, canUndo, canRedo, def]);
+  const runCommand = (command: GraphCommand) => {
+    if (command.disabled || !commandList.some(current => current.id === command.id && !current.disabled)) return;
+    if (command.action === "view") { setView(command.view);return; }
+    if (command.action === "undo" || command.action === "redo") { moveHistory(command.action);return; }
+    if (command.action === "root") { setScope([]);setSelNodes([]);setSelEdges([]);setView("graph");return; }
+    if (command.action === "inspect") { if (cur.nodes.some(n => n.id === command.node)) { setSelNodes([command.node]);setSelEdges([]);setView("graph"); } return; }
+    if (command.action === "create") {
+      const op = ops.find(o => o.type === command.operation);
+      if (op) { addNode(op.type, structuredClone(op.defaults), op.version);setView("graph");setMessage("Added a disconnected block with registered defaults. Configure it and inspect native validation before running."); }
+    }
   };
 
   const addBlock = (op: OpInfo) => {
@@ -604,6 +622,7 @@ function Workbench() {
         <button onClick={() => save().catch(() => {})}>Save{dirty ? " *" : ""}</button>
         <button aria-label="undo draft edit" title="Undo graph settings/layout; recorded runs and external actions are retained" disabled={!canUndo} onClick={() => moveHistory("undo")}>Undo</button>
         <button aria-label="redo draft edit" title="Redo graph settings/layout" disabled={!canRedo} onClick={() => moveHistory("redo")}>Redo</button>
+        <GraphCommandMenu key={`commands:${projectId}:${def ? modKey(def) : "root"}`} commands={commandList} context={`${projectId} · ${def ? `Module ${modKey(def)}` : `${graph.graphKind} root`}`} onRun={runCommand} />
         <label>Open <select value="" onChange={(e) => { const [k, ...r] = e.target.value.split(":"); if (k) load(k as "project" | "example", r.join(":")); }} aria-label="open project">
           <option value="">choose…</option>
           {projects.length > 0 && <optgroup label="Saved projects">{projects.map((p) => <option key={p.id} value={`project:${p.id}`}>{p.id} [{p.graphKind}]</option>)}</optgroup>}
@@ -624,10 +643,7 @@ function Workbench() {
           </label>
         )}
         <span className="viewtabs" role="tablist" aria-label="workspace">
-          <button role="tab" aria-selected={view === "scale"} className={view === "scale" ? "on" : ""} onClick={() => setView("scale")}>Integrations</button>
-          <button role="tab" aria-selected={view === "production"} className={view === "production" ? "on" : ""} onClick={() => setView("production")}>Production</button>
-          <button role="tab" aria-selected={view === "records"} className={view === "records" ? "on" : ""} onClick={() => setView("records")}>Records</button>
-          {(domain ? [["domain", "Domain workspace"], ["graph", "Graph"], ["coverage", "Coverage"]] as [View, string][] : rl ? [["graph", "RL lab"]] as [View, string][] : agent ? [["graph", "Agent"], ["data", "Data"]] as [View, string][] : [["graph", "Graph"], ["data", "Data"], ["experiments", "Experiments"], ...(tabular ? [] : [["training", "Training"], ["debug", "Debug"], ["attention", "Attention"], ["backends", "Backend"]]), ["coverage", "Coverage"]] as [View, string][]).map(([k, label]) => (
+          {workspaceChoices(graph.graphKind).map(([k, label]) => (
             <button key={k} role="tab" aria-selected={view === k} className={view === k ? "on" : ""} onClick={() => setView(k)}>{label}</button>))}
         </span>
         <span className="badge kind" title="Graph kind: wires of different kinds never mean the same thing">{graph.graphKind} graph</span>
