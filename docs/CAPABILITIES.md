@@ -621,7 +621,7 @@ remain. Final full/live/hosted state is recorded in HANDOFF§33; Mac1209native/1
 recovery pass; hosted verification of this arrangement scope is pending.
 
 
-### Scoped authored node comments (ADR0037; Mac accepted, hosted pending in HANDOFF§34)
+### Scoped authored node comments (ADR0037; Mac accepted; Linux browser pass, native pending in HANDOFF§35)
 
 | Capability | Implementation | Evidence |
 |---|---|---|
@@ -634,4 +634,23 @@ recovery pass; hosted verification of this arrangement scope is pending.
 identity references are editable authored metadata, not authenticated or signed audit.
 No native model pin/dependency/schema change. Older notes can remain in draft history
 and backups; no physical erasure. Agent/RL/runtime-instance/sample/plot annotations,
-collaboration, append-only comment revisions and report exports remain. Mac acceptance:1209native/12live/17Node, strict real Chrome/curl and58-file source-deleted recovery pass. Comments hosted verification remains pending; read HANDOFF§34 for evidence and limitations.
+collaboration, append-only comment revisions and report exports remain. Mac acceptance:1209native/12live/17Node, strict real Chrome/curl and58-file source-deleted recovery pass. Linux comments/recovery browser verification passes on536dd33; its native job and separate arrangement repair remain pending; read HANDOFF§34 for evidence and limitations.
+
+
+### Explicit typed-wire insertion (ADR0038; Mac accepted, hosted pending in HANDOFF§35)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Explicit existing wire, installed operation, selected input/output and exact kind | GraphInsertionTools/graphInsertion, native registry defaults | Real browser static port/kind choices, fitted-state refusal without edit |
+| Root model/tabular/domain and stored module input/internal edge replacement | One appended node/two fresh wires; other definitions/interfaces unchanged | Native Torch output/loss/gradient/SGD/count references; exact browser module/root graph/UI preservation |
+| One whole-draft Undo/Redo, orphan note/layout ID reservation, additional inputs remain missing | Existing paired history and native validation | Real missing b/E_MISSING_INPUT; exact Undo/Redo and19Node checks |
+| Native table profile and vision annotation wires | Native pandas/domain contracts with actual labelled fixture files | Actual Chrome/curl native reports; no training/quality claim |
+
+Only new position stored at endpoint-origin midpoint; placement may overlap. Consumer
+extension metadata remains on the downstream wire. Native semantic identity changes,
+existing comments retain original references. No learned-weight transfer, opaque state,
+backend/model-pin/dependency/schema change. Module output-interface display links,
+Agent/RL/generated-instance links and structural/code operations are excluded explicitly.
+Sequence movement/grouping/automatic layout/drag-on-wire suggestions remain separate.
+Mac full1214pass/1skip plus12live/19Node/build/typecheck/current ledger/strict browser/curl/recovery pass; read §35 for environment scope and retained failures. Arrangement also reads current DOM dimensions after native
+readiness to repair the observed Linux card-resize race; next hosted verification pending.

@@ -161,7 +161,7 @@ Activation capture on Keras/JAX returns every node's value in graph layout (NCHW
 | `core.tensor_input` | 6 workload | 6 workload | 6 workload | 4 |
 | `diag.assert` | - | - | - | 1 |
 | `diag.histogram` | - | - | - | 1 |
-| `diag.probe` | - | - | - | 1 |
+| `diag.probe` | - | - | - | 2 |
 | `diag.timer` | - | - | - | 1 |
 | `jax.lax.cumsum` | - | - | 2 conformance | 2 |
 | `keras.layers.separable_conv2d` | - | 3 conformance | - | 2 |
@@ -173,7 +173,7 @@ Activation capture on Keras/JAX returns every node's value in graph layout (NCHW
 | `pytorch.nn.max_pool2d` | 5 conformance, 2 workload | 2 conformance, 3 refusal, 2 workload | 4 conformance, 1 refusal, 2 workload | 1 |
 | `pytorch.nn.relu` | 1 conformance, 3 workload | 1 conformance, 3 workload | 1 conformance, 3 workload | 3 |
 | `tensor.abs` | - | - | - | 2 |
-| `tensor.add` | - | - | - | 3 |
+| `tensor.add` | - | - | - | 4 |
 | `tensor.any_all` | - | - | - | 1 |
 | `tensor.arange` | - | - | - | 0 |
 | `tensor.batchnorm` | - | - | - | 1 |
@@ -369,7 +369,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `tabular.join` | tabular | pandas | yes | join | 1 |
 | `tabular.predictions_export` | tabular | scikit-learn | yes | step | 1 |
 | `tabular.profile` | tabular | pandas | yes | profile | 2 |
-| `tabular.select_columns` | tabular | pandas | yes | step | 2 |
+| `tabular.select_columns` | tabular | pandas | yes | step | 3 |
 | `tabular.train_validation_split` | tabular | pandas | yes | split | 3 |
 
 ## Templates and pretrained weights

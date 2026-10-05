@@ -94,6 +94,9 @@ jobs:
       - name: Real browser authored node comments
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_comments_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-comments-smoke
+      - name: Real browser explicit typed wire insertion
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .venv/bin/python tools/editor_insertion_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-insertion-smoke
       - name: Real browser, backup and restored native state journey
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/recovery_smoke.py --trackers --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
@@ -133,5 +136,9 @@ jobs:
             /tmp/void-ci-comments-smoke/evidence.json
             /tmp/void-ci-comments-smoke/*.log
             /tmp/void-ci-comments-smoke/*.png
+            /tmp/void-ci-insertion-smoke/runner.json
+            /tmp/void-ci-insertion-smoke/evidence.json
+            /tmp/void-ci-insertion-smoke/*.log
+            /tmp/void-ci-insertion-smoke/*.png
           if-no-files-found: warn
           retention-days: 7

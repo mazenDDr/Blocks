@@ -47,3 +47,11 @@ the checkout. Ignored Mac vision/speech files are not available in a fresh Linux
 browser job. The runner uses the existing fixture generator and explicit owned source
 paths, retains all native .ok assertions, and compares whole native before/after reports.
 No missing-data error is hidden or replaced. Exact failed/repaired evidence is in §34.
+
+Following current-identity validation guards (ADR0037), a fresh Linux run caught cards
+resizing after the alignment action: bottom edges differed by13canvas units. Alignment
+now waits for current native validation/compatibility and reads actual unscaled DOM
+border-box dimensions at the explicit click, rather than an observer's prior dimensions.
+No guessed size or geometry assertion relaxed. Final all-family Mac rerun and next
+hosted outcome are recorded in HANDOFF §35. Dynamic future run updates can resize
+cards again; layout remains explicit rather than automatic realignment.

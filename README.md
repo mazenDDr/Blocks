@@ -615,3 +615,14 @@ with source nodes. Actual commands run:
 .venv/bin/python tools/editor_comments_smoke.py --output /private/tmp/void-node-comments-editor-smoke-final
 .venv/bin/python tools/recovery_smoke.py --trackers --output /private/tmp/void-node-comments-integrated-recovery-final
 ```
+
+
+Typed wire insertion verification (owned temporary services and SYNTHETIC fixtures):
+
+```bash
+.venv/bin/pytest -q tests/test_graph_insertion.py
+.venv/bin/python tools/editor_insertion_smoke.py --output /private/tmp/void-insertion-editor-scope-reentry
+```
+
+The real Chrome journey passes. Final native/environment acceptance and retained
+failure diagnostics are recorded in docs/HANDOFF.md §35.

@@ -8,6 +8,8 @@ import { AgentWorkspace } from "./components/agent/AgentWorkspace";
 import { DomainWorkspace } from "./components/DomainWorkspace";
 import { ProductionWorkspace } from "./components/ProductionWorkspace";
 import { ScaleWorkspace } from "./components/ScaleWorkspace";
+import { GraphInsertionTools } from "./components/GraphInsertionTools";
+import { insertOnWire } from "./graphInsertion";
 import { KeyboardGraphTools } from "./components/KeyboardGraphTools";
 import { RLWorkspace } from "./components/rl/RLWorkspace";
 import { GraphContext } from "./components/UnsupViews";
@@ -318,6 +320,23 @@ function Workbench() {
     return id;
   };
 
+  const insertBlock = (edgeId: string, op: OpInfo, input: string, output: string) => {
+    try {
+      // Module boundary output links encode an interface rather than stored edges.
+      if (def && !def.edges.some(e => e.id === edgeId)) throw new Error("E_INSERT_SCOPE: Choose a stored module input/internal wire; output-interface links require explicit interface editing.");
+      const layout = def ? { ...ui, positions: { ...ui.positions, ...Object.fromEntries(Object.entries(auto).filter(([id]) => !Object.hasOwn(ui.positions, posKey(id))).map(([id, p]) => [posKey(id), p])) } } : ui;
+      const result = insertOnWire(cur, layout, edgeId, op, input, output, def ? `${modKey(def)}/` : "");
+      if (def) {
+        const replacement = result.replacement.map(e => ({ ...e, from: e.from.node.startsWith("__in:") ? { node: "$in", port: e.from.node.slice(5) } : e.from }));
+        setGraph(g => { const d = findModule(g, def.id, def.version); return d ? replaceModule(g, d, { ...d, nodes: [...d.nodes, result.graph.nodes[result.graph.nodes.length - 1]], edges: d.edges.flatMap(e => e.id === edgeId ? replacement : [e]) }) : g; });
+      } else setGraph(result.graph);
+      // Only the new node's position is stored; temporary module fallback positions stay temporary.
+      setUi(u => ({ ...u, positions: { ...u.positions, [posKey(result.id)]: result.ui.positions[posKey(result.id)] } }));
+      setSelNodes([result.id]); setSelEdges([]);
+      setMessage(`Inserted ${result.id}. Configure it and inspect native validation before running.`);
+    } catch (error) { setMessage(errorText(error)); }
+  };
+
   const addBlock = (op: OpInfo) => {
     if (op.type === "code.block" && def) { setMessage("Code blocks are added from the project graph; leave the module first."); return; }
     const special = ["core.composite", "core.repeat", "core.select", "code.block"].includes(op.type) ? structuralDefaults(op.type) : null;
@@ -483,15 +502,20 @@ function Workbench() {
     if (view === "graph" && !agent && !rl) updateNodeInternals(ids);
   }, [flowMembership, projectId, scope.length, view, agent, rl, pruneMeasurements, updateNodeInternals]);
 
-  const arrangementBlocked = expandedGroups.length ? "Collapse expanded modules before arranging this root layout."
+  const arrangementBlocked = validation.pending || (!tabular && compat.pending) ? "Waiting for current native validation and compatibility before measuring cards."
+    : validation.error ? "Native validation is unavailable; retry before arranging cards."
+    : expandedGroups.length ? "Collapse expanded modules before arranging this root layout."
     : selNodes.some(id => cur.nodes.some(n => n.id === id) && !measurements[id]) ? "Waiting for actual selected-card dimensions." : null;
   const arrangeSelection = (operation: Arrangement) => {
     if (arrangementBlocked) { setMessage(arrangementBlocked); return; }
     try {
       const positions = arrangeGraphNodes(cur.nodes.flatMap((node, i) => {
         if (!selNodes.includes(node.id)) return [];
-        const p = basePos(node.id, i), measured = measurements[node.id];
-        return [{ id: node.id, key: posKey(node.id), ...p, width: measured?.width ?? NaN, height: measured?.height ?? NaN }];
+        const p = basePos(node.id, i);
+        const card = document.querySelector<HTMLElement>(`.react-flow__node[data-id="${CSS.escape(node.id)}"]`);
+        // Read current unscaled DOM border-box dimensions at this explicit action.
+        // A newly returned native report can resize a card before Flow's observer catches up.
+        return [{ id: node.id, key: posKey(node.id), ...p, width: card?.offsetWidth ?? NaN, height: card?.offsetHeight ?? NaN }];
       }), operation);
       setUi(old => Object.entries(positions).every(([id, p]) => old.positions[id]?.x === p.x && old.positions[id]?.y === p.y) ? old
         : { ...old, positions: { ...old.positions, ...positions } });
@@ -661,6 +685,9 @@ function Workbench() {
       <div className="graph-tools">
       {ui.description && <div className={`notice-inline ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic / teaching data. </b>}{ui.description}</div>}
       <KeyboardGraphTools graph={cur} ops={opsByType} selectedNode={selNodes[0] ?? ""} selectedWire={selEdges[0] ?? ""} onNode={(id) => { setSelNodes(id ? [id] : []); setSelEdges([]); }} onWire={(id) => { setSelEdges(id ? [id] : []); setSelNodes([]); }} onConnect={connect} />
+      <GraphInsertionTools key={`insertion:${projectId}:${def ? modKey(def) : "root"}`} graph={cur} ops={ops} selectedWire={selEdges.length === 1 ? selEdges[0] : ""}
+        blocked={def && selEdges.length === 1 && !def.edges.some(e => e.id === selEdges[0]) ? "E_INSERT_SCOPE: Output-interface links are edited through the module interface." : null}
+        onWire={id => { setSelEdges(id ? [id] : []); setSelNodes([]); }} onInsert={insertBlock} />
       <GraphClipboardTools key={`${projectId}:${scope.length}`} graph={graph} selected={selNodes} clipboard={clipboard} inModule={!!def} onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onCopy={copySelection} onPaste={pasteSelection} onClear={() => { setClipboard(null); setPasteCount(0); }} />
       <GraphArrangementTools key={`arrangement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={arrangementBlocked}
         onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onArrange={arrangeSelection} onCollapse={expandedGroups.length ? () => setExpanded([]) : undefined} />
