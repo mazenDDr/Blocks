@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §36 — comments536dd33 and Mac-verified insertion/arrangement repair3e428bc pushed.** New searchable command-menu draft integrated; full/native/browser acceptance pending. Current default Linux37361034202 active; previous comments run native/comments/recovery pass, separate arrangement race repaired locally. Read §36 before older notes.
+> **Latest continuation: §37 — searchable commands d406884 pushed; insertion/arrangement repair 3e428bc passes full default Linux CI.** Selected-group movement is Mac accepted; local commit/publication follows. Command CI37363299537 is active; preserve it before the next master push. Read §37 before older notes.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0037`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0040`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -63,8 +63,11 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Revisioned research run notes/tags/search | Mac verified; Linux native/recovered journey pass on833e133, §29/§32 | 3bdfe53 |
 | Root model/tabular/domain graph clipboard | Mac verified; Linux native/clipboard browser pass on833e133, §30/§32 | 2c20cd5 |
 | Structured root/module graph outline | Mac and default Linux native/browser verified §31–§33/ADR0034 | 27d0635/18ae842 |
-| Measured graph arrangement | Mac verified; owned-fixture Linux browser passes, native pending §33–§34 | af31a76/7de4667 |
-| Scoped authored node comments | Mac native/live/browser/curl/recovery verified; publication/hosted pending §34 | selective commit follows |
+| Measured graph arrangement | Mac and default Linux native/browser verified; current-DOM repair §35–§37 | af31a76/7de4667/3e428bc |
+| Scoped authored node comments | Mac and default Linux native/browser/recovery verified §34–§37 | 536dd33/3e428bc |
+| Explicit typed-wire insertion | Mac and default Linux native/browser/recovery verified §35–§37 | 3e428bc |
+| Searchable existing editor commands | Mac verified; default Linux active §36–§37 | d406884 |
+| Selected-group layout movement | Mac native/live/browser/curl/recovery verified §37 | local verified commit follows |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -1158,3 +1161,30 @@ Default insertion/arrangement repair [37361034202](https://github.com/mazenDDr/p
 Final actual layout/modal/native journey `/private/tmp/void-commands-editor-final-layout` **passes6.0980s**, backend44664/editor44679/browser44698 stopped(-15/143/0), errors empty. Real dialog title/close rectangles do not overlap and scrollWidth<=clientWidth; user metadata and all original native/default/orphan/module/keyboard/Undo assertions retained. Screenshot visually reviewed. Final build271modules/typecheck/Node22/coveragecurrent/diffcheck/native16identity+store audit pass; exact final Node duration in `/private/tmp/void-commands-node-layout.log`. Full1214pass/1skip/12deselected1941warnings478.68s plus12actualOllama24.02s and strict curl/recovery/alloriginalbrowser checks above pass. No native code/dependency/identity/schema changes; later browser/style/converter corrections have actual final Node/browser proof.
 
 Command-menu scope Mac accepted; commit locally with current handoff, push waits for active3e428bc default native verification. No unaccepted implementation is bundled. NextADR0040, explicit selected-group translation still proposed only. Continue alone through useful remaining work until approaching usage limit; no project-finalization claim. Credentials/infrastructure/other §32 gaps remain. All own services closed; user8258/8000 never touched.
+
+
+## 37. Selected-group layout movement — 2026-10-05 (draft until final acceptance)
+
+Commands **d40688468cfed6a0b4ead2ae0fbfaed581af9d44 pushed**. Default [37363299537](https://github.com/mazenDDr/project-void/actions/runs/37363299537) active; do not cancel its native/browser verification by the next master push. Prior insertion/arrangement repair [37361034202](https://github.com/mazenDDr/project-void/actions/runs/37361034202) on3e428bc now **whole-workflow success**: native1214pass/1skip/12deselected1941warnings711.00s,269module build/typecheck/19Node/generated coverage pass. Downloaded `/private/tmp/void-insertion-ci-native`, full log `/private/tmp/void-insertion-ci.log`, independently parsed JUnit1215cases/0failures/0errors/1skip. All original and arrangement/comments/insertion/recovered browser checks pass; `/private/tmp/void-insertion-ci-browser`, strict error arrays empty/all recorded services stopped. This supersedes older insertion/repair/comments pending notices, does not verify later commands or movement.
+
+Current uncommitted `graphMovement.ts`, `GraphMovementTools.tsx`, App/CSS,2pureNode tests, owned runner/journey (ADR0040). Explicit offsets for1–100 actual unique root/module layout cards; same offset from actual stored/module/fallback origins; only selected UI positions change, one existing whole-draft Undo/Redo. Zero offset materializes no fallback key and adds no history. Finite current/result origins and offsets within±1,000,000; stable E_MOVE_SELECTION/E_MOVE_DELTA/E_MOVE_POSITION refusal, no partial edits. Expanded root interiors require explicit collapse even while native validation is pending; Agent/RL/generated interiors excluded. Graph/config/wires/interfaces/native values/identity untouched; unknown UI and authored provenance retained. No group container/automatic layout/weight-transfer/performance claim.
+
+Native full `/private/tmp/void-movement-full.log` running. Actual live **12passed,1215deselected24.94s** (`/private/tmp/void-movement-live.log`).24Node pass134.990ms; final build/typecheck/coverage checks complete or running, verify final logs. First owned Chrome `/private/tmp/void-movement-editor-smoke` failed3.2509s before launch due copied old fixture environment-variable read; no product assertion weakened. Services45266/45285/45304 stopped(-15/143/1). Removed the unused read and explicitly reopened the root outline after module Undo (existing navigation resets to root). New `/private/tmp/void-movement-editor-fixture-scope` running; no browser/curl/recovery acceptance claim yet. Owned fixtures generated n=12vision/n=24NLP/n=12audio in private temporary paths, never user's ignored example data. All16native pin sources and store/dependencies unchanged, audit before acceptance.
+
+Continue alone until approaching reserve or whole-project finalization; account53%five-hour/69%weekly, no reset credit consumed. NextADR0041 after this scope. User8258/8000 untouched. Broader remaining VISION scope remains §32/CAPABILITIES; credentials/infrastructure gaps stay honestly unimplemented.
+
+
+### Movement native verification and actual DOM diagnostic
+
+Full native **1214passed,1skipped,12deselected1941warnings475.53s** (`/private/tmp/void-movement-full.log`), live12pass1215deselected24.94s. Final build273modules/typecheck/24Node134.990ms/coveragecurrent/diffcheck pass. First setup failure above was followed by fixture-scope49.9759s and origin-diagnostic49.7798s failures at an overly precise computed-CSS transform assertion: expected fc1503.125, actual computed transform1503.12 (Chrome serializes to6significant digits). Exact saved graph/UI/native reports had already passed; Both inline and computed CSSOM transforms serialize limited precision (inline1503.1199951171875). New journey checks both DOM representations within0.01 layout units alongside exact saved API coordinates and exact graph/UI/native assertions. No product coordinates were rounded or changed; all exact document/report/Undo assertions remain. Diagnostic service groups47040/47055/47074 and47325/47333/47352 stopped(-15/143/1). Current `/private/tmp/void-movement-editor-exact-dom` and all original browser/recovery regressions running; no final movement acceptance claim yet.
+
+Exact-inline attempt `/private/tmp/void-movement-editor-exact-dom` also fails49.4941s at the same CSSOM serialization, services47457/47471/47490 stopped(-15/143/1). This is a correction to a new, infeasible browser assertion, not a loosened original graph/native regression; existing original history/clipboard/outline/arrangement/comments/insertion/commands journeys all pass unchanged. Current `/private/tmp/void-movement-editor-rendered-geometry` keeps exact stored coordinates/relative offsets and native reports, verifies actual rendered CSS within0.01 units.
+
+
+### Final Mac movement acceptance / publication checkpoint
+
+Native **1214passed,1skipped,12deselected1941warnings475.53s**, actual live **12passed,1215deselected24.94s**. Final273module build/typecheck/24Node134.990ms/coveragecurrent/diffcheck/16identity-source plus store/dependency audit pass. No saved-model invalidation/reinstall/schema changes. Actual owned Chrome `/private/tmp/void-movement-editor-rendered-geometry` **passes8.6965s**, backend48041/editor48057/browser48080 stopped(-15/143/0), runtime/API/console arrays empty. Exact graph/hash/unknown UI/unselected positions/native reports/relative coordinates; one Undo/Redo; zero no-op/no fallback materialization; empty/bounds refusal; shared module/root-key/interfaces preservation and explicit expanded-root collapse; all4native families plus real constructor ID. Screenshot visually inspected. CSSOM geometry uses declared0.01-unit precision bound; exact stored origins remain independently checked.
+
+Actual curl `/private/tmp/void-movement-curl/evidence.json` **passes7savedcases**, exact PUT/GET UI/graph/hash/native before-after reports and full module validation match actual Chrome evidence. Backend48122/port56173 stopped-15. Original history5.5859s/clipboard5.4366s/outline6.1411s/arrangement12.0553s/comments8.8608s/insertion7.4556s/commands6.2192s all pass unchanged; `/private/tmp/void-movement-*-regression`, error arrays empty/all recorded services stopped. Integrated `/private/tmp/void-movement-integrated-recovery` **passes58files/10DBs/3internal-links/1explicitdiagnosticomission**, sourceDeletedtrue; seed10.7442s/restored8.2105s, backend47978/editor47981/browser48000 stopped(-15/143/0). All original actual conversations/historical restore/discovery/research/authored comments/confirmed trackers retained. Manifest06ccd09db35f24bb6ac414a81c01556616030dc4343b4a5dafab6b354385d30d.
+
+Movement scope accepted on Mac; commit locally now, push only after d406884 default37363299537 completes both native/browser jobs (currently native tests active/browser queued). No own local services remain; user8258/8000 untouched. CI adds evidence-only movement runner step; datasets/workbench/CAS/models/token/browser profile excluded. Continue alone, nextADR0041. Proposed next useful scope: module-definition clipboard transfer with native source identity and explicit boundary omission; no implementation accepted yet. Broader §32 remaining gaps still apply, no whole-VISION finalization claim.

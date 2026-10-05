@@ -8,6 +8,8 @@ import { AgentWorkspace } from "./components/agent/AgentWorkspace";
 import { DomainWorkspace } from "./components/DomainWorkspace";
 import { ProductionWorkspace } from "./components/ProductionWorkspace";
 import { ScaleWorkspace } from "./components/ScaleWorkspace";
+import { GraphMovementTools } from "./components/GraphMovementTools";
+import { moveGraphNodes } from "./graphMovement";
 import { GraphCommandMenu } from "./components/GraphCommandMenu";
 import { graphCommands, workspaceChoices, type GraphCommand, type WorkspaceView } from "./graphCommands";
 import { GraphInsertionTools } from "./components/GraphInsertionTools";
@@ -541,6 +543,18 @@ function Workbench() {
     } catch (error) { setMessage(errorText(error)); }
   };
 
+  const movementBlocked = !def && expanded.length ? "Collapse expanded modules before moving this root layout."
+    : selNodes.some(id => cur.nodes.filter(n => n.id === id).length !== 1) ? "Select actual uniquely identified root or module layout cards; generated interiors cannot be moved independently." : null;
+  const moveSelection = (dx: number, dy: number) => {
+    if (movementBlocked) { setMessage(movementBlocked);return; }
+    try {
+      const positions = moveGraphNodes(cur.nodes.flatMap((node, i) => selNodes.includes(node.id) ? [{ id: node.id, key: posKey(node.id), ...basePos(node.id, i) }] : []), dx, dy);
+      setUi(old => Object.entries(positions).every(([key, point]) => own(old.positions, key)?.x === point.x && own(old.positions, key)?.y === point.y) ? old
+        : { ...old, positions: { ...old.positions, ...positions } });
+      setMessage(Object.keys(positions).length ? "Moved selected layout cards together. Graph configuration and native identity are unchanged." : "Zero offset; layout unchanged.");
+    } catch (error) { setMessage(errorText(error)); }
+  };
+
   const rfEdges: Edge[] = useMemo(() => {
     const base = cur.edges.map((e) => {
       const t = own(v?.nodes, e.from.node)?.outputShapes?.[e.from.port];
@@ -707,6 +721,8 @@ function Workbench() {
       <GraphClipboardTools key={`${projectId}:${scope.length}`} graph={graph} selected={selNodes} clipboard={clipboard} inModule={!!def} onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onCopy={copySelection} onPaste={pasteSelection} onClear={() => { setClipboard(null); setPasteCount(0); }} />
       <GraphArrangementTools key={`arrangement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={arrangementBlocked}
         onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onArrange={arrangeSelection} onCollapse={expandedGroups.length ? () => setExpanded([]) : undefined} />
+      <GraphMovementTools key={`movement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={movementBlocked}
+        onSelect={ids => { setSelNodes(ids);setSelEdges([]); }} onMove={moveSelection} onCollapse={!def && expanded.length ? () => setExpanded([]) : undefined} />
       <GraphOutline key={`${projectId}:${scope.map(s => `${s.module}@${s.version}`).join("/")}`} graph={cur} ops={opsByType} validation={v ?? null} pending={validation.pending} error={validation.error} selected={selNodes} scope={def ? `Module ${def.id}@${def.version}` : `Root project ${projectId}`}
         onInspect={id => { setSelNodes([id]); setSelEdges([]); }} onCenter={id => { setSelNodes([id]); setSelEdges([]); void fitView({ nodes: [{ id }], padding: 0.4, maxZoom: 1, duration: 0 }); }} onOpenModule={openInstance} />
       <NodeComments key={`comments:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} value={ui.nodeComments} prefix={def ? `${modKey(def)}/` : ""}

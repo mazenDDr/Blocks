@@ -637,7 +637,7 @@ and backups; no physical erasure. Agent/RL/runtime-instance/sample/plot annotati
 collaboration, append-only comment revisions and report exports remain. Mac acceptance:1209native/12live/17Node, strict real Chrome/curl and58-file source-deleted recovery pass. Linux comments/recovery browser verification passes on536dd33; its native job and separate arrangement repair remain pending; read HANDOFF§34 for evidence and limitations.
 
 
-### Explicit typed-wire insertion (ADR0038; Mac accepted, hosted pending in HANDOFF§35)
+### Explicit typed-wire insertion (ADR0038; Mac and default Linux accepted, HANDOFF§35–§37)
 
 | Capability | Implementation | Evidence |
 |---|---|---|
@@ -651,9 +651,9 @@ extension metadata remains on the downstream wire. Native semantic identity chan
 existing comments retain original references. No learned-weight transfer, opaque state,
 backend/model-pin/dependency/schema change. Module output-interface display links,
 Agent/RL/generated-instance links and structural/code operations are excluded explicitly.
-Sequence movement/grouping/automatic layout/drag-on-wire suggestions remain separate.
+Selected-group translation is recorded separately below; persistent grouping, automatic layout and drag-on-wire suggestions remain separate.
 Mac full1214pass/1skip plus12live/19Node/build/typecheck/current ledger/strict browser/curl/recovery pass; read §35 for environment scope and retained failures. Arrangement also reads current DOM dimensions after native
-readiness to repair the observed Linux card-resize race; next hosted verification pending.
+readiness to repair the observed Linux card-resize race; full default Linux37361034202 also passes (see HANDOFF§37).
 
 
 ### Searchable existing editor commands (ADR0039; Mac accepted; hosted pending in HANDOFF§36)
@@ -671,3 +671,22 @@ commands; actual earlier provenance remains untouched. No dependency/native pin/
 or DB change. Formal accessibility certification, browser/platform matrix, user-defined
 shortcuts, Agent/RL generic creation, whole-project/remote commands remain separate.
 Required full1214native/12live/22Node/build/typecheck/ledger/current pin audit, strict Chrome/curl and58-file recovery pass; final dialog geometry and modal-history browser check passes. Read HANDOFF§36 for final outcomes.
+
+
+### Selected-group layout movement (ADR0040; Mac accepted, hosted pending, HANDOFF§37)
+
+Explicit horizontal/vertical layout offsets translate1–100 selected actual root/model,
+tabular/domain or stored-module layout cards together. Current/result coordinates and
+offsets must be finite within±1,000,000; all validation precedes the edit. Only selected
+UI position keys change; graph/wires/interfaces/unknown metadata/native identity and
+comments retain their original values. One whole-draft Undo/Redo; zero offset adds no
+key/history. Empty inputs, ambiguous/oversized selection and bounds refuse with stable
+E_MOVE_* codes. Expanded root modules require explicit collapse; generated interiors
+and Agent/RL specialized canvases are excluded. Placement may overlap; no automatic
+topology inference/group container/performance/platform certification claim.
+
+Two pure Node tests/24total pass. Mac full1214pass/1skip/12deselected plus12real
+Ollama tests,273module build/typecheck/coverage/pin audit and actual browser/curl/all
+original journeys/58-file source-deletion recovery pass. Native graph/API coordinates
+are compared exactly; browser CSS geometry within0.01 layout units accounts for actual
+Chrome serialization precision. Hosted verification remains separate; see HANDOFF§37.

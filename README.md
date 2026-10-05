@@ -636,3 +636,25 @@ node --test apps/editor/tests/graphCommands.test.mjs
 ```
 
 Final acceptance and retained focus-test failures are in docs/HANDOFF.md §36.
+
+
+## Move selected layout cards together
+
+In Graph, open **Move selected nodes together**, select actual layout cards and enter
+horizontal/vertical offsets in canvas units. Root model/tabular/domain and shared module
+definition layouts use the same offset for each selected origin. Only selected positions
+change, with one Undo/Redo. Zero offset makes no edit; empty/nonfinite/out-of-bounds
+requests refuse. Collapse expanded root module frames explicitly before moving. Placement
+can overlap; persistent grouping and automatic layout remain separate. Mac verification
+passes; hosted scope is recorded in HANDOFF§37. Actual commands run:
+
+```bash
+node --test apps/editor/tests/*.test.mjs
+.venv/bin/python tools/editor_movement_smoke.py --output /private/tmp/void-movement-editor-rendered-geometry
+.venv/bin/pytest -q -o faulthandler_timeout=240
+.venv/bin/pytest -q -m live
+pnpm -C apps/editor build
+pnpm -C apps/editor exec tsc --noEmit
+.venv/bin/python -m backends.coverage --write
+.venv/bin/python -m backends.coverage --check
+```

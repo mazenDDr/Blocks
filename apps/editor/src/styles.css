@@ -486,3 +486,9 @@ table.compat th { background: #f1f3f6; }
 .command-menu { white-space: normal; }
 .command-menu .row { display: flex; gap: 8px; }
 .command-menu p, .command-results span { overflow-wrap: anywhere; }
+
+.movement-tools { padding: 5px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.movement-tools summary { cursor: pointer; font-weight: 600; }
+.movement-tools p { font-size: 12px; }
+.movement-actions { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin: 8px 0; }
+.movement-actions label input { display: block; margin-top: 4px; width: 120px; }
