@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §32 — controlled canvas measurement and startup repair; §31 outline is Mac verified.** Local master includes e0765ef and outline27d0635. Prior master833e133 native Linux job passed1204 tests, clipboard/recovered browser journeys passed, but history failed. The e0765ef browser-only diagnosis also failed; actual retained DOM measurements fix that cause, with all four final Mac browser journeys passing. Final repair full/live rerun and hosted verification pending; read §32 for current evidence and remaining work. Older pending/draft notes are historical and superseded by later outcomes.
+> **Latest continuation: §32 — final limit handoff.** All code pushed on master18ae842; final Mac1209native/12live/17Node/build/typecheck/coverage/curl and all browser journeys pass. Default Linux37322922445 **browser job passes all journeys**; native job still running when stopping, so no whole-workflow green claim yet. Account85% five-hour/60% weekly; stopping under the user’s until-limit instruction. Read final §32 checkpoint first, then capability limits; next agent must inspect this exact hosted run before another code push.
 
 ## 1. What this project is
 
@@ -59,10 +59,10 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Explicit offline W&B links/native resource recovery | verified Mac and Linux, see §25/§28/ADR0028 | d6a9d90/d0bdafa |
 | Read-only native conversation discovery | verified Mac and Linux, see §26/§28/ADR0029 | c83adff/d0bdafa |
 | Reviewed historical native checkpoint restore | Mac verified; Linux native/recovered journey pass on833e133, §27/§32 | 5d2f732 |
-| Bounded editor whole-draft history | Mac verified; Linux DOM measurement repair under verification, §28/§32 | a49bd85/8c197a7/e0765ef |
+| Bounded editor whole-draft history | Mac verified; repaired Linux Chrome passes on18ae842, §28/§32 | a49bd85/18ae842 |
 | Revisioned research run notes/tags/search | Mac verified; Linux native/recovered journey pass on833e133, §29/§32 | 3bdfe53 |
 | Root model/tabular/domain graph clipboard | Mac verified; Linux native/clipboard browser pass on833e133, §30/§32 | 2c20cd5 |
-| Structured root/module graph outline | Mac verified; hosted pending, §31/§32/ADR0034 | 27d0635 |
+| Structured root/module graph outline | Mac verified; Linux Chrome passes, native pending §31/§32/ADR0034 | 27d0635/18ae842 |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -1026,3 +1026,15 @@ All original assertions remain. Dedicated real Chrome:
 No16native identity-source changes (union production agent/conversation adapters), no artifact_store/store.py edit, no retraining needed from these editor/records/recovery changes. Next ADR0036 after controlled-measurement ADR0035. Final pause/commit/remote/CI state must be added below if nearing quota; preserve pending evidence honestly.
 
 - Post-repair live Ollama **12 passed,1210 deselected,24.93s**, `/private/tmp/void-flow-repair-live.log`. Final curl `/private/tmp/void-flow-repair-curl/evidence.json` passes exact native graph/UI/hash20,042params, invalid diagnostic/module contract equality; owned backend23511/port56747 stopped-15. Native16pin/store audit and diffcheck pass. Full rerun still running; code snapshot is ready for hosted verification, not yet a final whole-workflow acceptance claim.
+
+
+### Final limit handoff — 2026-10-05, stopping with verified code pushed
+
+- User asked to continue alone until nearing usage limits, then write/push handoff and stop. Current85% five-hour/60% weekly; stopping now with reserve. No credits/reset purchased or used. Broader project work in the list above remains; do not mark the overall project finalized.
+- **All code pushed to master18ae842eced75d05f7d22f5b5c30c7f4c17dfcaa**, including outline27d0635 and controlled-measurement/startup repair. Final documentation-only handoff commit follows with `[skip ci]` to preserve the active default verification; do not interpret the skipped docs commit as a new code verification. No PR created. Owned temporary remote `codex/measurement-repair` removed through GitHub API after final Linux browser success. No worktrees were created.
+- Final post-repair Mac full **1209passed,1skipped,12deselected,1941warnings488.82s**, `/private/tmp/void-flow-repair-full.log`; live **12passed,1210deselected24.93s**, `/private/tmp/void-flow-repair-live.log`. All17Node,262module build/typecheck, coverage/diffcheck/native16identity+artifact-store audit pass. Existing warnings and Anthropic no-key skip retained; no test weakened.
+- Default [Linux run37322922445 on18ae842](https://github.com/mazenDDr/project-void/actions/runs/37322922445) **browser job success**: history15.9044s, clipboard17.3730s, outline16.6081s, native recovery seed20.8035s/restored18.1823s. Downloaded actual evidence `/private/tmp/void-flow-repair-ci-browser`; every runtime/API/console-warning array empty, each owned backend/editor/browser closed in runner.json. BrowserChrome154.0.8037.57. Original exact graph/UI/drag/Undo/Redo/native references/assertions retained. History screenshot inspected. Recovery56files/10DBs/3links/1explicitomission, physical source deletion true; authored records/discovery/historical restore/confirmed tracker journeys pass.
+- **Linux native job111806302082 remains in progress at stop.** Browser job111806301687 is accepted independently, not a whole-workflow success. Job-log fetch is unavailable until the whole run finishes, so do not claim a downloaded final job log; completed browser artifact is downloaded/checked. Prior833e133 native1204pass supports earlier scopes; it does not replace the new1209-test hosted run.
+- All own Mac services/processes stopped; user8258/8000 was checked still running and untouched. All generated/trained/workbench evidence stays under private temporary paths, never committed. No saved model invalidation/dependency reinstall from this continuation.
+
+**First next-agent actions:** safely inspect `git status`, fetch remote and fast-forward only if local work is clean; read this final checkpoint and CAPABILITIES. Inspect `gh run view 37322922445 --json status,conclusion,jobs` before any master code push (cancel-in-progress). If finished, download `native-test-evidence` and compare actual JUnit counts/errors/skips, retrieve actual logs, record exact final outcome. If failure, diagnose from evidence without weakening assertions or touching user8000. Add a docs-only `[skip ci]` evidence follow-up if appropriate. The checked code SHA is18ae842; final docs SHA will differ. Then proceed through remaining priorities above, alone unless the user changes that preference. NextADR0036. Do not redo accepted native fixtures or label synthetic data real. No uncommitted implementation remains; alignment/comments have not begun.

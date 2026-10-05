@@ -594,8 +594,9 @@ Disposed initial-load requests are aborted and cannot adopt a stale example afte
 new draft. No guessed dimensions, native model pin/dependency/schema changes.
 
 All four final Mac actual Chrome journeys pass after this repair, retaining exact
-saved graph/layout/native identity checks. Required post-repair native rerun and final
-hosted verification are pending; HANDOFF §32 records actual outcomes. Prior833e133
+saved graph/layout/native identity checks. Post-repair Mac native1209/1skip and live12 tests pass. Default Linux18ae842 browser
+job passes all four journeys; its native job is pending at the limit handoff. HANDOFF
+§32 records actual evidence and the exact run for the next agent to finish reviewing. Prior833e133
 Linux native1204/build/typecheck/Node14/coverage and clipboard/recovered journeys pass,
 but history failed; initial e0765ef remeasure-only diagnosis also failed. Neither is a
 whole-workflow success. Large-graph/platform/browser coverage remains separate work.
