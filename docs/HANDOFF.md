@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest verified continuation: §28 — bounded editor draft history (Mac verified; commit/push follows).** §27 historical restoration is Mac verified/committed5d2f732. §25/§26 recovery/discovery and timing repairs now pass hosted Linux on d0bdafa, run37308500924 (see outcome below). Read §26 first, then §25. §24 records whole-workbench recovery; §23 the browser baseline. §22 reset/fork, §21 persistent conversations, §20 isolated agent serving, §19 domain imports. Earlier cloud work is recorded in §11–§18.
+> **Latest continuation: §30 — graph clipboard release checks running; §29 research records Mac verified and pushed3bdfe53, followed by canvas/browser repair8c197a7.** Hosted run37315549500 is pending. Earlier restore/editor history Mac acceptance is in §27–§28; failed hosted37311914629/repair are retained in §29. Recovery/discovery passed hosted Linux on d0bdafa/run37308500924. Read §30 first, then §29 and the preceding scope you change. Earlier progressive status notes are superseded by these final outcomes; do not invent completion from a pending run.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0032`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0033`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -56,8 +56,12 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Reviewed native conversation reset/fork | done, verified on Mac arm64 (see §22, ADR 0025) | ad36e42 |
 | Reproducible native editor smoke and CI baseline | verified Mac arm64 and hosted Linux x86_64 (§23, ADR0026) | 6d50d6c; docs follow-up records CI |
 | Offline whole-workbench backup/recovery | verified Mac arm64 and hosted Linux x86_64 (§24, ADR0027) | 9d3b810; docs follow-up records CI |
-| Explicit offline W&B links/native resource recovery | verified Mac, hosted CI pending, see §25/ADR0028 | this continuation |
-| Read-only native conversation discovery | verified Mac, push/hosted CI pending, see §26/ADR0029 | this continuation |
+| Explicit offline W&B links/native resource recovery | verified Mac and Linux, see §25/§28/ADR0028 | d6a9d90/d0bdafa |
+| Read-only native conversation discovery | verified Mac and Linux, see §26/§28/ADR0029 | c83adff/d0bdafa |
+| Reviewed historical native checkpoint restore | Mac verified, hosted rerun pending, §27/ADR0030 | 5d2f732 |
+| Bounded editor whole-draft history | Mac verified, hosted rerun pending, §28/ADR0031 | a49bd85/8c197a7 |
+| Revisioned research run notes/tags/search | Mac verified, hosted pending, §29/ADR0032 | 3bdfe53 |
+| Root model/tabular/domain graph clipboard | final checks running, uncommitted §30/ADR0033 | draft |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -911,7 +915,7 @@ User asked continuous work until approaching usage limits, not one-task stops. C
 - Selective editor-history commit/push with already committed5d2f732 follows. Newly drafted research records/API/UI/tests remain outside this accepted scope until registered/tested. No16native identity file change. Account lastcheck five-hour38%/weekly53%; continue alone with reserve, no reset purchase.
 
 
-## 29. Revisioned authored research run records — 2026-10-05 (final verification pending)
+## 29. Revisioned authored research run records — 2026-10-05 (Mac verified; hosted rerun pending)
 
 - Continue alone under the ongoing until-limit instruction. Restore5d2f732 and editor historya49bd85 pushed; hosted run37311914629 on a49bd85 is in progress. No Linux claims yet for these scopes. Latest accountfive-hour38%/weekly53%; check before starting more. User8258/8000 untouched.
 - New `research` package/`research.sqlite`, bounded revision/current/mutation API, Records UI integrated beside workspaces, ADR0032, native20 tests, expanded seed/restored Chrome notes/search/history/original-run journey. No16native model identity source/dependency/schema changes; additive separate metadata DB. Older backups create an empty notes DB on startup. Notes/author/tags are user statements, not measured results or authenticated ownership. Clearing retains history/receipts, no physical privacy deletion/automatic retention/signatures claimed.
@@ -935,3 +939,22 @@ User asked continuous work until approaching usage limits, not one-task stops. C
 - Research records committed locally3bdfe53; accepted Mac1196pass and live12pass (§29), not pushed yet. Clipboard UI/native/browser work is independent draft; nextADR0033. Continue alone; account51% five-hour/55% weekly at check.
 
 - Final Mac repair Chrome `/private/tmp/void-undo-layout-smoke-final` **passes6.7475s**: usable1009px canvas, actual card hit after fit-view animation stable350ms,15-step native drag/one-undo and original graph/UI/settings/redo/load/focus assertions retained. Runtime/API/console errors empty; backend15654/editor15682/browser15703 closed(-15/143/0). First repair attempt still dragged during fit-view animation and panned instead; explicit transform stability fixes that race without weakening assertions. Build/typecheck also pass (clipboard remains uncommitted draft). Push research3bdfe53 plus selective layout/browser repair next, rerun hosted verification. Native records final full/live remains1196/12 as above; this repair edits only CSS/browser diagnostics.
+
+## 30. Root graph draft clipboard — 2026-10-05 (Mac verified; push/hosted pending)
+
+- Research3bdfe53 and canvas/browser repair8c197a7 pushed. Hosted run37315549500 on8c197a7 still in progress, do not claim Linux acceptance yet. User8258/8000 remains untouched; continue alone until nearing limits/project finalization. Account at lastcheck51%five-hour/55%weekly, check before another large release.
+- Clipboard implementation/UI/native/Node/Chrome/ADR0033/docs/CI are uncommitted draft until final checks complete. Model/tabular/domain actualroot selection1–100, internaltypedwires/config/unknownnodefields, transitive defs/codeorigin/packageidentities, native capturedsourcehash, freshIDs/layoutoffset, copied-group root/composite sharing and conventional model/<this-id> draftref rebinding. Opaque refs/moduledefinition state refs/externalsharing/conflictingdefs refuse. Boundarycount explicit, noweights/files/run/native state transfer or implicitdeps/rewiring. Samekind/backendonly; training/globaltargetsettings retained. Payload100defs/512KiBestimatedJSON, page-onlymemory acrossprojectloads, noperf/OSclipboard/collabclaim. Onepaste is wholegraph/UI undo/redo.
+- Focused native **8passed2.83s** `/private/tmp/void-clipboard-native-final.log`: realNodehelper→realbundled graphs, CNN/residual shapes/counts/output/loss/grads/SGDindependentreferenceweights; sharedencoder internalties remainnewindependentgroup; tabular/vision/NLP/speechcontracts; partialmissinginput/unknownstableerrors. Initial tests exposed genuine compositeconfig.share rootref needing rebind; fixed/tested, originaltests retained. Native8 final pass. Node**13pass118.46ms**, `/private/tmp/void-clipboard-node-final.log`; build/typecheck pass259modules (confirm exact buildlog), existingchunkwarning. Coveragewrite/checkcurrentnodiff, diffcheckpass.
+- Final actual Chrome `/private/tmp/void-clipboard-editor-smoke-final` **passes6.4200s**; API-savedwholegraphconfigs/typedwires/relativepositions/native20,042params+sourcehash, oneUndo/Redo exactdraft, repeateduniqueIDs, boundarycount2+nativeE_MISSING_INPUT, incompatiblekinddisable/clear. Runtime/API/consoleerrorsall empty. Screenshotcopied-native-model.png reviewed, controls/layout insidepanel. Backend16252/editor16260/browser16279 stopped(-15/143/0).
+- Integrated recovery `/private/tmp/void-clipboard-integrated-recovery` **passes** after currentUI:56files/tenDBs/threeinternallinks/oneexternaldiagnosticomission; physicalsourcegone; restored native historicalpreview/restore/nextturn, discoverypages, authoredrecords/search/history and confirmedtrackers. Seed10.7295s/restored8.6406s, recoveredbackend16405/editor16408/browser16429 stopped(-15/143/0). Errors empty, manifest70d3fe4e801bd51887ed0a5f4d9249ff4425c0ea853c7d13786da29dc3087fca.
+- Final curl `/private/tmp/void-clipboard-curl/evidence.json` **passes**: copiednativegraph/UI save/read exact,20,042params/nativehash, partialmissing-inputdiagnosticretained. Owned backend16647/port64951 stopped-15. AllHTTP200 (validation communicates diagnostics within200). No native pin/dependency/userdata/model changes.
+- Current full `/private/tmp/void-clipboard-full.log` is running; live/lastpin audit/fullcounts/commitpending. Preserve clipboard draft if interrupted. CI addsactualclipboardChrome andallNodetests/evidenceonlyuploads. Do notpushwhile37315549500active(cancel-in-progress). NextADR0034.
+- Remaining: root/module outline/error navigation/comments/alignment/performance; larger nativeproductionagents retrieval/index/memory/tools/effects/interrupt/structured/multipleprovider/streaming; wider ML serving/cache/import/recovery/migration; privacyretention/GC/authenticatedroles/TLS/deployment; realdata/perf/qualitybenchmarks; credentialandGPU/cloud/distributedinfrastructure integrations. No finalization claim from bounded A01–A64 evidence.
+
+### Final clipboard release checks
+
+- Full native **1204passed,1skipped,12deselected,1941warnings486.47s**, `/private/tmp/void-clipboard-full.log`. Final pure fallback-layout/code-message refinement was followed by the same native8 tests **2.97s**, and Node**14passed131.31ms**, preserving all reference model assertions. Missing saved positions now use the actual root canvas fallback at original source graph index (60+260i,120); no partial-selection default repositioning. Clipboard errors display their stable code. Build/typecheck259modules/currentcoverage/diffcheck pass;16nativepinsunchanged.
+- Live `/private/tmp/void-clipboard-live.log` and finalpostrefinementChrome `/private/tmp/void-clipboard-editor-release` running; record actual outcomes before selectivecommit. UI/runtime/learning semantics unchanged by the layout fallback, source teaching graphs already had saved positions.
+- **Independent outline draft, not integrated/accepted:** new `graphOutline.ts`, `components/GraphOutline.tsx`, `tests/graphOutline.test.mjs`. Pure3tests pass; scoped structured node/wire/module/sharing list, native contracts/errors/provenance, stale validation withheld, literalsearch/nativeerrorfilter, paged50rows and explicitinspect/center/module actions. CurrentApp does not import it; native/browser/docs/ADR0034/acceptance remain. Preserve outside clipboardrelease. No native model/source/pin changes. Do not treat it as finished merely because files exist.
+
+- Final live actual Ollama **12 passed,1205 deselected,25.29s**, `/private/tmp/void-clipboard-live.log`. Final post-refinement actual Chrome `/private/tmp/void-clipboard-editor-release` **passes7.6754s**, errors empty, same full native graph/validation/undo/boundary/kind assertions. Owned backend18569/editor18594/browser18613 closed(-15/143/0). Native20,042params and exactsource/pastedgraph hashes in evidence.json; no learned values invented. Final code/type/Node14/native8/pin/diff checks pass. Clipboard is now Mac accepted, selectivecommit follows; push awaits active37315549500.

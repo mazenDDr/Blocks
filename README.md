@@ -542,3 +542,22 @@ automatic retention. Actual commands run:
 .venv/bin/pytest -q tests/test_research_records.py
 .venv/bin/python tools/recovery_smoke.py --trackers --output /private/tmp/void-records-recovery-smoke-final
 ```
+
+### Copy and paste graph drafts
+
+Open Copy and paste graph nodes beside Keyboard graph tools. Select root nodes using
+checkboxes, then copy; open a compatible model/tabular/domain graph and paste. Internal
+wires, configuration, relative positions and required module/code definitions are
+preserved with fresh IDs. Sharing within the copied group is rebound; boundary wires
+stay disconnected and native validation reports missing inputs. Paste is one Undo
+edit. The panel shows the actual source graph identity and omitted boundary count.
+
+This page-local clipboard survives project changes, clears on reload, and carries no
+native weights/files. Opaque state references and conflicting definitions refuse;
+agent/RL and module editor copying remain separate. Actual commands run:
+
+```sh
+node --test apps/editor/tests/*.test.mjs
+.venv/bin/pytest -q tests/test_graph_clipboard.py
+.venv/bin/python tools/editor_clipboard_smoke.py --output /private/tmp/void-clipboard-editor-smoke-final
+```

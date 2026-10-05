@@ -41,10 +41,12 @@ jobs:
         run: |
           pnpm -C apps/editor build
           pnpm -C apps/editor exec tsc --noEmit
-          node --test apps/editor/tests/documentHistory.test.mjs
+          node --test apps/editor/tests/*.test.mjs
           .venv/bin/python -m backends.coverage --check
       - name: Real browser graph draft history
         run: .venv/bin/python tools/editor_history_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-history-smoke
+      - name: Real browser graph clipboard
+        run: .venv/bin/python tools/editor_clipboard_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-clipboard-smoke
       - name: Real browser, backup and restored native state journey
         run: .venv/bin/python tools/recovery_smoke.py --trackers --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
       - name: Preserve actual test evidence on success or failure
@@ -68,5 +70,9 @@ jobs:
             /tmp/void-ci-history-smoke/evidence.json
             /tmp/void-ci-history-smoke/*.log
             /tmp/void-ci-history-smoke/*.png
+            /tmp/void-ci-clipboard-smoke/runner.json
+            /tmp/void-ci-clipboard-smoke/evidence.json
+            /tmp/void-ci-clipboard-smoke/*.log
+            /tmp/void-ci-clipboard-smoke/*.png
           if-no-files-found: warn
           retention-days: 7

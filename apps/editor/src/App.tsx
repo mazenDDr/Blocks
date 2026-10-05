@@ -40,6 +40,8 @@ import {
 import { fmtInt, fmtShape, nextId, shortName } from "./util";
 import { useDocumentHistory } from "./useDocumentHistory";
 import { ResearchRecords } from "./components/ResearchRecords";
+import { GraphClipboardTools } from "./components/GraphClipboardTools";
+import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
 const EMPTY_AGENT: Graph = { schemaVersion: "1.0.0", graphKind: "agent", backend: "langgraph", nodes: [], edges: [], agent: { state: [{ name: "question", type: "text", reducer: { kind: "replace" }, scope: "turn" }], routes: [], joins: [], limits: { maxSteps: 25 }, indexes: [], policies: [] } };
@@ -84,6 +86,8 @@ function Workbench() {
   const [examples, setExamples] = useState<ProjectInfo[]>([]);
   const [selNodes, setSelNodes] = useState<string[]>([]);
   const [selEdges, setSelEdges] = useState<string[]>([]);
+  const [clipboard, setClipboard] = useState<GraphClipboard | null>(null);
+  const [pasteCount, setPasteCount] = useState(0);
   const [ctx, setCtx] = useState<Ctx>({ runId: null, step: null, sample: null });
   const [message, setMessage] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
@@ -506,6 +510,23 @@ function Workbench() {
   const instUsed = def ? (rv?.modules?.find((m) => m.id === def.id && m.version === def.version)?.usedBy ?? []) : [];
 
   const unusedNote = !tabular && graph.modules && graph.modules.length > 0 && !graph.nodes.some((n) => ["core.composite", "core.repeat", "core.select"].includes(n.type));
+  const copySelection = async () => {
+    try {
+      const snapshot = structuredClone(graph); const layout = structuredClone(ui); const selection = [...selNodes]; const source = projectId;
+      const result = await api.validate(snapshot);
+      setClipboard(copyGraphNodes(snapshot, layout, selection, source, result.graphHash)); setPasteCount(0);
+      setMessage(`Copied ${selection.length} draft nodes from '${source}'. Native validation remains required after paste.`);
+    } catch (error) { setMessage(errorText(error)); }
+  };
+  const pasteSelection = () => {
+    if (!clipboard || def) return;
+    try {
+      const result = pasteGraphNodes(graph, ui, clipboard, 80 * (pasteCount + 1));
+      setGraph(result.graph); setUi(result.ui); setSelNodes(result.selected); setSelEdges([]); setPasteCount(n => n + 1);
+      setCtx({ runId: null, step: null, sample: null });
+      setMessage(`Pasted ${result.selected.length} draft nodes with fresh IDs. ${clipboard.omittedBoundaryEdges} boundary wires remain disconnected; inspect validation before running.`);
+    } catch (error) { setMessage(errorText(error)); }
+  };
 
   return (
     <GraphContext.Provider value={graph}>
@@ -595,7 +616,10 @@ function Workbench() {
       }} />}
       {view === "attention" && !tabular && <div className="fullws"><AttentionWorkspace graph={graph} runs={procRuns} setMessage={setMessage} /></div>}
       {view === "graph" && !agent && !rl && <>
+      <div className="graph-tools">
       <KeyboardGraphTools graph={cur} ops={opsByType} selectedNode={selNodes[0] ?? ""} selectedWire={selEdges[0] ?? ""} onNode={(id) => { setSelNodes(id ? [id] : []); setSelEdges([]); }} onWire={(id) => { setSelEdges(id ? [id] : []); setSelNodes([]); }} onConnect={connect} />
+      <GraphClipboardTools key={`${projectId}:${scope.length}`} graph={graph} selected={selNodes} clipboard={clipboard} inModule={!!def} onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onCopy={copySelection} onPaste={pasteSelection} onClear={() => { setClipboard(null); setPasteCount(0); }} />
+      </div>
       <aside className="left">
         {!tabular && (
           <div className="tabs" role="tablist" style={{ marginTop: 0 }}>

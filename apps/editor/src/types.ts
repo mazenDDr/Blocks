@@ -28,6 +28,7 @@ export interface CodeBlockDef {
 export interface Graph {
   schemaVersion: string; graphKind: string; backend: string; nodes: GNode[]; edges: GEdge[];
   modules?: ModuleDef[]; codeBlocks?: CodeBlockDef[]; training?: Record<string, any> | null;
+  packageDependencies?: Record<string, unknown>[];
   /** agent graphs: state schema, routes, joins, limits, indexes, memory policies (see components/agent/types.ts) */
   agent?: Record<string, unknown> | null;
 }

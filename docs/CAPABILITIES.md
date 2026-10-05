@@ -552,3 +552,19 @@ automatic retention or signed audit guarantee. Original run navigation requires 
 project currently open. No semantic/full-text index, global snapshot/total count or
 large-catalogue performance claim. No native pin/dependency changes. Final checks in
 HANDOFF §29 supersede earlier experiment-board notes/tags/search gaps.
+
+### Root graph draft copy/paste (ADR0033)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Model/tabular/domain root node configuration, internal typed wires, relative layout and native source graph identity | `graphClipboard.ts`, actual validation on captured source | Node tests plus owned Chrome exact API-saved graph/config/wire/layout comparisons |
+| Fresh IDs, copied-group parameter sharing, declared local draft state reference rebinding, transitive module/code definitions and package identities | Bounded pure transform with explicit conflict/opaque reference refusals | Native CNN/residual shape/count/output/loss/gradient/SGD reference equality; native shared encoder retains internal ties independently |
+| Typed domain/tabular contracts and invalid partial/unknown graphs preserved for native review | Existing validators remain authoritative | Native all-four workflow validation, missing-input/unknown-op diagnostics retained |
+| Accessible explicit selection/copy/paste/clear, compatible-scope reasons and one whole-document Undo/Redo | Root tools and existing history setters | Actual Chrome repeat paste uniqueness, boundary omission/refusal, kind restriction and full draft undo/redo |
+
+Page-memory only, 100 selected nodes/100 required definitions/512 KiB estimated JSON.
+No weights/files/resource relocation or automatic boundary wiring. Entire package
+declarations are retained conservatively, no implicit dependency installation. Root
+training/global settings are retained from the target. Agent/RL/module-editor transfer,
+OS/serialized clipboard, cross-backend conversion and large-graph benchmarks remain.
+Final environment-specific verification and hosted status are in HANDOFF §30.
