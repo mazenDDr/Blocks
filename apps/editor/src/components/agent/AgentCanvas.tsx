@@ -82,7 +82,7 @@ function withFields(spec: AgentSpec, type: string, cfg: Record<string, any>): Ag
 }
 
 export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNode, setSelNode, trace, setMessage, runValues }: {
-  graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; ui: UiDoc; setUi: (f: (u: UiDoc) => UiDoc) => void; validation: Validation | null; ops: OpInfo[];
+  graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; ui: UiDoc; setUi: (f: (u: UiDoc) => UiDoc, dragging?: boolean) => void; validation: Validation | null; ops: OpInfo[];
   selNode: string | null; setSelNode: (id: string | null) => void; trace: Trace | null; setMessage: (m: string) => void; runValues?: (nodeId: string) => Record<string, any> | undefined;
 }) {
   const spec = specOf(graph);
@@ -134,7 +134,7 @@ export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNo
   const onNodesChange = useCallback((changes: NodeChange<AgentFlowNode>[]) => {
     const moved = applyNodeChanges(changes, nodes);
     for (const c of changes) if (c.type === "select" && c.selected) setSelNode(c.id === "START" || c.id === "END" ? null : c.id);
-    if (changes.some((c) => c.type === "position")) setUi((u) => ({ ...u, positions: { ...u.positions, ...Object.fromEntries(moved.map((n) => [n.id, { x: n.position.x, y: n.position.y }])) } }));
+    if (changes.some((c) => c.type === "position")) setUi((u) => ({ ...u, positions: { ...u.positions, ...Object.fromEntries(moved.map((n) => [n.id, { x: n.position.x, y: n.position.y }])) } }), changes.some(c => c.type === "position" && c.dragging === true));
   }, [nodes, setUi, setSelNode]);
 
   const connect = (c: Connection) => {

@@ -157,12 +157,12 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
   broader final-test comparison workflows beyond the supported pinned baseline/variant evidence, regression plane / projection views, streaming or sampled profiles for huge tables.
 - Statistics: descriptive-statistics block, parameter estimation, interval-estimation block, bootstrap/permutation tests, power analysis, multiple-comparison procedures, other distributions,
   special-function curves with singularities, generated samples, a two-sided tail rule on the generic tail block, the interactive "Explore" slider for the observed statistic, visual statistical programming (custom statistics from primitives).
-- Editor: layout is a left-to-right row layout, large graphs are small at the initial fit; no automated browser tests in the repo.
+- Editor: large graphs can be small at initial fit; durable real Chrome tests now exist (ADR0026 onward).
 
 - Gradients tab and captured gradient information (VISION 8.3), saliency, activation distributions over training.
-- Editor: undo/redo, copy/paste, grouping, auto-layout, comments, structured outline view, multi-select move as a unit,
+- Editor: copy/paste, richer grouping/auto-layout, comments, structured outline view, multi-select move as a unit,
   insertion into an existing connection, interactive convolution teaching mode (8.4), partial-weight transfer (8.5.6),
-  resource estimates, "resume compatible checkpoint". Automated browser tests.
+  resource estimates, "resume compatible checkpoint". Bounded draft undo/redo is implemented below (ADR0031).
 - General pause/heartbeats/leases and orphaned-worker recovery; supported model checkpoint resume and domain completed-epoch child continuation exist. Cancellation cannot forcibly terminate a native call stuck inside a batch.
 - Experiment board: tags, notes, search/filter of runs, smoothing, x-axes other than step (model graphs keep the pin + two-run compare; tabular/model sweeps have the Experiments board above).
 - User accounts, roles and multi-user audit; an optional shared bearer token exists (ADR 0021). Image-folder datasets are server-side folders (tabular graphs can read connected sources).
@@ -519,3 +519,20 @@ Bounds: same native environment/code/provider and exact scope; no arbitrary SHA/
 failed or incomplete checkpoint, cross-version migration, privacy erasure/GC, authenticated
 ownership or distributed replica guarantee. Earlier traces/snapshots stay retained. No
 new model pins/dependencies/migrations. Final acceptance is recorded in HANDOFF §27.
+
+### Bounded editor draft undo/redo (ADR0031)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Whole immutable graph + UI draft undo/redo; same-event paired setters, no-op handling, project reset and count/size eviction | `documentHistory.ts`, `useDocumentHistory.ts`, App setters | Pure Node history tests compare full documents, ordered multiple undo/redo and bounded oldest eviction |
+| Main/agent node drag grouped into one draft edit; backend/settings use existing history setters | Existing canvases and toolbar | Real Chrome actual API save/read: add/settings/layout undo/redo, full15-step drag, redo invalidation and project reset |
+| Focus-aware keyboard shortcuts and saved dirty fingerprint retained | App Cmd/Ctrl-Z, Shift-Z/Ctrl-Y, labelled native buttons | Real focused-text shortcut leaves draft redo available; other projects start with disabled Undo/Redo |
+
+History is session-local draft data only:100 prior documents/8MiB estimated JSON
+history, with oldest eviction. Large current drafts remain editable; history may be
+evicted. No run/checkpoint/external-effect undo, persistent/collaborative history or
+large-graph performance claim. Remaining copying/pasting/outline/comment/navigation
+work is separate. Exact verification is recorded in HANDOFF §28.
+
+
+Recovery/discovery hosted verification passed on d0bdafa, [run37308500924](https://github.com/mazenDDr/project-void/actions/runs/37308500924):1152 native tests pass,1 skip, build/typecheck/coverage and recovered real Chrome discovery/tracker journey pass; downloaded JUnit has0failures/errors. Historical restoration/editor draft history have final Mac acceptance1176pass/1skip plus12live and5Node tests, actual dedicated/integrated Chrome and curl. Their next hosted run remains pending; see HANDOFF §28.

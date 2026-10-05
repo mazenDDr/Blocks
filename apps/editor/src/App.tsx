@@ -38,6 +38,7 @@ import {
   type CompatNode, isModelRun, isProcedureRun, isTabularRun, type CodeBlockDef, type GNode, type Graph, type ModuleDef, type NodeView, type OpInfo, type ProcedureRunSummary, type RunSummary, type UiDoc,
 } from "./types";
 import { fmtInt, fmtShape, nextId, shortName } from "./util";
+import { useDocumentHistory } from "./useDocumentHistory";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
 const EMPTY_AGENT: Graph = { schemaVersion: "1.0.0", graphKind: "agent", backend: "langgraph", nodes: [], edges: [], agent: { state: [{ name: "question", type: "text", reducer: { kind: "replace" }, scope: "turn" }], routes: [], joins: [], limits: { maxSteps: 25 }, indexes: [], policies: [] } };
@@ -75,8 +76,7 @@ function usedModules(g: Graph): Set<string> {
 
 function Workbench() {
   const [projectId, setProjectId] = useState("untitled");
-  const [graph, setGraph] = useState<Graph>(EMPTY);
-  const [ui, setUi] = useState<UiDoc>(EMPTY_UI);
+  const { graph, ui, setGraph, setUi, reset: resetDraft, move: moveDraft, canUndo, canRedo } = useDocumentHistory(EMPTY, EMPTY_UI);
   const [saved, setSaved] = useState<string>("");
   const [ops, setOps] = useState<OpInfo[]>([]);
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
@@ -145,11 +145,30 @@ function Workbench() {
 
   const adopt = useCallback((id: string, g: Graph, u: UiDoc | null, savedState: boolean) => {
     const uu = u ?? EMPTY_UI;
-    setProjectId(id); setGraph(g); setUi(uu); setSelNodes([]); setSelEdges([]); setScope([]); setExpanded([]); setView(g.graphKind === "domain" ? "domain" : "graph");
+    setProjectId(id); resetDraft({ graph: g, ui: uu }); setSelNodes([]); setSelEdges([]); setScope([]); setExpanded([]); setView(g.graphKind === "domain" ? "domain" : "graph");
     setSaved(savedState ? JSON.stringify([g, uu]) : "");
     setLoadToken((n) => n + 1);
     setCtx({ runId: null, step: null, sample: null });
   }, []);
+
+  const moveHistory = useCallback((direction: "undo" | "redo") => {
+    moveDraft(direction); setSelNodes([]); setSelEdges([]); setScope([]); setExpanded([]); setCodeEdit(null);
+    setCtx({ runId: null, step: null, sample: null });
+    setMessage(direction === "undo" ? "Undid draft edit." : "Redid draft edit.");
+  }, [moveDraft]);
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('input, textarea, select, [contenteditable], .cm-editor') || event.altKey || !(event.metaKey || event.ctrlKey)
+          || view === "production" || view === "scale") return;
+      const direction = event.key.toLowerCase() === "z" ? (event.shiftKey ? "redo" : "undo") : event.key.toLowerCase() === "y" && event.ctrlKey ? "redo" : null;
+      if (!direction) return;
+      event.preventDefault();
+      if (direction === "undo" ? canUndo : canRedo) moveHistory(direction);
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [view, canUndo, canRedo, moveHistory]);
 
   // boot: registry, then the last saved project, else the reference example as an unsaved draft
   useEffect(() => {
@@ -460,7 +479,7 @@ function Workbench() {
     const moved = applyNodeChanges(changes, rfNodes);
     const sel = changes.some((c) => c.type === "select");
     if (sel) setSelNodes(moved.filter((n) => n.selected).map((n) => n.id));
-    if (changes.some((c) => c.type === "position")) setUi((u) => ({ ...u, positions: { ...u.positions, ...Object.fromEntries(moved.filter((n) => !n.parentId).map((n) => [posKey(n.id), { x: n.position.x, y: n.position.y }])) } }));
+    if (changes.some((c) => c.type === "position")) setUi((u) => ({ ...u, positions: { ...u.positions, ...Object.fromEntries(moved.filter((n) => !n.parentId).map((n) => [posKey(n.id), { x: n.position.x, y: n.position.y }])) } }), changes.some(c => c.type === "position" && c.dragging === true));
   }, [rfNodes]); // eslint-disable-line react-hooks/exhaustive-deps
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
     if (changes.some((c) => c.type === "select")) setSelEdges(applyEdgeChanges(changes, rfEdges).filter((e) => e.selected).map((e) => e.id));
@@ -494,6 +513,8 @@ function Workbench() {
         <b className="brand">Project Void</b>
         <label>Project <input value={projectId} onChange={(e) => setProjectId(e.target.value)} aria-label="project id" size={16} /></label>
         <button onClick={() => save().catch(() => {})}>Save{dirty ? " *" : ""}</button>
+        <button aria-label="undo draft edit" title="Undo graph settings/layout; recorded runs and external actions are retained" disabled={!canUndo} onClick={() => moveHistory("undo")}>Undo</button>
+        <button aria-label="redo draft edit" title="Redo graph settings/layout" disabled={!canRedo} onClick={() => moveHistory("redo")}>Redo</button>
         <label>Open <select value="" onChange={(e) => { const [k, ...r] = e.target.value.split(":"); if (k) load(k as "project" | "example", r.join(":")); }} aria-label="open project">
           <option value="">choose…</option>
           {projects.length > 0 && <optgroup label="Saved projects">{projects.map((p) => <option key={p.id} value={`project:${p.id}`}>{p.id} [{p.graphKind}]</option>)}</optgroup>}

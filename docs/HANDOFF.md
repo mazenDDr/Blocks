@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest verified continuation: §27 — reviewed historical restoration (Mac verified; commit/push pending); draft editor history is in progress.** §25 explicit W&B/native recovery is pushed and Mac verified; first hosted Linux run failed two timing races (see §27). Read §26 first, then §25. §24 records whole-workbench recovery; §23 the browser baseline. §22 reset/fork, §21 persistent conversations, §20 isolated agent serving, §19 domain imports. Earlier cloud work is recorded in §11–§18.
+> **Latest verified continuation: §28 — bounded editor draft history (Mac verified; commit/push follows).** §27 historical restoration is Mac verified/committed5d2f732. §25/§26 recovery/discovery and timing repairs now pass hosted Linux on d0bdafa, run37308500924 (see outcome below). Read §26 first, then §25. §24 records whole-workbench recovery; §23 the browser baseline. §22 reset/fork, §21 persistent conversations, §20 isolated agent serving, §19 domain imports. Earlier cloud work is recorded in §11–§18.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0030`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0031`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -883,3 +883,29 @@ User asked continuous work until approaching usage limits, not one-task stops. C
 
 - New `apps/editor/src/documentHistory.ts`, `useDocumentHistory.ts`, `apps/editor/tests/documentHistory.test.mjs`; App draft state uses paired graph/layout history, project load resets, toolbar Undo/Redo and focus-aware shortcuts. Agent/main canvas drag grouping passes real dragging flags; same-event graph+position setters share an edit. No run/artifact/production-action rollback. Bounded100 prior snapshots/8MiB estimated JSON history (oversize current draft still editable, history evicts); no persistence across reload.
 - Pure Node tests4 pass, build/typecheck pass after union narrowing correction. Actual Chrome runner `tools/editor_history_smoke.py`/`smoke/history.mjs` in progress: first attempt incorrectly waited for POST save instead of existing PUT route; browser script corrected, rerun still required. Preserve all draft files; no accepted undo claim yet. Next ADR0031. Does not affect native Python full-suite result above. Existing recovery/restore implementation remains selective commit scope.
+
+
+## 28. Bounded editor graph draft history — 2026-10-05 (final checks in progress)
+
+- Continue alone under the ongoing until-limit instruction; no project-finalization claim. Native historical restore Mac verified/committed5d2f732, waiting prior Linux run before push to avoid cancellation. User8258/8000 untouched. All16 native identity sources unchanged.
+- New document-history reducer/hook, Node4 tests, App whole graph/UI setters/reset/Undo/Redo/focus-aware shortcuts, main/agent grouped drag, owned `editor_history_smoke.py` + real Chrome `smoke/history.mjs`, ADR0031. No new dependency/schema/backend pin. Draft history does not roll back runs, conversations, artifacts or external effects. Max100 snapshots/8MiB estimated JSON history, no reload persistence/large-graph heap/performance guarantee.
+- Pure Node5 tests pass (added grouped-gesture regression). Build/typecheck pass (256 modules, existing large-chunk warning). First browser attempt waited on nonexistent POST save; second exposed initial boot/example-selection timing; fixed the smoke to use actual PUT and await boot completion. Final actual Chrome `/private/tmp/void-undo-editor-smoke-final2` **passes**: full API-saved graph/UI equality after add undo/redo,15-step drag is one edit, new edit invalidates redo, different project resets, PyTorch→JAX setting restored, focused text keeps draft redo. Runtime/API/console errors empty, owned services closed, screenshot inspected.
+- Final acceptance below completes full/live/coverage/curl and integrated recovered browser verification for this editor scope. Native restore full suite1176/1skip/12live-deselected470.84s already passed before editor draft changes; do not claim that as the editor's final run. No Python test assertions weakened.
+- Current remaining work: copy/paste/outline/comments/navigation/editor performance; privacy deletion/retention/GC, recovery/migration, native agent retrieval/memory/tools/effects/interrupt/structured/providers/streaming; wider ML serving/cache/import/data/benchmarks. Authenticated roles/TLS/tested deployment and GPU/cloud/distributed/credential-dependent features still require concrete integrations. Next ADR0032.
+
+### Next independent draft in progress (research records, not accepted)
+
+- New `python/research/{__init__,records}.py`, `services/control/research_api.py` are draft only, not registered in the live control app yet. Plan: `research.sqlite` with current annotation and append-only revisions/idempotent mutation receipts, reviewed graph identity/revision, user-authored note/tags/author/time and bounded lexical run catalogue. No native model/store pin edits. Read recorded execution metadata via readonly attached meta.db, Unicode-casefold literal substring and exact tags/project/kind/status filters; no artifact/provider loading or ranking invented from annotation text.
+- UI/native/HTTP/recovery/concurrency tests/ADR0032/full acceptance still required. Author labels are caller-declared, shared-token holders can edit, no authenticated roles/privacy erasure claim. Keep this draft separate from accepted restore/editor-history commits. New additive DB must be included in actual offline recovery and browser proof before claiming persistence.
+
+
+### Hosted recovery/discovery/race repair accepted (on d0bdafa)
+
+- Actions https://github.com/mazenDDr/project-void/actions/runs/37308500924 **success**: native **1152 passed,1 skipped,11 deselected,1941 warnings,1031.92s**. Build/typecheck/coverage and both real Chrome seed/restored stages pass. Downloaded `/private/tmp/void-discovery-ci-evidence`: JUnit1153 cases,0errors,0failures,1skip; actual Chrome evidence arrays empty and owned services closed. Seed31.4327s/restored17.0131s. Restored discovery screenshot inspected; tracker mappings confirmed. Log `/private/tmp/void-discovery-ci.log`. Supersedes failedrun37305715111; retains its failure/repair explanation. This verifies §25/§26 and terminal publication fix; does not claim Linux historical restoration/editor-history yet.
+
+### Final Mac editor-history acceptance
+
+- `.venv/bin/pytest -q -o faulthandler_timeout=240`: **1176 passed,1 skipped,12 deselected,1941 warnings,480.00s**, `/private/tmp/void-undo-full.log`. Live actual Ollama **12 passed,1177 deselected,23.06s**, `/private/tmp/void-undo-live.log`. Pure Node **5 passed**, `/private/tmp/void-undo-node-tests.log`. Final build/typecheck pass,256 modules, existing chunk warning. Coverage regenerated/check current, no ledger diff; diffcheck pass.
+- Dedicated actual Chrome `/private/tmp/void-undo-editor-smoke-final2` pass5.7091s; backend9696/editor9701/browser9733 closed(-15/143/0). Integrated `tools/recovery_smoke.py --trackers --output /private/tmp/void-undo-integrated-recovery` also **passes**: native source deletion/backup/restore, current historical preview/restore/next turn, discovery pagination and confirmed trackers after App history integration; restored8.4414s, backend10236 closed-15. Runtime/API/console errors empty. All own services closed; user8258/8000 unchanged.
+- Actual curl on owned saved draft backend12154/port58252: PyTorch graph loaded, only conv_1 layout moved then saved/reloaded, same semantic hash and exact graph/UI bytes, validatorok/20042params. All200, backend stopped-15, `/private/tmp/void-undo-curl/evidence.json`. Neither training nor any user dataset/process touched.
+- Selective editor-history commit/push with already committed5d2f732 follows. Newly drafted research records/API/UI/tests remain outside this accepted scope until registered/tested. No16native identity file change. Account lastcheck five-hour38%/weekly53%; continue alone with reserve, no reset purchase.

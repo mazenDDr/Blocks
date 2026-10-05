@@ -506,3 +506,20 @@ Actual verification commands:
 This requires the original native code/environment/provider identity and exact
 scope. It does not import arbitrary checkpoints or erase historical data. See
 HANDOFF §27 and ADR0030 for receipt/concurrency/recovery limits and final checks.
+
+### Undo and redo graph drafts
+
+Use Undo/Redo in the top bar or Cmd/Ctrl-Z and Cmd/Ctrl-Shift-Z (Ctrl-Y also works).
+Graph settings and layout restore together; a node drag is one edit. Loading another
+project resets history. Saving keeps it, so undoing a saved edit marks the draft dirty.
+Focused text/code editors keep their own undo. Production and Integrations do not
+receive draft shortcuts. Earlier runs, weights, conversations and external actions
+stay recorded.
+
+History lasts for this page session, bounded to100 prior documents and8MiB estimated
+JSON history; older entries evict. Actual commands run:
+
+```sh
+node --test apps/editor/tests/documentHistory.test.mjs
+.venv/bin/python tools/editor_history_smoke.py --output /private/tmp/void-undo-editor-smoke-final2
+```

@@ -15,7 +15,7 @@ type Tab = "canvas" | "state" | "run" | "context" | "memory" | "indexes";
 
 /** The agent graph workspace (VISION 4, 12): canvas, state schema and routes, run + trace, context inspector, memory, indexes. */
 export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validation, ops, allRuns, reloadRuns, setMessage, requestedRunId }: {
-  projectId: string; graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; ui: UiDoc; setUi: (f: (u: UiDoc) => UiDoc) => void; validation: Validation | null; ops: OpInfo[];
+  projectId: string; graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; ui: UiDoc; setUi: (f: (u: UiDoc) => UiDoc, dragging?: boolean) => void; validation: Validation | null; ops: OpInfo[];
   allRuns: AnyRun[]; reloadRuns: () => void; setMessage: (m: string) => void; requestedRunId?: string | null;
 }) {
   const [tab, setTab] = useState<Tab>("canvas");
