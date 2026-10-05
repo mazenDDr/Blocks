@@ -45,9 +45,12 @@ import { GraphOutline } from "./components/GraphOutline";
 import { useFlowMeasurements } from "./useFlowMeasurements";
 import { GraphArrangementTools } from "./components/GraphArrangementTools";
 import { arrangeGraphNodes, type Arrangement } from "./graphArrangement";
+import { NodeComments } from "./components/NodeComments";
+import { removeAnnotation, renameAnnotation, saveAnnotation } from "./nodeAnnotations";
 import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
 
 const EMPTY: Graph = { schemaVersion: "1.0.0", graphKind: "model", backend: "pytorch", nodes: [], edges: [] };
+const own = <T,>(values: Record<string, T> | null | undefined, id: string): T | undefined => values && Object.hasOwn(values, id) ? values[id] : undefined;
 const EMPTY_AGENT: Graph = { schemaVersion: "1.0.0", graphKind: "agent", backend: "langgraph", nodes: [], edges: [], agent: { state: [{ name: "question", type: "text", reducer: { kind: "replace" }, scope: "turn" }], routes: [], joins: [], limits: { maxSteps: 25 }, indexes: [], policies: [] } };
 const EMPTY_TABULAR: Graph = { schemaVersion: "1.0.0", graphKind: "tabular", backend: "python", nodes: [], edges: [] };
 interface ProjectInfo { id: string; graphKind: string; description: string | null; synthetic: boolean }
@@ -129,7 +132,7 @@ function Workbench() {
   const compatFor = useCallback((id: string): CompatNode | undefined => {
     const nodes = compat.data?.nodes;
     if (!nodes) return undefined;
-    let n: CompatNode | undefined = nodes[id];
+    let n: CompatNode | undefined = own(nodes, id);
     if (!n) {
       const kids = Object.entries(nodes).filter(([k]) => k.startsWith(`${id}/`));
       if (!kids.length) return undefined;
@@ -252,8 +255,11 @@ function Workbench() {
   const removeNodes = (ids: string[]) => {
     const s = new Set(ids.filter((i) => !isPseudo(i) && !i.includes("/")));
     if (!s.size) return;
+    let comments = ui.nodeComments;
+    try { if (comments !== undefined) for (const id of s) comments = removeAnnotation(comments, posKey(id)); }
+    catch (error) { setMessage(errorText(error)); return; }
     edit((g) => ({ ...g, nodes: g.nodes.filter((n) => !s.has(n.id)), edges: g.edges.filter((e) => !s.has(e.from.node) && !s.has(e.to.node)) }));
-    setUi((u) => ({ ...u, positions: Object.fromEntries(Object.entries(u.positions).filter(([k]) => ![...s].some((x) => k === posKey(x)))) }));
+    setUi((u) => ({ ...u, ...(comments === undefined ? {} : { nodeComments: comments }), positions: Object.fromEntries(Object.entries(u.positions).filter(([k]) => ![...s].some((x) => k === posKey(x)))) }));
     setSelNodes((a) => a.filter((x) => !s.has(x)));
     setExpanded((a) => a.filter((x) => !s.has(x)));
   };
@@ -262,19 +268,22 @@ function Workbench() {
   const rename = (oldId: string, newId: string): string | null => {
     if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(newId)) return "Use letters, digits and underscores, starting with a letter.";
     if (cur.nodes.some((n) => n.id === newId)) return `Node id '${newId}' is already used.`;
+    let comments = ui.nodeComments;
+    try { if (comments !== undefined) comments = renameAnnotation(comments, posKey(oldId), posKey(newId)); }
+    catch (error) { return errorText(error); }
     edit((g) => ({
       ...g,
       nodes: g.nodes.map((n) => (n.id === oldId ? { ...n, id: newId, stateRef: n.stateRef ? n.stateRef.replace(new RegExp(`${oldId}$`), newId) : n.stateRef } : n.sharedWith === oldId ? { ...n, sharedWith: newId } : n)),
       edges: g.edges.map((e) => ({ ...e, id: e.id.split(oldId).join(newId), from: e.from.node === oldId ? { ...e.from, node: newId } : e.from, to: e.to.node === oldId ? { ...e.to, node: newId } : e.to })),
     }));
-    setUi((u) => { const { [posKey(oldId)]: p, ...rest } = u.positions; return { ...u, positions: p ? { ...rest, [posKey(newId)]: p } : rest }; });
+    setUi((u) => { const { [posKey(oldId)]: p, ...rest } = u.positions; return { ...u, ...(comments === undefined ? {} : { nodeComments: comments }), positions: p ? { ...rest, [posKey(newId)]: p } : rest }; });
     setSelNodes([newId]);
     return null;
   };
 
   const viewsNow = v?.nodes ?? {};
   const portsOf = (nid: string, type: string, dir: "inputs" | "outputs") => {
-    const vw = viewsNow[nid];
+    const vw = own(viewsNow, nid);
     return (dir === "inputs" ? vw?.inputPorts : vw?.outputPorts) ?? opsByType[type]?.[dir] ?? [];
   };
 
@@ -421,8 +430,8 @@ function Workbench() {
   /** Instances drawn expanded (project level only): their inner nodes and wires from the validation. */
   const expandedGroups = useMemo(() => {
     if (def || !rv?.instances) return [];
-    return expanded.filter((p) => rv.instances![p] && graph.nodes.some((n) => n.id === p)).map((p) => {
-      const inst = rv.instances![p];
+    return expanded.filter((p) => own(rv.instances, p) && graph.nodes.some((n) => n.id === p)).map((p) => {
+      const inst = own(rv.instances, p)!;
       const members = inst.members.filter((m) => rv.flat?.[m]);
       const lay = autoLayout({ ...EMPTY, nodes: members.map((id) => ({ id, type: "", version: "", config: {} })), edges: (inst.innerEdges ?? []).map((e) => ({ id: e.id, kind: "tensor", from: e.from, to: e.to })) }, 262, 150, 28, 52);
       const w = Math.max(320, ...Object.values(lay).map((q) => q.x + 262)), h = Math.max(160, ...Object.values(lay).map((q) => q.y + 150));
@@ -431,7 +440,7 @@ function Workbench() {
   }, [def, rv, expanded, graph.nodes]);
   const expandedPaths = new Set(expandedGroups.map((g) => g.path));
   const expandedGroupsRef = { current: expandedGroups };
-  const basePos = (id: string, i: number) => ui.positions[posKey(id)] ?? (def ? auto[id] : undefined) ?? { x: 60 + i * 260, y: 120 };
+  const basePos = (id: string, i: number) => own(ui.positions, posKey(id)) ?? (def ? own(auto, id) : undefined) ?? { x: 60 + i * 260, y: 120 };
   /** nodes to the right of an expanded instance move right by the extra width of its frame, so nothing is drawn on top of it */
   const posOf = (id: string, i: number) => {
     const p = basePos(id, i);
@@ -444,7 +453,7 @@ function Workbench() {
   const rfNodes: AnyNode[] = useMemo(() => {
     const out: AnyNode[] = [];
     cur.nodes.forEach((n, i) => {
-      const nv: NodeView | undefined = v?.nodes[n.id];
+      const nv: NodeView | undefined = own(v?.nodes, n.id);
       const structural = ["core.composite", "core.repeat", "core.select"].includes(n.type);
       const grp = expandedGroups.find((g) => g.path === n.id);
       if (grp) {
@@ -492,8 +501,8 @@ function Workbench() {
 
   const rfEdges: Edge[] = useMemo(() => {
     const base = cur.edges.map((e) => {
-      const t = v?.nodes[e.from.node]?.outputShapes?.[e.from.port];
-      const bad = (v?.nodes[e.to.node]?.diagnostics ?? []).some((d) => d.severity === "error" && d.port === e.to.port);
+      const t = own(v?.nodes, e.from.node)?.outputShapes?.[e.from.port];
+      const bad = (own(v?.nodes, e.to.node)?.diagnostics ?? []).some((d) => d.severity === "error" && d.port === e.to.port);
       return {
         id: e.id, source: e.from.node, sourceHandle: e.from.port, target: e.to.node, targetHandle: e.to.port, selected: selEdges.includes(e.id),
         label: bad ? `${fmtShape(t)} ✖` : fmtShape(t), interactionWidth: 28, markerEnd: { type: MarkerType.ArrowClosed },
@@ -532,7 +541,7 @@ function Workbench() {
   const selNode: GNode | undefined = flatId && flatView
     ? { id: flatId, type: flatView.type ?? "", version: flatView.nodeVersion ?? "1.0.0", config: (flatView.resolvedConfig ?? {}) as Record<string, unknown>, sharedWith: flatView.sharedWith }
     : selNodes.length === 1 && selEdges.length === 0 ? cur.nodes.find((n) => n.id === selNodes[0]) : undefined;
-  const selView: NodeView | undefined = flatId ? flatView : selNode ? v?.nodes[selNode.id] : undefined;
+  const selView: NodeView | undefined = flatId ? flatView : selNode ? own(v?.nodes, selNode.id) : undefined;
   const selEdge = selEdges.length === 1 && selNodes.length === 0 ? cur.edges.find((e) => e.id === selEdges[0]) : undefined;
   const errCount = rv ? rv.diagnostics.filter((d) => d.severity === "error").length : 0;
   const extra: InnerActions | undefined = selNode ? {
@@ -657,6 +666,12 @@ function Workbench() {
         onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onArrange={arrangeSelection} onCollapse={expandedGroups.length ? () => setExpanded([]) : undefined} />
       <GraphOutline key={`${projectId}:${scope.map(s => `${s.module}@${s.version}`).join("/")}`} graph={cur} ops={opsByType} validation={v ?? null} pending={validation.pending} error={validation.error} selected={selNodes} scope={def ? `Module ${def.id}@${def.version}` : `Root project ${projectId}`}
         onInspect={id => { setSelNodes([id]); setSelEdges([]); }} onCenter={id => { setSelNodes([id]); setSelEdges([]); void fitView({ nodes: [{ id }], padding: 0.4, maxZoom: 1, duration: 0 }); }} onOpenModule={openInstance} />
+      <NodeComments key={`comments:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} value={ui.nodeComments} prefix={def ? `${modKey(def)}/` : ""}
+        identity={!validation.pending && !validation.error && v ? { kind: def ? "module" : "graph", hash: v.graphHash } : null} pending={validation.pending}
+        onSelect={id => { setSelNodes([id]); setSelEdges([]); }}
+        onSave={(key, note) => { try { const notes = saveAnnotation(ui.nodeComments, key, note); setUi(old => ({ ...old, nodeComments: notes })); return null; } catch (error) { return errorText(error); } }}
+        onRemove={key => { try { const notes = removeAnnotation(ui.nodeComments, key); setUi(old => ({ ...old, nodeComments: notes })); return null; } catch (error) { return errorText(error); } }}
+        onRemoveMalformed={() => setUi(old => ({ ...old, nodeComments: {} }))} />
       </div>
       <aside className="left">
         {!tabular && (

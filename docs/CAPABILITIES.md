@@ -160,7 +160,7 @@ document loaders read local UTF-8 text files only; the vector store is FAISS fla
 - Editor: large graphs can be small at initial fit; durable real Chrome tests now exist (ADR0026 onward).
 
 - Gradients tab and captured gradient information (VISION 8.3), saliency, activation distributions over training.
-- Editor: richer grouping/auto-layout, comments, multi-select move as a unit,
+- Editor: richer grouping/auto-layout, multi-select move as a unit,
   insertion into an existing connection, interactive convolution teaching mode (8.4), partial-weight transfer (8.5.6),
   resource estimates, "resume compatible checkpoint". Bounded draft undo/redo is implemented below (ADR0031).
 - General pause/heartbeats/leases and orphaned-worker recovery; supported model checkpoint resume and domain completed-epoch child continuation exist. Cancellation cannot forcibly terminate a native call stuck inside a batch.
@@ -531,7 +531,7 @@ new model pins/dependencies/migrations. Final acceptance is recorded in HANDOFF 
 History is session-local draft data only:100 prior documents/8MiB estimated JSON
 history, with oldest eviction. Large current drafts remain editable; history may be
 evicted. No run/checkpoint/external-effect undo, persistent/collaborative history or
-large-graph performance claim. Remaining copying/pasting/outline/comment/navigation
+large-graph performance claim. Broader scope transfer/navigation
 work is separate. Exact verification is recorded in HANDOFF §28.
 
 
@@ -579,7 +579,7 @@ Final environment-specific verification and hosted status are in HANDOFF §30.
 
 No native values are guessed when a contract is unavailable. Outline content describes
 structure and native validation; learned activations remain in recorded inspectors.
-Agent/RL outlines, deeper cross-scope navigation, command menus, comments, alignment,
+Agent/RL outlines, deeper cross-scope navigation, command menus,
 performance benchmarks, onboarding and formal accessibility certification remain.
 Synthetic description now uses tools layout flow so it cannot cover those controls.
 No model pin/dependency/schema change. Final verification is recorded in HANDOFF §31.
@@ -619,3 +619,19 @@ Alignment can overlap. No guessed/stored DOM dimensions, native pin/schema/depen
 changes. Agent/RL arrangement, grid/guides/auto-layout and large-graph/platform benchmarks
 remain. Final full/live/hosted state is recorded in HANDOFF§33; Mac1209native/12live/17Node/build/typecheck/coverage and actual all-family Chrome/curl/
 recovery pass; hosted verification of this arrangement scope is pending.
+
+
+### Scoped authored node comments (ADR0037; Mac accepted, hosted pending in HANDOFF§34)
+
+| Capability | Implementation | Evidence |
+|---|---|---|
+| Root/module comments with exact current native graph/module identity reference and original target | UI-only `nodeComments`, NodeComments/NodeComment, native validation | Actual browser saved graph/hash/layout unchanged; native current/earlier review and module hash |
+| Rename/delete whole-draft Undo with preserved original provenance; clipboard leaves source notes | Existing graph/UI history, metadata key conflict preflight | Exact source note bytes/times/hash through one Undo; target conflict refuses without graph mutation |
+| Literal catalogue search,25row pages, explicit orphan/malformed removal and bounded metadata | Annotation helper/read/write guards and actual inspector links | Actual native/browser fault handling; no inferred node/prototype note |
+| Real project UI comments recover after physical source deletion | Existing offline backup/native project files | Actual seed/restored editor comment equals original alongside native conversations/records/trackers |
+
+4000UTF16text units/120author units,200comments/2MiB estimated metadata. Author/time/
+identity references are editable authored metadata, not authenticated or signed audit.
+No native model pin/dependency/schema change. Older notes can remain in draft history
+and backups; no physical erasure. Agent/RL/runtime-instance/sample/plot annotations,
+collaboration, append-only comment revisions and report exports remain. Mac acceptance:1209native/12live/17Node, strict real Chrome/curl and58-file source-deleted recovery pass. Comments hosted verification remains pending; read HANDOFF§34 for evidence and limitations.

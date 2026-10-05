@@ -29,7 +29,7 @@ export function graphOutline(graph: Graph, ops: Record<string, OpInfo>, validati
     const module = structural && typeof node.config.module === "string" ? `${node.config.module}@${node.config.version ?? "1.0.0"}` : null;
     const sharing = node.sharedWith ?? (node.type === "core.composite" && typeof node.config.share === "string" && !["clone", ""].includes(node.config.share) ? node.config.share : null);
     return { id: node.id, type: node.type, title: ops[node.type]?.displayName ?? node.type,
-      incoming: incoming.get(node.id) ?? [], outgoing: outgoing.get(node.id) ?? [], diagnostics, nativeView: report?.nodes[node.id] ?? null, module, sharing };
+      incoming: incoming.get(node.id) ?? [], outgoing: outgoing.get(node.id) ?? [], diagnostics, nativeView: report?.nodes && Object.hasOwn(report.nodes, node.id) ? report.nodes[node.id] : null, module, sharing };
   }).filter(row => (!errorsOnly || row.diagnostics.some(d => d.severity === "error")) &&
     [row.id, row.type, row.title, row.module ?? "", row.sharing ?? "", ...row.incoming, ...row.outgoing, ...row.diagnostics.map(d => `${d.code} ${d.message}`)].some(value => value.toLowerCase().includes(text)));
   return { rows, globalDiagnostics, graphHash: report?.graphHash ?? null };

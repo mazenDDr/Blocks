@@ -598,3 +598,20 @@ connections remain unchanged. Actual commands run:
 ```sh
 .venv/bin/python tools/editor_arrangement_smoke.py --output /private/tmp/void-arrangement-all-families
 ```
+
+### Node comments
+
+Open Node comments and select a node through the outline or canvas. Enter its comment
+and author label, Apply, then Save project. The comment records the reviewed native
+graph/module identity; configuration changes show an earlier-identity notice until
+explicit review. Comments follow renames/deletions through Undo. The catalogue finds
+comments and exposes orphaned or malformed metadata for explicit removal.
+
+These are authored observations, with a declared author and browser time. Removing
+metadata does not provide privacy erasure from history/backups. Copy/paste keeps notes
+with source nodes. Actual commands run:
+
+```sh
+.venv/bin/python tools/editor_comments_smoke.py --output /private/tmp/void-node-comments-editor-smoke-final
+.venv/bin/python tools/recovery_smoke.py --trackers --output /private/tmp/void-node-comments-integrated-recovery-final
+```

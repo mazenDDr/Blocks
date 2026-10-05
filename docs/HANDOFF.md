@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §33 — measured graph arrangement Mac verified, final1209native/12live/17Node plus actual all-family Chrome/curl/recovery.** Prior18ae842 default hosted37322922445 succeeded completely. Arrangement ready for commit/push; next hosted pending. Separate node-comment draft files are not integrated/accepted. Read §33 before older progressive notes.
+> **Latest continuation: §34 — scoped node comments Mac accepted;1209native/12live/17Node, strict Chrome/curl and58-file native recovery pass.** Arrangement af31a76 and owned-fixture repair7de4667 pushed. Repair hosted37355667485 browser succeeds; native job still active. Comments selective commit follows; read final §34 outcomes before older draft/pending notes.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0035`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0037`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -62,7 +62,9 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Bounded editor whole-draft history | Mac verified; repaired Linux Chrome passes on18ae842, §28/§32 | a49bd85/18ae842 |
 | Revisioned research run notes/tags/search | Mac verified; Linux native/recovered journey pass on833e133, §29/§32 | 3bdfe53 |
 | Root model/tabular/domain graph clipboard | Mac verified; Linux native/clipboard browser pass on833e133, §30/§32 | 2c20cd5 |
-| Structured root/module graph outline | Mac verified; Linux Chrome passes, native pending §31/§32/ADR0034 | 27d0635/18ae842 |
+| Structured root/module graph outline | Mac and default Linux native/browser verified §31–§33/ADR0034 | 27d0635/18ae842 |
+| Measured graph arrangement | Mac verified; owned-fixture Linux browser passes, native pending §33–§34 | af31a76/7de4667 |
+| Scoped authored node comments | Mac native/live/browser/curl/recovery verified; publication/hosted pending §34 | selective commit follows |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -1088,3 +1090,16 @@ Required strict actual browser/native identities/rename/delete/copy/search/fault
 Arrangement default37352207094 onaf31a76 **overall failure**, native job success1209pass1skip12deselected1941warnings1038.46s;264module build/typecheck/Node17/coverage pass. JUnit1210cases/0failures/0errors/1skip independently parsed; `/private/tmp/void-arrangement-ci-native`, log `/private/tmp/void-arrangement-ci.log`. Browser failed only all-family vision due absent ignored dataset; original history/clipboard/outline/recovery pass. Fixture-only runner/script/ADR0036 repair is Mac verified10.5913s with actual owned data and stronger before/after reports; selective commit/push follows now that native job completed, without unaccepted comment implementation.
 
 Comments final native full1209pass1skip12deselected1941warnings484.26s and live12pass1210deselected24.36s have completed. Final browser current-identity/prototype-name checks pass8.6669s (backend34665/editor34677/browser34696 closed). A prior expanded comment regression found a real UI crash for native node IDconstructor: inherited Object constructor was read as a native node view during a project transition. Own-property node/position lookups now preserve that valid native ID; no node/native value fabricated. Native validation hooks now withhold old reports immediately when graph/module/request shape changes, including before effects run, and ignore aborted success callbacks. These frontend guards change no Python/native identity source; final original history/outline/clipboard/recovery/build/typecheck/curl checks are now running before comment acceptance. No weakened assertions. NextADR0038.
+
+
+### Final Mac comments acceptance and current publication state
+
+This supersedes §34 draft/pending notes. Full native **1209passed,1skipped,12deselected,1941warnings484.26s** (`/private/tmp/void-node-comments-full.log`), actual Ollama **12passed,1210deselected24.36s** (`/private/tmp/void-node-comments-live.log`). Native code did not change after these checks; subsequent frontend guards pass final build/typecheck267modules,17Node tests125.904ms, coverage current and diffcheck.16native identity-source union and artifact_store/store.py unchanged; no retraining/reinstall needed.
+
+Final dedicated comments Chrome `/private/tmp/void-node-comments-current-identity` **passes8.6669s**, backend34665/editor34677/browser34696 closed(-15/143/0). Includes escaped Unicode/HTML, exact native provenance, unchanged-text explicit identity review, rename/delete single Undo, source-only clipboard notes, orphan conflict/no edit, malformed record/collection explicit reversible removal,200-entry/25-row/no-eviction refusal, valid native constructor ID and exact module identity. Earlier constructor regression failed with inherited node-view filter; retained failure evidence, fixed own-property lookups and immediately-current validation guards rather than rejecting the native ID.
+
+Final existing original history (`/private/tmp/void-comments-identity-history`) passes5.9701s, outline6.1971s, clipboard5.2854s. All corresponding backend/editor/browser groups closed. Integrated `/private/tmp/void-comments-identity-recovery` **passes58files/10DBs/3internal-links/1explicitdiagnosticomission**, sourceDeleted true; seed10.8386s/restored8.1332s, backend35039/editor35041/browser35060 closed(-15/143/0). Exact authored comment and captured original hash restored alongside all original conversations, historical restore, discovery, research records and confirmed native trackers. Manifest0a16c06ea2337b53768efe603aaed6b7d05ac1194250ccf885afbd7e9d1ce1bd. Runtime/API/console arrays empty throughout.
+
+Actual curl `/private/tmp/void-node-comments-curl/evidence.json` **passes5savedcases** annotated/renamed/orphan conflict/native constructor/module, exact PUT/GET graph/UI and full actual graph/module reports matching browser. Backend35235/port51671 stopped-15. No own local services left running; user8258/8000 untouched. Temporary generated datasets, workbench and evidence excluded from Git.
+
+Arrangement repair **7de4667 pushed**. Default [37355667485](https://github.com/mazenDDr/project-void/actions/runs/37355667485) **browser job succeeds**, including owned labelled fixtures and full before/after native reports; downloaded `/private/tmp/void-owned-fixtures-ci-browser`. Native job active at this checkpoint, no whole-workflow acceptance claim. Do not cancel it by next master push; comment commit can be prepared locally while independent next scope proceeds. The repair run does not verify unpublished comments/current-identity guards. NextADR0038, proposed explicit typed-wire insertion; no insertion implementation accepted yet. Continue alone until limit/project finalization, current23%five-hour/64%weekly; no reset credit used. Remaining whole-VISION work stays as §32 broader list, replacing comments/alignment items with these bounded accepted scopes.

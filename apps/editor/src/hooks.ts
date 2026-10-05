@@ -4,18 +4,19 @@ import type { AnyRun, EpochEnd, Graph, RunEvent, Validation } from "./types";
 
 /** Debounced validation of the draft graph. Stale responses are aborted, so shapes always match the latest edit. */
 export function useValidation(graph: Graph, delay = 250) {
-  const [state, setState] = useState<{ data: Validation | null; pending: boolean; error: string | null }>({ data: null, pending: true, error: null });
+  const [state, setState] = useState<{ graph: Graph | null; data: Validation | null; pending: boolean; error: string | null }>({ graph: null, data: null, pending: true, error: null });
   useEffect(() => {
     const ctl = new AbortController();
-    setState((s) => ({ ...s, pending: true }));
+    setState({ graph, data: null, pending: true, error: null });
     const t = setTimeout(() => {
       api.validate(graph, ctl.signal)
-        .then((data) => setState({ data, pending: false, error: null }))
-        .catch((e) => { if (!ctl.signal.aborted) setState((s) => ({ ...s, pending: false, error: errorText(e) })); });
+        .then((data) => { if (!ctl.signal.aborted) setState({ graph, data, pending: false, error: null }); })
+        .catch((e) => { if (!ctl.signal.aborted) setState({ graph, data: null, pending: false, error: errorText(e) }); });
     }, delay);
     return () => { clearTimeout(t); ctl.abort(); };
   }, [graph, delay]);
-  return state;
+  // A changed draft cannot expose the previous identity even before its effect runs.
+  return state.graph === graph ? state : { data: null, pending: true, error: null };
 }
 
 export function usePolling<T>(url: string | null, intervalMs: number, deps: unknown[] = []): { data: T | null; error: string | null; reload: () => void } {
@@ -125,19 +126,21 @@ export function useInspect<T>(url: string | null, body: unknown | null, retryMs 
 
 /** Debounced validation of one module on its own (instantiated on tensor inputs of its declared shapes). Shaped like a project validation. */
 export function useModuleValidation(graph: Graph, moduleId: string | null, version: string | null, shapes?: Record<string, (number | string)[]>, delay = 250) {
-  const [state, setState] = useState<{ data: (Validation & { outputs?: Record<string, any>; params?: number }) | null; pending: boolean; error: string | null }>({ data: null, pending: false, error: null });
+  const shapeKey = JSON.stringify(shapes) ?? "";
+  const [state, setState] = useState<{ query: { graph: Graph; moduleId: string; version: string | null; shapeKey: string } | null; data: (Validation & { outputs?: Record<string, any>; params?: number }) | null; pending: boolean; error: string | null }>({ query: null, data: null, pending: false, error: null });
   useEffect(() => {
-    if (!moduleId) { setState({ data: null, pending: false, error: null }); return; }
-    const ctl = new AbortController();
-    setState((s) => ({ ...s, pending: true }));
+    if (!moduleId) { setState({ query: null, data: null, pending: false, error: null }); return; }
+    const ctl = new AbortController(), query = { graph, moduleId, version, shapeKey };
+    setState({ query, data: null, pending: true, error: null });
     const t = setTimeout(() => {
       api.post<any>("/api/modules/validate", { graph, moduleId, version, shapes }, undefined, ctl.signal)
-        .then((d) => setState({ data: { ok: d.ok, graphHash: d.moduleHash, totalParams: d.params, diagnostics: d.diagnostics, nodes: d.nodes, outputs: d.outputs, params: d.params }, pending: false, error: null }))
-        .catch((e) => { if (!ctl.signal.aborted) setState((s) => ({ ...s, pending: false, error: errorText(e) })); });
+        .then((d) => { if (!ctl.signal.aborted) setState({ query, data: { ok: d.ok, graphHash: d.moduleHash, totalParams: d.params, diagnostics: d.diagnostics, nodes: d.nodes, outputs: d.outputs, params: d.params }, pending: false, error: null }); })
+        .catch((e) => { if (!ctl.signal.aborted) setState({ query, data: null, pending: false, error: errorText(e) }); });
     }, delay);
     return () => { clearTimeout(t); ctl.abort(); };
-  }, [graph, moduleId, version, JSON.stringify(shapes), delay]); // eslint-disable-line react-hooks/exhaustive-deps
-  return state;
+  }, [graph, moduleId, version, shapeKey, delay]); // eslint-disable-line react-hooks/exhaustive-deps
+  return state.query?.graph === graph && state.query.moduleId === moduleId && state.query.version === version && state.query.shapeKey === shapeKey
+    ? state : { data: null, pending: !!moduleId, error: null };
 }
 
 /** Backend compatibility report of the draft graph for its selected backend (debounced, stale responses aborted). Model graphs only. */

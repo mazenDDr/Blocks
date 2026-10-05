@@ -456,3 +456,12 @@ table.compat th { background: #f1f3f6; }
 .arrangement-tools { padding: 4px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
 .arrangement-tools p { margin: 6px 0; }
 .arrangement-actions { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0; }
+.node-comments { padding: 4px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.node-comments table { width: 100%; table-layout: fixed; overflow-wrap: anywhere; }
+.node-comments th, .node-comments td { vertical-align: top; text-align: left; padding: 5px; }
+.node-comments p { margin: 6px 0; }
+.node-comments pre { white-space: pre-wrap; max-height: 140px; overflow: auto; }
+.node-comments .node-comment { margin: 8px 0; border: 1px solid var(--line); padding: 8px; }
+.node-comment label { display: block; margin: 6px 0; }
+.node-comment textarea { width: 100%; min-height: 90px; }
+.node-comment .provenance { overflow-wrap: anywhere; }

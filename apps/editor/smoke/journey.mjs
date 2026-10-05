@@ -202,6 +202,21 @@ try {
   await click('Open original run');
   await page.waitForFunction(r => [...document.querySelectorAll('.rundetail h3')].some(h => h.innerText.includes(r) && h.innerText.includes('completed')), {},source.runId);
   await text('The run reached END.');
+  // Actual editor comments are UI metadata and must survive the offline workbench copy.
+  await page.select('select[aria-label="open project"]','example:reference_cnn');
+  await page.waitForFunction(()=>document.querySelector('input[aria-label="project id"]').value==='reference_cnn');
+  await fill('input[aria-label="project id"]','SYNTHETIC_recovery_comments');
+  if(!(await page.$eval('.graph-outline',e=>e.open)))await page.click('.graph-outline summary');
+  await page.waitForSelector('[aria-label="inspect outline conv_1"]');await page.click('[aria-label="inspect outline conv_1"]');
+  if(!(await page.$eval('.node-comments',e=>e.open)))await page.click('.node-comments summary');
+  if(!(await page.$eval('.node-comment',e=>e.open)))await page.click('.node-comment summary');
+  await fill('textarea[aria-label="node comment text"]','SYNTHETIC editor comment; native identity retained through physical source deletion.');
+  await fill('input[aria-label="node comment author"]','SYNTHETIC declared recovery researcher');await click('Apply node comment');
+  pending=response('/api/projects/SYNTHETIC_recovery_comments','PUT');
+  for(const h of await page.$$('.topbar button'))if(await h.evaluate(e=>e.textContent.startsWith('Save'))){await h.click();break;}
+  await pending;
+  const commented=await page.evaluate(async()=>{const r=await fetch('/api/projects/SYNTHETIC_recovery_comments');if(!r.ok)throw Error('Saved comment '+r.status);return r.json();});
+  assert.equal(commented.ui.nodeComments.conv_1.source.hash,commented.graphHash);assert.equal(commented.ui.nodeComments.conv_1.source.nodeId,'conv_1');evidence.nodeComments=commented;await capture('source-node-comment');
   assert.deepEqual(evidence.runtimeErrors,[]);
   assert.deepEqual(evidence.apiErrors,[]);
   // Preserve known initial CNN warnings, but never silently discard unexpected console errors.

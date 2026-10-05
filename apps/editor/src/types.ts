@@ -35,6 +35,8 @@ export interface Graph {
 export interface UiDoc {
   schemaVersion: string; positions: Record<string, { x: number; y: number }>; pinnedBaseline?: string | null;
   description?: string; synthetic?: boolean; defaultInput?: Record<string, unknown>; seedExample?: string;
+  /** User-authored editor metadata, checked separately from graph execution. */
+  nodeComments?: Record<string, unknown>;
 }
 
 export interface OpInfo {
