@@ -252,7 +252,7 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0 2px;
 .atabs { margin: 0; padding: 0 12px; background: var(--panel); align-items: center; }
 .atabs button { padding: 6px 12px; }
 .atabrun { margin-left: auto; }
-.atabbody { min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.atabbody { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .atabbody > .scroll { overflow: auto; flex: 1; min-height: 0; }
 .acanvas { display: grid; grid-template-columns: 230px 1fr 440px; flex: 1; min-height: 0; }
 .acanvas .left, .acanvas .center, .acanvas .right { grid-area: auto; }

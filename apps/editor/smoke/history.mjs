@@ -57,9 +57,22 @@ try{
   await shortcut();const again=await save();assert.deepEqual(again.graph,baseline.graph);assert.deepEqual(again.ui,baseline.ui);
   // A full drag is one edit, independent of animation frame count.
   evidence.stage='drag';const node=await page.$('.react-flow__node[data-id="tick"]');assert(node);
+  // A fitted canvas must fill the workspace and the drag must hit this actual card.
+  await page.click('.react-flow__controls-fitview');
+  await page.waitForFunction(()=>{
+    const transform=document.querySelector('.react-flow__viewport')?.style.transform;
+    if(window.__historyFit?.transform!==transform)window.__historyFit={transform,since:performance.now()};
+    return window.__historyFit && performance.now()-window.__historyFit.since>350;
+  });
+  await page.waitForFunction(()=>{
+    const n=document.querySelector('.react-flow__node[data-id="tick"]'), c=document.querySelector('.acanvas .center');
+    if(!n||!c||c.getBoundingClientRect().height<400)return false;
+    const b=n.getBoundingClientRect();return document.elementFromPoint(b.x+b.width/2,b.y+b.height/2)?.closest('.react-flow__node')===n;
+  });
   const box=await node.boundingBox();assert(box);
-  await page.mouse.move(box.x+box.width/2,box.y+30);await page.mouse.down();
-  await page.mouse.move(box.x+box.width/2+80,box.y+110,{steps:15});await page.mouse.up();
+  evidence.dragTarget=await node.evaluate(n=>({node:n.getBoundingClientRect().toJSON(),canvas:n.closest('.center').getBoundingClientRect().toJSON()}));
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+  await page.mouse.move(box.x+box.width/2+80,box.y+box.height/2+80,{steps:15});await page.mouse.up();
   await page.waitForFunction(()=>!document.querySelector('[aria-label="undo draft edit"]').disabled);
   const moved=await save();assert.deepEqual(moved.graph,baseline.graph);assert.notDeepEqual(moved.ui.positions.tick,baseline.ui.positions.tick);
   assert(await disabled('[aria-label="redo draft edit"]'));
