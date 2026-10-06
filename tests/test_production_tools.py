@@ -169,6 +169,11 @@ def test_adapter_storage_pins_match_explicit_migration_compatibility_decision():
     memory = json.loads((Path(__file__).parent / "fixtures/serving_sources_adr0075.json").read_text())["files"]
     assert set(memory) == {"storage/schema.py"} and memory["storage/schema.py"] != expected["storage/schema.py"], "ADR0075 declares an intentional pin change"
     expected.update(memory)
+    provider = json.loads((Path(__file__).parent / "fixtures/serving_sources_adr0076.json").read_text())["files"]
+    assert set(provider) == {"agent/blocks.py", "agent/models.py", "agent/validate.py"}
+    for name in provider:
+        assert provider[name] != expected[name], "ADR0076 declares an intentional pin change"
+    expected.update(provider)
     for mod in (agent_adapter, conversation_adapter, retrieval_agent_adapter):
         for name, current in mod.implementation().items():
             assert expected[name] == current

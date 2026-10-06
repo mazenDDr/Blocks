@@ -127,6 +127,12 @@ def validate_agent(graph: Graph) -> AgentReport:
         for ms in op.model_specs(cfg):
             if ms.provider == "anthropic" and not ms.api_key:
                 add("E_MODEL_NO_KEY", "The Anthropic provider needs an API key given as a secret reference.", nid, path=f"/nodes/{nid}/config/model/api_key", severity="warning")
+            if ms.provider == "openai_compatible":
+                from .openai_compat import check_base_url
+                try:
+                    check_base_url(ms.base_url, bool(ms.api_key))
+                except ValueError as e:
+                    add("E_MODEL_ENDPOINT", str(e), nid, path=f"/nodes/{nid}/config/model/base_url")
             if ms.provider == "fixture":
                 add("W_FIXTURE_MODEL", "This block uses the FIXTURE model: scripted replies for control-flow tests, not a language model.", nid, path=f"/nodes/{nid}/config/model", severity="warning")
 

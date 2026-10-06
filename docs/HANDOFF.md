@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §82 — tabular data-scale benchmark.** §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §83 — OpenAI-compatible provider (ADR0076).** §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2938,3 +2938,19 @@ recovery journey with the CI flags passes (`/private/tmp/void-recovery-2`). Jour
 `voidscale` (finished, exited) with log/result in `~/project-void-worker/`. All sizes completed on both machines. The
 storage amplification (≈5.5× CSV bytes in the CAS) is reported, not changed. The gpu-box numbers use its conda
 `main` environment (Python 3.11, its own package versions), not the pinned project environment.
+
+## 83. OpenAI-compatible provider — 2026-10-06 (ADR0076)
+
+New `agent/openai_compat.py`, `tests/test_openai_compatible.py` (3 offline + 1 live), `smoke/provider.mjs`,
+`tools/editor_provider_smoke.py` (+ CI stage), ledger `serving_sources_adr0076.json`. Changed: `agent/models.py`
+(provider, `reasoning_effort`), `agent/blocks.py` (effects), `agent/validate.py` (endpoint diagnostic), editor
+model form and types, `AgentCanvas.tsx` (effective defaults in forms/cards). Findings while building: (1) qwen3.5
+through `/v1` returns empty content when reasoning consumes `max_tokens` — hence the explicit `reasoning_effort`;
+(2) the agent inspector showed omitted settings as "(not declared)"/"undefined" — fixed; journey asserts it.
+Provider journey runs: `/private/tmp/void-provider-1..4` (the first three failed on the journey itself: the
+"Save *" label, a sed-mangled line, a wrong select label).
+Verification: full native 1427 passed, 1 failed, 1 skipped, 28 deselected 551.83s (`/private/tmp/void-prov-full.log`) — the
+failure was `test_agent_api.py` asserting the exact provider set; updated to include `openai_compatible` and its settings
+(11 passed); live Ollama 26 passed; build, 50 Node tests, base + 25 editor journeys and the recovery journey with CI flags
+pass with zero console warnings (`/private/tmp/void-prov-regressions`). An earlier verification run was discarded because
+a `git stash` to push a commit ran while it read the working tree.

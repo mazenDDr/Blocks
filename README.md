@@ -1456,3 +1456,16 @@ Commands actually run:
 python benchmarks/tabular_scale.py --rows 10000 100000 1000000 3000000 10000000 --out tabular_scale_gpu_box.json
 .venv/bin/pytest -q tests/test_tabular_scale_benchmark.py
 ```
+
+## OpenAI-compatible model servers
+
+Agent model blocks can call any server that speaks the OpenAI chat-completions protocol
+(provider `openai_compatible`, a base URL such as `http://127.0.0.1:11434/v1`, an optional
+API key reference). See ADR 0076.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_openai_compatible.py -m 'live or not live'
+.venv/bin/python tools/editor_provider_smoke.py --output /private/tmp/void-provider-4
+```

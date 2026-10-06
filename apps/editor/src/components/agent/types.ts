@@ -24,8 +24,9 @@ export const emptySpec = (): AgentSpec => ({ state: [], routes: [], joins: [], l
 export const specOf = (g: Graph): AgentSpec => ({ ...emptySpec(), ...((g.agent as Partial<AgentSpec>) ?? {}) });
 
 export interface ModelSpec {
-  provider: "ollama" | "anthropic" | "fixture"; model: string; temperature: number | null; max_tokens: number | null; seed: number | null; timeout_s: number;
+  provider: "ollama" | "anthropic" | "openai_compatible" | "fixture"; model: string; temperature: number | null; max_tokens: number | null; seed: number | null; timeout_s: number;
   think: boolean; base_url?: string | null; api_key?: { kind: "env" | "file"; name?: string; path?: string; key?: string } | null; fixture: Record<string, any>;
+  reasoning_effort?: "none" | "low" | "medium" | "high" | null;
 }
 
 export interface AgentNodeView {

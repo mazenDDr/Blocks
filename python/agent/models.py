@@ -28,6 +28,9 @@ CAPABILITIES: dict[str, dict[str, Any]] = {
     "anthropic": {"label": "Anthropic API", "settings": ["temperature", "max_tokens", "timeout_s", "api_key"],
                   "structured": "JSON requested in the prompt, validated here (no constrained decoding is claimed)", "usage": "provider-reported (usage)",
                   "unsupported": {"seed": "the Anthropic API has no sampling seed", "think": "extended thinking is not exposed by this adapter"}, "live": False},
+    "openai_compatible": {"label": "OpenAI-compatible endpoint", "settings": ["temperature", "max_tokens", "seed", "timeout_s", "base_url", "api_key", "reasoning_effort"],
+                          "structured": "JSON requested in the prompt, validated here (no constrained decoding is claimed)",
+                          "usage": "provider-reported (usage) when the server sends it", "unsupported": {"think": "not part of the protocol"}, "live": True},
     "fixture": {"label": "FIXTURE (scripted test model, not a language model)", "settings": [], "structured": "scripted JSON replies", "usage": "none (unknown)",
                 "unsupported": {"temperature": "scripted", "max_tokens": "scripted", "seed": "scripted"}, "live": False},
 }
@@ -35,15 +38,16 @@ CAPABILITIES: dict[str, dict[str, Any]] = {
 
 class ModelSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    provider: Literal["ollama", "anthropic", "fixture"] = "ollama"
+    provider: Literal["ollama", "anthropic", "openai_compatible", "fixture"] = "ollama"
     model: str = "qwen3.5:2b"
     temperature: float | None = Field(0.0, ge=0.0, le=2.0)
     max_tokens: int | None = Field(512, ge=1, le=200000)
     seed: int | None = None
     timeout_s: float = Field(180.0, gt=0, le=3600)
     think: bool = False  # ollama reasoning models: request the reasoning trace or not
+    reasoning_effort: Literal["none", "low", "medium", "high"] | None = None  # openai_compatible: sent only when set (servers may reject it)
     base_url: str | None = None
-    api_key: dict[str, str] | None = None  # secret reference {"kind":"env","name":...} / {"kind":"file",...}; anthropic only
+    api_key: dict[str, str] | None = None  # secret reference {"kind":"env","name":...} / {"kind":"file",...}; anthropic / openai_compatible
     # fixture only: rules are checked in order against the full text sent; `responses` is cycled by call number; `fail_first` returns
     # unparsable text for that many calls (to exercise structured-output retries).
     fixture: dict[str, Any] = Field(default_factory=dict)
@@ -72,7 +76,7 @@ def resolve_settings(spec: ModelSpec) -> tuple[dict[str, Any], dict[str, str]]:
     cap = CAPABILITIES[spec.provider]
     resolved: dict[str, Any] = {"model": spec.model}
     ignored: dict[str, str] = {}
-    for k in ("temperature", "max_tokens", "seed", "think"):
+    for k in ("temperature", "max_tokens", "seed", "think", "reasoning_effort"):
         v = getattr(spec, k)
         if k in cap["settings"]:
             resolved[k] = v
@@ -153,6 +157,24 @@ def build_chat_model(spec: ModelSpec, counter: dict[str, int] | None = None):
         if spec.temperature is not None:
             kw["temperature"] = spec.temperature
         return ChatAnthropic(**kw)
+    if spec.provider == "openai_compatible":
+        from pydantic import SecretStr
+        from .openai_compat import OpenAICompatibleChat, check_base_url
+
+        key = None
+        if spec.api_key:
+            from connectors import secrets as sec
+            from connectors.errors import SourceError
+            try:
+                key = sec.resolve(sec.normalize_ref(spec.api_key, field="api_key"), "api_key")
+            except SourceError as e:
+                raise ModelUnavailable("E_MODEL_NO_KEY", e.message if hasattr(e, "message") else str(e))
+        try:
+            url = check_base_url(spec.base_url, key is not None)
+        except ValueError as e:
+            raise ModelUnavailable("E_MODEL_ENDPOINT", str(e))
+        return OpenAICompatibleChat(model=spec.model, base_url=url, api_key=SecretStr(key) if key else None, temperature=spec.temperature,
+                                    max_tokens=spec.max_tokens, seed=spec.seed, timeout=spec.timeout_s, reasoning_effort=spec.reasoning_effort)
     raise ModelUnavailable("E_MODEL_PROVIDER", f"unknown provider {spec.provider}")
 
 

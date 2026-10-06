@@ -1,0 +1,8 @@
+{
+  "decision": "ADR0076 deliberately changes agent pins (OpenAI-compatible provider); agent families require re-registration",
+  "files": {
+    "agent/blocks.py": "4987b181659efc378833690c8e953687bf4061ad26c65aa1c28c0e588b3acb20",
+    "agent/models.py": "16ec776e9118fb5a85063cfa6b493dfe12c047bf36eb7929dfcf6151cba8f0d5",
+    "agent/validate.py": "75701f80d04d794cf27ce171896f4a5adf09df2d8fe34f4613b43685bf828375"
+  }
+}

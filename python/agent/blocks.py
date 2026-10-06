@@ -278,6 +278,9 @@ class ChatModel(AgentOp):
         return [cfg.model]
 
     def effects(self, cfg):
+        if cfg.model.provider == "openai_compatible":
+            from .openai_compat import is_loopback
+            return ["local_runtime"] if is_loopback(cfg.model.base_url) else ["network"]
         return ["network"] if cfg.model.provider != "fixture" and cfg.model.provider != "ollama" else (["local_runtime"] if cfg.model.provider == "ollama" else [])
 
     def execute(self, rt, ctx, cfg, state):
@@ -378,6 +381,9 @@ class StructuredOutput(AgentOp):
         return [cfg.model]
 
     def effects(self, cfg):
+        if cfg.model.provider == "openai_compatible":
+            from .openai_compat import is_loopback
+            return ["local_runtime"] if is_loopback(cfg.model.base_url) else ["network"]
         return ["local_runtime"] if cfg.model.provider == "ollama" else (["network"] if cfg.model.provider == "anthropic" else [])
 
     def check(self, cfg, spec):

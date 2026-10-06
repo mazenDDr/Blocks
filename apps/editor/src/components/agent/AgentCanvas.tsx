@@ -17,8 +17,11 @@ interface CardData extends Record<string, unknown> {
 }
 type AgentFlowNode = Node<CardData, "acard">;
 
-function cardSummary(n: GNode): string[] {
-  const c = n.config as Record<string, any>;
+/** The op's declared defaults apply to omitted settings natively, so show them too (an omitted field is not "undefined"). */
+const effectiveConfig = (n: GNode, op?: OpInfo): Record<string, any> => ({ ...(op?.defaults ?? {}), ...(n.config as Record<string, any>) });
+
+function cardSummary(n: GNode, op?: OpInfo): string[] {
+  const c = effectiveConfig(n, op);
   switch (n.type) {
     case "agent.chat_model": case "agent.structured_output": return [`${c.model?.provider}: ${c.model?.model}`, c.model?.provider === "fixture" ? "scripted FIXTURE" : `T=${c.model?.temperature ?? "default"} · max ${c.model?.max_tokens ?? "?"} tokens${c.model?.seed != null && c.model?.provider === "ollama" ? ` · seed ${c.model.seed}` : ""}`];
     case "agent.prompt": return [`${(c.items ?? []).length} message sources → ${c.output_field}`, (c.items ?? []).map((i: any) => i.kind === "template" ? i.role : i.kind).join(" · ")];
@@ -55,7 +58,7 @@ function AgentCard({ data, selected }: NodeProps<AgentFlowNode>) {
       <Handle id="out" type="source" position={Position.Right} title="control output" />
       <div className="card-head"><b>{op?.displayName ?? gnode.type}</b><span>{view?.fixtureModel && <FixtureBadge fixture />}{gnode.type === "agent.human_interrupt" && <span className="badge warnb">interrupt</span>}{external && <span className="badge warnb" title="External effect: needs an approval interrupt">external effect</span>}</span></div>
       <div className="card-id">{gnode.id}{ran && <span className="runmark finished">ran ×{ran.count}{ran.last != null ? ` · ${fmtMs(ran.last)}` : ""}{ran.replay ? " · replayed" : ""}</span>}{paused && <span className="runmark paused">PAUSED here</span>}</div>
-      {cardSummary(gnode).map((s, i) => <div key={i} className="card-sum">{s}</div>)}
+      {cardSummary(gnode, op).map((s, i) => <div key={i} className="card-sum">{s}</div>)}
       {(view?.reads?.length || view?.writes?.length) ? <div className="rw small">{view?.reads?.length ? <>reads <b>{Array.from(new Set(view.reads.map((r) => r.split(".")[0]))).join(", ")}</b></> : null}{view?.writes?.length ? <> · writes <b>{view.writes.join(", ")}</b></> : null}</div> : null}
       {errors.length > 0 && <div className="errbadge">{errors[0].message}{errors.length > 1 ? ` (+${errors.length - 1})` : ""}</div>}
       {errors.length === 0 && warns.length > 0 && <div className="warn small">{warns[0].message}</div>}
@@ -240,7 +243,7 @@ function AgentCanvasInner({ graph, setGraph, ui, setUi, validation, ops, selNode
             <p className="small">{selView?.explain?.summary ?? opsByType[sel.type]?.purpose}</p>
             {(selView?.effects?.length ?? 0) > 0 && <div className="small">Declared effects: <b>{selView!.effects!.join(", ")}</b></div>}
             {selView?.diagnostics.map((d, i) => <div key={i} className={d.severity === "error" ? "errbadge" : "warn"}>{d.code}: {d.message}</div>)}
-            <NodeForm key={sel.id} type={sel.type} cfg={sel.config as Record<string, any>} spec={spec} onConfig={setConfig} runValues={runValues?.(sel.id)} />
+            <NodeForm key={sel.id} type={sel.type} cfg={effectiveConfig(sel, opsByType[sel.type])} spec={spec} onConfig={setConfig} runValues={runValues?.(sel.id)} />
             <h4>Transitions out of {sel.id}</h4>
             {route ? (
               <>

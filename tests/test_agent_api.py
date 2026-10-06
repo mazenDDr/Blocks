@@ -24,7 +24,8 @@ def test_registry_lists_agent_blocks_with_schema_ports_and_defaults(client):
 
 def test_catalog_states_provider_capabilities_reducers_tools_and_the_fixture_label(client):
     c = client.get("/api/agent/catalog").json()
-    assert set(c["providers"]) == {"ollama", "anthropic", "fixture"}
+    assert set(c["providers"]) == {"ollama", "anthropic", "openai_compatible", "fixture"}
+    assert {"base_url", "api_key", "reasoning_effort"} <= set(c["providers"]["openai_compatible"]["settings"])
     assert "seed" in c["providers"]["ollama"]["settings"] and "seed" not in c["providers"]["anthropic"]["settings"] and "no sampling seed" in c["providers"]["anthropic"]["unsupported"]["seed"]
     assert c["providers"]["ollama"]["ollama"]["reachable"] in (True, False) and c["defaults"]["anthropicModel"] == "claude-sonnet-5-5"
     assert {r["kind"] for r in c["reducers"]} == {"replace", "append", "append_unique", "add", "max", "min", "merge", "keep_last_n"}

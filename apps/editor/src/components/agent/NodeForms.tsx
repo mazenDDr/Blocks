@@ -40,8 +40,9 @@ export function ModelForm({ model, onChange }: { model: ModelSpec; onChange: (m:
   return (
     <fieldset className="afield" aria-label="model invocation">
       <legend>Model invocation <small className="muted">(inference, not training)</small> <FixtureBadge fixture={model.provider === "fixture"} /></legend>
-      <Row label="Provider"><Sel label="provider" value={model.provider} options={[{ value: "ollama", label: "Ollama (local)" }, { value: "anthropic", label: "Anthropic API" }, { value: "fixture", label: "FIXTURE (scripted test model)" }]}
-        onChange={(p) => set({ provider: p, model: p === "anthropic" ? cat?.defaults.anthropicModel ?? "claude-sonnet-5-5" : p === "ollama" ? cat?.defaults.ollamaModel ?? "qwen3.5:2b" : "fixture" })} /></Row>
+      <Row label="Provider"><Sel label="provider" value={model.provider} options={[{ value: "ollama", label: "Ollama (local)" }, { value: "anthropic", label: "Anthropic API" }, { value: "openai_compatible", label: "OpenAI-compatible endpoint" }, { value: "fixture", label: "FIXTURE (scripted test model)" }]}
+        onChange={(p) => set({ provider: p, model: p === "anthropic" ? cat?.defaults.anthropicModel ?? "claude-sonnet-5-5" : p === "ollama" || p === "openai_compatible" ? cat?.defaults.ollamaModel ?? "qwen3.5:2b" : "fixture",
+          base_url: p === "openai_compatible" ? model.base_url ?? "http://127.0.0.1:11434/v1" : p === "ollama" ? model.base_url : null, api_key: p === "ollama" || p === "fixture" ? null : model.api_key })} /></Row>
       {model.provider === "ollama" && oll && !oll.reachable && <div className="warn">Ollama is not reachable at http://localhost:11434: runs with this block will fail with model_unavailable.</div>}
       <Row label="Model">
         {model.provider === "ollama" && oll?.models.length ? <Sel label="model" value={model.model} options={oll.models.includes(model.model) ? oll.models : [model.model, ...oll.models]} onChange={(m) => set({ model: m })} />
@@ -53,6 +54,14 @@ export function ModelForm({ model, onChange }: { model: ModelSpec; onChange: (m:
       <Row label="Timeout (s)"><Num label="timeout seconds" min={1} value={model.timeout_s} onChange={(n) => set({ timeout_s: n ?? 180 })} /></Row>
       {model.provider === "ollama" && <Row label="Thinking" hint="request the reasoning trace (reasoning models)"><Check label="think" value={model.think} onChange={(b) => set({ think: b })} /></Row>}
       {model.provider === "ollama" && <Row label="Base URL"><input aria-label="base url" value={model.base_url ?? ""} placeholder="http://localhost:11434" onChange={(e) => set({ base_url: e.target.value || null })} /></Row>}
+      {model.provider === "openai_compatible" && <Row label="Base URL" hint="the server's /v1 root; a key is only sent over https or to this machine"><input aria-label="base url" value={model.base_url ?? ""} placeholder="http://127.0.0.1:11434/v1" onChange={(e) => set({ base_url: e.target.value || null })} /></Row>}
+      {model.provider === "openai_compatible" && <Row label="Reasoning effort" hint="sent only when set; reasoning models may otherwise spend max tokens on hidden reasoning, and some servers reject it">
+        <Sel label="reasoning effort" value={model.reasoning_effort ?? ""} options={[{ value: "", label: "not sent (server default)" }, { value: "none", label: "none" }, { value: "low", label: "low" }, { value: "medium", label: "medium" }, { value: "high", label: "high" }]}
+          onChange={(v) => set({ reasoning_effort: (v || null) as ModelSpec["reasoning_effort"] })} /></Row>}
+      {model.provider === "openai_compatible" && <Row label="API key" hint="optional (local servers need none); a reference to a secret">
+        <Check label="use api key" value={!!model.api_key} onChange={(b) => set({ api_key: b ? { kind: "env", name: "OPENAI_API_KEY" } : null })} />
+        {model.api_key && <input aria-label="secret variable name" value={model.api_key?.name ?? ""} placeholder="OPENAI_API_KEY" onChange={(e) => set({ api_key: { kind: "env", name: e.target.value } })} />}
+      </Row>}
       {model.provider === "anthropic" && (
         <Row label="API key" hint="a reference to a secret; the value is never stored">
           <Sel label="secret kind" value={model.api_key?.kind ?? "env"} options={[{ value: "env", label: "environment variable" }, { value: "file", label: "secrets file" }]} onChange={(k) => set({ api_key: k === "env" ? { kind: "env", name: "ANTHROPIC_API_KEY" } : { kind: "file", path: "", key: "anthropic" } })} />

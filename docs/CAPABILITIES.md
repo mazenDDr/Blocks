@@ -1153,3 +1153,9 @@ and on Linux: linear time (≈3.8 / 5.6 µs per row), ≈3 GiB peak at 10M rows,
 ceiling. Intermediate tables are stored at ≈5.5× the CSV size, the first practical limit. Validation of
 files over 50 MB checks a 20,000-row sample. Not measured: larger-than-memory data, Postgres/JSONL at scale,
 concurrency, repeated trials. `benchmarks/results/tabular_scale_summary.md`.
+
+### OpenAI-compatible provider (ADR0076; Mac verified incl. live Ollama /v1, HANDOFF§83)
+
+Research-run chat calls to any `/chat/completions` server over httpx, streamed and not, provider-reported
+usage, optional key reference (https or loopback only), optional reasoning effort. Not provided: serving with
+it, tool calling, response_format, embeddings, hosted APIs verified with real keys.
