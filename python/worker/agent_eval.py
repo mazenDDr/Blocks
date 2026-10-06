@@ -47,11 +47,26 @@ class AgentEvalConfig(BaseModel):
     project_id: str | None = None
     name: str = Field("evaluation", max_length=80)
     cases: list[EvalCase] = Field(min_length=1, max_length=200)
+    # Repeats (ADR 0078): each seed is written into every model node's `seed`; one child run per case and seed. Empty = the graph as is.
+    seeds: list[int] = Field(default_factory=list, max_length=5)
 
     def model_post_init(self, _):
         ids = [c.id for c in self.cases]
         if len(set(ids)) != len(ids):
             raise ValueError("case ids must be unique")
+        if len(set(self.seeds)) != len(self.seeds):
+            raise ValueError("seeds must be unique")
+        if len(self.cases) * max(1, len(self.seeds)) > 400:
+            raise ValueError("cases × seeds must be at most 400 runs")
+
+
+def seeded(graph: Graph, seed: int) -> Graph:
+    """The same graph with `seed` on every model invocation (chat and structured output)."""
+    doc = graph.to_json()
+    for n in doc["nodes"]:
+        if isinstance(n.get("config", {}).get("model"), dict):
+            n["config"]["model"] = {**n["config"]["model"], "seed": seed}
+    return Graph.model_validate(doc)
 
 
 def _path(state: dict[str, Any], path: str) -> Any:
@@ -117,36 +132,51 @@ def run_agent_eval(graph: Graph, cfg: AgentEvalConfig, store: ArtifactStore, run
     try:
         store.set_status(run_id, "preparing")
         store.set_status(run_id, "running")
-        em.emit("run_started", name=cfg.name, cases=len(cfg.cases), grading="declared checks on the final state; no model grades answers")
+        seeds = cfg.seeds or [None]
+        em.emit("run_started", name=cfg.name, cases=len(cfg.cases), seeds=cfg.seeds, runs=len(cfg.cases) * len(seeds),
+                grading="declared checks on the final state; no model grades answers")
         results = []
         t_all = time.perf_counter()
-        for i, case in enumerate(cfg.cases):
-            if should_cancel():
-                return finish("cancelled", "cancelled between cases", completedCases=len(results))
-            child = f"{run_id}-c{i:03d}"
-            child_cfg = AgentRunConfig(project_id=cfg.project_id, thread_id=f"eval-{run_id}-{i:03d}", input=case.input)
-            store.create_run(child, graph_hash, {**child_cfg.model_dump(), "evaluationOf": run_id, "caseId": case.id})
-            t = time.perf_counter()
-            status = run_agent(graph, child_cfg, store, child, should_cancel)
-            latency = (time.perf_counter() - t) * 1000
-            finals = store.artifacts(child, "final_state")
-            state = json.loads(store.read_artifact(finals[-1]["sha256"])) if finals else {}
-            checks = [evaluate_check(c, state) for c in case.checks]
-            fin = store.last_event(child, "run_finished")
-            calls = store.events(child, -1, ("model_call",))
-            passed = status == "completed" and all(c["passed"] for c in checks)
-            row = {"case": case.id, "childRunId": child, "status": status, "error": store.get_run(child)["error"], "passed": passed, "checks": checks,
-                   "latencyMs": round(latency, 1), "modelCalls": len(calls),
-                   "outputTokens": sum((c["data"].get("usage") or {}).get("outputTokens") or 0 for c in calls),
-                   "stoppedBy": (fin["data"].get("stoppedBy") if fin else None)}
-            results.append(row)
-            em.emit("eval_case", **row)
+        for si, seed in enumerate(seeds):
+            g = graph if seed is None else seeded(graph, seed)
+            for i, case in enumerate(cfg.cases):
+                if should_cancel():
+                    return finish("cancelled", "cancelled between cases", completedCases=len(results))
+                suffix = f"c{i:03d}" if seed is None else f"s{si}c{i:03d}"
+                child = f"{run_id}-{suffix}"
+                child_cfg = AgentRunConfig(project_id=cfg.project_id, thread_id=f"eval-{run_id}-{suffix}", input=case.input)
+                store.create_run(child, semantic_hash(g), {**child_cfg.model_dump(), "evaluationOf": run_id, "caseId": case.id, "seed": seed})
+                t = time.perf_counter()
+                status = run_agent(g, child_cfg, store, child, should_cancel)
+                latency = (time.perf_counter() - t) * 1000
+                finals = store.artifacts(child, "final_state")
+                state = json.loads(store.read_artifact(finals[-1]["sha256"])) if finals else {}
+                checks = [evaluate_check(c, state) for c in case.checks]
+                fin = store.last_event(child, "run_finished")
+                calls = store.events(child, -1, ("model_call",))
+                passed = status == "completed" and all(c["passed"] for c in checks)
+                row = {"case": case.id, "seed": seed, "childRunId": child, "status": status, "error": store.get_run(child)["error"], "passed": passed, "checks": checks,
+                       "latencyMs": round(latency, 1), "modelCalls": len(calls),
+                       "outputTokens": sum((c["data"].get("usage") or {}).get("outputTokens") or 0 for c in calls),
+                       "stoppedBy": (fin["data"].get("stoppedBy") if fin else None)}
+                results.append(row)
+                em.emit("eval_case", **row)
         k, n = sum(r["passed"] for r in results), len(results)
+        per_seed, stability = None, None
+        if cfg.seeds:
+            per_seed = [{"seed": s, "passed": sum(r["passed"] for r in results if r["seed"] == s), "cases": len(cfg.cases),
+                         "passRate": round(sum(r["passed"] for r in results if r["seed"] == s) / len(cfg.cases), 4),
+                         "wilson95": wilson(sum(r["passed"] for r in results if r["seed"] == s), len(cfg.cases))} for s in cfg.seeds]
+            outcome = {c.id: [r["passed"] for r in results if r["case"] == c.id] for c in cfg.cases}
+            stability = {"alwaysPass": sorted(c for c, v in outcome.items() if all(v)), "neverPass": sorted(c for c, v in outcome.items() if not any(v)),
+                         "varies": sorted(c for c, v in outcome.items() if any(v) and not all(v))}
         report = {"name": cfg.name, "graphHash": graph_hash, "cases": n, "passed": k, "passRate": round(k / n, 4), "wilson95": wilson(k, n),
+                  "caseCount": len(cfg.cases), "seeds": cfg.seeds, "perSeed": per_seed, "stability": stability,
                   "byStatus": {s: sum(r["status"] == s for r in results) for s in sorted({r["status"] for r in results})},
                   "failedChecks": [{"case": r["case"], **c} for r in results for c in r["checks"] if not c["passed"]],
                   "totalSeconds": round(time.perf_counter() - t_all, 2), "results": results,
-                  "interpretation": "Pass rate over these cases only, with a Wilson 95% interval over cases; a different case set or model can differ. Checks are literal; they do not judge meaning."}
+                  "interpretation": ("Pass rate over these cases only, with a Wilson 95% interval over cases; a different case set or model can differ. Checks are literal; they do not judge meaning."
+                                     if not cfg.seeds else "With seeds, `cases` counts case×seed runs; runs of one case are not independent, so read the per-seed rates (each with its own interval over cases) and which cases vary with the seed.")}
         store.add_artifact(run_id, "agent_eval_report", json.dumps(report).encode(), "complete", None, {"graph_hash": graph_hash})
         em.emit("eval_summary", **{k_: v for k_, v in report.items() if k_ not in ("results", "failedChecks")})
         return finish("completed", passed=k, cases=n)

@@ -1165,3 +1165,9 @@ it, tool calling, response_format, embeddings, hosted APIs verified with real ke
 Labelled cases → real child agent runs → literal checks → pass rate with Wilson 95% interval and recorded
 failures; Evaluate tab. Measured: qwen3.5:0.8b 12/20, qwen3.5:2b 16/20 on SYNTHETIC computable questions.
 Not provided: model-graded checks, repeats/seeds, parallel cases, evaluation of releases.
+
+### Evaluation seeds, files and releases (ADR0078; Mac verified, HANDOFF§85)
+
+Per-seed repeats with per-seed intervals and stability; cases from JSON/JSONL files; evaluation of a
+deployed release through its route with per-case isolated users. Not provided: parallel cases,
+comparison views, seeds for releases.

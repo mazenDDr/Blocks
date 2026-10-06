@@ -98,6 +98,14 @@ try {
   await page.waitForFunction(()=>document.querySelectorAll('[aria-label="memory records"] tbody tr').length===1);
   const t3=await predict('SYNTHETIC alice reads poems');assert.match(t3.result.predictions[0],/recalled 1 /);
   await capture('alice-after-delete');
+  // Evaluate the deployed release (ADR 0078): each case is its own user, so every case recalls 0 notes; real users are untouched.
+  await click('Release','.production-workspace');
+  await fill('textarea[aria-label="evaluation cases"]',JSON.stringify([{id:'e1',input:{note:'SYNTHETIC eval one'},checks:[{field:'output',kind:'contains',value:'recalled 0 '}]},
+    {id:'e2',input:{note:'SYNTHETIC eval two'},checks:[{field:'output',kind:'contains',value:'recalled 0 '}]},
+    {id:'e3',input:{note:'SYNTHETIC eval three'},checks:[{field:'output',kind:'contains',value:'recalled 9 '}]}]));
+  pending=response(`/api/production/releases/${release.id}/evaluate`);await click('Evaluate release');assert.equal((await pending).status(),201);
+  await page.waitForFunction(()=>document.querySelector('.release-eval .eval-score')?.textContent.includes('2 / 3'));
+  await capture('release-evaluation');
   evidence.memory={alice:(await get(`/api/production/releases/${release.id}/memory?user=alice`)).records.map(r=>r.text),bob:(await get(`/api/production/releases/${release.id}/memory?user=bob`)).records.map(r=>r.text)};
   assert.deepEqual(evidence.memory,{alice:['SYNTHETIC alice owns a bicycle','SYNTHETIC alice reads poems'],bob:['SYNTHETIC bob likes red']});
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);

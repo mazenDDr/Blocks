@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §84 — agent evaluation runs (ADR0077).** §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §85 — evaluation seeds, files, releases (ADR0078).** §84 agent evaluation; §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2967,3 +2967,16 @@ Verification: full native 1439 passed, 1 failed, 1 skipped, 29 deselected 552.51
 `test_agent_api.py::test_example_projects_are_listed_open_and_valid` owns every `examples/agent_*.json` for its generator; the new
 example was renamed `evaluation_arithmetic` (test then 23 passed with test_agent_eval). Live 27 passed; build, 50 Node tests, base +
 26 editor journeys and the recovery journey pass with zero console warnings (`/private/tmp/void-eval-regressions`).
+
+## 85. Evaluation seeds, files and deployed releases — 2026-10-06 (ADR0078)
+
+User asked to do everything that does not need them. Changed `worker/agent_eval.py` (seeds, `seeded`), new
+`production/release_eval.py`, `services/control/release_eval_api.py`, `components/ReleaseEval.tsx`; `EvalTab.tsx` split into
+`CasesEditor`/`EvalResult`/`parseCases`; `app.py` and `agent_api.py` accept `release_eval`. Journeys extended (agentEval,
+releaseMemory): `/private/tmp/void-evx-agent_eval-1`, `/private/tmp/void-evx-release_memory-1`. No pinned serving file changed.
+Verification: full native 1441 passed, 1 failed, 1 skipped, 29 deselected 548.16s (`/private/tmp/void-ev2-full.log`); live 27 passed;
+build, 50 Node tests, base + 26 journeys and the recovery journey pass with zero console warnings (`/private/tmp/void-ev2-regressions`).
+The failure is pre-existing and unrelated (traffic code untouched since 51eceb8): `test_production.py::test_arrival_patterns_and_generator_saturation_are_measured[burst]`
+saw `droppedAtGenerator == 0` once under full-suite load; it passed 5/5 alone and in every other full run today. Each request
+sleeps 35 ms while burst arrivals come every ~5 ms with concurrency 1, so drops should be certain; the cause is not yet found.
+Recorded as an intermittent failure to investigate, not loosened.

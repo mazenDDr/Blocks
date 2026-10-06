@@ -1483,3 +1483,7 @@ Commands actually run:
 .venv/bin/python benchmarks/agent_eval_quality.py --models qwen3.5:0.8b qwen3.5:2b --out benchmarks/results/agent_eval_local_models.json
 .venv/bin/python tools/editor_agent_eval_smoke.py --output /private/tmp/void-agent-eval-2
 ```
+
+Evaluations can repeat each case with several seeds, load cases from `.json`/`.jsonl` files, and
+run against a deployed release from Production → Release (each case a recorded request as its own
+user). See ADR 0078.

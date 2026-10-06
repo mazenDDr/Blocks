@@ -88,3 +88,47 @@ def test_live_local_model_evaluation(tmp_path):
     rep = __import__("json").loads(store.read_artifact(store.artifacts("eval", "agent_eval_report")[-1]["sha256"]))
     assert rep["cases"] == 2 and all(r["status"] == "completed" and r["modelCalls"] == 1 for r in rep["results"])
     print("LIVE EVAL", rep["passed"], rep["cases"], [r["checks"][0]["observed"] for r in rep["results"]])
+
+
+def test_seeds_repeat_cases_with_each_seed_on_every_model_node(tmp_path):
+    from artifact_store import ArtifactStore
+    from worker.agent_eval import AgentEvalConfig, run_agent_eval, seeded
+    g = sm.make_graph([sm.N("prompt", "agent.prompt", output_field="messages", items=[{"kind": "template", "role": "user", "template": "{question}"}]),
+                       sm.N("reply", "agent.chat_model", messages_field="messages", output_field="answer",
+                            model={"provider": "fixture", "model": "fixture", "fixture": {"responses": ["SYNTHETIC yes", "SYNTHETIC no"]}})],
+                      sm.chain("START", "prompt", "reply", "END"), {"state": [sm.S("question"), sm.S("messages", "messages"), sm.S("answer")], "limits": {"maxSteps": 6, "maxModelCalls": 1}})
+    assert next(n for n in seeded(g, 11).to_json()["nodes"] if n["id"] == "reply")["config"]["model"]["seed"] == 11
+    store = ArtifactStore(tmp_path)
+    cfg = AgentEvalConfig(cases=[{"id": "a", "input": {"question": "q"}, "checks": [{"field": "answer", "kind": "contains", "value": "yes"}]}], seeds=[1, 2])
+    store.create_run("ev", "g", cfg.model_dump())
+    assert run_agent_eval(g, cfg, store, "ev") == "completed"
+    import json as _json
+    rep = _json.loads(store.read_artifact(store.artifacts("ev", "agent_eval_report")[-1]["sha256"]))
+    assert rep["cases"] == 2 and [r["seed"] for r in rep["results"]] == [1, 2] and len(rep["perSeed"]) == 2
+    assert store.get_run("ev-s1c000")["config"]["seed"] == 2
+    with pytest.raises(ValueError):
+        AgentEvalConfig(cases=cfg.cases, seeds=[1, 1])
+
+
+def test_deployed_release_evaluation_isolates_cases_and_real_users(tmp_path):
+    from test_production_memory import setup, say, texts
+    lab, rt, version, rel = setup(tmp_path)
+    assert say(rt, "real-1", "SYNTHETIC a real user's note")["status"] == 200
+    with TestClient(create_app(lab.wb)) as c:
+        rt2 = c.app.state.services.production
+        cases = [{"id": f"n{i}", "input": {"note": f"SYNTHETIC eval note {i}"}, "checks": [{"field": "output", "kind": "contains", "value": "recalled 0 "}]} for i in range(3)]
+        cases.append({"id": "designed-fail", "input": {"note": "SYNTHETIC x"}, "checks": [{"field": "output", "kind": "contains", "value": "recalled 5 "}]})
+        r = c.post(f"/api/production/releases/{rel['id']}/evaluate", json={"name": "SYNTHETIC release check", "cases": cases})
+        assert r.status_code == 201, r.text
+        rid = r.json()["runId"]
+        end = time.time() + 60
+        while c.get(f"/api/agent/evals/{rid}").json()["status"] not in ("completed", "failed") and time.time() < end:
+            time.sleep(0.2)
+        ev = c.get(f"/api/agent/evals/{rid}").json()
+        assert ev["kind"] == "release_eval" and ev["status"] == "completed", ev
+        assert (ev["report"]["passed"], ev["report"]["cases"]) == (3, 4) and ev["report"]["failedChecks"][0]["case"] == "designed-fail"
+        assert all(x["traceSha256"] and x["user"].startswith("ev") for x in ev["cases"])
+        assert texts(rt2, rel, "alice") == ["SYNTHETIC a real user's note"]  # real users untouched; each case had its own user
+        assert c.get(f"/api/runs/{rid}").json()["kind"] == "release_eval"
+        rt2.ps.query("DELETE FROM routes")
+        assert c.post(f"/api/production/releases/{rel['id']}/evaluate", json={"cases": cases}).status_code == 409

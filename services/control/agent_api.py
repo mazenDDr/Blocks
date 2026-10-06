@@ -280,11 +280,11 @@ def register(app: FastAPI, sv) -> None:
     @app.get("/api/agent/evals/{rid}")
     def evaluation(rid: str):
         row = store.get_run(rid)
-        if row is None or row["config"].get("kind") != "agent_eval":
+        if row is None or row["config"].get("kind") not in ("agent_eval", "release_eval"):
             raise HTTPException(404, {"code": "not_found", "message": f"no agent evaluation '{rid}'"})
         a = store.artifacts(rid, "agent_eval_report")
         cases = [e["data"] for e in store.events(rid, -1, ("eval_case",))]
-        return {"runId": rid, "status": row["status"], "error": row["error"], "name": row["config"].get("name"), "caseCount": len(row["config"].get("cases", [])),
+        return {"runId": rid, "kind": row["config"]["kind"], "releaseId": row["config"].get("releaseId"), "status": row["status"], "error": row["error"], "name": row["config"].get("name"), "caseCount": len(row["config"].get("cases", [])),
                 "cases": cases, "report": json.loads(store.read_artifact(a[-1]["sha256"])) if a else None,
                 "provenance": {"runId": rid, "graphHash": row["graph_hash"], "reportSha256": a[-1]["sha256"] if a else None}}
 

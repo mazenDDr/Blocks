@@ -312,10 +312,10 @@ class Services:
             return self.procedure_summary(row)
         if row["config"].get("kind") == "agent":
             return self.agent_summary(row)
-        if row["config"].get("kind") == "agent_eval":
+        if row["config"].get("kind") in ("agent_eval", "release_eval"):
             s = self.store.last_event(rid, "eval_summary")
             done = len(self.store.events(rid, -1, ("eval_case",)))
-            return {"kind": "agent_eval", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": {k: v for k, v in row["config"].items() if k != "cases"},
+            return {"kind": row["config"]["kind"], "id": rid, "releaseId": row["config"].get("releaseId"), "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": {k: v for k, v in row["config"].items() if k != "cases"},
                     "createdAt": row["created_at"], "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "name": row["config"].get("name"),
                     "cases": len(row["config"].get("cases", [])), "casesDone": done, "summary": s["data"] if s else None}
         if row["config"].get("kind") == "sandbox":
@@ -793,8 +793,9 @@ def create_app(workbench: str | Path | None = None, api_token: str | None = None
     rl_api.register(app, sv)
     unsup_api.register(app, sv)
     production_api.register(app, sv)
-    from . import memory_api
+    from . import memory_api, release_eval_api
     memory_api.register(app, sv)
+    release_eval_api.register(app, sv)
     scale_api.register(app, sv)
     domain_api.register(app, sv)
     domain_datasets_api.register(app, sv)

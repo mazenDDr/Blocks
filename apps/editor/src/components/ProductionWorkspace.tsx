@@ -9,6 +9,7 @@ import { ApprovalReview } from "./ApprovalReview";
 import { ContextTurnEvidence } from "./ContextTurnEvidence";
 import { AgentTurnInspection } from "./AgentTurnInspection";
 import { ReleaseMemory } from "./ReleaseMemory";
+import { ReleaseEval } from "./ReleaseEval";
 
 interface Candidate { runId: string; node: string; pipelineSha256: string; graphHash: string; adapter?: "tabular" | "domain" | "model" | "rl" | "unsup" | "agent" | "conversation" | "agent_json" | "conversation_json" | "agent_retrieval" | "agent_tools" | "conversation_approval" | "agent_context" | "conversation_context" | "agent_context_json" | "conversation_context_json" | "model_keras" | "model_jax" | "rl_td3" | "agent_memory"; family?: string }
 interface Version { id: string; name: string; runId: string; node: string; owner: string; intendedUse: string; limitations: string; pipelineSha256: string; manifest: any; adapter?: "domain" | "model" | "rl" | "unsup" | "agent" | "conversation" | "agent_json" | "conversation_json" | "agent_retrieval" | "agent_tools" | "conversation_approval" | "agent_context" | "conversation_context" | "agent_context_json" | "conversation_context_json" | "model_keras" | "model_jax" | "rl_td3" | "agent_memory"; family?: string; modelId?: string }
@@ -150,7 +151,8 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
         <p>Current route: {route ? short(route.release) : "not deployed"}</p>
         <button disabled={!!busy || route?.release === release.id} onClick={() => act("Deploying local endpoint", async () => { await api.post(`/api/production/releases/${release.id}/deploy`, { expectedCurrent: route?.release ?? null }); setNotice("Local endpoint routes this exact release."); })}>Deploy selected release</button>{" "}
         <button disabled={!!busy || !route || route.release === release.id || !data?.lifecycle.some((e) => ["deployed", "rolled_back"].includes(e.type) && e.data.releaseId === release.id)} onClick={() => act("Rolling back route", async () => { await api.post(`/api/production/releases/${release.id}/rollback`, { expectedCurrent: route?.release ?? null }); setNotice("Known prior release restored; in-flight requests keep their original version."); })}>Rollback to selected release</button>
-        <p>Endpoint: <code>/api/serve/{release.config.target}/{release.config.namespace}/predict</code></p></>}
+        <p>Endpoint: <code>/api/serve/{release.config.target}/{release.config.namespace}/predict</code></p>
+        <ReleaseEval key={release.id} releaseId={release.id} deployed={route?.release === release.id} inputFields={data?.versions.find((x) => x.id === release.versionId)?.manifest?.inputFields ?? []} /></>}
       <details open><summary>Recorded lifecycle and routing</summary><Recorded value={data?.routes ?? []} /><Recorded value={data?.lifecycle ?? []} /></details>
     </section></div>}
     {tab === "Requests" && <div className="prod-grid"><section className="prod-card"><h3>Send a bounded real request</h3>{selectedVersion}{selectedRelease}
