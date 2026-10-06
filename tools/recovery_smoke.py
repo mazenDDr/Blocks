@@ -23,6 +23,8 @@ def run(args):
         out.mkdir(parents=True, exist_ok=False)
     result = {"status": "failed", "fixture": "SYNTHETIC native state recovery", "evidenceDirectory": str(out)}
     try:
+        if args.cache_retention:
+            import editor_cache_retention_smoke as cache_smoke
         if args.json_agent:
             import editor_json_agent_smoke as json_smoke
             json_smoke.available()
@@ -37,6 +39,14 @@ def run(args):
                 raise RuntimeError("Real Ollama JSON source browser failed; no backup taken.")
             extra_env["VOID_JSON_RECOVERY_SEED"] = str(out / "json-seed/evidence.json")
             result["jsonAgent"] = {"provider": "actual installed Ollama qwen3.5:2b", "seed": "json-seed/evidence.json"}
+        if args.cache_retention:
+            cache_smoke.seed(source)
+            cache_seed = argparse.Namespace(output=str(out / "cache-seed"), chrome=args.chrome, timeout=args.timeout)
+            if smoke.run(cache_seed, workbench=source, journey=smoke.EDITOR / "smoke/cacheRetention.mjs",
+                         fixture="SYNTHETIC regression; actual native scheduled cache retention"):
+                raise RuntimeError("Native cache-retention browser seed failed; no backup taken.")
+            extra_env["VOID_CACHE_RECOVERY_SEED"] = str(out / "cache-seed/evidence.json")
+            result["cacheRetention"] = {"seed": "cache-seed/evidence.json"}
         if args.trackers:
             seeded = subprocess.run([sys.executable, str(smoke.ROOT / "tools/tracker_recovery_seed.py"), "--workbench", str(source)],
                                     env=smoke.isolated_env(), capture_output=True, text=True, timeout=240)
@@ -62,6 +72,12 @@ def run(args):
                          extra_env=extra_env, fixture=json_smoke.FIXTURE):
                 raise RuntimeError("Restored native JSON browser/provider execution failed.")
             result["jsonAgent"]["restored"] = "json-check/evidence.json"
+        if args.cache_retention:
+            cache_check = argparse.Namespace(output=str(out / "cache-check"), chrome=args.chrome, timeout=args.timeout)
+            if smoke.run(cache_check, workbench=out / "recovered", journey=smoke.EDITOR / "smoke/cacheRetention.mjs",
+                         extra_env=extra_env, fixture="SYNTHETIC native cache policy/receipt recovery"):
+                raise RuntimeError("Restored native cache policy/receipt browser failed.")
+            result["cacheRetention"]["restored"] = "cache-check/evidence.json"
         result["status"] = "passed"
     except Exception as error:
         result["error"] = str(error)
@@ -76,6 +92,7 @@ def main():
     parser.add_argument("--output", help="new evidence directory outside the repository")
     parser.add_argument("--chrome")
     parser.add_argument("--trackers", action="store_true", help="Seed real local MLflow/offline W&B; use v2 links with explicit external diagnostic-log omission.")
+    parser.add_argument("--cache-retention", action="store_true", help="Also seed actual native cached regression/policy and verify policy/receipts/cache/run artifacts after source deletion.")
     parser.add_argument("--json-agent", action="store_true", help="Also seed/recover a pinned JSON version and invoke real installed local Ollama; fails without the provider, no fixture substitution.")
     parser.add_argument("--timeout", type=float, default=180)
     args = parser.parse_args()

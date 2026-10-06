@@ -115,15 +115,30 @@ jobs:
       - name: Real browser specialized native RL outline
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_rl_outline_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-rl-outline-smoke
+      - name: Real browser opt-in automatic cache retention
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .venv/bin/python tools/editor_cache_retention_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-cache-retention-smoke
       - name: Real browser, backup and restored native state journey
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: .venv/bin/python tools/recovery_smoke.py --trackers --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
+        run: .venv/bin/python tools/recovery_smoke.py --trackers --cache-retention --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
       - name: Preserve actual test evidence on success or failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browser-evidence
           path: |
+            /tmp/void-ci-cache-retention-smoke/runner.json
+            /tmp/void-ci-cache-retention-smoke/evidence.json
+            /tmp/void-ci-cache-retention-smoke/*.log
+            /tmp/void-ci-cache-retention-smoke/*.png
+            /tmp/void-ci-recovery-smoke/cache-seed/runner.json
+            /tmp/void-ci-recovery-smoke/cache-seed/evidence.json
+            /tmp/void-ci-recovery-smoke/cache-seed/*.log
+            /tmp/void-ci-recovery-smoke/cache-seed/*.png
+            /tmp/void-ci-recovery-smoke/cache-check/runner.json
+            /tmp/void-ci-recovery-smoke/cache-check/evidence.json
+            /tmp/void-ci-recovery-smoke/cache-check/*.log
+            /tmp/void-ci-recovery-smoke/cache-check/*.png
             /tmp/void-ci-recovery-smoke/recovery.json
             /tmp/void-ci-recovery-smoke/trackers.json
             /tmp/void-ci-recovery-smoke/seed/runner.json

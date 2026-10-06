@@ -42,6 +42,8 @@ const shortcut=async(redo=false)=>{
 const choose=async id=>{
   if(!(await page.$eval('.graph-outline',e=>e.open)))await page.click('.graph-outline summary');
   await page.waitForSelector(`[aria-label="inspect outline ${id}"]`);await page.click(`[aria-label="inspect outline ${id}"]`);
+  await page.waitForFunction(id=>document.querySelector(`[aria-label="inspect outline ${id}"]`)?.getAttribute("aria-pressed")==="true",{},id);
+  await page.waitForSelector(".node-comment");
   if(!(await page.$eval('.node-comments',e=>e.open)))await page.click('.node-comments summary');
   await fill('input[aria-label="find node comments"]','');
   if(!(await page.$eval('.node-comment',e=>e.open)))await page.click('.node-comment summary');
@@ -50,8 +52,12 @@ const apply=async(text,author='SYNTHETIC declared researcher')=>{
   await fill('textarea[aria-label="node comment text"]',text);await fill('input[aria-label="node comment author"]',author);await click('Apply node comment');
 };
 const loadStored=async(data,id='SYNTHETIC_comments')=>{
-  await page.evaluate(async ({id,data})=>{const r=await fetch('/api/projects/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:data.graph,ui:data.ui})});if(!r.ok)throw Error('Seed native project '+r.status);},{id,data});
-  await page.select('select[aria-label="open project"]','project:'+id);await page.waitForFunction(()=>document.querySelector('button[aria-label="undo draft edit"]').disabled);
+  const expected=await page.evaluate(async ({id,data})=>{const r=await fetch('/api/projects/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:data.graph,ui:data.ui})});if(!r.ok)throw Error('Seed native project '+r.status);const stored=await fetch('/api/projects/'+id);if(!stored.ok)throw Error('Read native seed '+stored.status);return stored.json();},{id,data});
+  if(await page.$('.toast[role="status"]')){await page.click('.toast[role="status"]');await page.waitForFunction(()=>!document.querySelector('.toast[role="status"]'));}
+  await page.select('select[aria-label="open project"]','project:'+id);
+  await page.waitForFunction(id=>document.querySelector('.toast[role="status"]')?.textContent.includes(`Loaded project '${id}'`),{},id);
+  await page.waitForFunction(()=>document.querySelector('button[aria-label="undo draft edit"]').disabled);
+  const loaded=await save();assert.deepEqual(loaded.graph,expected.graph);assert.deepEqual(loaded.ui,expected.ui);assert.equal(loaded.graphHash,expected.graphHash);
 };
 const textVisible=text=>page.waitForFunction(t=>document.querySelector('.node-comment')?.textContent.includes(t),{},text);
 try{

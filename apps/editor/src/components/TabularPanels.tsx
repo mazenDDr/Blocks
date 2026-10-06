@@ -6,6 +6,7 @@ import { NotRecorded } from "./Provenance";
 import { NodeResultView, SchemaList, TabProv, TabularExplain, TablePreview, VIEW_LABEL } from "./Tabular";
 import { DomainResultView } from "./DomainViews";
 import { ConnectorSourceView, JoinView } from "./Connectors";
+import { CacheRetentionPolicy } from "./CacheRetentionPolicy";
 
 const ACTIVE = ["queued", "preparing", "running", "cancelling"];
 
@@ -91,7 +92,6 @@ function CacheControls({ projectId, refresh }: { projectId: string; refresh: str
   const load = () => api.get<CacheSummary>("/api/cache/nodes").then(setSum).catch(() => setSum(null));
   useEffect(() => { load(); }, [projectId, refresh]);
   const mine = sum?.projects.find((p) => p.projectId === projectId);
-  if (!mine) return null;
   const prune = async (keepLatestPerNode: number | null) => {
     try {
       const preview = await api.post<{ removed: number; indexBytes: number }>("/api/cache/nodes/prune", { projectId, keepLatestPerNode, dryRun: true });
@@ -102,11 +102,11 @@ function CacheControls({ projectId, refresh }: { projectId: string; refresh: str
     } catch (e) { setMsg(errorText(e)); }
   };
   return (
-    <div className="small cachectl">
+    <>{mine && <div className="small cachectl">
       Cached results for this project: {mine.entries} ({fmtBytes(mine.bytes)}, {mine.nodes} nodes){" "}
       <button className="link" onClick={() => prune(1)}>keep only the latest per node</button> · <button className="link" onClick={() => prune(null)}>clear</button>
       {msg && <span className="muted"> {msg}</span>}
-    </div>
+    </div>}<CacheRetentionPolicy key={projectId} projectId={projectId} /></>
   );
 }
 

@@ -315,7 +315,7 @@ Limits: CPU and completed-epoch continuation only, local owning control process,
 | Retention: per-project summary; explicit prune (dry-run default, keep latest N per node, older-than) that frees only unreferenced entry bytes and never touches run artifacts; editor size/keep-latest/clear controls | `tabular/cache.py`, `services/control/cache_api.py`, `TabularPanels.tsx` | `test_node_cache.py` |
 | Recorded decision per node (`hit`/`miss`/`bypass`, reason, what changed, source run) in events, run summary and the editor Run record's node-cache table | `services/control/app.py`, `apps/editor/src/components/TabularPanels.tsx` | `test_node_cache.py` (API) |
 
-Not implemented: caching for model/procedure/agent/RL/domain graphs, connector sources, joins, code blocks or plugin operations (they always run); automatic retention policies (pruning is explicit); sharing entries across workbenches; any import/upload path for entries. Cache-off (default) runs are unchanged.
+Not implemented: caching for model/procedure/agent/RL/domain graphs, connector sources, joins, code blocks or plugin operations (they always run); sharing entries across workbenches; any import/upload path for entries. Optional automatic retention for saved tabular projects is verified below (ADR0046). Cache-off (default) runs are unchanged.
 
 ## Pinned repository browse and code import (A44, ADR 0016)
 
@@ -783,3 +783,28 @@ memory/interrupts, remote/fixture/multiple providers, streaming or semantic qual
 benchmarks. Default hosted Linux CI verifies native contracts/originalbrowser/
 recovery but has no Ollama and does not claim JSON provider acceptance. The optional
 JSON browser/recovery runners fail honestly without the actual installed model.
+
+
+### Optional automatic cache retention (ADR0046; Mac verified, HANDOFF§43)
+
+Opt-in saved-project policies, native dry-run/revision-guarded settings and actual
+owner scheduling/receipts are verified on the Mac. Default disabled;
+no policy database until explicit configuration. Native prune preserves recorded
+artifacts and retained/shared cache bytes; queued/preparing/running/cancelling/paused
+research runs defer checks under the owner submission lock. Controls use recorded
+policy/revision snapshots; invalid editor IDs suppress background requests.
+Native paused/resume/restart/auth/scope/artifact protection and physical source-deletion
+recovery pass. Full suite1239pass/1skip/14deselected,14actualOllama live tests,
+33Node tests/build/typecheck/ledger/source-pin audit pass. Real Chrome enables/prunes/
+disables and preserves exact native graph/run records;13curlcases and all12original
+editor regressions pass. Integrated137-file/11database recovery retains policy/receipts/
+cache, old native conversations, real JSON serving and local/offline tracker evidence.
+Invalid draft IDs issue no background policy requests. Default hosted CI adds the
+new browser/recovery checks; its outcome remains separate from Mac acceptance.
+
+One owning local process only; all writers must stop before offline backup. No
+exactly-once or distributed guarantee, cross-workbench sharing, physical run/model
+erasure or result-cache support for other graph families. No saved model/source
+identity, native execution/cache semantics, dependencies or weights were changed.
+The separate policy metadata transaction can lose a receipt after a process crash;
+a later check recomputes actual candidates. See HANDOFF§43 for exact evidence.

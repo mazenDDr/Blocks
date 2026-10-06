@@ -316,7 +316,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `agent.chat_model` | agent | langgraph | yes | agent | 2 |
 | `agent.citations` | agent | langgraph | yes | agent | 2 |
 | `agent.embed_text` | agent | langgraph | yes | agent | 2 |
-| `agent.human_interrupt` | agent | langgraph | yes | agent | 1 |
+| `agent.human_interrupt` | agent | langgraph | yes | agent | 2 |
 | `agent.memory_select` | agent | langgraph | yes | agent | 1 |
 | `agent.memory_write` | agent | langgraph | yes | agent | 2 |
 | `agent.prompt` | agent | langgraph | yes | agent | 3 |

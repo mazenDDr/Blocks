@@ -7,6 +7,7 @@ Runs live in their own OS process and write events straight to SQLite, so they c
 from __future__ import annotations
 
 import asyncio
+from contextlib import asynccontextmanager
 import hashlib
 import json
 import math
@@ -336,7 +337,18 @@ class Services:
 def create_app(workbench: str | Path | None = None, api_token: str | None = None) -> FastAPI:
     wb = Path(workbench or os.environ.get("VOID_WORKBENCH", ".workbench")).resolve()
     sv = Services(wb)
-    app = FastAPI(title="Project Void control service", version="1.0.0")
+    from maintenance.cache_retention import CacheRetention
+    sv.cache_retention = CacheRetention(sv.store, idle_lock=sv.lock)
+
+    @asynccontextmanager
+    async def lifespan(app):
+        sv.cache_retention.start()
+        try:
+            yield
+        finally:
+            sv.cache_retention.stop()
+
+    app = FastAPI(title="Project Void control service", version="1.0.0", lifespan=lifespan)
     token = api_token if api_token is not None else (os.environ.get("VOID_API_TOKEN") or None)
     sv.api_token = token
     if token:
@@ -731,5 +743,7 @@ def create_app(workbench: str | Path | None = None, api_token: str | None = None
     domain_datasets_api.register(app, sv)
     repos_api.register(app, sv)
     cache_api.register(app, sv)
+    from . import cache_retention_api
+    cache_retention_api.register(app, sv)
     research_api.register(app, sv)
     return app

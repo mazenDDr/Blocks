@@ -771,3 +771,42 @@ The recovery journey retains the original native conversations/research/comments
 local MLflow/offline W&B checks, additionally verifies JSON manifests/requests,
 physically deletes its disposable source workbench and makes a fresh real model
 call from the restored version. It does not bundle external services or environments.
+
+
+## Optional automatic cache retention
+
+For a saved tabular project, open **Automatic cache retention** in the Run panel.
+It defaults to disabled. Edit the recorded policy, choose how many latest variants
+to retain per node and the minimum age/cadence, then preview actual candidates.
+**Save retention policy** explicitly updates future checks for that project.
+The owner service schedules native pruning and shows actual receipts/errors;
+disable prevents future eligible checks. A stale policy revision requires reloading.
+
+Checks defer during active or paused native research runs and preserve recorded
+run artifacts. Removed cache results are recomputed when needed. Use one owning
+control process and stop it before offline backup. The lazy policy database and
+receipts survive backup/restore; enabled policies resume when that service starts.
+This does not erase runs/models, add cache support for other graph families or
+provide distributed/exactly-once maintenance. ADR0046/HANDOFF§43 record bounds
+and final verification status. Existing saved model/JSON/legacy identities remain
+unchanged. Incomplete editor project IDs do not issue background policy requests.
+
+Commands actually run against generated private native fixtures and owned services:
+
+```bash
+.venv/bin/pytest -q tests/test_cache_retention.py tests/test_node_cache.py
+.venv/bin/python tools/editor_cache_retention_smoke.py --output /private/tmp/void-cache-retention-editor-labelled-fields
+.venv/bin/python tools/recovery_smoke.py --trackers --json-agent --cache-retention --output /private/tmp/void-cache-retention-integrated-recovery
+.venv/bin/pytest -q -o faulthandler_timeout=240
+.venv/bin/pytest -q -m live
+pnpm -C apps/editor build
+pnpm -C apps/editor exec tsc --noEmit
+node --test apps/editor/tests/*.test.mjs
+.venv/bin/python -m backends.coverage --write
+.venv/bin/python -m backends.coverage --check
+```
+
+Use fresh evidence directory names. The JSON recovery option requires actual local
+Ollama; omit it for provider-free native cache/conversation/tracker recovery.
+Default hosted CI runs the new cache browser and source-deletion recovery alongside
+every original browser stage; it does not substitute an Ollama fixture.
