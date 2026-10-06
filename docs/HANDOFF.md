@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §73 — automated accessibility audit (ADR0072).** §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §75 — data-parallel training (ADR0073).** §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2803,3 +2803,12 @@ and gitignored (present only on this Mac). Every other browser stage passed. Rep
 generates a SYNTHETIC shapes folder (`examples/make_shapes10.py`, 6 per class) in a temp directory and
 the journey sets the Train tab dataset folder to it. Re-verified with the local folder moved away:
 `/private/tmp/void-backend-training-smoke-3` passes (JAX run completed). The ADR0070 code was not at fault.
+
+## 75. Data-parallel training — 2026-10-06 (ADR0073)
+
+`python/worker/distributed.py`, `worker/train.py` (`workers`, `_train_loop`), Train tab Workers field,
+`tests/test_distributed_training.py` (4), training journey extended with a 2-worker run
+(`/private/tmp/void-backend-training-smoke-4`). The first test version bounded Adam like SGD
+(1e-5) and failed at 3.2e-5; the bound is now optimizer-specific with the reason documented.
+Verification: full native 1407 passed, 1 skipped, 27 deselected 547.51s (`/private/tmp/void-dp-full.log`);
+all 23 editor journeys pass (`/private/tmp/void-dp-regressions`).

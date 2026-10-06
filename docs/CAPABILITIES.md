@@ -1123,3 +1123,10 @@ GPU work on workers.
 or images in Chrome's accessibility tree (baseline 12 decorative SVGs, now aria-hidden);
 self-check flags injected violations. Not provided: human review, screen readers,
 contrast, focus order, WCAG conformance.
+
+### Data-parallel training (ADR0073; Mac verified, HANDOFF§75)
+
+`workers: 1–8` gloo processes on one machine for PyTorch CPU model-graph runs; per-shard
+summed gradients averaged over the global batch; equivalence to one process measured
+(SGD 6.3e-8, Adam 3.2e-5 max parameter difference). Not provided: multi-machine, CUDA/
+NCCL, throughput claims, fault tolerance.

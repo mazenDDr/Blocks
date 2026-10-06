@@ -1396,3 +1396,16 @@ Commands actually run:
 ```bash
 .venv/bin/python tools/editor_accessibility_smoke.py --output /private/tmp/void-a11y-4
 ```
+
+## Data-parallel training
+
+Set **Workers** in the Train tab (PyTorch, CPU, 1–8) to split every batch across
+worker processes on the same machine. The result equals single-process training up
+to float summation order. See ADR 0073.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_distributed_training.py
+.venv/bin/python tools/editor_backend_training_smoke.py --output /private/tmp/void-backend-training-smoke-4
+```

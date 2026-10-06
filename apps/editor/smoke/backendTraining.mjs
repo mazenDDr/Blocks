@@ -30,6 +30,15 @@ try{
   await new Promise(r=>setTimeout(r,800));
   await page.screenshot({path:path.join(output,'jax-training.png'),fullPage:true});
   evidence.run={runId,status:final.status,backend:final.config.backend,progress:final.progress,final:final.final};
+  // Data-parallel run (ADR 0073): PyTorch backend, 2 worker processes.
+  await page.select('select[aria-label="training backend"]','pytorch');
+  await page.$$eval('label',ls=>{const i=ls.find(x=>x.textContent.trim().startsWith('Workers')).querySelector('input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(i,'2');i.dispatchEvent(new Event('input',{bubbles:true}));});
+  const posted2=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/runs'&&r.request().method()==='POST');
+  await (await page.waitForSelector('button[title="Save the project and train a new run"]:not([disabled])')).click();
+  const resp2=await posted2;assert.equal(resp2.status(),201);const run2=(await resp2.json()).runId;
+  const final2=await page.waitForFunction(async id=>{const j=await (await fetch('/api/runs/'+id)).json();return ['completed','failed','cancelled'].includes(j.status)?j:null;},{polling:500},run2).then(h=>h.jsonValue());
+  assert.equal(final2.status,'completed',JSON.stringify(final2.error));assert.equal(final2.config.workers,2);assert.equal(final2.config.backend,'pytorch');
+  evidence.dataParallel={runId:run2,status:final2.status,workers:final2.config.workers,final:final2.final};
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS Train tab backend=jax → native worker JAX SGD run completes with its recorded backend');

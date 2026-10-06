@@ -17,7 +17,7 @@ export interface RunPanelProps {
 }
 
 // ---------------------------------------------------------------------------------------- train
-const DEFAULT_CFG = { data: "examples/data/shapes10", epochs: 2, batch_size: 16, lr: 0.05, optimizer: "sgd" as const, device: "cpu" as "cpu" | "cuda", backend: "pytorch" as "pytorch" | "keras" | "jax", momentum: 0, seed: 0, val_fraction: 0.2, split_seed: "" as number | "" };
+const DEFAULT_CFG = { data: "examples/data/shapes10", epochs: 2, batch_size: 16, lr: 0.05, optimizer: "sgd" as const, device: "cpu" as "cpu" | "cuda", backend: "pytorch" as "pytorch" | "keras" | "jax", workers: 1, momentum: 0, seed: 0, val_fraction: 0.2, split_seed: "" as number | "" };
 
 function TrainTab({ p }: { p: RunPanelProps }) {
   const [cfg, setCfg] = useState(DEFAULT_CFG);
@@ -29,7 +29,7 @@ function TrainTab({ p }: { p: RunPanelProps }) {
   const status = run?.status ?? stream.status;
   const active = !!status && ACTIVE.includes(status);
   const set = <K extends keyof typeof cfg>(k: K, v: (typeof cfg)[K]) => setCfg({ ...cfg, [k]: v });
-  const num = (k: "epochs" | "batch_size" | "lr" | "momentum" | "seed" | "val_fraction", label: string, step?: string) => (
+  const num = (k: "epochs" | "batch_size" | "lr" | "momentum" | "seed" | "val_fraction" | "workers", label: string, step?: string) => (
     <label>{label}<input type="number" step={step ?? "any"} value={cfg[k]} onChange={(e) => e.target.value !== "" && set(k, Number(e.target.value))} /></label>
   );
 
@@ -64,7 +64,7 @@ function TrainTab({ p }: { p: RunPanelProps }) {
         <label>Optimizer<select value={cfg.optimizer} onChange={(e) => set("optimizer", e.target.value as "sgd")}><option value="sgd">sgd</option><option value="adam">adam</option></select></label>
         <label title="Keras/JAX train with plain SGD (momentum 0) on CPU from the same seeded initialization; checkpoints are saved in PyTorch format.">Backend<select aria-label="training backend" value={cfg.backend} onChange={(e) => set("backend", e.target.value as "pytorch" | "keras" | "jax")}><option value="pytorch">pytorch</option><option value="keras">keras (plain SGD)</option><option value="jax">jax (plain SGD)</option></select></label>
         <label title="CUDA runs only where the worker has a usable NVIDIA GPU; otherwise the run fails with E_DEVICE_UNAVAILABLE. CUDA results are not bitwise reproducible.">Device<select aria-label="training device" value={cfg.device} onChange={(e) => set("device", e.target.value as "cpu" | "cuda")}><option value="cpu">cpu</option><option value="cuda">cuda (NVIDIA GPU)</option></select></label>
-        {num("momentum", "Momentum")}{num("seed", "Seed", "1")}{num("val_fraction", "Val fraction")}
+        {num("momentum", "Momentum")}{num("seed", "Seed", "1")}{num("val_fraction", "Val fraction")}<span title="Data-parallel processes on the worker machine (PyTorch, CPU); 1–8. Same result as one process up to float summation order.">{num("workers", "Workers", "1")}</span>
         <label>Split seed (blank = seed)<input type="number" value={cfg.split_seed} onChange={(e) => set("split_seed", e.target.value === "" ? "" : Number(e.target.value))} /></label>
         <div className="actions">
           <button className="primary" disabled={busy || blocked} onClick={start} title={blocked ? "Fix the graph errors first" : "Save the project and train a new run"}>Run</button>

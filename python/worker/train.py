@@ -37,6 +37,7 @@ class RunConfig(BaseModel):
     trial: dict | None = None  # study identity (study, trial, attempt, seed, fold) when the run is a sweep trial; informational
     device: Literal["cpu", "cuda"] = "cpu"  # explicit: CUDA is never chosen automatically, and is refused when unavailable
     backend: Literal["pytorch", "keras", "jax"] = "pytorch"  # keras/jax: plain SGD on the portable subset, PyTorch-format checkpoints (ADR 0070)
+    workers: int = Field(1, ge=1, le=8)  # >1: data-parallel processes on this machine (gloo), same result as one process (ADR 0073)
 
     @property
     def effective_split_seed(self) -> int:
@@ -154,6 +155,8 @@ def run_training(graph: Graph, cfg: RunConfig, store: ArtifactStore, run_id: str
         if cfg.backend != "pytorch" and (cfg.optimizer != "sgd" or cfg.momentum != 0 or cfg.device != "cpu"):
             raise UnsupportedGraph(f"E_BACKEND_OPTIMIZER: {cfg.backend} training supports plain SGD (momentum 0) on CPU only; "
                                    f"got optimizer={cfg.optimizer}, momentum={cfg.momentum}, device={cfg.device}")
+        if cfg.workers > 1 and (cfg.backend != "pytorch" or cfg.device != "cpu"):
+            raise UnsupportedGraph(f"E_DISTRIBUTED_CONFIG: data-parallel workers run PyTorch on CPU; got backend={cfg.backend}, device={cfg.device}")
         hardware = device_info(cfg.device)
         torch.manual_seed(cfg.seed)
         model = lower_graph(graph, report)
@@ -172,10 +175,29 @@ def run_training(graph: Graph, cfg: RunConfig, store: ArtifactStore, run_id: str
         opt = (torch.optim.SGD(model.parameters(), lr=cfg.lr, momentum=cfg.momentum) if cfg.optimizer == "sgd"
                else torch.optim.Adam(model.parameters(), lr=cfg.lr))
         model.train()
+        dp = None
+        if cfg.workers > 1:
+            from .distributed import DataParallel
+            dp = DataParallel(graph, cfg, model, data)
+        try:
+            return _train_loop(graph, cfg, store, run_id, em, finish, model, opt, data, n_classes, report, hardware, graph_hash, should_cancel, dp)
+        finally:
+            if dp is not None:
+                dp.close()
+    except Exception as e:  # noqa: BLE001  (record any failure on the run)
+        tb = traceback.format_exc()
+        em.emit("error", message=str(e), traceback=tb)
+        return finish("failed", f"{type(e).__name__}: {e}")
+
+
+def _train_loop(graph, cfg, store, run_id, em, finish, model, opt, data, n_classes, report, hardware, graph_hash, should_cancel, dp) -> str:
+    try:
         _advance(store, run_id, "running")
         em.emit("run_started", total_params=report.total_params, classes=data.classes, n_train=len(data.x_train),
                 n_val=len(data.x_val), dataset_sha256=data.files_sha256, torch=torch.__version__,
-                split_seed=data.split_seed, val_fraction=data.val_fraction, val_files=data.val_files, hardware=hardware)
+                split_seed=data.split_seed, val_fraction=data.val_fraction, val_files=data.val_files, hardware=hardware,
+                workers=cfg.workers, parallelism=("data-parallel gloo processes on this machine; gradients summed per shard and divided by the global batch"
+                                                  if dp else "single process"))
 
         step, n = 0, len(data.x_train)
         for epoch in range(cfg.epochs):
@@ -185,14 +207,18 @@ def run_training(graph: Graph, cfg: RunConfig, store: ArtifactStore, run_id: str
                 if should_cancel():
                     return _cancel(store, em, run_id, model, opt, step, epoch, graph_hash)
                 idx = order[start:start + cfg.batch_size]
-                loss = F.cross_entropy(model(data.x_train[idx].to(cfg.device)), data.y_train[idx].to(cfg.device))
-                opt.zero_grad()
-                loss.backward()
+                if dp is not None:
+                    loss_value = dp.batch_loss(epoch, start, idx)  # gradients of the global batch, already averaged across ranks
+                else:
+                    loss = F.cross_entropy(model(data.x_train[idx].to(cfg.device)), data.y_train[idx].to(cfg.device))
+                    opt.zero_grad()
+                    loss.backward()
+                    loss_value = loss.item()
                 opt.step()
                 step += 1
-                epoch_loss += loss.item() * len(idx)
+                epoch_loss += loss_value * len(idx)
                 seen += len(idx)
-                em.emit("train_step", step=step, epoch=epoch, batch=b, loss=loss.item())
+                em.emit("train_step", step=step, epoch=epoch, batch=b, loss=loss_value)
             ev = _evaluate(model, data.x_val, data.y_val, cfg.batch_size, n_classes, cfg.device)
             em.emit("epoch_end", epoch=epoch, step=step, train_loss=epoch_loss / seen, val_loss=ev["val_loss"], val_acc=ev["val_acc"])
             em.emit("val_detail", epoch=epoch, step=step, confusion=ev["confusion"], sample_loss=ev["sample_loss"],
