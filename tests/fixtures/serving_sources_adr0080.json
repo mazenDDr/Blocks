@@ -1,0 +1,8 @@
+{
+  "decision": "ADR0080 deliberately changes agent pins (model-chosen tools); agent families require re-registration",
+  "files": {
+    "agent/blocks.py": "10b4efb55703770f7daf54b7d7598c6ddb4dd81d2f490f506ca40d6578f5be60",
+    "agent/models.py": "12ec3b22913b802f63cc346c7b1a93044cf2cce7d65c9f95f24b4fb7d065c05c",
+    "agent/runtime.py": "1449e400b244c067df0f8219b2a821db585beb5436e1177204abd0105168ee60"
+  }
+}

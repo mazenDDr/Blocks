@@ -179,12 +179,17 @@ def build_chat_model(spec: ModelSpec, counter: dict[str, int] | None = None):
 
 
 def to_lc_messages(messages: list[dict[str, Any]]):
-    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
     out = []
     for m in messages:
-        cls = {"system": SystemMessage, "assistant": AIMessage}.get(m["role"], HumanMessage)
-        out.append(cls(content=m["content"]))
+        if m["role"] == "tool":  # a tool result answering one model tool call (ADR 0080)
+            out.append(ToolMessage(content=m["content"], tool_call_id=m["tool_call_id"]))
+        elif m["role"] == "assistant" and m.get("tool_calls"):
+            out.append(AIMessage(content=m["content"], tool_calls=m["tool_calls"]))
+        else:
+            cls = {"system": SystemMessage, "assistant": AIMessage}.get(m["role"], HumanMessage)
+            out.append(cls(content=m["content"]))
     return out
 
 
@@ -199,13 +204,19 @@ def usage_of(msg: Any) -> dict[str, Any]:
 TOKEN_SINK: ContextVar[Callable[[str], None] | None] = ContextVar("agent_token_sink", default=None)
 
 
-def invoke_chat(spec: ModelSpec, messages: list[dict[str, Any]], counter: dict[str, int] | None = None, json_schema: dict | None = None) -> dict[str, Any]:
-    """One provider call. Returns text, provider-reported usage (or unavailable), latency. Never fabricates a response."""
+def invoke_chat(spec: ModelSpec, messages: list[dict[str, Any]], counter: dict[str, int] | None = None, json_schema: dict | None = None,
+                tools: list[dict] | None = None) -> dict[str, Any]:
+    """One provider call. Returns text, provider-reported usage (or unavailable), latency, and any tool calls the model requested
+    (only when `tools` — OpenAI function schemas — are offered). Never fabricates a response."""
     model = build_chat_model(spec, counter)
     if json_schema is not None and spec.provider == "ollama":
         model = model.bind(format=json_schema)
+    if tools:
+        if spec.provider not in ("ollama", "openai_compatible"):
+            raise ModelUnavailable("E_MODEL_TOOLS", f"provider {spec.provider} is not wired for model-chosen tools")
+        model = model.bind_tools(tools)
     t0 = time.perf_counter()
-    sink = TOKEN_SINK.get()
+    sink = None if tools else TOKEN_SINK.get()  # tool turns are not streamed
     try:
         if sink is None:
             out = model.invoke(to_lc_messages(messages))
@@ -228,7 +239,9 @@ def invoke_chat(spec: ModelSpec, messages: list[dict[str, Any]], counter: dict[s
     content = out.content
     if isinstance(content, list):
         content = "".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in content)
-    return {"text": str(content), "usage": usage_of(out), "latencyMs": round(latency, 1), "responseMetadata": {k: v for k, v in (getattr(out, "response_metadata", None) or {}).items()
+    calls = [{"id": c.get("id") or f"call_{i}", "name": c.get("name"), "args": c.get("args") if isinstance(c.get("args"), dict) else {}}
+             for i, c in enumerate(getattr(out, "tool_calls", None) or [])] if tools else []
+    return {"text": str(content), "toolCalls": calls, "usage": usage_of(out), "latencyMs": round(latency, 1), "responseMetadata": {k: v for k, v in (getattr(out, "response_metadata", None) or {}).items()
                                                                                                         if k in ("model", "done_reason", "stop_reason", "total_duration", "eval_duration", "model_name")}}
 
 

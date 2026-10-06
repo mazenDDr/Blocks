@@ -273,6 +273,19 @@ export function NodeForm({ type, cfg, spec, onConfig, runValues }: { type: strin
     );
     case "agent.citations": return <SimpleFields cfg={cfg} set={onConfig} spec={spec} rows={[{ key: "text_field", label: "Generated text", types: ["text"] }, { key: "docs_field", label: "Retrieved chunks", types: ["documents"] }, { key: "output_field", label: "Result to", types: ["object"] }]} />;
     case "agent.tool_call": return <ToolForm cfg={cfg} set={onConfig} spec={spec} cat={cat} />;
+    case "agent.tool_agent": return (
+      <div>
+        <ModelForm model={cfg.model} onChange={(m) => onConfig({ model: m })} />
+        <SimpleFields cfg={cfg} set={onConfig} spec={spec} rows={[{ key: "messages_field", label: "Messages from", types: ["list"] }, { key: "output_field", label: "Answer text to", types: ["text"] },
+          { key: "calls_field", label: "Tool calls to", types: ["list"], none: true }]} />
+        <Row label="Tools the model may call" hint="effect-free tools only; tools with external effects stay behind an approval node">
+          {(["calculator", "read_text_file"] as const).map((t) => <label key={t} className="small"><input type="checkbox" aria-label={`offer tool ${t}`} checked={(cfg.tools ?? []).includes(t)}
+            onChange={(e) => onConfig({ tools: e.target.checked ? [...(cfg.tools ?? []), t] : (cfg.tools ?? []).filter((x: string) => x !== t) })} /> {t}</label>)}
+        </Row>
+        {(cfg.tools ?? []).includes("read_text_file") && <Row label="Readable directory"><Txt label="allowed directory" value={cfg.allowed_dir ?? ""} onChange={(t) => onConfig({ allowed_dir: t })} /></Row>}
+        <Row label="Max tool calls" hint="after this many, the model is asked again without tools and must answer"><Num label="max tool calls" integer min={1} max={8} value={cfg.max_tool_calls ?? 3} onChange={(n) => onConfig({ max_tool_calls: n ?? 3 })} /></Row>
+      </div>
+    );
     case "agent.human_interrupt": return (
       <div>
         <Row label="Prompt"><Txt label="interrupt prompt" value={cfg.prompt} onChange={(t) => onConfig({ prompt: t })} /></Row>

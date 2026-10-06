@@ -1176,3 +1176,9 @@ comparison views, seeds for releases.
 
 Table outputs over 64 KiB are stored as deterministic gzip (level 1) with the encoding in metadata;
 stored size about halves (10M rows: 1.15 GB → 565 MB) for ≈+17% run time. Older artifacts unchanged.
+
+### Model-chosen tools (ADR0080; Mac verified incl. live Ollama native and /v1, HANDOFF§87)
+
+`agent.tool_agent`: the model may call calculator / bounded read_text_file up to max_tool_calls; refusals for
+unoffered tools, extra calls and wrong arguments; every call recorded. External-effect tools are not offered to
+models. Not provided: serving, parallel tool calls, Anthropic/fixture providers, user-defined tools.

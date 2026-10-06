@@ -23,6 +23,7 @@ const effectiveConfig = (n: GNode, op?: OpInfo): Record<string, any> => ({ ...(o
 function cardSummary(n: GNode, op?: OpInfo): string[] {
   const c = effectiveConfig(n, op);
   switch (n.type) {
+    case "agent.tool_agent": return [`${c.model?.provider}: ${c.model?.model}`, `may call ${(c.tools ?? []).join(", ") || "no tools"} · ≤${c.max_tool_calls ?? 3} calls`, `reads ${c.messages_field} · writes ${c.output_field}`];
     case "agent.chat_model": case "agent.structured_output": return [`${c.model?.provider}: ${c.model?.model}`, c.model?.provider === "fixture" ? "scripted FIXTURE" : `T=${c.model?.temperature ?? "default"} · max ${c.model?.max_tokens ?? "?"} tokens${c.model?.seed != null && c.model?.provider === "ollama" ? ` · seed ${c.model.seed}` : ""}`];
     case "agent.prompt": return [`${(c.items ?? []).length} message sources → ${c.output_field}`, (c.items ?? []).map((i: any) => i.kind === "template" ? i.role : i.kind).join(" · ")];
     case "agent.retrieve": return [`index ${c.index || "?"} · k=${c.k}${c.score_threshold != null ? ` · score ≥ ${c.score_threshold}` : ""}`, `query: ${j(c.query, 40)}`];

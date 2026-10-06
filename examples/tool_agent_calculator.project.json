@@ -1,0 +1,137 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "prompt",
+      "type": "agent.prompt",
+      "version": "1.0.0",
+      "config": {
+        "output_field": "messages",
+        "items": [
+          {
+            "kind": "template",
+            "role": "system",
+            "template": "Use the calculator tool for arithmetic. Reply with the result only."
+          },
+          {
+            "kind": "template",
+            "role": "user",
+            "template": "{question}"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "solve",
+      "type": "agent.tool_agent",
+      "version": "1.0.0",
+      "config": {
+        "model": {
+          "provider": "ollama",
+          "model": "qwen3.5:4b",
+          "temperature": 0.0,
+          "seed": 7,
+          "think": false,
+          "max_tokens": 128,
+          "timeout_s": 120
+        },
+        "messages_field": "messages",
+        "output_field": "answer",
+        "tools": [
+          "calculator"
+        ],
+        "max_tool_calls": 3,
+        "calls_field": "calls"
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "START__prompt",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "prompt",
+        "port": "in"
+      }
+    },
+    {
+      "id": "prompt__solve",
+      "kind": "control",
+      "from": {
+        "node": "prompt",
+        "port": "out"
+      },
+      "to": {
+        "node": "solve",
+        "port": "in"
+      }
+    },
+    {
+      "id": "solve__END",
+      "kind": "control",
+      "from": {
+        "node": "solve",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "question",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "messages",
+        "type": "messages",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "answer",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "calls",
+        "type": "list",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "default": []
+      }
+    ],
+    "limits": {
+      "maxSteps": 6,
+      "maxModelCalls": 4,
+      "maxToolCalls": 3,
+      "maxSeconds": 240
+    }
+  }
+}

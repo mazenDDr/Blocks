@@ -669,6 +669,98 @@ class ToolCall(AgentOp):
                 "reads": self.reads(cfg), "writes": self.writes(cfg), "effects": self.effects(cfg), "tool": t.describe() if t else None}
 
 
+# ================================================================================================ model-chosen tools (ADR 0080)
+class ToolAgentConfig(Strict):
+    model: ModelSpec = ModelSpec()
+    messages_field: str = "prompt_messages"
+    output_field: str = "answer"
+    tools: list[Literal["calculator", "read_text_file"]] = ["calculator"]  # effect-free tools only: external effects stay behind an approval node
+    allowed_dir: str = ""  # read_text_file: the only directory it may read
+    max_tool_calls: int = Field(3, ge=1, le=8)
+    calls_field: str = ""  # optional list field receiving every tool call the model made
+
+
+def tool_schema(name: str) -> dict[str, Any]:
+    t = toolmod.TOOLS[name]
+    return {"type": "function", "function": {"name": t.name, "description": t.description,
+                                             "parameters": {"type": "object", "properties": {a: {"type": "string"} for a in t.args}, "required": list(t.args)}}}
+
+
+@register
+class ToolAgent(AgentOp):
+    type = "agent.tool_agent"
+    Config = ToolAgentConfig
+
+    def reads(self, cfg):
+        return [cfg.messages_field]
+
+    def writes(self, cfg):
+        return [cfg.output_field] + ([cfg.calls_field] if cfg.calls_field else [])
+
+    def model_specs(self, cfg):
+        return [cfg.model]
+
+    def effects(self, cfg):
+        from .openai_compat import is_loopback
+        model = ["local_runtime"] if cfg.model.provider == "ollama" or (cfg.model.provider == "openai_compatible" and is_loopback(cfg.model.base_url)) else ["network"]
+        return sorted(set(model) | {e for t in cfg.tools if t in toolmod.TOOLS for e in toolmod.TOOLS[t].effects})
+
+    def check(self, cfg, spec):
+        out = []
+        if cfg.model.provider not in ("ollama", "openai_compatible"):
+            out.append(("E_MODEL_TOOLS", "model-chosen tools need the ollama or openai_compatible provider"))
+        if not cfg.tools or len(set(cfg.tools)) != len(cfg.tools):
+            out.append(("E_TOOL_ARGS", "offer one or more distinct tools"))
+        if "read_text_file" in cfg.tools and not cfg.allowed_dir:
+            out.append(("E_TOOL_BOUNDS", "read_text_file needs the directory it may read"))
+        return out
+
+    def execute(self, rt, ctx, cfg, state):
+        from .memory import new_id
+
+        msgs = [{"role": m["role"], "content": m["content"]} for m in (state.get(cfg.messages_field) or [])]
+        schemas = [tool_schema(t) for t in cfg.tools]
+        base = rt.resolve_dir(cfg.allowed_dir) if cfg.allowed_dir else rt.outbox
+        calls: list[dict[str, Any]] = []
+        final = ""
+        for round_ in range(cfg.max_tool_calls + 1):
+            offer = schemas if len(calls) < cfg.max_tool_calls else None  # once the budget is spent the model must answer
+            res = rt.model_call(ctx, cfg.model, msgs, purpose="tool_agent", attempt=round_ + 1, messages_field=cfg.messages_field, tools=offer)
+            if not res["toolCalls"]:
+                final = res["text"]
+                break
+            msgs.append({"role": "assistant", "content": res["text"], "tool_calls": [{"id": c["id"], "name": c["name"], "args": c["args"]} for c in res["toolCalls"]]})
+            for c in res["toolCalls"]:
+                call_id = new_id("tool")
+                args = {k: str(v) for k, v in (c["args"] or {}).items()}
+                tool = toolmod.TOOLS.get(c["name"]) if c["name"] in cfg.tools else None
+                if tool is None:
+                    status, result = "refused", {"code": "E_TOOL_NOT_OFFERED", "message": f"tool '{c['name']}' was not offered to the model"}
+                elif len(calls) >= cfg.max_tool_calls:
+                    status, result = "refused", {"code": "E_TOOL_BUDGET", "message": f"max_tool_calls={cfg.max_tool_calls} reached"}
+                elif set(args) != set(tool.args):
+                    status, result = "error", {"code": "E_TOOL_ARGS", "message": f"expected arguments {sorted(tool.args)}, got {sorted(args)}"}
+                else:
+                    rt.check_budget("tool")
+                    try:
+                        status, result = "ok", tool.run(args, base)
+                    except toolmod.ToolError as e:
+                        status, result = "error", {"code": e.code, "message": e.message}
+                    rt.count_tool()
+                rec = {"tool": c["name"], "args": args, "status": status, "result": result, "callId": call_id, "modelCallId": res["callId"], "chosenBy": "model"}
+                calls.append(rec)
+                rt.emit("tool_call", ctx.node_id, effects=list(tool.effects) if tool else [], **rec)
+                msgs.append({"role": "tool", "tool_call_id": c["id"], "content": json.dumps(result, default=str)[:4000]})
+        out: dict[str, Any] = {cfg.output_field: final}
+        if cfg.calls_field:
+            out[cfg.calls_field] = calls
+        return out
+
+    def explain(self, cfg, inputs=None, outputs=None):
+        return {"summary": "The model may call the offered effect-free tools (bounded by max_tool_calls) before answering; every call is recorded.",
+                "reads": self.reads(cfg), "writes": self.writes(cfg), "effects": self.effects(cfg), "tools": [toolmod.TOOLS[t].describe() for t in cfg.tools if t in toolmod.TOOLS]}
+
+
 # ================================================================================================ human in the loop
 class HumanInterruptConfig(Strict):
     prompt: str = "Please review."

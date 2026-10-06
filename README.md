@@ -1490,3 +1490,16 @@ user). See ADR 0078.
 
 Large tabular intermediate tables are stored gzip-compressed (ADR 0079): about 2.7× the CSV size
 instead of 5.5×, for 7–17% more run time.
+
+## Model-chosen tools
+
+The **Tool agent** block lets an Ollama or OpenAI-compatible model call effect-free tools
+(calculator, bounded file reading) before answering, up to a declared limit, with every call
+recorded. Tools with external effects stay behind an approval node. See ADR 0080.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_tool_agent.py -m 'live or not live'
+.venv/bin/python tools/editor_tool_agent_block_smoke.py --output /private/tmp/void-toolagent-1
+```

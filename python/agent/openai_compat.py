@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import httpx
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResult
 from pydantic import SecretStr
 
@@ -39,6 +39,15 @@ def _role(m: BaseMessage) -> str:
     return {"system": "system", "ai": "assistant", "human": "user"}.get(m.type, "user")
 
 
+def _wire(m: BaseMessage) -> dict:
+    if isinstance(m, ToolMessage):
+        return {"role": "tool", "tool_call_id": m.tool_call_id, "content": _text(m.content)}
+    out = {"role": _role(m), "content": _text(m.content)}
+    if isinstance(m, AIMessage) and m.tool_calls:
+        out["tool_calls"] = [{"id": c["id"], "type": "function", "function": {"name": c["name"], "arguments": json.dumps(c["args"])}} for c in m.tool_calls]
+    return out
+
+
 def _text(content: Any) -> str:
     if isinstance(content, str):
         return content
@@ -61,13 +70,19 @@ class OpenAICompatibleChat(BaseChatModel):
     seed: int | None = None
     timeout: float = 180.0
     reasoning_effort: str | None = None
+    tools: list[dict] | None = None  # OpenAI function-tool schemas (ADR 0080)
+
+    def bind_tools(self, tools, **kwargs):
+        return self.model_copy(update={"tools": [t if t.get("type") == "function" else {"type": "function", "function": t} for t in tools]})
 
     @property
     def _llm_type(self) -> str:
         return "openai-compatible"
 
     def _body(self, messages: list[BaseMessage], stream: bool) -> dict:
-        body: dict[str, Any] = {"model": self.model, "messages": [{"role": _role(m), "content": _text(m.content)} for m in messages], "stream": stream}
+        body: dict[str, Any] = {"model": self.model, "messages": [_wire(m) for m in messages], "stream": stream}
+        if self.tools:
+            body["tools"] = self.tools
         if self.temperature is not None:
             body["temperature"] = self.temperature
         if self.max_tokens is not None:
@@ -90,7 +105,15 @@ class OpenAICompatibleChat(BaseChatModel):
             r.raise_for_status()
             data = r.json()
         choice = data["choices"][0]
-        msg = AIMessage(content=choice["message"].get("content") or "", usage_metadata=_usage(data.get("usage")),
+        calls = []
+        for i, tc in enumerate(choice["message"].get("tool_calls") or []):
+            fn = tc.get("function") or {}
+            try:
+                args = json.loads(fn.get("arguments") or "{}")
+            except ValueError:
+                args = {"__unparsed__": fn.get("arguments")}
+            calls.append({"name": fn.get("name"), "args": args if isinstance(args, dict) else {"__unparsed__": args}, "id": tc.get("id") or f"call_{i}"})
+        msg = AIMessage(content=choice["message"].get("content") or "", tool_calls=calls, usage_metadata=_usage(data.get("usage")),
                         response_metadata={"model_name": data.get("model"), "stop_reason": choice.get("finish_reason")})
         return ChatResult(generations=[ChatGeneration(message=msg)])
 

@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §86 — compressed table outputs (ADR0079).** §85 evaluation extensions; §84 agent evaluation; §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §87 — model-chosen tools (ADR0080).** §86 compression; §85 evaluation extensions; §84 agent evaluation; §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2992,3 +2992,14 @@ burst test window (HANDOFF§85 follow-up). No pinned serving file changed.
 Verification: full native 1443 passed, 1 skipped, 29 deselected 553.68s (`/private/tmp/void-cmp-full.log`, the widened traffic test
 included); build, 50 Node tests, base + 26 journeys and the recovery journey pass with zero console warnings (`/private/tmp/void-cmp-regressions`).
 No agent/provider code changed, so the live suite was not rerun.
+
+## 87. Model-chosen tools — 2026-10-06 (ADR0080)
+
+Changed `agent/openai_compat.py` (bind_tools, tool_calls, tool messages), `agent/models.py` (`invoke_chat(tools=)`, tool
+messages), `agent/runtime.py` (`model_call(tools=)`), `agent/blocks.py` (`ToolAgent`), editor form/card; new example
+`tool_agent_calculator`, `tests/test_tool_agent.py` (3 offline + 2 live), `smoke/toolAgentBlock.mjs`,
+`tools/editor_tool_agent_block_smoke.py` (+ CI stage), ledger `serving_sources_adr0080.json`. The first live run used
+qwen3.5:2b, which did not call the tool without thinking (probed directly against Ollama with curl, all installed models
+compared); the live test uses qwen3.5:4b, with that reason in the test.
+Verification: full native 1446 passed, 1 skipped, 31 deselected 562.47s (`/private/tmp/void-ta-full.log`); live Ollama 29 passed;
+build, 50 Node tests, base + 27 editor journeys and the recovery journey pass with zero console warnings (`/private/tmp/void-ta-regressions`).

@@ -174,6 +174,11 @@ def test_adapter_storage_pins_match_explicit_migration_compatibility_decision():
     for name in provider:
         assert provider[name] != expected[name], "ADR0076 declares an intentional pin change"
     expected.update(provider)
+    tools = json.loads((Path(__file__).parent / "fixtures/serving_sources_adr0080.json").read_text())["files"]
+    assert set(tools) == {"agent/blocks.py", "agent/models.py", "agent/runtime.py"}
+    for name in tools:
+        assert tools[name] != expected[name], "ADR0080 declares an intentional pin change"
+    expected.update(tools)
     for mod in (agent_adapter, conversation_adapter, retrieval_agent_adapter):
         for name, current in mod.implementation().items():
             assert expected[name] == current

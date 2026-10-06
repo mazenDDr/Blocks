@@ -319,10 +319,11 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `agent.human_interrupt` | agent | langgraph | yes | agent | 4 |
 | `agent.memory_select` | agent | langgraph | yes | agent | 2 |
 | `agent.memory_write` | agent | langgraph | yes | agent | 3 |
-| `agent.prompt` | agent | langgraph | yes | agent | 9 |
+| `agent.prompt` | agent | langgraph | yes | agent | 10 |
 | `agent.retrieve` | agent | langgraph | yes | agent | 5 |
 | `agent.set_state` | agent | langgraph | yes | agent | 11 |
 | `agent.structured_output` | agent | langgraph | yes | agent | 4 |
+| `agent.tool_agent` | agent | langgraph | yes | agent | 1 |
 | `agent.tool_call` | agent | langgraph | yes | agent | 6 |
 | `domain.audio_features` | domain | python | yes | audio_features | 1 |
 | `domain.audio_resample` | domain | python | yes | audio_data | 1 |

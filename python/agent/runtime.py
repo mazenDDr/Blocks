@@ -123,15 +123,15 @@ class Runtime:
 
     # ------------------------------------------------------------------ model calls + context record
     def model_call(self, ctx: NodeCtx, spec: ModelSpec, messages: list[dict[str, Any]], purpose: str, attempt: int = 1, json_schema: dict | None = None,
-                   validate: Callable[[str], list[str]] | None = None, messages_field: str | None = None) -> dict[str, Any]:
+                   validate: Callable[[str], list[str]] | None = None, messages_field: str | None = None, tools: list[dict] | None = None) -> dict[str, Any]:
         with self._lock:
             self.check_budget("model")
         resolved, ignored = resolve_settings(spec)
-        sent = [{"role": m["role"], "content": m["content"]} for m in messages]
+        sent = [{"role": m["role"], "content": m["content"], **{k: m[k] for k in ("tool_calls", "tool_call_id") if k in m}} for m in messages]
         call_id = new_id("call")
         counter = self.fixture_counters.setdefault(ctx.node_id, {})
         try:
-            res = invoke_chat(spec, sent, counter, json_schema)
+            res = invoke_chat(spec, sent, counter, json_schema, tools)
         except ModelUnavailable as e:
             self.emit("model_call_failed", ctx.node_id, callId=call_id, provider=spec.provider, model=spec.model, code=e.code, message=e.message, purpose=purpose, attempt=attempt)
             raise NodeFailure(e.code, e.message)
@@ -148,8 +148,8 @@ class Runtime:
         self.emit("model_call", ctx.node_id, callId=call_id, purpose=purpose, attempt=attempt, provider=spec.provider, model=spec.model, fixture=spec.provider == "fixture",
                   resolved=resolved, ignored=ignored, latencyMs=res["latencyMs"], usage=res["usage"], cost=cost, contextSha256=sha, messages=len(sent),
                   tokensEstimate=ctxrec["tokens"]["estimateTotal"], responseChars=len(res["text"]), response=res["text"][:2000], validationErrors=vres,
-                  responseMetadata=res["responseMetadata"], step=ctx.step)
-        return {"text": res["text"], "callId": call_id, "usage": res["usage"]}
+                  responseMetadata=res["responseMetadata"], step=ctx.step, **({"toolCalls": res["toolCalls"], "toolsOffered": [t["function"]["name"] for t in tools]} if tools else {}))
+        return {"text": res["text"], "callId": call_id, "usage": res["usage"], "toolCalls": res.get("toolCalls", [])}
 
     def linked_sources(self, messages_field: str | None) -> tuple[list[str], list[str]]:
         """Selections and retrievals that FED this call even when nothing from them reached it (an empty selection leaves no segment to point at):
