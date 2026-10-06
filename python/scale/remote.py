@@ -15,7 +15,7 @@ from graph_core.registry import get_op
 from graph_core.validate import require_executable
 from tabular.core import resolve_path
 from artifact_store import ArtifactStore
-from .common import IntegrationError, digest, encoded, loopback, secret_free
+from .common import IntegrationError, digest, encoded, loopback, secret_free, tls_verify, worker_endpoint
 from .state import State
 
 # Native pure tabular CPU subset. Arbitrary code, third-party operations and live credentials are excluded.
@@ -29,6 +29,7 @@ class RemoteRequest(BaseModel):
     graph:Graph
     endpoint:str
     tokenEnv:str=Field(pattern=r"^[A-Za-z_][A-Za-z0-9_]{0,80}$")
+    caFile:str|None=Field(None,max_length=1024)  # https workers on another host: pinned CA/certificate (ADR 0071)
     seed:int|None=None
     projectId:str|None=None
 
@@ -86,7 +87,7 @@ class RemoteClient:
         if not token or len(token)<16:raise IntegrationError("worker_token_missing","Set the referenced worker token environment variable (at least 16 characters).")
         return {"Authorization":"Bearer "+token}
     def submit(self,req):
-        endpoint=loopback(req.endpoint)
+        endpoint=worker_endpoint(req.endpoint,req.caFile)
         bundle=snapshot(req.graph)
         bundle["seed"]=req.seed
         id=digest({"bundle":bundle,"endpoint":endpoint,"projectId":req.projectId})
@@ -94,9 +95,10 @@ class RemoteClient:
             prior=self.state.get("remote",id)
             if not prior:
                 sha=self.store.put_bytes(encoded(bundle))
-                prior=self.state.put("remote",id,{"id":id,"endpoint":endpoint,"tokenEnv":req.tokenEnv,"projectId":req.projectId,
+                prior=self.state.put("remote",id,{"id":id,"endpoint":endpoint,"tokenEnv":req.tokenEnv,"caFile":req.caFile,"projectId":req.projectId,
                         "bundleSha256":sha,"originalGraphHash":bundle["originalGraphHash"],"workerRunId":None,"runId":None,"status":"pending","error":None,
-                        "location":"separate local process over authenticated loopback HTTP; CPU"})
+                        "location":("separate local process over authenticated loopback HTTP; CPU" if endpoint.startswith("http://")
+                                    else "another host over authenticated HTTPS with a pinned certificate; CPU")})
             return self.refresh(id,submit=True)
     def refresh(self,id,submit=False):
         with self.lock:
@@ -104,7 +106,7 @@ class RemoteClient:
             if not r:raise IntegrationError("worker_job_missing","Unknown worker job.")
             if r["status"] in ("completed","failed","cancelled") and r.get("runId"):return r
             try:
-                with httpx.Client(base_url=loopback(r["endpoint"]),headers=self.headers(r),timeout=15,trust_env=False) as c:
+                with httpx.Client(base_url=worker_endpoint(r["endpoint"],r.get("caFile")),headers=self.headers(r),timeout=15,trust_env=False,verify=tls_verify(r.get("caFile"))) as c:
                     if not r["workerRunId"]:
                         if not self.store.verify(r["bundleSha256"]):raise IntegrationError("worker_bundle_hash","Saved input bundle changed.")
                         body=json.loads(self.store.read_artifact(r["bundleSha256"]))
@@ -155,6 +157,6 @@ class RemoteClient:
     def cancel(self,id):
         r=self.state.get("remote",id)
         if not r or not r["workerRunId"]:raise IntegrationError("worker_job_missing","Worker has not accepted this job.")
-        res=httpx.post(loopback(r["endpoint"])+"/v1/jobs/"+id+"/cancel",headers=self.headers(r),timeout=15,trust_env=False)
+        res=httpx.post(worker_endpoint(r["endpoint"],r.get("caFile"))+"/v1/jobs/"+id+"/cancel",headers=self.headers(r),timeout=15,trust_env=False,verify=tls_verify(r.get("caFile")))
         res.raise_for_status()
         return self.refresh(id)

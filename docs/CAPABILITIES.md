@@ -1109,3 +1109,10 @@ policies, GPU serving.
 steps on the backend, backend evaluation, PyTorch-format checkpoints. Loss trajectories
 match PyTorch on the reference CNN. Not provided: Adam/momentum, GPU, native Keras/JAX
 checkpoint formats, graphs outside the portable subset.
+
+### Cross-host workers over pinned-certificate HTTPS (ADR0071; verified Mac → GPU machine, HANDOFF§72)
+
+Worker endpoints `https://HOST:PORT` with a pinned `caFile`; workers bind beyond loopback
+only with TLS. A real tabular job ran on the GPU machine over Tailscale with metrics
+identical to the local run. Not provided: cert rotation, mTLS, multi-worker scheduling,
+GPU work on workers.

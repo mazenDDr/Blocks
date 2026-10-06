@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §71 — Keras/JAX training runs (ADR0070).** §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §72 — cross-host TLS workers (ADR0071).** §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2775,3 +2775,13 @@ First test run failed: added node ids `__target__`/`__loss__` are not valid modu
 a different primary "Run" button; it now targets the Train tab button by title.
 Verification: full native 1400 passed, 1 skipped, 27 deselected 536.12s (`/private/tmp/void-bktrain-full.log`);
 all 22 editor journeys incl. backend_training pass; build and 50 Node tests pass. Hosted fb8453d: SUCCESS.
+
+## 72. Cross-host TLS workers — 2026-10-06 (ADR0071)
+
+`scale/common.py` (`worker_endpoint`, `tls_verify`), `scale/remote.py` (`caFile`), `scale/worker_server.py`
+(`--host`, TLS required off loopback), scale API capability text, editor certificate field,
+`tests/test_worker_tls.py` (3). Cross-host run: code rsynced to gpu-box, SYNTHETIC cert for
+100.109.90.64 + token in `~/project-void-worker/tls` (0700/0600), worker in tmux `voidworker`
+(stopped after the run). Evidence `/private/tmp/void-xhost-worker.json` (copied to benchmarks/results).
+Verification: full native 1403 passed, 1 skipped, 27 deselected 545.62s (`/private/tmp/void-xhost-full.log`);
+all 22 editor journeys pass (`/private/tmp/void-xhost-regressions`).

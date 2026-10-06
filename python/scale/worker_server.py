@@ -102,6 +102,10 @@ def create_worker(root,token):
 if __name__=="__main__":
     import uvicorn
     ap=argparse.ArgumentParser();ap.add_argument("--workbench",required=True);ap.add_argument("--port",type=int,default=8778);ap.add_argument("--token-env",default="VOID_WORKER_TOKEN")
+    ap.add_argument("--host",default="127.0.0.1",help="bind address; anything but 127.0.0.1 requires --ssl-certfile/--ssl-keyfile (ADR 0071)")
+    ap.add_argument("--ssl-certfile");ap.add_argument("--ssl-keyfile")
     a=ap.parse_args()
+    if a.host!="127.0.0.1" and not (a.ssl_certfile and a.ssl_keyfile):
+        ap.error("binding to another interface requires TLS: pass --ssl-certfile and --ssl-keyfile")
     token=os.environ.get(a.token_env,"")
-    uvicorn.run(create_worker(a.workbench,token),host="127.0.0.1",port=a.port)
+    uvicorn.run(create_worker(a.workbench,token),host=a.host,port=a.port,ssl_certfile=a.ssl_certfile,ssl_keyfile=a.ssl_keyfile)

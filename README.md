@@ -1363,3 +1363,23 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_backend_training.py
 .venv/bin/python tools/editor_backend_training_smoke.py --output /private/tmp/void-backend-training-smoke-2
 ```
+
+## Running a worker on another machine
+
+Start the worker with TLS on the other host, then submit with its certificate:
+
+```bash
+# on the worker host (token in the environment, key readable only by you)
+VOID_WORKER_TOKEN=... python -m scale.worker_server --workbench ~/void-worker --host <its-address> --port 8778 \
+  --ssl-certfile worker.pem --ssl-keyfile worker.key
+```
+
+In Scale → worker, use endpoint `https://<its-address>:8778` and the path of
+`worker.pem` on this machine as the worker certificate file. Cleartext is accepted only
+on 127.0.0.1. See ADR 0071.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_worker_tls.py
+```
