@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §75 — data-parallel training (ADR0073).** §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §76 — container deployment (ADR0074).** §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2812,3 +2812,11 @@ the journey sets the Train tab dataset folder to it. Re-verified with the local 
 (1e-5) and failed at 3.2e-5; the bound is now optimizer-specific with the reason documented.
 Verification: full native 1407 passed, 1 skipped, 27 deselected 547.51s (`/private/tmp/void-dp-full.log`);
 all 23 editor journeys pass (`/private/tmp/void-dp-regressions`).
+
+## 76. Container deployment — 2026-10-06 (ADR0074)
+
+`deploy/Dockerfile`, `deploy/entrypoint.sh`, `.dockerignore`, `tests/test_deploy_entrypoint.py` (3).
+Built on gpu-box (`docker build -f deploy/Dockerfile -t project-void:dev .`, log
+`~/project-void-worker/docker-build.log`), run as `void-control` with `~/project-void-deploy` (0700) mounted,
+checked from the Mac (`/private/tmp/void-deploy-check.json`), restarted, then removed.
+The local Mac Docker daemon was not running; nothing was started on the Mac.

@@ -1130,3 +1130,10 @@ contrast, focus order, WCAG conformance.
 summed gradients averaged over the global batch; equivalence to one process measured
 (SGD 6.3e-8, Adam 3.2e-5 max parameter difference). Not provided: multi-machine, CUDA/
 NCCL, throughput claims, fault tolerance.
+
+### Container deployment (ADR0074; built and run on Linux, HANDOFF§76)
+
+`deploy/Dockerfile` + entrypoint: non-root, pinned requirements, refuses to start without
+accounts or a token, optional TLS, workbench on a volume. Verified on the GPU machine
+from the Mac (auth, roles, a real run, persistence across restart). Not provided: cloud
+provider manifests, registry, GPU image, editor bundle.

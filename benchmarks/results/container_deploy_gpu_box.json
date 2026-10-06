@@ -1,0 +1,18 @@
+{
+ "noToken": 401,
+ "admin": {
+  "account": {
+   "name": "ops",
+   "role": "admin"
+  },
+  "mode": "accounts"
+ },
+ "viewerWrite": 403,
+ "submit": 201,
+ "run": {
+  "id": "787fe1febcc3",
+  "status": "completed",
+  "error": null
+ },
+ "systemTrust": "refused"
+}

@@ -1409,3 +1409,20 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_distributed_training.py
 .venv/bin/python tools/editor_backend_training_smoke.py --output /private/tmp/void-backend-training-smoke-4
 ```
+
+## Running the control service in a container
+
+```bash
+docker build -f deploy/Dockerfile -t project-void .
+docker run -d -v /srv/void:/data -e VOID_USERS_FILE=/data/users.json \
+  -e VOID_TLS_CERT=/data/cert.pem -e VOID_TLS_KEY=/data/key.pem -p 8443:8000 project-void
+```
+
+The container refuses to start without `VOID_USERS_FILE` or `VOID_API_TOKEN`. The
+workbench lives in `/data/workbench`. See ADR 0074.
+
+Commands actually run: the build and run above on the GPU machine, and
+
+```bash
+.venv/bin/pytest -q tests/test_deploy_entrypoint.py
+```
