@@ -115,11 +115,17 @@ def test_failed_cancelled_expired_and_sqlite_failure_preserve_paused_head(tmp_pa
     from production.approval_store import finish_request
     out=finish_request(rt.ps,"alice","expired",{"status":200,"error":None,"result":result},conversation=(dumps([rel["id"],"alice","chat"]),before,timing["_checkpoint"]),deadline=time.perf_counter()-1)
     assert out["status"]==504 and head(rt,rel)==before
-    rt.ps.query("CREATE TRIGGER fail_finish BEFORE UPDATE OF trace ON requests BEGIN SELECT RAISE(ABORT, 'forced approval persistence failure'); END")
+    native_db = rt.ps.db
+    def failing_db():
+        db = native_db()
+        db.execute("CREATE TEMP TRIGGER fail_finish BEFORE UPDATE OF trace ON requests BEGIN SELECT RAISE(ABORT, 'forced approval persistence failure'); END")
+        assert db.execute("SELECT COUNT(*) FROM sqlite_temp_master WHERE name='fail_finish'").fetchone()[0] == 1
+        return db
+    monkeypatch.setattr(rt.ps, "db", failing_db)
     with pytest.raises(Exception,match="forced approval persistence failure"):
         rt.predict("local","lab",resume_request(rt,rel,"write-failed"))
     assert head(rt,rel)==before and rt.ps.trace("alice","write-failed")["available"] is False
-    rt.ps.query("DROP TRIGGER fail_finish")
+    monkeypatch.setattr(rt.ps, "db", native_db)
     restarted=ProductionRuntime(lab.store)
     assert head(restarted,rel)==before
     assert restarted.predict("local","lab",resume_request(restarted,rel,"after-crash"))["status"]==200

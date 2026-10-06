@@ -1249,3 +1249,63 @@ Source-readiness/cache-helper failed attempts are retained in HANDOFF§64.
 
 Full JSONL native acceptance:1361 passed/1 skipped/25 deselected558.54s,1941
 retained warnings. Hosted outcome is recorded separately in HANDOFF§64.
+
+## SQLite schema versions
+
+Managed stores adopt compatible legacy version0 through an explicit transactional
+version1 migration, then check ownership, shape and user_version at every open.
+Future versions refuse before application SQL; there is no automatic downgrade.
+Nine application schemas are managed; native LangGraph and tracker/provider schemas
+keep their own ownership. See [ADR0066](docs/adr/0066-sqlite-schema-migrations.md).
+
+`python -m storage inspect --workbench <path>` is read-only.
+`python -m storage migrate --workbench <path> --offline` requires all writers stopped
+and upgrades existing files independently. No absent optional stores are created.
+These interfaces are implemented and accepted (ADR0066, HANDOFF§67).
+The CLI was exercised through subprocess tests; focused test command actually run:
+
+```sh
+.venv/bin/pytest -q tests/test_storage_schema.py tests/test_production_tools.py tests/test_cache_retention.py
+```
+
+**Compatibility:** all eleven agent families require re-registration because their
+storage source pins changed. Prior versions/releases/checkpoints remain recorded;
+no automatic rebinding or cross-release state migration. Non-agent prediction
+source identities remain unchanged. No library-owned schema is marked version1.
+
+Control startup preflights all existing owned schema files before mutations.
+Integrated recovery explicitly constructs compatible version0 headers on stopped
+SYNTHETIC native seed outputs, then verifies exact native row hashes and version1
+before restored browser actions. This is not arbitrary historical-binary coverage.
+SQLite failure tests use native TEMP triggers per connection, preserving real
+transaction rollback without adding forbidden persisted schema objects.
+
+Additional schema verification commands actually started (completion evidence and
+pending work in HANDOFF§65):
+
+```sh
+.venv/bin/pytest -q -o faulthandler_timeout=240 --junitxml=/private/tmp/void-schema-native-final2.xml
+.venv/bin/pytest -q -m live
+.venv/bin/python -m backends.coverage --write
+.venv/bin/python -m backends.coverage --check
+node --test apps/editor/tests/*.test.mjs
+pnpm -C apps/editor typecheck
+pnpm -C apps/editor build
+.venv/bin/python tools/recovery_smoke.py --trackers --json-agent --tools-agent --approval-agent --context-agent --context-json --jsonl --legacy-schema --cache-retention --gc --sealed --output /private/tmp/void-schema-recovery-final
+```
+
+All21 editor runners are being executed at `/private/tmp/void-schema-regressions-final`.
+An interrupted native suite and failed initial focused commands are retained as
+failures/interruption, with no acceptance inferred from them.
+
+Receipt/reset/fork/history rollback fixtures likewise use real per-connection TEMP
+SQLite triggers; all rollback/restart/competition assertions remain. The backup WAL
+fixture records committed evidence in declared events rather than adding an
+undeclared table to owned metadata; WAL presence and exact recovery checks remain.
+Full native acceptance: fresh run 1386 passed, 1 skipped, 25 deselected, 1941 warnings in 516.62s (JUnit 1387 cases, 0 failures/errors; `/private/tmp/void-schema-native-final3.{log,xml}`).
+
+Schema continuation stopped at Codex's weekly99% threshold; Claude Code completed
+acceptance from the final3 run below (HANDOFF§67).
+Completed targeted compatibility checks:72 pass, research20 pass; full live25,
+all21 editor journeys and legacy schema recovery pass. Final3 full native then passed
+(1386/1 skip/25 deselected). Earlier interrupted failures remain preserved in §65.

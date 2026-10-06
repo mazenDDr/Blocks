@@ -5,10 +5,11 @@ Policies and receipts are local metadata, never a native model/cache identity in
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 import json
 import hashlib
 from pathlib import Path
+from storage.schema import CACHE_RETENTION, open_database
 import sqlite3
 import threading
 import time
@@ -34,15 +35,17 @@ class CacheRetention:
         self._last_error = None
         self._lifecycle = threading.Lock()
         self._idle_lock = idle_lock or threading.Lock()
+        if self.path.is_file():
+            with self.database():
+                pass  # guard/adopt existing metadata without creating an optional empty store
 
     @contextmanager
     def database(self):
         # Created only when explicitly configuring a policy (or reading existing metadata).
-        with sqlite3.connect(self.path, timeout=30) as db:
+        with closing(open_database(self.path, "cache-retention", CACHE_RETENTION, timeout=30)) as db, db:
             db.row_factory = sqlite3.Row
             db.execute("PRAGMA busy_timeout=30000")
-            db.execute("CREATE TABLE IF NOT EXISTS policies (project TEXT PRIMARY KEY, config TEXT NOT NULL, revision INTEGER NOT NULL, next_due REAL NOT NULL, updated REAL NOT NULL)")
-            db.execute("CREATE TABLE IF NOT EXISTS receipts (seq INTEGER PRIMARY KEY AUTOINCREMENT, project TEXT NOT NULL, revision INTEGER NOT NULL, started REAL NOT NULL, finished REAL NOT NULL, result TEXT, error TEXT)")
+            # Migration/ownership/downgrade checks precede policy reads and writes.
             yield db
 
     def inspect(self, project):

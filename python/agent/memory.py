@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from storage.schema import open_database
 import time
 import uuid
 from contextlib import closing
@@ -46,11 +47,11 @@ class MemoryStore:
         self.root.mkdir(parents=True, exist_ok=True)
         self.path = self.root / "memory.db"
         with closing(self._db()) as db:
-            db.executescript(SCHEMA)
+            # Explicit migration and downgrade checks run in the connection factory.
             db.commit()
 
     def _db(self) -> sqlite3.Connection:
-        db = sqlite3.connect(self.path, timeout=30)
+        db = open_database(self.path, "memory", SCHEMA, timeout=30)
         db.row_factory = sqlite3.Row
         db.execute("PRAGMA journal_mode=WAL")
         return db

@@ -84,13 +84,19 @@ def test_reviewed_graph_and_stored_graph_identity_refused(tmp_path):
         assert e.value.code=='E_RECORD_IDENTITY'
 
 
-def test_transaction_failure_rolls_back_current_revision_receipt_and_history(tmp_path):
+def test_transaction_failure_rolls_back_current_revision_receipt_and_history(tmp_path,monkeypatch):
     _,records=setup(tmp_path)
-    with records.db() as db:db.execute("CREATE TRIGGER fail_revision BEFORE INSERT ON mutations BEGIN SELECT RAISE(ABORT,'forced note rollback'); END")
+    native_db = records.db
+    def failing_db():
+        db = native_db()
+        db.execute("CREATE TEMP TRIGGER fail_revision BEFORE INSERT ON mutations BEGIN SELECT RAISE(ABORT,'forced note rollback'); END")
+        assert db.execute("SELECT COUNT(*) FROM sqlite_temp_master WHERE name='fail_revision'").fetchone()[0] == 1
+        return db
+    monkeypatch.setattr(records, "db", failing_db)
     args=request(records)
     with pytest.raises(sqlite3.IntegrityError,match='forced note rollback'):records.update('r1',args)
     assert records.get('r1')['annotation']['revision']==0 and records.history('r1')['revisions']==[]
-    with records.db() as db:db.execute('DROP TRIGGER fail_revision')
+    monkeypatch.setattr(records, "db", native_db)
     assert records.update('r1',args)['annotation']['revision']==1
 
 

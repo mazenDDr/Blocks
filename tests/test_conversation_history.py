@@ -96,15 +96,21 @@ def test_source_scope_is_exact(tmp_path,user,session):
     assert e.value.code in ('E_SESSION_HISTORY_SCOPE','E_REQUEST_NOT_FOUND')
 
 
-def test_competing_restores_one_winner_and_receipt_failure_rolls_back(tmp_path):
+def test_competing_restores_one_winner_and_receipt_failure_rolls_back(tmp_path,monkeypatch):
     _,rt,_,rel,_=seed(tmp_path)
     before=head(rt,rel)
-    rt.ps.query("CREATE TRIGGER fail_restore BEFORE INSERT ON conversation_actions BEGIN SELECT RAISE(ABORT,'forced restore rollback'); END")
+    native_db = rt.ps.db
+    def failing_db():
+        db = native_db()
+        db.execute("CREATE TEMP TRIGGER fail_restore BEFORE INSERT ON conversation_actions BEGIN SELECT RAISE(ABORT,'forced restore rollback'); END")
+        assert db.execute("SELECT COUNT(*) FROM sqlite_temp_master WHERE name='fail_restore'").fetchone()[0] == 1
+        return db
+    monkeypatch.setattr(rt.ps, 'db', failing_db)
     request=reviewed(rt,rel)
     with pytest.raises(sqlite3.IntegrityError,match='forced restore rollback'):
         action(rt,rel['id'],'restore',request)
     assert head(rt,rel)==before and rt.ps.query("SELECT * FROM lifecycle WHERE type='conversation_restore'")==[]
-    rt.ps.query('DROP TRIGGER fail_restore')
+    monkeypatch.setattr(rt.ps, 'db', native_db)
     requests=[reviewed(rt,rel,id_=f'restore-{i}') for i in range(2)]
     def restore(r):
         try:

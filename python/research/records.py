@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 import sqlite3
+from storage.schema import open_database
 import time
 
 SCHEMA='''
@@ -22,10 +23,10 @@ class Records:
     def __init__(self,artifacts):
         self.artifacts=artifacts
         self.path=artifacts.root/'research.sqlite'
-        with closing(self.db()) as db:db.executescript(SCHEMA)
+        with closing(self.db()):pass  # explicit migration runs before application SQL
 
     def db(self):
-        db=sqlite3.connect(self.path,timeout=10,uri=True)
+        db=open_database(self.path,"research",SCHEMA,timeout=10,uri=True)
         db.row_factory=sqlite3.Row
         return db
 

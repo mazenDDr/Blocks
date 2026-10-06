@@ -42,6 +42,7 @@ from connectors.errors import SourceError
 from connectors.registry import ConnectionRegistry
 from studies.runner import StudyRunner
 from studies.store import StudyStore
+from storage.schema import inspect as inspect_schemas
 
 from . import inspection as insp
 from . import tabular_inspection as tinsp
@@ -176,6 +177,7 @@ def agent_preflight(graph: Graph, cfg: AgentRunConfig) -> None:
 
 class Services:
     def __init__(self, workbench: Path):
+        inspect_schemas(workbench)  # refuse a future/foreign owned schema before startup mutations
         self.workbench = workbench
         self.store = ArtifactStore(workbench)
         self.projects = workbench / "projects"

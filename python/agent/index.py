@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from storage.schema import EMBEDDINGS, open_database
 import time
 from contextlib import closing
 from pathlib import Path
@@ -59,14 +60,14 @@ def split_documents(docs: list[dict[str, Any]], spec: IndexSpec) -> list[dict[st
 class EmbedCache:
     def __init__(self, path: Path):
         self.path = path
-        with closing(sqlite3.connect(path)) as db:
-            db.execute("CREATE TABLE IF NOT EXISTS emb (key TEXT PRIMARY KEY, vec TEXT NOT NULL)")
+        with closing(open_database(path, "embeddings", EMBEDDINGS)) as db:
+            # Explicit versioned migration already created/validated the cache.
             db.commit()
 
     def get_many(self, ident: str, texts: list[str]) -> dict[str, list[float]]:
         keys = {hashlib.sha256((ident + "\0" + t).encode()).hexdigest(): t for t in texts}
         out: dict[str, list[float]] = {}
-        with closing(sqlite3.connect(self.path)) as db:
+        with closing(open_database(self.path, "embeddings", EMBEDDINGS)) as db:
             for k, t in keys.items():
                 row = db.execute("SELECT vec FROM emb WHERE key=?", (k,)).fetchone()
                 if row:
@@ -74,7 +75,7 @@ class EmbedCache:
         return out
 
     def put_many(self, ident: str, items: dict[str, list[float]]) -> None:
-        with closing(sqlite3.connect(self.path)) as db:
+        with closing(open_database(self.path, "embeddings", EMBEDDINGS)) as db:
             for t, v in items.items():
                 db.execute("INSERT OR REPLACE INTO emb VALUES (?,?)", (hashlib.sha256((ident + "\0" + t).encode()).hexdigest(), json.dumps(v)))
             db.commit()

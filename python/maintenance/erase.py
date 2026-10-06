@@ -17,6 +17,9 @@ import re
 import sqlite3
 from pathlib import Path
 
+from storage.schema import guard, statements
+from production.store import SCHEMA as PRODUCTION_SCHEMA
+
 from .cas_gc import GcError, blob_references, mark
 
 USER = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -43,6 +46,7 @@ def erase_user(workbench, user: str, *, apply=False, offline=False) -> dict:
         raise GcError("E_ERASE_STORE", "This workbench has no production database.")
     mark(root)  # integrity, active-work and reference checks of every database before any change
     with closing(sqlite3.connect(db_path, timeout=1)) as db:
+        guard(db, "production", (statements(PRODUCTION_SCHEMA),))
         tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         rows, referenced = {}, set()
         for table, column in TABLES:

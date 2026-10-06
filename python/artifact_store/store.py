@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import sqlite3
+from storage.schema import open_database
 import tempfile
 import threading
 import time
@@ -68,10 +69,10 @@ class ArtifactStore:
         with self._lock, closing(self._db()) as db:
             with db:
                 db.execute("PRAGMA journal_mode=WAL")
-                db.executescript(_SCHEMA)
+                # Explicit migration and downgrade checks run in the connection factory.
 
     def _db(self) -> sqlite3.Connection:
-        db = sqlite3.connect(self.db_path, timeout=30)
+        db = open_database(self.db_path, "meta", _SCHEMA, timeout=30)
         db.row_factory = sqlite3.Row
         return db
 

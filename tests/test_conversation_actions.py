@@ -125,17 +125,23 @@ def test_reset_waits_for_active_native_turn_and_refuses_old_review(tmp_path, mon
 
 
 @pytest.mark.parametrize('operation',['reset','fork'])
-def test_sqlite_receipt_failure_rolls_back_head_event_and_receipt(tmp_path,operation):
+def test_sqlite_receipt_failure_rolls_back_head_event_and_receipt(tmp_path,operation,monkeypatch):
     _, rt, _, rel, _, _ = seed(tmp_path)
     before = head(rt,rel)
     req_ = body(rt,rel,'rollback',destination='other' if operation=='fork' else None)
-    rt.ps.query("CREATE TRIGGER fail_action BEFORE INSERT ON conversation_actions BEGIN SELECT RAISE(ABORT,'forced action transaction failure'); END")
+    native_db = rt.ps.db
+    def failing_db():
+        db = native_db()
+        db.execute("CREATE TEMP TRIGGER fail_action BEFORE INSERT ON conversation_actions BEGIN SELECT RAISE(ABORT,'forced action transaction failure'); END")
+        assert db.execute("SELECT COUNT(*) FROM sqlite_temp_master WHERE name='fail_action'").fetchone()[0] == 1
+        return db
+    monkeypatch.setattr(rt.ps, 'db', failing_db)
     with pytest.raises(sqlite3.IntegrityError,match='forced action transaction failure'):
         action(rt,rel['id'],operation,req_)
     assert head(rt,rel) == before and head(rt,rel,session='other') is None
     assert rt.ps.query('SELECT * FROM conversation_actions') == []
     assert rt.ps.query("SELECT * FROM lifecycle WHERE type IN ('conversation_reset','conversation_fork')") == []
-    rt.ps.query('DROP TRIGGER fail_action')
+    monkeypatch.setattr(rt.ps, 'db', native_db)
     assert action(rt,rel['id'],operation,req_)['idempotentReplay'] is False
 
 

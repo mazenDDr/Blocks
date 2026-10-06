@@ -29,7 +29,7 @@ NODE = "__agent_approval_conversation__"
 ALLOWED = {"agent.prompt", "agent.chat_model", "agent.set_state", "agent.human_interrupt"}
 FILES = ("production/approval_adapter.py", "production/approval_store.py", "production/approval_requests.py", "production/approval_monitor.py", "../services/control/approval_api.py", "production/models.py", "production/conversation_adapter.py", "production/agent_adapter.py", "agent/runtime.py", "agent/blocks.py", "agent/spec.py", "agent/models.py",
          "agent/validate.py", "agent/memory.py", "agent/index.py", "agent/policy.py", "graph_core/schema.py", "graph_core/hashing.py",
-         "graph_core/registry.py", "graph_core/validate.py", "artifact_store/store.py", "tabular/core.py")
+         "graph_core/registry.py", "graph_core/validate.py", "artifact_store/store.py", "storage/schema.py", "tabular/core.py")
 
 
 def environment():

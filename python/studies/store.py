@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from storage.schema import open_database
 import threading
 import time
 from contextlib import closing
@@ -27,10 +28,10 @@ class StudyStore:
         self._lock = threading.RLock()
         with self._lock, closing(self._db()) as db, db:
             db.execute("PRAGMA journal_mode=WAL")
-            db.executescript(_SCHEMA)
+            # Explicit migration and downgrade checks run in the connection factory.
 
     def _db(self):
-        db = sqlite3.connect(self.path, timeout=30)
+        db = open_database(self.path, "studies", _SCHEMA, timeout=30)
         db.row_factory = sqlite3.Row
         return db
 

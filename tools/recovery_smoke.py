@@ -113,6 +113,9 @@ def run(args):
             tracker_evidence = out / "trackers.json"
             tracker_evidence.write_text(json.dumps(json.loads(seeded.stdout.splitlines()[-1]), indent=2) + "\n")
             extra_env["VOID_RECOVERY_TRACKERS"] = str(tracker_evidence)
+        if args.legacy_schema:
+            import schema_recovery
+            result["legacySchema"] = schema_recovery.legacy_fixture(source)
         if args.gc:
             result["gc"] = collect_garbage(source)
         result["backup"] = create(source, out / "backup", offline=True,
@@ -132,8 +135,10 @@ def run(args):
             restorable = out / "unsealed"
         result["restore"] = restore(restorable, out / "recovered", trusted=True, manifest_sha256=sha)
         check = argparse.Namespace(output=str(out / "check"), chrome=args.chrome, timeout=args.timeout)
+        def schema_ready(root):
+            result["legacySchema"].update(schema_recovery.check_ready(root, result["legacySchema"]))
         if smoke.run(check, workbench=out / "recovered", journey=smoke.EDITOR / "smoke/recovery.mjs",
-                     extra_env=extra_env):
+                     extra_env=extra_env, ready_check=schema_ready if args.legacy_schema else None):
             raise RuntimeError("Restored browser recovery failed.")
         if args.json_agent:
             json_check = argparse.Namespace(output=str(out / "json-check"), chrome=args.chrome, timeout=args.timeout)
@@ -189,6 +194,7 @@ def main():
     parser.add_argument("--trackers", action="store_true", help="Seed real local MLflow/offline W&B; use v2 links with explicit external diagnostic-log omission.")
     parser.add_argument("--cache-retention", action="store_true", help="Also seed actual native cached regression/policy and verify policy/receipts/cache/run artifacts after source deletion.")
     parser.add_argument("--json-agent", action="store_true", help="Also seed/recover a pinned JSON version and invoke real installed local Ollama; fails without the provider, no fixture substitution.")
+    parser.add_argument("--legacy-schema", action="store_true", help="Construct compatible version0 headers on stopped SYNTHETIC fixture; verify every native row hash and version1 before restored browser actions.")
     parser.add_argument("--jsonl", action="store_true", help="Seed/recover native JSONL source runs, imported package and fitted regression; no model calls.")
     parser.add_argument("--context-agent", action="store_true", help="Seed/recover pinned retrieval and bounded native short-term conversation; zero model calls.")
     parser.add_argument("--context-json", action="store_true", help="Seed/recover combined retrieval, short-term conversation and actual installed Ollama JSON.")

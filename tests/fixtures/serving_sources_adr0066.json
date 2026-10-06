@@ -1,0 +1,11 @@
+{
+  "decision": "ADR0066 deliberately changes storage pins; agent families require re-registration",
+  "files": {
+    "production/agent_adapter.py": "0ca19f0e5ae9499d988bc22bdd896cc158cfe37000a285757070e847da6d6d9e",
+    "production/conversation_adapter.py": "4029a447a85602c3ae844dc1bba550022f6481af88d855938e690f3ff1d97e81",
+    "agent/memory.py": "bdc2913e860ecf9101ea3f152bb7fc3d7a96e83f227d5e1e3c02c18c6a7d1dc7",
+    "agent/index.py": "35252a409d6cba82d0344ea5e69c2858389e8fdec4ca37bc91f981a9b217ddef",
+    "artifact_store/store.py": "6bbc068c2aea802c3f3c991128817c2692159e87110ed317804889eda0e66708",
+    "storage/schema.py": "76c3629a21d718d32287df3c98924d4beac41d5a305cd99b81f2fb6c911478c7"
+  }
+}

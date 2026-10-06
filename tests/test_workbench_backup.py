@@ -38,8 +38,7 @@ def test_wal_all_sqlite_and_file_tree_roundtrip_preserves_committed_values(tmp_p
     dbs.add("trackers/mlflow/mlflow.sqlite")  # Discover nested native tracker DBs too.
     with closing(sqlite3.connect(store.db_path)) as held:
         held.execute("PRAGMA wal_autocheckpoint=0")
-        held.execute("CREATE TABLE wal_evidence(value TEXT)")
-        held.execute("INSERT INTO wal_evidence VALUES ('SYNTHETIC WAL committed')")
+        held.execute("INSERT INTO events VALUES (?,?,?,?,?,?,?)", ("finished", 1, 1., "wal_evidence", None, "hash", '"SYNTHETIC WAL committed"'))
         held.commit()
         assert Path(str(store.db_path) + "-wal").stat().st_size > 0
         for rel in dbs:
@@ -64,7 +63,7 @@ def test_wal_all_sqlite_and_file_tree_roundtrip_preserves_committed_values(tmp_p
     for rel in m["files"]:
         assert backup.digest(out / rel) == m["files"][rel]["sha256"]
     with closing(sqlite3.connect(out / "meta.db")) as db:
-        assert db.execute("SELECT value FROM wal_evidence").fetchall() == [("SYNTHETIC WAL committed",)]
+        assert db.execute("SELECT data FROM events WHERE type='wal_evidence'").fetchall() == [('"SYNTHETIC WAL committed"',)]
     assert ArtifactStore(out).get_run("finished")["status"] == "completed"
     assert (out / "empty").is_dir()
     assert json.loads((out / "projects/demo.json").read_text())["path"] == str(tmp_path / "external.csv")

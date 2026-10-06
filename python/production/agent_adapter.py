@@ -28,7 +28,7 @@ NODE = "__agent_graph__"
 ALLOWED = {"agent.prompt", "agent.chat_model", "agent.set_state"}
 FILES = ("production/agent_adapter.py", "agent/runtime.py", "agent/blocks.py", "agent/spec.py", "agent/models.py",
          "agent/validate.py", "agent/memory.py", "agent/index.py", "agent/policy.py", "graph_core/schema.py", "graph_core/hashing.py",
-         "graph_core/registry.py", "graph_core/validate.py", "artifact_store/store.py", "tabular/core.py")
+         "graph_core/registry.py", "graph_core/validate.py", "artifact_store/store.py", "storage/schema.py", "tabular/core.py")
 
 
 def environment():

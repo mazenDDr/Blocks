@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §63 — CLAUDE CODE HANDOFF (start here); §59 retains the requested build order.** §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §67 — schema migrations accepted; GPU work next.** §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2402,3 +2402,321 @@ raw logs `/private/tmp/void-context-hosted-native-job.log` and
 `/private/tmp/void-context-hosted-browser-job.log`. Successful context source seed
 is not restored recovery acceptance because cache-seed readiness stopped the flow.
 JSONL push now carries both test-runner corrections with actual Mac full acceptance.
+
+## 65. SQLite migration implementation — verification in progress
+
+JSONL code0d49a070dab26e5acaea4d95884a490dd93cc390 plus outcome/preflight docs
+bf3d09051d3f8f3185f283a1019f40f5fd85f4b8 pushed. Hosted **37434103050 IN PROGRESS**:
+https://github.com/mazenDDr/project-void/actions/runs/37434103050 . Do not push a
+new scope while that run is active. Item3 hosted native1338/1skip/25deselect1941
+warnings1168.93s succeeded; browser readiness failure means overall FAILURE.
+
+GPU remains blocked on stopped Tailscale/unresolved SSH alias; user asked to start
+peers/PC/WSL asynchronously. No GPU job/transfer/install or device claim. Continuing
+item6 independently. Weekly98%, five-hour81% at latest check; user asks stop at
+weekly99% after completing a current Claude handoff.
+
+New storage/schema.py + __main__.py: nine app-owned schemas with application_id,
+user_version1 baseline adoption, exact canonical SQL object matching, partial known
+legacy tables allowed, future/negative/owner/mismatch refusal before application
+SQL, BEGIN IMMEDIATE recheck, execute steps + owner/version atomic per-DB commit.
+Reference schemas use in-memory native SQLite; current shapes verified every open.
+Read-only CLI inventory and --offline existing-file migration; native LangGraph
+checkpoints/tracker/provider files excluded. No new dependency or row/CAS rewrite.
+
+Hooks in artifact_store/store.py, production/store.py, connectors/registry.py,
+studies/store.py, research/records.py, scale/state.py, agent/memory.py, agent/index.py,
+maintenance/cache_retention.py. Cache-retention explicitly closes its connection.
+Erasure guard before deleting production rows. Old CREATE IF NOT EXISTS declarations
+retained but constructors now use explicit migration instead of executescript.
+Base agent/conversation/approval FILES additionally pin storage/schema.py. **All
+11 agent families require re-registration**, exact list ADR0066. Non-agent prediction
+sources unchanged. Original source fixture retained; new ADR0066 fixture declares
+five changed old pins plus helper and explicitly asserts other sources unchanged.
+
+New tests/test_storage_schema.py covers actual owning constructors, v0 exact-row/
+object preservation and idempotency, all9 future-version byte-preserving refusals,
+foreign/malformed schema, missing legacy tables, real second-step unique-index
+constraint rollback, ownership/current-shape refusal, real two-process migration,
+read-only inventory/offline CLI and untouched native-provider database. Initial
+focused **2 failed/23 passed1.41s** `/private/tmp/void-schema-focused-1.log`: incorrect
+new studies fixture had6 instead of7 columns; cache-retention hook dropped sqlite3
+import still needed for Row. Both corrected. Focused storage/tools/cache tests now
+running `/private/tmp/void-schema-focused-2.log`.
+
+ADR0066/README/CAP status remains implementation, **not full acceptance**. Next:
+finish focused checks, regenerate coverage BEFORE native suite, run full native/live/
+all21 editor runners/integrated sealed/GC recovery. Add explicit legacyv0 recovery
+and schema version preservation/downgrade evidence to recovery journey; confirm
+non-agent pins and exact changed agent pins. Inspect tests/backend endpoint ledger.
+Keep failed evidence. No item6 commit/push yet. Stop at weekly99% and record exact
+pending processes/results for Claude instead of claiming unfinished verification.
+
+Focused final **48 passed19.84s**, `/private/tmp/void-schema-focused-final.log`.
+Coverage regenerated before full suite. Full native first run was intentionally
+interrupted at owned PID44352 after recognizing two persisted SQL fault-injection
+triggers conflict with the new exact persisted-schema guard. New tests install
+actual **TEMP SQLite triggers per connection** after the guard, with an explicit
+native temp-trigger count assertion. Real RAISE(ABORT) transaction/head/trace/restart
+checks remain unchanged. No persistence guard is relaxed. Initial targeted rollback
+command had the wrong approval test name (collected no tests), retained
+`/private/tmp/void-schema-rollback-tests.log`; corrected two actual tests now running
+`/private/tmp/void-schema-rollback-tests-final.log`. Fresh full native must run after
+that succeeds; interrupted `/private/tmp/void-schema-native-final.log` is no acceptance.
+
+All21 browser runners now running `/private/tmp/void-schema-regressions-final`;
+integrated all scopes --legacy-schema recovery `/private/tmp/void-schema-recovery-final`.
+Legacy fixture explicitly resets only owned header stamps on our stopped SYNTHETIC
+native outputs (does not claim execution of arbitrary old binaries), retains all
+row hashes/schema/CAS; after restored service readiness before Chrome actions,
+callback checks all owned v1 and exact native row SHA. Native-provider versions
+untouched. New `tools/schema_recovery.py`, optional ready_check callback in owned
+editor runner, recovery --legacy-schema and CI flag. Control startup preflights
+all existing owned schemas before mutation; existing cache policy adopts at
+constructor without creating absent optional metadata. New schema code remains
+uncommitted and unaccepted. Hosted JSONL browser SUCCESS; native still pending.
+
+Fresh full native after preserved TEMP-trigger rollback checks is active:
+`/private/tmp/void-schema-native-final2.log`, JUnit `.xml`; owned exec session39959.
+Corrected rollback tests **2 passed3.07s**, `/private/tmp/void-schema-rollback-tests-final.log`.
+First interrupted native141 passed1skip25deselect72.77s is explicitly not acceptance.
+Coverage check current. Schema build/typecheck/Node50 pass; full actual live started
+`/private/tmp/void-schema-live-final.log`. All21 editor and integrated legacy/sealed/
+GC recovery still active at this snapshot. JSONL hosted browser completed SUCCESS;
+verify still pending. No item6 commit or push until actual required acceptance.
+
+
+### Schema verification progress and JSONL hosted acceptance
+
+Schema integrated **PASSED240 files/11DBs/16 browser cases**, sourceDeleted=true;
+`/private/tmp/void-schema-recovery-final/recovery.json`. All **9** owned databases
+were explicitly constructed at version0, then restored startup upgraded to1 with
+**identical native row SHA for every DB before Chrome actions**. Native checkpoints/
+trackers retain library ownership; schema result records exact inventories. All21
+editor runners pass (`/private/tmp/void-schema-regressions-final`); live **25 passed/
+1387 deselected38.55s** (`/private/tmp/void-schema-live-final.log`). Node50/build/
+typecheck/coverage/diff pass. Full native final2 still active, no acceptance yet.
+
+JSONL head **bf3d09051d3f8f3185f283a1019f40f5fd85f4b8**, hosted **37434103050
+SUCCESS**, both jobs. Browser completed08:18:55Z; verify completed08:24:29Z. This
+verifies bounded readiness repair, layout groups and integrated JSONL source/cache/
+package/serving/recovery on Linux, alongside zero-model tools/approval/context.
+Actual hosted native counts/JUnit recorded below after downloaded inspection.
+No hosted Ollama/GPU claim. Prior context37431555909 remains overall FAILED, with
+native SUCCESS and readiness-only browser failure preserved. New run does not
+retroactively label that old run successful. A new code push may now proceed after
+schema full native succeeds; pending user GPU-start question has no reply yet.
+
+
+Native final2 **interrupted after3 real failures**: JUnit529 cases,3failures1skip,
+525 passes,211.896s. The three failures were receipt reset/fork and history restore
+persisted fault-injection triggers conflicting with exact owned-schema validation.
+Both tests now use real per-connection TEMP SQLite triggers with an explicit native
+count check; actual receipt/head/event rollback and competing-restore assertions
+remain. Full2 also reported a pytest temporary-fixture teardown KeyError on SIGINT;
+not an application success. Owned PID45459 stopped; do not reuse it. Diagnosis
+`/private/tmp/void-schema-failures-diagnosis.log`:3failed40deselected2.45s.
+
+Backup WAL test previously added an undeclared wal_evidence table to owned meta;
+it now records actual committed WAL evidence in declared events, preserving WAL
+presence, exact round-trip bytes/values and native get_run assertion. Independent
+provider/arbitrary archive fixture coverage remains. Compatibility tests running
+`/private/tmp/void-schema-compatibility-tests-final.log`; once pass, regenerate/check
+coverage and start a fresh full native final3. Native2 is not full acceptance.
+Product code since passing editor/live/recovery is unchanged; only compatibility
+test fixtures above changed. Never relax guards to conceal these failures.
+
+JSONL hosted verify actual **1361 passed/1skip/25deselect1941warnings790.14s**;
+JUnit `/private/tmp/void-jsonl-hosted-native-evidence/void-pytest.xml`, raw native
+`/private/tmp/void-jsonl-hosted-native-job.log`; browser artifacts
+`/private/tmp/void-jsonl-hosted-browser-evidence`. Both jobs SUCCESS as above.
+
+
+## 66. Claude Code handoff — start here (Codex weekly99%, 2026-10-06)
+
+The user explicitly asked Codex to continue until **99%**, then write all changes
+for Claude Code. Latest tool snapshot **weekly99% / five-hour88%**. New work stops
+here; no reset credit was used. The whole VISION remains unfinished. Read §59 fully,
+CAPABILITIES and ADR0062–0066; historical §60–65 retain detailed evidence/failures.
+This section supersedes older pending/prototype-only snapshots in §63/64/65.
+
+### Checkout and immediate action
+
+Repository `/Users/mazenkhaled/project-void`, master. **HEAD and origin/master both
+bf3d09051d3f8f3185f283a1019f40f5fd85f4b8**. Items1–4 committed/pushed; item6 storage
+migration work is **uncommitted**, including new/untracked files. Preserve it.
+No subagents/worktrees/PRs/goals/automations created. No unrelated user edits found.
+
+**Only active verification:** owned native pytest PID **46936**, exec session55905,
+`.venv/bin/pytest -q -o faulthandler_timeout=240
+--junitxml=/private/tmp/void-schema-native-final3.xml`, stdout/stderr
+`/private/tmp/void-schema-native-final3.log`. At handoff it is past5%, no failure
+observed yet; **this is not acceptance**. Let it finish; inspect log and XML. Do not
+launch a duplicate full suite or kill unrelated processes. Earlier PIDs44352/45459
+were stopped; PID38775 was completed; never reuse stale PIDs. All owned browser,
+server and recovery process groups are stopped, cleanup audited. Ollama is user's
+existing service, untouched. Do not commit/push item6 until the fresh full result is
+actually known and any failures repaired. If final3 passes, update ADR0066/README/
+CAP/§65/66 with exact counts/warnings/time, inspect diff, commit all storage work and
+push. Last hosted run is finished, so it will not be cancelled. Then record the
+new hosted run/result, distinguishing Mac live provider checks from Linux CI.
+
+### Published scopes and hosted outcomes
+
+- Original **6f63e09ab1aea7b76d6a1c0f31214f86adfbe3e9** CI checked FIRST as requested;
+  **37419343709 SUCCESS**05:52:50Z, recorded§59. Short-SHA query missed it; full SHA
+  resolved it. Always get actual full SHA from git instead of guessing it.
+- Item1 pure calculator, **2a58545c36335cfedbf6dd889b8422ba45689bd7**, ADR0062:
+  new tools_agent_adapter, bounded calculator/maxToolCalls atomic reservation,
+  optional pinned retrieval, <=1 local Ollama, no effects/threads/approvals.
+  Native1300/1skip/20deselect, live20, all18 browsers, sealed recovery147files/10DBs.
+  Hosted37425641129 overallFAILURE: nativeSUCCESS, existing layout-group geometry
+  click timeout. Failure preserved; repaired in item2, not relabelled green.
+- Item2 approvals, **539f62e6940cb0c6c08ce08a4feb270437576520**, ADR0063:
+  approval_adapter/store/requests/monitor + approval_api + ApprovalReview. Real
+  serialized native paused checkpoint/pending writes, HTTP202 no final prediction,
+  review SHA/revision/interrupt identity, approve/reject/edit native Command resume,
+  budgets persist, no repeated prior calls; private warmup pause; effect-free single
+  active path. Native1319/1skip/21deselect, live21, all19 browsers, recovery169files/
+  11DBs. Hosted **37428152049 SUCCESS** both jobs07:34:28Z; Linux native1140.48s.
+  Layout runner waits for actual stable fonts/geometry; exact selection/drag/Undo
+  assertions retained. Existing JSON-agent recovery monitor seed saved after stream.
+- Item3 context, **886e8e6b3e62c0bf819ab80b5546a3dd9b7d3c5e**, ADR0064:
+  new context_agent_adapter + ContextTurnEvidence. Four stateless/conversation ×
+  text/JSON families; pinned index snapshots and bounded native short-term policies.
+  No long-term/global memory/effects/tools/approval combinations. Native1338/1skip/
+  25deselect525.19s, live25, all20 browsers plus real JSON-context mode, sealed GC
+  recovery207files/11DBs. Hosted **37431555909 overallFAILURE**08:07:18Z:
+  nativeSUCCESS1338/1skip/25deselect1168.93s1941warnings; browser failed before
+  Chrome at cache-seed service readiness ConnectionResetError. Context source seed
+  passed; restored recovery did not run. Evidence preserved in§64. New bounded
+  readiness handling repairs this; no assertion/error suppression or browser retry.
+- Item4 JSONL, **0d49a070dab26e5acaea4d95884a490dd93cc390**, plus documentation head
+  **bf3d09051d3f8f3185f283a1019f40f5fd85f4b8**, ADR0065. New jsonl_source module,
+  strict bounded UTF8 flat objects, physical-line diagnostics, first-seen columns/
+  native pandas/null inference, stable row IDs, whole-byte SHA; cache reread/bypass,
+  worker events, bundle requirements, inert explicit package snapshots and real
+  authenticated separate loopback CPU worker. Existing includeCsv flag explicitly
+  covers CSV/JSONL; smaller8MiB transport bound preserved. Native1361/1skip/25deselect
+  558.54s1941warnings, live25, all21 editor runners, sealed GC source-deletion
+  recovery240files/11DBs/16 browser cases; all old17 source pins unchanged then.
+  Hosted **37434103050 SUCCESS BOTH JOBS**: browser08:18:55Z, verify08:24:29Z,
+  actual native1361/1skip/25deselect790.14s1941warnings. JUnit/log/browser artifacts
+  `/private/tmp/void-jsonl-hosted-native-evidence`, `void-jsonl-hosted-native-job.log`,
+  `void-jsonl-hosted-browser-evidence`. URL:
+  https://github.com/mazenDDr/project-void/actions/runs/37434103050 . Hosted repair
+  confirms readiness/layout/integrated JSONL recovery; no Linux Ollama/GPU claim.
+  New source click waits for completed UI after native completion. Cache seed now
+  explicitly scopes any_project=False; exact19/3/16 counts remain. No cache-core
+  behavior changed to hide the previously counted35 global entries.
+
+### Current uncommitted item6: storage migrations
+
+New `python/storage/{__init__,schema,__main__}.py`. Nine owned schemas: meta,
+production, connections, studies, integrations, research, memory, embeddings,
+cache-retention. Version1 baseline and per-kind application_id; known exact legacy
+objects adopted/additive missing tables added; canonical native SQL comparison;
+future/negative/owner/unknown/altered schema refuses before application SQL. Native
+LangGraph checkpoint/tracker/provider schemas excluded. Trusted sequential execute
+steps + BEGIN IMMEDIATE recheck + owner/version commit/rollback per DB. No dependency,
+row/CAS rewrite, all-workbench atomicity or automatic downgrade claim. CLI inspect
+read-only; migrate requires --offline and only existing files. Old binaries lacking
+these guards cannot be made to enforce them. See ADR0066 for full contract/limits.
+
+Changed connection hooks: artifact_store/store.py, production/store.py,
+connectors/registry.py, studies/store.py, research/records.py, scale/state.py,
+agent/memory.py, agent/index.py, maintenance/cache_retention.py; erasure guard before
+SQL deletes; control/app.py preflights all existing owned DBs before startup writes.
+Existing retention metadata adopts at construction, absent optional DB stays absent;
+connections explicitly close. Old schema declarations stay; executescript removed
+from managed bootstrap. Base agent/conversation/approval FILES pin storage/schema.py.
+
+**Compatibility: ALL11 agent families need re-registration** (plain/conversation/
+JSON/JSON-conversation/retrieval/tools/approval/four context modes). Changed old
+storage and base adapter source pins are intentional, documented; original fixture
+`serving_sources_6f63e09.json` retained and separate ADR0066 fixture declares exactly
+five changed old pins plus new helper, asserts each changed hash differs and checks
+all remaining prior bytes. New versions may require rerunning source graphs to
+record current source identities. Do not mutate old manifests/rebind old releases/
+copy checkpoint heads to conceal the identity change. Non-agent prediction sources
+remain unchanged. ADR0066 is **implemented, not accepted** until full native passes.
+
+New tests/test_storage_schema.py: all9 actual store constructors preserve legacy
+rows/objects; all9 future header byte-preserving refusal; owner/current shape/foreign
+objects/missing legacy tables; real two-process migration; real v2 unique-index
+constraint rollback; read-only/offline CLI and untouched provider version. SQLite
+rollback tests (production conversation/approval, conversation actions/history,
+research records) now use actual per-connection TEMP native triggers with count
+assertions, retaining real abort/rollback/restart/race checks. Backup WAL evidence
+uses declared events, retaining actual WAL presence/exact restored values/bytes.
+No guard is weakened. These are test-fixture compatibility changes, not simulated
+application success. README/CAP/ADR/HANDOFF/COVERAGE conventions followed.
+
+New `tools/schema_recovery.py`; optional owned-runner ready_check callback;
+recovery --legacy-schema, CI flag. It explicitly constructs version0 headers on
+our stopped SYNTHETIC native seed outputs (not arbitrary old-binary coverage),
+then checks exact row SHA for every DB and version1 **before restored browser
+interactions**, with untouched library-owned schemas. Workbench is physically
+removed after authenticated sealed backup/zero-grace GC, then actual browser and
+Ollama turns resume. No dataset/service/credential/environment portability claim.
+
+### Item6 completed checks / failures / pending
+
+- Focused storage/tools/cache **48passed19.84s**, `/private/tmp/void-schema-focused-final.log`.
+  First2fail23pass1.41s retained: wrong new studies fixture column count and a dropped
+  sqlite3 Row import; corrected. Two native rollback tests **2passed3.07s**.
+- Compatibility actions/history/backup **72passed20.05s**
+  `/private/tmp/void-schema-compatibility-tests-final.log`; research **20passed3.50s**
+  `/private/tmp/void-schema-research-tests-final.log`. No persisted fault triggers left.
+- Full actual installed Ollama live **25passed1387deselected38.55s**
+  `/private/tmp/void-schema-live-final.log`; all21 editor runners passed, audited
+  empty runtime/API errors and all3 owned groups cleaned,
+  `/private/tmp/void-schema-regressions-final/results.json`.
+- Integrated **PASSED240files/11DBs/all16browser cases**, sourceDeleted=true;
+  `/private/tmp/void-schema-recovery-final/recovery.json`. All9 owned0→1 native-row
+  SHA identical before browser actions; native checkpoint/tracker schemas excluded.
+- Node50/0fail370.92ms, build/typecheck, coverage regenerated and checked, diff check
+  pass. Logs `/private/tmp/void-schema-{node,build,typecheck}-final.log`.
+- First full native intentionally interrupted141pass1skip25deselect72.77s before
+  adapting first two persisted test triggers; `void-schema-native-final.log`.
+  Second interrupted after3 real receipt-trigger failures: JUnit529cases,
+  3fail1skip525pass211.896s, `void-schema-native-final2.{log,xml}`; interruption also
+  produced pytest temp-fixture teardown KeyError. Diagnosis3failed40deselect2.45s
+  `void-schema-failures-diagnosis.log`. Both are **not full acceptance**. Extra
+  targeted command with wrong test name collected none, retained rollback-tests.log.
+  All trigger fixtures subsequently adapted and targeted suites pass as above.
+- **Fresh native FINAL3 RUNNING PID46936** as at top; no completed count yet. No
+  item6 commit/push/hosted result. README/CAP/ADR remain pending accordingly.
+
+### Remaining work order and conventions
+
+1. Finish native final3; repair genuine failures, run a fresh necessary suite if
+   execution changes, preserve failures and use actual full completion evidence.
+   Only then accept/commit/push item6 and check hosted status. If it fails, do not
+   overwrite evidence or claim the existing green JSONL CI validates these edits.
+2. GPU item5 still blocked: tailscale status said stopped; SSH gpu-box did not
+   resolve. User was asked to start Mac/PC Tailscale/WSL and provide correct alias;
+   no reply at handoff. Read gpu-box skill, check once when user says ready; do not
+   retry blindly or call CPU/Ollama-managed placement GPU verification. No job or
+   transfer/install occurred. Training still has no selected-device contract.
+3. Then §59 item7 broader RL/Keras/JAX training/provider credentials/cloud/
+   distributed/accessibility. None started. Long-term memory remains a separate
+   ownership/write contract; context scope only bounded short-term memory.
+
+New serving behavior in new modules; precise compatibility consequences; each scope
+ADR+README actually-run commands+CAP+HANDOFF; native/live/every editor runner and
+integrated baseline/recovery; SYNTHETIC labels and in-sample limits; no new dependency
+without required authorization. Evidence outside repo. Preserve prior active CI
+before push; no skip-CI head containing new code. Use .venv, existing node/pnpm,
+owned isolated Puppeteer/ports/process groups; never manipulate personal Chrome or
+kill unrelated services. Git diff/status shows all uncommitted work. The handoff
+is saved for Claude Code; no message was sent to another chat or external person.
+
+## 67. Schema migrations accepted — Claude Code, 2026-10-06
+
+Codex's final3 full native (PID46936) completed: **1386 passed, 1 skipped, 25 deselected,
+1941 warnings in 516.62s**; JUnit `/private/tmp/void-schema-native-final3.xml` 1387 cases,
+0 failures, 0 errors. With the focused/live/editor/recovery evidence in §66 this accepts
+ADR0066; item6 committed and pushed. Hosted result is recorded below when observed.
+Previous hosted run on bf3d090 was complete (success) before this push.
+User reports the gpu-box connection is fixed; GPU work (§59 item5) starts next.

@@ -153,9 +153,14 @@ def test_scope_refusals(change):
     with pytest.raises(ProductionError): adapter.contract(Graph.model_validate(doc), {"question": "2+3"})
 
 
-def test_previous_adapter_source_identities_unchanged():
+def test_adapter_storage_pins_match_explicit_migration_compatibility_decision():
     from production import agent_adapter, conversation_adapter, retrieval_agent_adapter
     expected = json.loads((Path(__file__).parent / "fixtures/serving_sources_6f63e09.json").read_text())["files"]
+    changed = json.loads((Path(__file__).parent / "fixtures/serving_sources_adr0066.json").read_text())["files"]
+    assert set(changed) == {"production/agent_adapter.py", "production/conversation_adapter.py", "agent/memory.py", "agent/index.py", "artifact_store/store.py", "storage/schema.py"}
+    for name in set(changed) & set(expected):
+        assert changed[name] != expected[name], "ADR0066 declares an intentional pin change"
+    expected.update(changed)
     for mod in (agent_adapter, conversation_adapter, retrieval_agent_adapter):
         for name, current in mod.implementation().items():
             assert expected[name] == current

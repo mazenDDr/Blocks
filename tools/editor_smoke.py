@@ -78,7 +78,7 @@ def wait_ready(url, process, headers=None, timeout=45):
     raise RuntimeError(f"Service readiness exceeded {timeout}s: {url}")
 
 
-def run(args, *, workbench=None, journey=None, extra_env=None, fixture="SYNTHETIC native model-free state workflow"):
+def run(args, *, workbench=None, journey=None, extra_env=None, ready_check=None, fixture="SYNTHETIC native model-free state workflow"):
     chrome = chrome_path(args.chrome)
     node, pnpm = shutil.which("node"), shutil.which("pnpm")
     if not node or not pnpm:
@@ -122,6 +122,8 @@ def run(args, *, workbench=None, journey=None, extra_env=None, fixture="SYNTHETI
         backend = start("backend", [sys.executable, "-m", "uvicorn", "control.app:create_app", "--factory",
                           "--app-dir", "services", "--host", "127.0.0.1", "--port", str(backend_port)], ROOT)
         wait_ready(base+"/api/production", backend, {"Authorization": "Bearer "+token})
+        if ready_check is not None:
+            ready_check(Path(env["VOID_WORKBENCH"]))
         editor = start("editor", [pnpm, "dev", "--host", "127.0.0.1", "--port", str(editor_port), "--strictPort"], EDITOR)
         wait_ready(result["editor"]+"/api/production", editor)
         script = out / "journey.mjs"

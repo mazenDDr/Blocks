@@ -1056,3 +1056,28 @@ assertions when other projects have cached nodes. Native store/cache code is unc
 JSONL final native1361 passed/1 skipped/25 deselected558.54s; actual live25, all21
 editor runners, sealed/GC recovery240 files/11DBs/16 browser cases pass. Hosted
 acceptance remains separately recorded in HANDOFF§64.
+
+### SQLite owned schema migrations (ADR0066; Mac accepted, HANDOFF§67)
+
+Nine application-owned schemas now declare transactional version1 adoption and
+application_id; every managed connection guards user_version/ownership/object
+shape before application SQL. Compatible legacy objects/rows remain, missing known
+objects are added, mismatches/future versions refuse. BEGIN IMMEDIATE recheck,
+ordered execute steps and rollback; read-only inventory and explicit offline CLI.
+Native LangGraph/tracker/provider schemas excluded; no cross-version backup repair
+or whole-workbench atomic transaction claim. All eleven agent serving families
+need re-registration because storage source pins change; non-agent prediction
+sources unchanged. Focused/full/live/editor/recovery evidence pending in HANDOFF§65.
+
+Control startup preflights all existing owned schema files before mutations.
+Integrated recovery explicitly constructs compatible version0 headers on stopped
+SYNTHETIC native seed outputs, then verifies exact native row hashes and version1
+before restored browser actions. This is not arbitrary historical-binary coverage.
+SQLite failure tests use native TEMP triggers per connection, preserving real
+transaction rollback without adding forbidden persisted schema objects.
+
+Receipt/reset/fork/history rollback fixtures likewise use real per-connection TEMP
+SQLite triggers; all rollback/restart/competition assertions remain. The backup WAL
+fixture records committed evidence in declared events rather than adding an
+undeclared table to owned metadata; WAL presence and exact recovery checks remain.
+Full native acceptance remains pending until a complete fresh run passes.

@@ -127,16 +127,22 @@ def test_failed_cancelled_and_expired_candidates_never_advance_head(tmp_path, mo
     assert t["status"] == 504 and t["conversationState"] is None and head(rt, rel) == before
 
 
-def test_sqlite_failure_rolls_back_trace_and_checkpoint_together(tmp_path):
+def test_sqlite_failure_rolls_back_trace_and_checkpoint_together(tmp_path, monkeypatch):
     _, rt, v, rel = setup(tmp_path)
     rt.predict("local", "lab", req("ok"))
     before = head(rt, rel)
-    rt.ps.query("CREATE TRIGGER fail_finish BEFORE UPDATE OF trace ON requests BEGIN SELECT RAISE(ABORT, 'forced persistence failure'); END")
+    native_db = rt.ps.db
+    def failing_db():
+        db = native_db()
+        db.execute("CREATE TEMP TRIGGER fail_finish BEFORE UPDATE OF trace ON requests BEGIN SELECT RAISE(ABORT, 'forced persistence failure'); END")
+        assert db.execute("SELECT COUNT(*) FROM sqlite_temp_master WHERE name='fail_finish'").fetchone()[0] == 1
+        return db
+    monkeypatch.setattr(rt.ps, "db", failing_db)
     with pytest.raises(Exception, match="forced persistence failure"):
         rt.predict("local", "lab", req("failed-write"))
     assert head(rt, rel) == before
     assert rt.ps.trace("alice", "failed-write")["available"] is False
-    rt.ps.query("DROP TRIGGER fail_finish")
+    monkeypatch.setattr(rt.ps, "db", native_db)
     restarted = ProductionRuntime(rt.store)
     assert restarted.ps.trace("alice", "failed-write")["error"]["code"] == "E_SERVING_RESTART"
     assert head(restarted, rel) == before
