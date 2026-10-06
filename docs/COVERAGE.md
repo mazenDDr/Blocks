@@ -313,17 +313,17 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 
 | Operation | Graph kind | Native backend | Explain | Dedicated view | Test files mentioning the id |
 |---|---|---|---|---|---|
-| `agent.chat_model` | agent | langgraph | yes | agent | 5 |
+| `agent.chat_model` | agent | langgraph | yes | agent | 6 |
 | `agent.citations` | agent | langgraph | yes | agent | 2 |
 | `agent.embed_text` | agent | langgraph | yes | agent | 2 |
-| `agent.human_interrupt` | agent | langgraph | yes | agent | 3 |
-| `agent.memory_select` | agent | langgraph | yes | agent | 1 |
-| `agent.memory_write` | agent | langgraph | yes | agent | 2 |
-| `agent.prompt` | agent | langgraph | yes | agent | 6 |
-| `agent.retrieve` | agent | langgraph | yes | agent | 4 |
-| `agent.set_state` | agent | langgraph | yes | agent | 9 |
-| `agent.structured_output` | agent | langgraph | yes | agent | 3 |
-| `agent.tool_call` | agent | langgraph | yes | agent | 5 |
+| `agent.human_interrupt` | agent | langgraph | yes | agent | 4 |
+| `agent.memory_select` | agent | langgraph | yes | agent | 2 |
+| `agent.memory_write` | agent | langgraph | yes | agent | 3 |
+| `agent.prompt` | agent | langgraph | yes | agent | 7 |
+| `agent.retrieve` | agent | langgraph | yes | agent | 5 |
+| `agent.set_state` | agent | langgraph | yes | agent | 10 |
+| `agent.structured_output` | agent | langgraph | yes | agent | 4 |
+| `agent.tool_call` | agent | langgraph | yes | agent | 6 |
 | `domain.audio_features` | domain | python | yes | audio_features | 1 |
 | `domain.audio_resample` | domain | python | yes | audio_data | 1 |
 | `domain.audio_source` | domain | python | yes | audio_data | 2 |

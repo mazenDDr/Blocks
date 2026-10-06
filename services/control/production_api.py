@@ -98,6 +98,12 @@ def register(app: FastAPI, sv):
                 if agent_node:
                     candidates.append({"runId": row["id"], "node": agent_node, "pipelineSha256": None,
                                        "graphHash": row["graph_hash"], "adapter": "agent", "family": "agent_turn"})
+                from production import context_agent_adapter
+                context_node = context_agent_adapter.is_candidate(sv.store, row)
+                if context_node:
+                    context_name = next(name for name, node in context_agent_adapter.NODES.items() if node == context_node)
+                    candidates.append({"runId": row["id"], "node": context_node, "pipelineSha256": None,
+                                       "graphHash": row["graph_hash"], "adapter": context_name, "family": "agent_json" if context_name.endswith("_json") else "agent_turn"})
                 from production import approval_adapter
                 approval_node = approval_adapter.is_candidate(sv.store, row)
                 if approval_node:
@@ -132,7 +138,7 @@ def register(app: FastAPI, sv):
                 "capabilities": {"adapter": "native scikit-learn tabular pipeline; native PyTorch vision/NLP/speech domain models (1-4 records per request); PyTorch model-graph image classifiers (1-32 images); greedy DQN policies (1-256 observations); k-means / Gaussian mixture / PCA (1-128 rows)", "targets": ["local", "staging"], "replicas": 1,
                                  "mode": "real native serving in this local FastAPI process; Ollama model device managed by its runtime; staging is a separate local route",
                                  "remoteDeployment": "not implemented: no infrastructure configured", "batch": "bounded synchronous batch",
-                                 "streaming": "agent SSE: provisional token deltas followed by the authoritative trace", "agent": "isolated native LangGraph text or schema-validated JSON turns; local Ollama pinned by installed digest/runtime; bounded native persistent text conversations; bounded pure calculator turns and pinned retrieval; committed human approval checkpoints; no file tools or memory effects",
+                                 "streaming": "agent SSE: provisional token deltas followed by the authoritative trace", "agent": "isolated native LangGraph text or schema-validated JSON turns; local Ollama pinned by installed digest/runtime; bounded native persistent text conversations; bounded pure calculator turns and pinned retrieval; committed human approval checkpoints; retrieval combined with conversations/JSON; bounded native short-term memory policies; no file tools or long-term memory writes",
                                  "session": "optional durable per-release/user/session counter for other families; conversation graphs require explicit sessions; stateless graphs keep stateless mode",
                                  "authentication": "single-user local workbench; user/session fields are caller-declared identities, not authentication",
                                  "limits": "latest 100 records per family / 100 lifecycle events; full source lineage stays in CAS"}}

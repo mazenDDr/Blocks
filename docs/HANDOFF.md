@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §59 — CODEX HANDOFF (start here).** §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §63 — CLAUDE CODE HANDOFF (start here); §59 retains the requested build order.** §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1990,3 +1990,266 @@ additional polling; actual owned Chrome confirms controls and native decisions.
 Next priority is §59 item3: retrieval with conversation/JSON output and bounded
 memory policies in releases. Approval file effects (`write_note`) remain unsupported;
 this scope implements committed human approval machinery, not an external effect ledger.
+
+Approval hosted [37428152049](https://github.com/mazenDDr/project-void/actions/runs/37428152049)
+for full SHA `539f62e6940cb0c6c08ce08a4feb270437576520`: browser job112152463686
+**success**, completed2026-10-06T07:22:53Z, including layout-groups fix and integrated
+paused approval recovery. Native job112152463991 still in progress at observation;
+overall hosted acceptance remains pending. Checked with `gh run list --commit
+539f62e6940cb0c6c08ce08a4feb270437576520 --json databaseId,status,conclusion,url` and
+`gh run view 37428152049 --json status,conclusion,jobs`.
+
+Approval hosted **37428152049 completed success** for
+`539f62e6940cb0c6c08ce08a4feb270437576520`, updated2026-10-06T07:34:28Z:
+verify job112152463991 success (completed07:34:27Z), browser job112152463686
+success (completed07:22:53Z). Linux verifies the layout-groups repair and native
+approval seed/restored recovery. Native evidence downloaded to
+`/private/tmp/void-approval-hosted-native-evidence`; job log
+`/private/tmp/void-approval-hosted-native-job.log`. Both jobs are finished; next
+scope push can proceed after its own full local verification.
+
+## 62. Pinned context conversations and short-term policies — Codex continuation, 2026-10-06
+
+§59 item3: new context execution module, four text/JSON stateless/conversation
+candidates, native pinned retrieval and bounded short-term memory_select/write.
+ADR0064, README/CAPABILITIES, SYNTHETIC model-free/actual Ollama JSON examples,
+recorded editor policy inspection and owned context journey/recovery added.
+Existing pinned execution module bytes remain unchanged; stateless agent_json
+shared integration pins need re-registration. Long-term reads/writes, model summaries,
+external effects, tools and approval combinations remain refused.
+
+Focused native **19 passed**,5.32s `/private/tmp/void-context-focused-1.log`; actual
+live **4 passed**,11.15s `/private/tmp/void-context-live-focused-1.log`. Model-free
+owned editor journey **passed**9.54s `/private/tmp/void-context-editor-1`, empty
+runtime/API/console error arrays and owned groups stopped. First JSON browser run
+failed solely at a new runner assertion using `.length` on native context maps;
+corrected to `Object.keys(...).length`, preserving nonempty application/retrieval
+checks. Evidence retained `/private/tmp/void-context-json-editor-1`; rerun pending.
+Full native, all editor journeys, actual live suite and integrated recovery pending.
+
+Context follow-up: corrected JSON browser **passed**12.08s
+`/private/tmp/void-context-json-editor-2`. All **20** editor runners pass on current
+code `/private/tmp/void-context-regressions-final`, empty runtime/API/console arrays.
+Node **50 passed / 0 failed**273.77ms (initial `pnpm ... test` was invalid: no script;
+used the repository's `node --test apps/editor/tests/*.test.mjs`), build/typecheck
+pass with existing bundle warning, coverage regenerated/current. First full native
+run began before coverage regeneration, so the ledger check failed; repaired ledger
+check **1 passed**2.55s `/private/tmp/void-context-coverage-repaired.log`. Full native
+acceptance requires a fresh run after this check completes; its failed evidence is
+retained `/private/tmp/void-context-native-final.log`.
+
+Full actual live **25 passed / 1339 deselected**34.23s
+`/private/tmp/void-context-live-final.log`. Integrated baseline + trackers + plain
+JSON + calculator + approval + both context modes + cache + zero-grace GC + sealed
+recovery **passed** after physical source deletion, **207 files / 11 SQLite DBs**,
+`/private/tmp/void-context-recovery-final/recovery.json`; all14 browser evidence files
+have empty error arrays. Exact source/trace/END checkpoint/monitor comparison precedes
+native continued turns. Restored JSON context screenshot visually inspected at
+`context-json-check/recovered-policy-2.png`. Audit confirms all17 execution source
+hashes in the committed 6f63e09 fixture remain unchanged. No long-term/effect claims.
+
+## 63. Claude Code handoff — start here (2026-10-06)
+
+The user asked to preserve all work for Claude Code before Codex reaches its limit.
+At this handoff preparation the account's weekly window was94% used (5-hour56%).
+This is a continuation, not a completed VISION/build. Work in
+`/Users/mazenkhaled/project-void`; master, no extra worktree, no dependency installs,
+no domain retraining, no background automation. Read this section fully, then §59
+(the original requested order and conventions), §60–62, CAPABILITIES and
+ADR0062/0063/0064 plus ADR0060/0061 and the ADRs those cite.
+
+### Completed and published before the current scope
+
+- Original head `6f63e09ab1aea7b76d6a1c0f31214f86adfbe3e9`: first action was
+  `gh run list` as requested; full-SHA query resolves hosted37419343709, **success**,
+  completed2026-10-06T05:52:50Z. Result recorded in §59. Short SHA queries returned
+  no rows; always resolve/use a full SHA for `gh run list --commit`.
+- §59 item1, **2a58545c36335cfedbf6dd889b8422ba45689bd7**: new
+  `tools_agent_adapter.py`, bounded effect-free calculator/tool budget + optional
+  pinned retrieval; runtime/API/editor integration; SYNTHETIC example; native/live,
+  browser and recovery tests; ADR0062 + README/CAP/HANDOFF/coverage updates.
+  Native1300 passed/1 skipped/20 deselected, live20 passed, all18 owned editor
+  journeys, integrated recovery147 files/10DBs. Hosted37425641129 **failure overall**:
+  native verify success, browser failed solely at existing layout-groups frame
+  selection after reload. Calculator and seeded/restored recovery passed there;
+  do not rewrite that failed run as accepted. Evidence/repair details §60–61.
+- §59 item2, **539f62e6940cb0c6c08ce08a4feb270437576520**: new
+  `approval_adapter/store/requests/monitor.py`, `control/approval_api.py`,
+  `ApprovalReview.tsx`. Actual native paused checkpoint and pending writes persist;
+  HTTP202 commits no final prediction; reviewed release/revision/SHA/interrupt
+  approve/reject/edit resumes through native Command without repeating prior calls.
+  One interrupt, acyclic one-active-path graph, no fixed parallel forks/joins;
+  budgets carry over pause (human wait excluded). No file effects/write_note.
+  Source must have genuinely reached END after research review. Warmup privately
+  pauses, no fabricated decision/live head. Scope/privacy/CAS/replay/monitor/reset
+  limits in ADR0063. Tests include actual SIGKILL restart. Native1319/1skip/21deselect,
+  live21, all19 editor journeys, sealed recovery169 files/11DBs. Browser geometry
+  runner repair preserves exact three-card selection/member movement/Undo checks.
+  Hosted **37428152049 SUCCESS**, both Linux jobs, completed07:34:28Z; native
+ 1319 passed/1 skipped/21 deselected,1941 warnings,1140.48s. Hosted native JUnit
+  `/private/tmp/void-approval-hosted-native-evidence`, raw job log
+  `/private/tmp/void-approval-hosted-native-job.log`.
+
+### Current scope: §59 item3 (implementation exists; final native verification pending here)
+
+New `python/production/context_agent_adapter.py` serves four candidates:
+`agent_context`/`__agent_context_graph__`,
+`conversation_context`/`__agent_context_conversation__`,
+`agent_context_json`/`__agent_context_json__`,
+`conversation_context_json`/`__agent_context_json_conversation__`.
+Thread fields determine conversation; structured_output determines JSON. Native
+prompt/set_state/retrieve/memory_select/direct short-term memory_write, <=1 local
+Ollama chat OR structured output. Require retrieval or a memory policy. 0–2 exact
+source-used ADR0060 index snapshots, k<=8; no document reread/index rebuild. 0–2
+used policies, 1–6 native stages beginning with exactly one short_term retrieve,
+k<=8; messages keep_last_n<=8; lexical local_hash<=512 dimensions; extractive
+summaries<=2000 only. No long-term reads/writes, global/research-memory copy, tools,
+interrupt combinations, file effects or hidden model summaries. ADR0023 bounds
+plus128KiB policy application evidence. Submit records are immutable trace inputs;
+native nodes keep their declared state-write semantics. JSON validation/actual
+attempt evidence occurs before an END checkpoint can commit.
+
+Each turn owns a private ArtifactStore/MemoryStore/InMemorySaver. Native serde
+restores successful END conversation state; existing per-session serialization,
+CAS, cancellation/deadline, idempotency, reset/fork/history and isolated captured
+parent replay are reused. Captured traces include native memory applications and
+per-record/stage decisions, exact sent model context and retrieved source segments.
+Capture-off traces keep hashes/usage/retrieval/policy summaries; private native
+checkpoint state still persists. Existing execution source bytes are unchanged
+(all17 hashes in `tests/fixtures/serving_sources_6f63e09.json` audited identical).
+**Stateless agent_json pins shared runtime/API/monitor and needs re-registration**;
+other plain/conversation/JSON-conversation/retrieval/calculator/approval/non-agent
+execution identities remain unchanged. No new dependencies/schema/training changes.
+
+Changed integration: `python/production/runtime.py` family/dispatch lists,
+`monitor.py` JSON family detection, `services/control/production_api.py` candidates
+and capabilities; editor `ProductionWorkspace.tsx` shared family lists/mode and
+JSON labels, plus new `ContextTurnEvidence.tsx` recorded retrieval/policy section.
+New examples/generator: `make_context_serving_fixture.py`, `serving_context` and
+`serving_context_json` project/ui files, labelled SYNTHETIC `fixtures/context_notes`.
+The text example is zero-model; JSON uses actual installed qwen3.5:2b.
+New tests `test_production_context.py` and `_live.py`; owned
+`editor_context_agent_smoke.py` + `smoke/contextAgent.mjs` with explicit `--json`;
+`recovery_smoke.py` adds `--context-agent` and `--context-json`. CI integrates the
+zero-model context seed/restored journey and uploads its evidence. ADR0064,
+README/CAPABILITIES/HANDOFF/COVERAGE updated; docs ADR0063 records hosted approval
+success. No item3 code commit yet at this snapshot; inspect `git status`/`git log`
+and read the final acceptance addendum below before deciding what remains.
+
+Evidence already completed on current execution code:
+
+- Focused native19 passed5.32s `/private/tmp/void-context-focused-1.log`.
+  Six text-mode combinations, native independent state, restart/isolation,
+  deleted documents/index, concurrent turns, capture-off, HTTP parent replay,
+  independent labels/monitor and scope refusals.
+- Actual local Ollama focused4 passed11.15s
+  `/private/tmp/void-context-live-focused-1.log`: stateless/conversation x text/JSON.
+  Full actual live **25 passed/1339 deselected34.23s**
+  `/private/tmp/void-context-live-final.log`. No model downloads/fixture substitution.
+- Owned model-free browser9.54s `/private/tmp/void-context-editor-1`; actual JSON
+  browser12.08s `/private/tmp/void-context-json-editor-2`. Both passed, empty
+  runtime/API/console errors, owned process groups stopped. First JSON run retained
+  `/private/tmp/void-context-json-editor-1`: new test used `.length` on native context
+  maps; corrected `Object.keys(...).length`, preserving actual nonempty assertions.
+- **All20** `tools/editor_*_smoke.py` runners passed, audited empty error arrays
+  and cleanup of all3 owned groups, `/private/tmp/void-context-regressions-final`.
+  Node50 pass/0 fail273.77ms (`node --test apps/editor/tests/*.test.mjs`);
+  build/typecheck/coverage/diff passed, existing large-bundle warning retained.
+  There is no pnpm test script; an initial attempted command failed and was corrected.
+- Integrated baseline+tracker+plain JSON+calculator+approval+both context modes+
+  cache+zero-grace GC+sealed recovery **passed**, **207 files/11DBs**, physically
+  deleted source workbench, `/private/tmp/void-context-recovery-final/recovery.json`.
+  All14 browser evidence files empty error arrays. Exact source/trace/checkpoint/
+  monitor before continued native turns; restored JSON-context screenshot inspected.
+  External datasets/services/credentials/env and absolute path portability limits
+  remain as documented by recovery. No corpus portability/semantic benchmark claim.
+- First full native `/private/tmp/void-context-native-final.log` completed:
+  **1 failed/1337 passed/1 skipped/25 deselected**,1941 warnings,545.87s. Only failure
+  `test_backend_api.py::test_coverage_endpoint_serves_the_generated_ledger`: suite
+  started before coverage was regenerated. Repaired ledger check1 passed2.55s
+  `/private/tmp/void-context-coverage-repaired.log`. This is **not full acceptance**.
+- Fresh full native after regeneration is running with output
+  `/private/tmp/void-context-native-final2.log`, JUnit
+  `/private/tmp/void-context-native-final2.xml`; owned PID31825 belonged to the
+  first completed run, **do not use that stale PID**. Inspect processes/log/file
+  and only report actual completion. The final acceptance addendum will supersede
+  this pending snapshot if Codex finishes the run before handing over.
+
+### Next work, in order
+
+1. Finish item3 full native acceptance. If successful update ADR0064 status,
+   README/CAPABILITIES/§62 with exact evidence; commit all item3 work, push only
+   after previous hosted CI is finished (approval now is). Check its hosted result
+   with `gh run list --commit $(git rev-parse HEAD)` and record actual status/run
+   URL. CI uses concurrency cancellation: **do not push a new code scope while
+   the previous run is still running**. Do not use a skip-CI docs head containing
+   a new code push. Hosted Ollama tests remain Mac-only; distinguish the two.
+2. §59 item4 JSONL: only researched/prototyped, **not integrated/accepted**.
+   Durable unintegrated prototype `docs/drafts/jsonl-source-prototype.py.txt`
+   (also `/private/tmp/void-jsonl_source.py`). New intended operation module
+   `python/operations/jsonl_source.py`, register via operations/__init__.py; do
+   not edit `operations/tabular_ops.py`/`tabular/core.py`/`production/pipeline.py`
+   (pinned by existing tabular models). Prototype uses standard json + existing
+   pandas, flat UTF-8 object per nonblank LF line, duplicate/nonfinite/nested/
+   malformed/surrogate/unsafe-integer refusals, stable nonblank record row IDs,
+   first-seen columns, native pandas dtype inference, byte hash of entire source;
+   bound50MB/200000records/256columns/2M cells/1MB record; no sampled validation.
+   Tested manually in a separate process, not a committed verification suite.
+   It deliberately splits LF bytes (not Unicode separators inside JSON strings).
+   Review contract before adopting; no dependency addition required.
+   Integration points already identified: tabular/cache.py SOURCE_TYPES and
+   IMPLEMENTATION_FILES; worker/tabular_run.py source_recorded; connections_api.py
+   export_bundle localFiles; scale/remote.py allowlist/snapshot mappings/materialize
+   `.jsonl` suffix; extensions/packages.py embedded local source resources (8MiB),
+   scale API/UI CSV-only copy; registry_meta.py title/category and editor util/empty
+   graph copy. Old includeCsv API field requires a deliberate compatibility choice
+   if package checkbox now includes JSONL. Existing fitted-pipeline capture already
+   handles a generic inputless table source; its execution source need not change.
+   Add ADR0065, README/CAP/coverage, actual JSONL native cache/source-change/pipeline/
+   bundle/package/real separate loopback worker tests. Useful test helpers:
+   `test_node_cache.run/outputs`, `test_scale.real_worker`, `tabular_helpers`,
+   `test_tabular_api` submit/wait/inspect. Add SYNTHETIC JSONL example/new owned
+   browser+recovery journey; full native/live/all editor/recovery verification.
+3. §59 item5 GPU: Tailscale was stopped at original handoff. Read gpu-box skill,
+   check actual current connectivity, request user starts Tailscale if still blocked.
+   Never claim GPU coverage from Mac or choose/install/train on a device implicitly.
+   Neither training nor serving currently exposes device choice. Full context scope
+   live calls use Ollama-managed placement with no hardware-utilization/cost claim.
+4. §59 item6 explicit SQLite user_version migrations + downgrade guard; currently
+   CREATE IF NOT EXISTS, no accepted migration contract. No schema code started.
+   Inventory application-owned databases separately from native LangGraph/Ollama/
+   tracker schemas. Preserve old pinned store/execution identities or document the
+   precise compatibility/reregistration consequence if changing them.
+5. §59 item7 broader RL beyond DQN, Keras/JAX training, provider credentials,
+   cloud/distributed/accessibility — outside the completed scopes, not implemented.
+
+### Working conventions for Claude
+
+New serving semantics in new modules, explicit ADR and README/CAP update per scope;
+no source graph pruning/rewrites to pretend support. Real native execution and actual
+provider evidence; SYNTHETIC examples labelled. Full verification includes **baseline**
+editor_smoke.py, every editor_*_smoke.py and integrated recovery. Repository-owned
+Puppeteer tests are isolated software tests with owned ports/Chrome/process groups;
+never manipulate personal browser tabs or kill unrelated processes. Evidence output
+outside repository, no secret logging; preserve failures and report limits precisely.
+Use `.venv/bin/python`/pytest, existing installed node/pnpm/Chrome; don't invent a
+pnpm test script. No subagents were used; the user did not authorize delegation.
+Nothing was marked as a completed goal; no goal or schedule was created. Keep the
+next handoff current before any assistant limit is exhausted.
+
+Latest user steering: **continue until the weekly usage reaches99%, then leave the
+Claude Code handoff current**. The94% figure above is the preparation snapshot,
+not authorization to stop at94%. Keep doing the ordered build in the meantime.
+
+
+### Final item3 local acceptance addendum (supersedes §63 pending snapshot)
+
+Fresh full native **1338 passed / 1 skipped / 25 deselected**,525.19s,1941 retained
+warnings, `/private/tmp/void-context-native-final2.log` and `.xml`; no running native
+suite remains. Final code is locally accepted in ADR0064. Full live25, all20 editor
+runners plus explicit real JSON context journey, build/typecheck/Node50/coverage/diff,
+sealed/GC integrated recovery207 files/11DBs are complete as recorded above.
+Approval hosted native evidence confirms1319/1skip/21deselect1140.48s, both jobs
+success. Item3 code commit/push and its hosted result are recorded immediately below;
+Claude must use this addendum instead of rerunning a supposedly still-pending suite.
+Next implementation work is item4 JSONL, with the preserved draft only.

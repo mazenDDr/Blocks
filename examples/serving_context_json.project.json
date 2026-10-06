@@ -1,0 +1,354 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "tick",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "turns",
+            "kind": "increment",
+            "by": 1
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "find",
+      "type": "agent.retrieve",
+      "version": "1.0.0",
+      "config": {
+        "index": "notes",
+        "query": "{question}",
+        "k": 1,
+        "output_field": "docs"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "remember",
+      "type": "agent.memory_write",
+      "version": "1.0.0",
+      "config": {
+        "target": "short_term",
+        "mode": "direct",
+        "field": "history",
+        "text": "{question}",
+        "role": "user"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "select",
+      "type": "agent.memory_select",
+      "version": "1.0.0",
+      "config": {
+        "policy": "recent",
+        "short_term_field": "history",
+        "output_field": "selected"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "prompt",
+      "type": "agent.prompt",
+      "version": "1.0.0",
+      "config": {
+        "output_field": "messages",
+        "items": [
+          {
+            "kind": "template",
+            "role": "system",
+            "template": "Extract colour and count from the retrieved SYNTHETIC record. Use only the declared JSON schema."
+          },
+          {
+            "kind": "documents",
+            "role": "system",
+            "field": "docs",
+            "header": "Retrieved record:",
+            "template": "{text}"
+          },
+          {
+            "kind": "memory",
+            "role": "system",
+            "field": "selected",
+            "header": "Recent questions:",
+            "template": "{text}"
+          },
+          {
+            "kind": "template",
+            "role": "user",
+            "template": "{question}"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "model",
+      "type": "agent.structured_output",
+      "version": "1.0.0",
+      "config": {
+        "messages_field": "messages",
+        "output_field": "result",
+        "model": {
+          "provider": "ollama",
+          "model": "qwen3.5:2b",
+          "think": false,
+          "max_tokens": 96,
+          "timeout_s": 20,
+          "temperature": 0,
+          "seed": 0
+        },
+        "schema_fields": [
+          {
+            "name": "colour",
+            "type": "enum",
+            "choices": [
+              "red",
+              "blue"
+            ]
+          },
+          {
+            "name": "count",
+            "type": "integer"
+          }
+        ],
+        "retry": {
+          "maxRetries": 0,
+          "feedback": true
+        },
+        "on_failure": "fail"
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "START__tick",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "tick",
+        "port": "in"
+      }
+    },
+    {
+      "id": "tick__find",
+      "kind": "control",
+      "from": {
+        "node": "tick",
+        "port": "out"
+      },
+      "to": {
+        "node": "find",
+        "port": "in"
+      }
+    },
+    {
+      "id": "find__remember",
+      "kind": "control",
+      "from": {
+        "node": "find",
+        "port": "out"
+      },
+      "to": {
+        "node": "remember",
+        "port": "in"
+      }
+    },
+    {
+      "id": "remember__select",
+      "kind": "control",
+      "from": {
+        "node": "remember",
+        "port": "out"
+      },
+      "to": {
+        "node": "select",
+        "port": "in"
+      }
+    },
+    {
+      "id": "select__prompt",
+      "kind": "control",
+      "from": {
+        "node": "select",
+        "port": "out"
+      },
+      "to": {
+        "node": "prompt",
+        "port": "in"
+      }
+    },
+    {
+      "id": "prompt__model",
+      "kind": "control",
+      "from": {
+        "node": "prompt",
+        "port": "out"
+      },
+      "to": {
+        "node": "model",
+        "port": "in"
+      }
+    },
+    {
+      "id": "model__END",
+      "kind": "control",
+      "from": {
+        "node": "model",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "question",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "docs",
+        "type": "documents",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "turns",
+        "type": "integer",
+        "reducer": {
+          "kind": "add"
+        },
+        "scope": "thread",
+        "description": "",
+        "default": 0
+      },
+      {
+        "name": "history",
+        "type": "messages",
+        "reducer": {
+          "kind": "keep_last_n",
+          "n": 3
+        },
+        "scope": "thread",
+        "description": "",
+        "default": []
+      },
+      {
+        "name": "selected",
+        "type": "records",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "messages",
+        "type": "messages",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "result",
+        "type": "object",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "properties": {
+          "colour": "text",
+          "count": "integer"
+        }
+      }
+    ],
+    "indexes": [
+      {
+        "id": "notes",
+        "loader": {
+          "directory": "examples/fixtures/context_notes",
+          "glob": "*.txt"
+        },
+        "splitter": {
+          "strategy": "paragraph",
+          "chunkSize": 200,
+          "chunkOverlap": 0
+        },
+        "embeddings": {
+          "provider": "local_hash",
+          "dimension": 256,
+          "normalize": true
+        }
+      }
+    ],
+    "policies": [
+      {
+        "id": "recent",
+        "query": "{question}",
+        "embeddings": {
+          "provider": "local_hash",
+          "dimension": 64
+        },
+        "stages": [
+          {
+            "id": "take",
+            "op": "retrieve",
+            "config": {
+              "sources": [
+                "short_term"
+              ],
+              "method": "recency",
+              "k": 2
+            }
+          },
+          {
+            "id": "dedupe",
+            "op": "dedupe",
+            "config": {
+              "method": "exact_text"
+            }
+          },
+          {
+            "id": "budget",
+            "op": "budget",
+            "config": {
+              "max_tokens": 128,
+              "order": "chronological"
+            }
+          }
+        ]
+      }
+    ],
+    "limits": {
+      "maxSteps": 12,
+      "maxSeconds": 30,
+      "maxModelCalls": 1,
+      "maxTokens": 4096
+    }
+  }
+}

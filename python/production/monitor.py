@@ -228,7 +228,8 @@ def agent_monitoring(runtime, release, version, pipeline, traces):
     from .pipeline import read_verified
     warm = json.loads(read_verified(runtime.store, release["compatibility"]["warmupResultSha256"]))
     preds = [p for t in ok for p in t["result"]["predictions"]]
-    json_output = version.get("adapter") in ("agent_json", "conversation_json")
+    from .runtime import JSON_ADAPTERS
+    json_output = version.get("adapter") in JSON_ADAPTERS
     canonical = lambda value: json.dumps(value, sort_keys=True, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
     output_size = lambda value: len(canonical(value).encode()) if json_output else len(value)
     output_drift = distribution_compare([output_size(p) for p in warm["predictions"]], [output_size(p) for p in preds])

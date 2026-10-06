@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {},
+  "synthetic": true,
+  "description": "SYNTHETIC pinned retrieval and bounded short-term conversation. Local hash is lexical hashing. Zero model calls; deterministic teaching output.",
+  "defaultInput": {
+    "question": "SYNTHETIC source: read the record."
+  }
+}

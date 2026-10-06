@@ -1145,3 +1145,52 @@ All `tools/editor_*_smoke.py` runners were executed with evidence under
 stable frame geometry before the real selection click after reload; selection,
 member movement, exact saved layout and Undo checks are retained. Hosted failure
 and final acceptance are recorded in HANDOFF§61.
+
+## Serving retrieval and short-term memory conversations
+
+Open SYNTHETIC `serving_context` for a model-free conversation, or
+`serving_context_json` for actual installed local Ollama JSON extraction. Run the
+source to END, register its context candidate, preview the native warmup and deploy.
+Requests retain thread state and bounded short-term history. **Inspect conversation
+checkpoint** shows the native state. Recorded requests show pinned chunk IDs/scores,
+embedding identity and policy application stages/decisions, alongside exact sent
+model context when capture is enabled. Replay uses the captured parent checkpoint
+without advancing the session. Reference source inputs are not ground truth.
+
+Four adapters support stateless/conversation and text/JSON modes, with 0–2 pinned
+indexes and 0–2 bounded short-term policies; at least one retrieve or memory_select
+is required. `keep_last_n<=8`, retrieve k<=8, extractive summaries only, local hash
+policy embeddings are lexical hashing. No long-term memory/effect/tool/approval
+combinations are served. JSON remains schema validation, not semantic correctness.
+See [ADR0064](docs/adr/0064-pinned-context-conversations.md). Earlier execution
+identities remain unchanged; shared integration pins require stateless agent_json
+re-registration.
+
+```sh
+.venv/bin/pytest -q tests/test_production_context.py
+.venv/bin/pytest -q -m live tests/test_production_context_live.py
+.venv/bin/python tools/editor_context_agent_smoke.py --output /private/tmp/void-context-editor-1
+.venv/bin/python tools/editor_context_agent_smoke.py --json --output /private/tmp/void-context-json-editor-2
+.venv/bin/python tools/recovery_smoke.py --trackers --json-agent --tools-agent --approval-agent --context-agent --context-json --cache-retention --gc --sealed --output /private/tmp/void-context-recovery-final
+```
+
+The JSON mode requires installed `qwen3.5:2b`; no provider substitution/download.
+Hosted CI runs the zero-model context journey through integrated recovery. Full
+native/live/editor/recovery acceptance and exact evidence are recorded in HANDOFF§62.
+
+
+Full context acceptance commands actually run (evidence in HANDOFF§62/63):
+
+```sh
+.venv/bin/pytest -q -o faulthandler_timeout=240 --junitxml=/private/tmp/void-context-native-final2.xml
+.venv/bin/pytest -q -m live
+node --test apps/editor/tests/*.test.mjs
+pnpm -C apps/editor typecheck
+pnpm -C apps/editor build
+.venv/bin/python -m backends.coverage --write
+.venv/bin/python -m backends.coverage --check
+```
+
+All20 editor runners passed with evidence at `/private/tmp/void-context-regressions-final`;
+full native1338/1skip/25deselect, live25, sealed recovery207 files/11DBs. Retained
+failed first ledger/JSON browser checks and separate hosted outcomes are in HANDOFF.

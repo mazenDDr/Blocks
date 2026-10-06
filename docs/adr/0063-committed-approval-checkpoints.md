@@ -66,3 +66,7 @@ now waits for stable frame geometry after opening the arrangement panel, and
 clicks within the header. Exact three-card selection/geometry/Undo assertions remain.
 The observed failure and repair evidence are recorded separately in HANDOFF§61;
 layout timing is an inference until hosted verification of this fix.
+
+Hosted approval commit539f62e run37428152049 completed success on Linux, both jobs,
+2026-10-06T07:34:28Z. Layout-groups repair and approval recovery passed there;
+the precise cause of the earlier geometry timing failure remains an inference.

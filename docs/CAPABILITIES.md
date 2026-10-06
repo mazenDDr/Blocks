@@ -1004,3 +1004,26 @@ exact restored paused checkpoint. Hosted outcome is recorded separately in HANDO
 JSON/memory combination, fixed parallel forks/joins, repeated interrupts, arbitrary edit values, distributed
 ownership or exactly-once effect claim. Existing execution adapters unchanged;
 stateless `agent_json` needs re-registration after shared integration updates.
+
+### Pinned retrieval and short-term text/JSON conversations (ADR0064; Mac native/live/editor/recovery verified, HANDOFF§62)
+
+New `agent_context`, `conversation_context`, `agent_context_json`,
+`conversation_context_json` families compose pinned ADR0060 retrieval with native
+END checkpoint turns and bounded short-term policies. 0–2 used indexes, k<=8;
+0–2 used policies, 1–6 native stages, keep_last_n<=8, short_term only, extractive
+summaries only, lexical local hash policy embeddings. Stateless/conversation and
+text/JSON modes follow native state semantics. Captured traces show actual policy
+applications/per-record decisions and retrieved IDs/scores/provider identity;
+exact sent model contexts retain retrieved/memory provenance. Full trace capture
+is optional; native checkpoint state persists. Parent replay does not advance state;
+monitoring counts committed model calls and independent string/JSON agreement.
+
+Full native1338 passed/1 skipped/25 deselected; actual installed Ollama live25
+passed (focused4 includes all four model modes); all20 editor runners plus explicit
+JSON context journey and integrated sealed recovery207 files/11DBs pass. Hosted
+acceptance is recorded separately in HANDOFF§62/63. No new
+dependencies or changes to previous pinned execution files; shared stateless
+agent_json integration pins need re-registration. No long-term memory reads/writes,
+model summaries, tools, approval combinations, remote providers or quality benchmark.
+Earlier unsupported-combination statements above describe the earlier families;
+these new context adapters establish only the bounded composition in ADR0064.

@@ -1,0 +1,136 @@
+"""Bounded local flat JSONL tables; native pandas objects, no additional dependency."""
+from __future__ import annotations
+
+import json
+import math
+from functools import lru_cache
+
+import pandas as pd
+from pydantic import Field
+
+from graph_core.registry import register
+from graph_core.types import Fix, OpError
+from tabular.core import TABLE, ExecutionError, Table, TabularOperation, resolve_path, schema_of, sha256_bytes, table_type
+from operations._common import StrictConfig
+from operations.tabular_ops import sample_rows
+
+MAX_BYTES = 50_000_000
+MAX_RECORD_BYTES = 1_000_000
+MAX_ROWS = 200_000
+MAX_COLUMNS = 256
+MAX_CELLS = 2_000_000
+MAX_INTEGER = 2**53 - 1  # exact even when pandas promotes a nullable/mixed numeric column to float
+
+
+class JsonlSourceConfig(StrictConfig):
+    path: str = Field('', description='Local UTF-8 JSONL file. One flat JSON object per nonblank line; no nested values or nonfinite numbers. Relative paths use the working directory, then repository root.')
+
+
+def _unique(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f'duplicate key {key!r}')
+        result[key] = value
+    return result
+
+
+def _constant(value):
+    raise ValueError(f'nonfinite JSON constant {value}')
+
+
+def parse_bytes(raw: bytes) -> pd.DataFrame:
+    if len(raw) > MAX_BYTES:
+        raise ExecutionError('E_SOURCE_LIMIT', f'JSONL source exceeds {MAX_BYTES} bytes.')
+    records, columns = [], {}
+    # Split on LF bytes, not Unicode line separators that may occur inside a JSON string.
+    for number, line in enumerate(raw.split(b'\n'), 1):
+        if not line.strip(b' \t\r'):
+            continue
+        try:
+            if len(line) > MAX_RECORD_BYTES:
+                raise ValueError(f'record exceeds {MAX_RECORD_BYTES} bytes')
+            record = json.loads(line.decode('utf-8'), object_pairs_hook=_unique, parse_constant=_constant)
+            if not isinstance(record, dict) or not record:
+                raise ValueError('expected a nonempty flat JSON object')
+            for key, value in record.items():
+                if not key or len(key.encode('utf-8')) > 256:
+                    raise ValueError('column names must be nonempty UTF-8 strings of at most 256 bytes')
+                if isinstance(value, (dict, list)):
+                    raise ValueError(f'column {key!r} has a nested object/array; select a flat table explicitly')
+                if isinstance(value, str):
+                    value.encode('utf-8')  # refuse unpaired escaped surrogate code points
+                elif type(value) is int and abs(value) > MAX_INTEGER:
+                    raise ValueError(f'column {key!r} integer is outside +/-{MAX_INTEGER}')
+                elif type(value) is float and not math.isfinite(value):
+                    raise ValueError(f'column {key!r} is nonfinite')
+                columns.setdefault(key, None)
+            if len(columns) > MAX_COLUMNS or len(records) + 1 > MAX_ROWS or (len(records) + 1) * len(columns) > MAX_CELLS:
+                raise ValueError(f'table exceeds {MAX_ROWS} records, {MAX_COLUMNS} columns or {MAX_CELLS} cells')
+        except (ValueError, UnicodeError) as exc:
+            raise ExecutionError('E_JSONL_RECORD', f'JSONL line {number}: {exc}.') from None
+        records.append(record)
+    if not records:
+        raise ExecutionError('E_JSONL_RECORD', 'JSONL source has no nonblank object records.')
+    frame = pd.DataFrame.from_records(records, columns=list(columns))
+    frame.index.name = 'row_id'
+    return frame
+
+
+def _read(path):
+    with path.open('rb') as stream:
+        raw = stream.read(MAX_BYTES + 1)
+    return raw, parse_bytes(raw)
+
+
+@lru_cache(maxsize=8)
+def _static_source(path, mtime_ns, size):
+    from pathlib import Path
+    raw, frame = _read(Path(path))
+    return {'schema': schema_of(frame), 'rows': len(frame), 'sha256': sha256_bytes(raw), 'bytes': len(raw)}
+
+
+def read_source(cfg):
+    path = resolve_path(cfg.path)
+    if not path.is_file():
+        raise ExecutionError('E_SOURCE_NOT_FOUND', f'JSONL file {cfg.path!r} does not exist.')
+    raw, frame = _read(path)
+    return frame, {'path': str(path), 'configuredPath': cfg.path, 'format': 'jsonl', 'sha256': sha256_bytes(raw),
+                   'bytes': len(raw), 'rows': len(frame), 'columns': len(frame.columns)}
+
+
+@register
+class JsonlSource(TabularOperation):
+    type = 'tabular.jsonl_source'
+    backend = 'pandas'
+    inputs = ()
+    outputs = ('table',)
+    out_kinds = {'table': TABLE}
+    Config = JsonlSourceConfig
+    summary_kind = 'source'
+
+    def infer(self, cfg, ins, node_id):
+        if not cfg.path:
+            raise OpError('E_SOURCE_NOT_SET', 'No JSONL file chosen.', None, [Fix("Set 'path' to a local JSONL file")])
+        path = resolve_path(cfg.path)
+        if not path.is_file():
+            raise OpError('E_SOURCE_NOT_FOUND', f'JSONL file {cfg.path!r} was not found.', None, [Fix('Check the path')])
+        try:
+            stat = path.stat()
+            source = _static_source(str(path), stat.st_mtime_ns, stat.st_size)
+        except ExecutionError as exc:
+            raise OpError(exc.code, exc.message) from None
+        except OSError as exc:
+            raise OpError('E_SOURCE_UNREADABLE', f'Cannot read {cfg.path!r}: {exc}.') from None
+        return {'table': table_type(source['schema'], source['rows'], 'full', True, sourceSha256=source['sha256'],
+                                    sourceBytes=source['bytes'], rowsExact=True, sourceNode=node_id)}
+
+    def execute(self, cfg, ins, ctx):
+        frame, provenance = read_source(cfg)
+        table = Table(frame, 'full', {'source': {'node': ctx.node_id, **provenance}})
+        return {'table': table}, {**provenance, 'schema': schema_of(frame), 'preview': sample_rows(frame)}
+
+    def explain(self, cfg, inputs, outputs):
+        return {'equation': 'table = pandas.DataFrame.from_records(strict flat JSONL objects)',
+                'note': 'Whole bounded UTF-8 file validated; LF-delimited blank lines ignored. Missing keys/null become missing values. Columns follow first occurrence; no datetime inference or nested flattening. Source bytes are never modified; SHA-256 covers every original byte.',
+                'rule': 'Row ids are zero-based nonblank record positions. Integers must be within +/- (2^53-1); dataframe dtypes follow pandas inference. At most 50MB / 200000 records / 256 columns / 2000000 cells / 1MB per record.'}

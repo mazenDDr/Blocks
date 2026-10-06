@@ -51,7 +51,7 @@ def run(args):
     try:
         if args.cache_retention:
             import editor_cache_retention_smoke as cache_smoke
-        if args.json_agent:
+        if args.json_agent or args.context_json:
             import editor_json_agent_smoke as json_smoke
             json_smoke.available()
         seed = argparse.Namespace(output=str(out / "seed"), chrome=args.chrome, timeout=args.timeout)
@@ -79,6 +79,17 @@ def run(args):
                 raise RuntimeError("Native approval browser seed failed; no backup taken.")
             extra_env["VOID_APPROVAL_RECOVERY_SEED"] = str(out / "approval-seed/evidence.json")
             result["approvalAgent"] = {"seed": "approval-seed/evidence.json"}
+        context_cases = []
+        for enabled, mode, name in ((args.context_agent, False, "context"), (args.context_json, True, "context-json")):
+            if not enabled:
+                continue
+            context_seed = argparse.Namespace(output=str(out / (name + "-seed")), chrome=args.chrome, timeout=args.timeout)
+            fixture = "SYNTHETIC pinned retrieval and bounded short-term conversation" + ("; actual Ollama JSON" if mode else "; zero model calls")
+            if smoke.run(context_seed, workbench=source, journey=smoke.EDITOR / "smoke/contextAgent.mjs",
+                         extra_env={"VOID_CONTEXT_JSON": "1" if mode else "0"}, fixture=fixture):
+                raise RuntimeError("Native context browser seed failed; no backup taken.")
+            context_cases.append((name, mode, fixture))
+            result[name] = {"seed": name + "-seed/evidence.json"}
         if args.cache_retention:
             cache_smoke.seed(source)
             cache_seed = argparse.Namespace(output=str(out / "cache-seed"), chrome=args.chrome, timeout=args.timeout)
@@ -141,6 +152,14 @@ def run(args):
                          extra_env=extra_env, fixture="SYNTHETIC approval checkpoint source-deletion recovery"):
                 raise RuntimeError("Restored native approval browser failed.")
             result["approvalAgent"]["restored"] = "approval-check/evidence.json"
+        for name, mode, fixture in context_cases:
+            context_check = argparse.Namespace(output=str(out / (name + "-check")), chrome=args.chrome, timeout=args.timeout)
+            context_env = {**extra_env, "VOID_CONTEXT_JSON": "1" if mode else "0",
+                           "VOID_CONTEXT_RECOVERY_SEED": str(out / (name + "-seed/evidence.json"))}
+            if smoke.run(context_check, workbench=out / "recovered", journey=smoke.EDITOR / "smoke/contextAgent.mjs",
+                         extra_env=context_env, fixture=fixture):
+                raise RuntimeError("Restored native context browser failed.")
+            result[name]["restored"] = name + "-check/evidence.json"
         result["status"] = "passed"
     except Exception as error:
         result["error"] = str(error)
@@ -157,6 +176,8 @@ def main():
     parser.add_argument("--trackers", action="store_true", help="Seed real local MLflow/offline W&B; use v2 links with explicit external diagnostic-log omission.")
     parser.add_argument("--cache-retention", action="store_true", help="Also seed actual native cached regression/policy and verify policy/receipts/cache/run artifacts after source deletion.")
     parser.add_argument("--json-agent", action="store_true", help="Also seed/recover a pinned JSON version and invoke real installed local Ollama; fails without the provider, no fixture substitution.")
+    parser.add_argument("--context-agent", action="store_true", help="Seed/recover pinned retrieval and bounded native short-term conversation; zero model calls.")
+    parser.add_argument("--context-json", action="store_true", help="Seed/recover combined retrieval, short-term conversation and actual installed Ollama JSON.")
     parser.add_argument("--approval-agent", action="store_true", help="Also seed a paused approval checkpoint and resume it through the restored editor.")
     parser.add_argument("--tools-agent", action="store_true", help="Also seed/recover pure calculator versions and execute native turns through the editor.")
     parser.add_argument("--gc", action="store_true", help="Inject an old orphan and run offline zero-grace CAS collection on the seeded workbench before backup.")
