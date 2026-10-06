@@ -85,7 +85,10 @@ def register(app: FastAPI, sv):
                 for a in sv.store.artifacts(row["id"], "unsup_pipeline") + sv.store.artifacts(row["id"], "unsup_fitted_pipeline"):
                     candidates.append({"runId": row["id"], "node": a["meta"]["node"], "pipelineSha256": a["sha256"], "graphHash": row["graph_hash"], "adapter": "unsup",
                                        "family": json.loads(sv.store.read_artifact(a["sha256"]))["method"]})
-                from production import rl_adapter
+                from production import rl_adapter, td3_adapter
+                td3_node = td3_adapter.is_candidate(sv.store, row)
+                if td3_node:
+                    candidates.append({"runId": row["id"], "node": td3_node, "pipelineSha256": None, "graphHash": row["graph_hash"], "adapter": "rl_td3", "family": "rl_continuous_policy"})
                 q_node = rl_adapter.is_candidate(sv.store, row)
                 if q_node:
                     candidates.append({"runId": row["id"], "node": q_node, "pipelineSha256": None, "graphHash": row["graph_hash"], "adapter": "rl", "family": "rl_policy"})
@@ -162,6 +165,10 @@ def register(app: FastAPI, sv):
                     "labelNote": "Source run input only. No ground truth is inferred. Supply a schema-valid reference object for canonical JSON agreement; not semantic accuracy." if json_output else "Source run input only. No ground truth is inferred from its response. Supply reference text for exact string agreement; this is not semantic accuracy.",
                     "provenance": {"versionId": vid, "runId": p.manifest["runId"], "referenceSha256": p.manifest["referenceSha256"],
                                    "partition": p.manifest["referencePartition"], "provider": p.manifest["provider"]}}
+        if ps.get("version", vid).get("adapter") == "rl_td3":
+            return {"records": p.reference_records(3), "observedLabels": None, "family": "rl_continuous_policy", "inputContract": p.manifest["inputContract"],
+                    "labelNote": "Observations the run collected. Supply reference action vectors (within the action bounds) only if you have them; agreement is mean absolute error.",
+                    "provenance": {"versionId": vid, "runId": p.manifest["runId"], "referenceSha256": p.manifest["referenceSha256"], "partition": "collected observations"}}
         if ps.get("version", vid).get("adapter") == "unsup":
             return {"records": p.reference_records(3), "observedLabels": None, "family": p.manifest["method"],
                     "inputContract": (f"records: [{{{', '.join(c['name'] + ': ' + c['dtype'] + (' or null' if c['nullable'] else '') for c in p.manifest['inputSchema'])}}}] "
@@ -334,7 +341,11 @@ def register(app: FastAPI, sv):
                 raise ProductionError("E_LABEL_SCHEMA", "External labels are strings or integers, one per record.")
             ps.add_labels(req.user, id_, req.labels)
             return {"recorded": True, "requestId": id_, "rows": len(req.labels)}
-        if adapter == "rl":
+        if adapter == "rl_td3":
+            dim, lo, hi = p.manifest["actionDim"], p.manifest["actionLow"], p.manifest["actionHigh"]
+            valid = all(isinstance(v, list) and len(v) == dim and all(type(x) in (int, float) and math.isfinite(x) and lo[i] <= x <= hi[i] for i, x in enumerate(v))
+                        for v in req.labels)
+        elif adapter == "rl":
             valid = all(type(v) is int and v in classes for v in req.labels)  # booleans are not actions
         elif classes is not None:
             valid = all(v in classes for v in req.labels)

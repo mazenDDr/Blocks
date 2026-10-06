@@ -66,6 +66,13 @@ class ProductionRuntime:
                 if version_id not in self.pipelines:
                     self.pipelines[version_id] = AgentPipeline(self.store, version["manifest"])
                 return self.pipelines[version_id]
+        if version.get("adapter") == "rl_td3":
+            from . import td3_adapter
+            td3_adapter.verify(self.store, version["manifest"])
+            with self.lock:
+                if version_id not in self.pipelines:
+                    self.pipelines[version_id] = td3_adapter.TD3PolicyPipeline(self.store, version["manifest"])
+                return self.pipelines[version_id]
         if version.get("adapter") in ("model", "rl", "unsup", *PORTABLE_ADAPTERS):
             from . import model_adapter, rl_adapter, unsup_adapter
             mod, cls = {"model": (model_adapter, model_adapter.ModelGraphPipeline), "rl": (rl_adapter, rl_adapter.PolicyPipeline),
@@ -133,6 +140,13 @@ class ProductionRuntime:
         refused = refused or [json.loads(self.store.read_artifact(a["sha256"])) for a in self.store.artifacts(req.runId, "unsup_refusal") if a["meta"]["node"] == req.node]
         if not arts and refused:
             raise ProductionError(refused[-1]["code"], refused[-1]["message"])
+        if not arts and not domain and row["config"].get("kind") == "rl":
+            from . import td3_adapter
+            if td3_adapter.is_candidate(self.store, row) == req.node:
+                manifest = td3_adapter.build_manifest(self.store, req.runId, req.node)
+                td3_adapter.TD3PolicyPipeline(self.store, manifest)
+                return self.ps.save("version", {**req.model_dump(), "adapter": "rl_td3", "family": "rl_continuous_policy",
+                                                "pipelineSha256": manifest["checkpointSha256"], "manifest": manifest})
         if not arts and not domain and req.node.split(":", 1)[0] in ("keras", "jax"):
             from . import portable_model_adapter
             manifest = portable_model_adapter.build_manifest(self.store, req.runId, req.node)
@@ -177,7 +191,7 @@ class ProductionRuntime:
             records = p.reference_records()
         elif req.config.sessionMode == "conversation":
             raise ProductionError("E_RELEASE_CONFIG", "Native conversations require a registered conversation graph.")
-        elif v.get("adapter") in ("model", "rl", "unsup", *PORTABLE_ADAPTERS):
+        elif v.get("adapter") in ("model", "rl", "unsup", "rl_td3", *PORTABLE_ADAPTERS):
             records = p.reference_records(1)
         elif domain:
             if req.config.maxBatch > 4:

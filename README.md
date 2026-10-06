@@ -1336,3 +1336,17 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_rl_td3.py
 .venv/bin/python tools/editor_td3_smoke.py --output /private/tmp/void-td3-smoke-2
 ```
+
+## Serving a TD3 policy
+
+A completed TD3 run is listed as a continuous-policy candidate in Production. The
+served endpoint takes `{observation: [...]}` records and returns the deterministic
+actor's bounded actions. Supply reference action vectors as labels to see their mean
+absolute error. See ADR 0069.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_production_td3.py
+.venv/bin/python tools/editor_td3_smoke.py --output /private/tmp/void-td3-smoke-4
+```

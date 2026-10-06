@@ -128,6 +128,45 @@ def model_monitoring(runtime, release, version, pipeline, traces):
                   "interpretation": "Image statistics and predicted-class frequencies are descriptive; quality uses only separately supplied labels; no automatic retraining or rollback."})
 
 
+def td3_monitoring(runtime, release, version, pipeline, traces):
+    """Continuous policy: per-dimension observation and action drift against the frozen reference; MAE against supplied actions (ADR 0069)."""
+    m = pipeline.manifest
+    ok = [t for t in traces if t["status"] == 200]
+    ref = np.asarray(pipeline.reference_observations(), dtype=float)
+    ref_actions = np.asarray(pipeline.predict([{"observation": o} for o in ref.tolist()])[0]["predictions"], dtype=float) if len(ref) else np.zeros((0, m["actionDim"]))
+    cur = np.asarray([r["observation"] for t in ok if t["records"] is not None for r in t["records"]], dtype=float)
+    input_drift = {f"obs[{i}]": distribution_compare(ref[:, i], cur[:, i]) if len(cur) else {
+        "available": False, "reason": "No captured successful inputs; enable capture on a new release to measure input drift."} for i in range(m["observationDim"])}
+    acts = np.asarray([a for t in ok for a in t["result"]["predictions"]], dtype=float)
+    action_drift = {f"action[{i}]": distribution_compare(ref_actions[:, i], acts[:, i]) if len(acts) else {
+        "available": False, "reason": "No successful predictions in this window."} for i in range(m["actionDim"])}
+    labels = {(r["user"], r["request"]): r for r in runtime.ps.query("SELECT * FROM labels")}
+    truth, got, ids = [], [], []
+    for t in ok:
+        row = labels.get((t["user"], t["requestId"]))
+        if row:
+            truth += json.loads(row["labels"]); got += t["result"]["predictions"]
+            ids.append({"user": t["user"], "requestId": t["requestId"], "traceSha256": t["traceSha256"]})
+    q = {"available": bool(truth), "labelledRows": len(truth), "labelledRequests": len(ids), "evidence": ids,
+         "reason": None if truth else "No reference actions have been supplied; agreement is not measured."}
+    if truth:
+        diff = np.abs(np.asarray(truth, float) - np.asarray(got, float))
+        q["values"] = {"actionMeanAbsoluteError": float(diff.mean()), "perDimension": diff.mean(0).tolist(),
+                       "note": "distance to action vectors a person supplied; not environment return (see the run's evaluation report)"}
+    lat = [t["totalMs"] for t in traces if t["totalMs"] is not None]
+    failures = [t for t in traces if t["status"] != 200]
+    return clean({"releaseId": release["id"], "versionId": release["versionId"], "pipelineSha256": release["pipelineSha256"], "family": "rl_continuous_policy",
+                  "mode": "observed local requests", "window": {"recordedRequests": len(traces), "maxRequests": 1000, "order": "newest 1000 requests for this release"},
+                  "health": {"requests": len(traces), "errors": len(failures), "errorFraction": len(failures) / len(traces) if traces else None,
+                             "p50Ms": float(np.percentile(lat, 50)) if lat else None, "p95Ms": float(np.percentile(lat, 95)) if lat else None,
+                             "schemaErrors": sum((t.get("error") or {}).get("code") == "E_REQUEST_SCHEMA" for t in failures)},
+                  "inputDrift": input_drift, "predictionDrift": action_drift, "labelBasedQuality": q,
+                  "reference": {"runId": m["runId"], "partition": "collected observations frozen at registration", "sha256": m["referenceSha256"], "rows": len(ref),
+                                "evaluation": m.get("evaluation")},
+                  "alertEvidence": [{"requestId": t["requestId"], "user": t["user"], "status": t["status"], "traceSha256": t["traceSha256"]} for t in failures[:20]],
+                  "interpretation": "Observation and action distribution changes are descriptive. Policy quality is the run's recorded evaluation."})
+
+
 def rl_monitoring(runtime, release, version, pipeline, traces):
     """Greedy policy: per-dimension observation drift and action frequencies against the frozen replay-buffer reference."""
     m = pipeline.manifest
@@ -280,6 +319,8 @@ def monitoring(runtime, release_id, since=0):
         return agent_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])
     if version.get("adapter") == "unsup":
         return unsup_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])
+    if version.get("adapter") == "rl_td3":
+        return td3_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])
     if version.get("adapter") == "rl":
         return rl_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])
     if version.get("adapter") in ("model", "model_keras", "model_jax"):

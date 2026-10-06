@@ -49,6 +49,18 @@ try{
   await click('Evaluation');await new Promise(r=>setTimeout(r,800));
   await page.screenshot({path:path.join(output,'td3-evaluation.png'),fullPage:true});
   evidence.run={runId,status:final.status,evalTicks:curves.evals.map(e=>e.tick),finalTaskReturn:curves.evals.at(-1).taskReturn};
+  // Serve the trained actor (ADR 0069): register, then inspect the pinned version in the Production workspace.
+  const version=await page.evaluate(async rid=>{const cand=(await (await fetch('/api/production')).json()).candidates.find(c=>c.runId===rid&&c.adapter==='rl_td3');
+    const r=await fetch('/api/production/versions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:rid,node:cand.node,name:'pendulum-td3',owner:'smoke',intendedUse:'SYNTHETIC check',limitations:'600 steps'})});
+    if(!r.ok)throw Error('register '+r.status+' '+await r.text());return r.json();},runId);
+  assert.equal(version.adapter,'rl_td3');
+  await page.reload();await page.waitForFunction(()=>document.querySelector('.rlbar')?.textContent.includes('RL · TD3'));// project load finished; it would otherwise reset the view
+  for(const h of await page.$$('button'))if(await h.evaluate(e=>e.textContent.trim()==='Production')){await h.click();break;}
+  await page.waitForFunction(v=>[...(document.querySelector('select[aria-label="registered version"]')?.options??[])].some(o=>o.value===v),{},version.id);
+  await page.select('select[aria-label="registered version"]',version.id);
+  await page.waitForFunction(()=>document.body.innerText.toLowerCase().includes('final td3 actor'));
+  await page.screenshot({path:path.join(output,'td3-version.png'),fullPage:true});
+  evidence.version={id:version.id,adapter:version.adapter,referenceRows:version.manifest.referenceRows};
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS TD3 example → learner edits saved → native worker run on Pendulum-v1 → curves/evaluation in the editor');

@@ -1095,3 +1095,10 @@ other run kinds, multi-GPU, mixed precision, MPS, GPU serving, GPU hosted CI.
 own float replay and deterministic evaluation; DQN-compatible events/reports; cpu/cuda
 device; editor panel and example. Pendulum-v1 20k steps: −985 → −172 mean task return.
 Not provided: TD3 serving, trace/frames/buffer browsing for TD3, vector envs, SAC/PPO.
+
+### Continuous TD3 policy serving (ADR0069; Mac verified, HANDOFF§70)
+
+`rl_td3` family: final actor + collected-observation reference; bounded actions equal to
+the run's actor; observation bounds enforced; MAE against supplied action vectors;
+per-dimension drift. Not provided: production environment returns, stochastic
+policies, GPU serving.

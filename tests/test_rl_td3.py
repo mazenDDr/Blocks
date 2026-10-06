@@ -20,8 +20,10 @@ def graph(**kw):
 
 
 def run(tmp_path, g, **cfg):
+    from graph_core.hashing import semantic_hash
     store = ArtifactStore(tmp_path)
-    store.create_run("r1", "g", {"kind": "rl"})
+    store.create_run("r1", semantic_hash(g), {"kind": "rl", "seed": 0})
+    store.add_artifact("r1", "graph", json.dumps(g.to_json(), sort_keys=True).encode(), "complete", None, {"graph_hash": semantic_hash(g)})  # as submit_run records it
     return store, run_rl(g, RLRunConfig(seed=0, **cfg), store, "r1")
 
 

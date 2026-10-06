@@ -232,6 +232,10 @@ def train_td3(env_spec: EnvSpec, reward: RewardSpec, cfg: TD3Config, eval_seeds:
         if tick % cfg.eval_every == 0 and tick < cfg.total_steps:
             evaluate(tick, False)
     env.close()
+    # Observations the run actually collected (oldest first): the frozen serving reference for continuous policies (ADR 0069).
+    obs_buf = io.BytesIO()
+    np.savez_compressed(obs_buf, obs=B["obs"][:min(size, 1024)])
+    sink.put_artifact("rl_td3_observations", obs_buf.getvalue(), {"rows": min(size, 1024), "bufferSize": size, "order": "oldest first"})
     evaluate(cfg.total_steps, True)
     elapsed = time.time() - t0
     summary = {"algorithm": "TD3", "envSteps": cfg.total_steps, "gradientUpdates": updates, "actorUpdates": actor_updates, "episodes": episodes,
