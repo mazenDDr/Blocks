@@ -710,3 +710,22 @@ Mac acceptance is recorded in HANDOFF§40. Actual commands run:
 node --test apps/editor/tests/agentOutline.test.mjs
 .venv/bin/python tools/editor_agent_outline_smoke.py --output /private/tmp/void-agent-outline-editor-wire-search
 ```
+
+
+## Inspect RL structure and native contracts
+
+In **RL lab → Structure**, search the actual nodes/typed wires, declared configuration,
+current native observation/action/reward contracts or diagnostic codes. Use **Inspect RL
+node** with the keyboard to focus its exact read-only inspector. Existing Environment/
+Learner controls open only when that node family is unique. Current root validation
+identity labels native spaces, reward weights, network shapes/counts and DQN equations;
+no trained Q-values or trajectory are inferred. Missing contracts say not returned and
+pending validation withholds previous results. Search is bounded to200UTF16 units and
+rows to50/page. Navigation leaves graph/UI/history unchanged. Mac acceptance is recorded in
+HANDOFF§41. Actual commands run:
+
+```bash
+node --test apps/editor/tests/rlOutline.test.mjs
+.venv/bin/pytest -q tests/test_rl_outline.py
+.venv/bin/python tools/editor_rl_outline_smoke.py --output /private/tmp/void-rl-outline-editor-native-missing
+```

@@ -738,3 +738,22 @@ Full1219native/1skip/12deselected plus12actualOllama/31Node/277module build/type
 ledger/pin audit pass. Strict current-report/held-real-request Chrome,4curlcases/native
 serving baseline/all10original editor journeys/58-file source-deleted recovery pass.
 No native pin/backend/schema/dependency change; hosted scope remains separate.
+
+
+### Specialized native RL structure (ADR0044; Mac verified, HANDOFF§41)
+
+The RL Structure tab lists declared typed wires/configuration and current native per-node
+contracts, typing/parameter counts/diagnostics/root hash. Literal200unit search/50row
+paging/error filtering, exact unique-node read-only inspection with keyboard heading
+focus, and existing uniquely scoped Environment/Learner controls. Exact native port
+contracts expose observation/action spaces, rewards, network shapes and DQN equations;
+no catalog/family-wide fallback or runtime/learned values inferred. Prior report fields
+withheld during pending/unavailable; duplicate IDs/families never get guessed inspectors/
+controls. Saved graph/UI/history unchanged. No native identity/schema/dependency change.
+Full1221native/1skip/12deselected plus12actualOllama/33Node/279module build/typecheck/
+ledger/pin audit pass. Strict current-report/keyboard-focus/held-real-request Chrome,
+5curlcases/native serving baseline/all11editor journeys/58-file source-deleted recovery
+pass; hosted scope remains separate. RL clipboard/groups, broader algorithms,
+expanded Q-network editing and performance/platform/accessibility certification remain
+separate work.75-row browser fixture intentionally triggers native duplicate-family
+refusal; it is pagination evidence, not learner validity/quality/performance evidence.

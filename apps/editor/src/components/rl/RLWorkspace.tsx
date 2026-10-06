@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, errorText } from "../../api";
-import type { AnyRun, Graph, UiDoc, Validation } from "../../types";
+import type { AnyRun, Graph, OpInfo, UiDoc, Validation } from "../../types";
 import { isRLRun } from "../../types";
 import { runLabel, uid } from "../../util";
 import { Num } from "../agent/common";
@@ -14,15 +14,17 @@ import { RunTab } from "./RunTab";
 import { TraceTab } from "./TraceView";
 import type { EvalReport } from "./types";
 import { VariantsTab } from "./Variants";
+import { RLOutline } from "./RLOutline";
 
-type Tab = "env" | "learner" | "run" | "rollouts" | "buffer" | "trace" | "eval" | "variants";
-const TABS: [Tab, string][] = [["env", "Environment"], ["learner", "Learner"], ["run", "Run & curves"], ["rollouts", "Rollouts"], ["buffer", "Replay buffer"], ["trace", "Transition trace"], ["eval", "Evaluation"], ["variants", "Variants"]];
+type Tab = "structure" | "env" | "learner" | "run" | "rollouts" | "buffer" | "trace" | "eval" | "variants";
+const TABS: [Tab, string][] = [["structure", "Structure"], ["env", "Environment"], ["learner", "Learner"], ["run", "Run & curves"], ["rollouts", "Rollouts"], ["buffer", "Replay buffer"], ["trace", "Transition trace"], ["eval", "Evaluation"], ["variants", "Variants"]];
 const ACTIVE = ["queued", "preparing", "running", "cancelling"];
 
 /** The reinforcement-learning workspace (VISION 9.9). RL agents are distinct from language-model workflow agents: observation / action / reward semantics live here. */
-export function RLWorkspace({ projectId, graph, setGraph, ui, validation, allRuns, reloadRuns, ensureSaved, initialTab }: {
+export function RLWorkspace({ projectId, graph, setGraph, ui, validation, validationPending, validationError, ops, allRuns, reloadRuns, ensureSaved, initialTab }: {
   projectId: string; graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; ui: UiDoc; validation: Validation | null; allRuns: AnyRun[]; reloadRuns: () => void;
   ensureSaved: () => Promise<void>; initialTab?: Tab;
+  validationPending: boolean; validationError: string | null; ops: OpInfo[];
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? "env");
   const [runId, setRunId] = useState<string | null>(null);
@@ -32,6 +34,7 @@ export function RLWorkspace({ projectId, graph, setGraph, ui, validation, allRun
   const [err, setErr] = useState<string | null>(null);
   const key = useRef<{ sig: string; id: string }>({ sig: "", id: "" });
   const runs = useMemo(() => allRuns.filter(isRLRun), [allRuns]);
+  const opsByType = useMemo(() => Object.fromEntries(ops.filter(op=>op.graphKind === "rl").map(op=>[op.type,op])), [ops]);
   useEffect(() => { setRunId(null); setTid(null); }, [projectId]);
   useEffect(() => { if (!runId && runs.length) setRunId(runs[runs.length - 1].id); }, [runs, runId]);
   const run = runs.find((r) => r.id === runId);
@@ -77,6 +80,7 @@ export function RLWorkspace({ projectId, graph, setGraph, ui, validation, allRun
       </div>
       {ui.description && <div className={`notice-inline ${ui.synthetic ? "synthetic" : ""}`}>{ui.synthetic && <b>Synthetic data. </b>}{ui.description}</div>}
       <div className="atabbody">
+        {tab === "structure" && <RLOutline key={`rl-outline:${projectId}`} graph={graph} ops={opsByType} validation={validation} pending={validationPending} error={validationError} onOpenPanel={setTab} />}
         {tab === "env" && <EnvPanel graph={graph} setGraph={setGraph} validation={validation} ui={ui} />}
         {tab === "learner" && <LearnerPanel graph={graph} setGraph={setGraph} validation={validation} />}
         {tab === "run" && <RunTab curves={curves.data} status={run?.status} summary={run ? { envSteps: run.envSteps, updates: run.updates, totalSteps: run.totalSteps } : undefined} />}

@@ -495,3 +495,4 @@ table.compat th { background: #f1f3f6; }
 
 .agent-outline { flex: none; max-height: 35vh; overflow: auto; }
 .agent-outline pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.rl-outline pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 45vh; overflow: auto; }

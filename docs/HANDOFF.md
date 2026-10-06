@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §40 final publication/resume checkpoint — all completed scopes are pushed to origin/master; Mac verification passes.** Code442b3e4 starts default CI37368880361 (both jobs queued at checkpoint). Read the end of §40 for current remaining work and commands; older draft/pending notes are historical.
+> **Latest continuation: §41 final Mac acceptance — RL Structure/inspector passes all required checks.** Prior Linux browser evidence passes; missing native job retry is live. Commit/push state and next scope are at the end of §41.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0043`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0044`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -70,7 +70,8 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Selected-group layout movement | Mac verified; Linux native passes, browser never-started cancelled §37–§40 | 5d53468 |
 | Module-definition clipboard transfer | Mac native/live/browser/curl/recovery verified §38–§40; hosted pending | 2350ff8 |
 | Native diagnostic scope navigation | Mac native/live/browser/curl/recovery verified §39–§40; hosted pending | b3029c8 |
-| Specialized native agent outline | Mac native/live/browser/curl/recovery verified §40; hosted pending | 442b3e4 |
+| Specialized native agent outline | Mac verified; Linux browser passes, native retry live §40–§41 | 442b3e4 |
+| Specialized native RL Structure/inspector | Mac native/live/browser/curl/recovery verified §41; hosted pending | current release |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -134,7 +135,7 @@ Run `git status`. If there are uncommitted files, a previous session was cut off
 
 ## 5. Remaining work
 
-> **Superseded: the current remaining-work list is §32, supplemented by scope limits in CAPABILITIES and §24.** The entries below are the historical milestone acceptance references, all completed.
+> **Superseded: the current remaining-work list is the latest continuation checkpoint (§40–§41), supplemented by CAPABILITIES.** The entries below are the historical milestone acceptance references, all completed.
 
 ### 6b — completed domain scope (VISION §9.7, §9.8, §23 Milestone 6 "Domain evidence", A56, A57, A58)
 
@@ -1303,3 +1304,34 @@ The whole VISION is **not finalized**: bounded A01–A64 evidence, synthetic fix
 
 
 **Usage-stop revalidation:** the automatic goal continuation rechecked the actual repository and account. All accepted changes plus final handoff are published atc448fa8; clean working tree and HEAD=origin/master confirmed. Usage now84%five-hour/74%weekly, latest code CI37368880361 still has both named jobs queued, no steps/evidence yet. The user's explicit instruction to make a handoff and stop before exhausting usage applies now; pause the active continuation goal after this checkpoint is pushed, without marking project completion or declaring CI success. A later user resume should review that same run before new code work. No retry/cancellation/duplicate run/server restart/reset-credit action was taken. NextADR0044 and prioritized remaining work are listed immediately above.
+
+
+## 41. Specialized native RL outline — 2026-10-06 (draft under verification)
+
+User/goal resumed; previous usage-stop revoked. Initial account0%five-hour/74%weekly after natural reset, no reset credit used. Repo clean atcebf7f5 and HEAD=origin/master, fetch completed. Continue alone toward remaining VISION until reserve. User8000 untouched; no modelpin/schema/dependency changes.
+
+Prior default [37368880361](https://github.com/mazenDDr/project-void/actions/runs/37368880361) on442b3e4 completed **overallfailure solely due native job111960691779 cancelled before any step**, not by this agent. **Browser job111960691484 success**: history21.2477s/rootclipboard10.8626s/outline10.9708s/arrangement23.5008s/comments19.7311s/insertion14.4805s/commands12.8392s/movement17.5096s/moduleclipboard14.3490s/diagnostic14.1815s/agentoutline10.7173s and source-deletion58-file/10DB/3links/1omission recovery seed16.3413s/restored14.2121s all pass. Downloaded `/private/tmp/void-agent-outline-ci-browser`, independently inspected every runner/evidence: allstrict runtime/API/console arrays empty/allrecorded groups stopped. Recovery manifest2426933131566ef21a870fe4b7da42345ba31f3f39828e971ac16eecb1a11fa9/sourceDeletedtrue; actual browser-only log `/private/tmp/void-agent-outline-ci-browser.log`. This supersedes all previous pending Linux browser claims through agent442b3e4; no native/full-workflow claim. Actual terminal native cancellation confirmed, `gh run rerun 37368880361 --failed` requested only the missing failed job; inspect attempt before next master code push.
+
+Current uncommitted draft RL helper/Structure tab/read-only exact node inspector, pure2Node/native2pytest/source-controlled owned Chrome runner/journey/ADR0044/CIevidence stage. Exact current native per-node input/output contracts (spaces/reward/network shapes/parameter counts/DQN equation), declared wires/configuration,200UTF16 literal query/50row pages/native error filter/actual unique node keyboard selection. No family-wide/catalog fallback, no learned Q-values/trajectory/measurement inference or saved graph/UI/history edit. Existing Environment/Learner controls open only for uniquely present families; duplicate IDs cannot be inspected. Prior contracts/errors/hash withheld during native pending/unavailable, including already selected inspector. Native root hash only, no fabricated embedded network hash. No backend/schema/nativepin/dependency/retrain changes.
+
+Focused actual native CartPole/GridWorld API→TS **2passed3.86s**; pure2Node113.6377ms and typecheck pass. Full `/private/tmp/void-rl-outline-full.log` and actual live `/private/tmp/void-rl-outline-live.log` started with real local-service access. Build/typecheck/allNode and actual Chrome `/private/tmp/void-rl-outline-editor-smoke` in progress. Chrome75-row fixture deliberately has extra reward nodes, expected native E_RL_NODE_COUNT; it is paging/refusal evidence, not valid learner/quality/performance evidence. Coverage regenerated/check current. Acceptance still needs actual full/live/build/types/Node/browser/curl/alloriginal/source-deletion recovery/pin/docs outcomes; do not mark draft done. NextADR0045 after scope.
+
+
+Initial RL actual Chrome `/private/tmp/void-rl-outline-editor-smoke` fails9.9196s at existing Environment controls navigation: select element existed before native catalog options arrived, yielding empty selected value. Screenshot after failure shows correctly loaded CartPole native control/spaces; no product graph/control issue. Journey now waits actual selected CartPole-v1 value, keeps exact value assertion. Backend61518/editor61520/browser61539 stopped(-15/143/1); strict runtime/API/console arrays empty. Final33Node160.4653ms/build279/typecheck pass; actual live12pass1222deselected24.10s. Full native still active. Repeat owned Chrome `/private/tmp/void-rl-outline-editor-catalog-ready` pending; no acceptance yet. Missing hosted native retry job112049889993 is actually running native suite, preserve it before next code push.
+
+
+RL catalog-ready rerun fails5.9847s only because new browser helper tried JSON.parse on truthful 'not returned' for missing native inputShapes on an invalid learner. Native report actually omits the contract; inspector correctly withholds it. Helper now compares absent fields to exact not returned, present fields to exact parsed native values. No product/native fallback introduced. Services stopped and strict errors empty. Visual screenshot inspected; improving keyboard usability by focusing the exact read-only inspector heading on activation, including same-node reselection, using a guarded current ref/event callback; new browser assertion requires that actual focus. No graph/UI/history mutation. Final browser/build/typecheck repeats required; native backend/tests unchanged.
+
+
+RL final actual Chrome `/private/tmp/void-rl-outline-editor-native-missing` **passes7.2430s**, backend62269/editor62301/browser62325 stopped(-15/143/0). Actual absent contracts exactly not returned, all present input/output JSON equal native values, heading focus asserted on keyboard activation/reselection, real missing input and held native request suppression, constructor, CartPole→GridWorld spaces, exact graph/UI/history and75-row native duplicate-family/global refusal/pages pass. Screenshot visually inspected: native4610Q-network params/current root identity/actual contract JSON/exact keyboard-focused inspector. Final33Node176.6019ms/build279/typecheck pass, `/private/tmp/void-rl-outline-{build,types,node}-final.log`. Actual live12pass1222deselected24.10s. Five independent curl cases `/private/tmp/void-rl-outline-curl/evidence.json` pass exact saved graph/UI/hash/full native reports (baseline/realmissinginput/constructor/grid/75duplicatefamily);62719/port53833 stopped-15.
+
+Original native serving/research/comments baseline11.2755s plus all11editor regressions **pass**: history5.9504s/rootclipboard5.8383s/outline6.5195s/arrangement12.3996s/comments9.4687s/insertion8.5844s/commands7.0151s/movement8.9260s/moduleclipboard7.2573s/diagnostic9.1849s/agentoutline6.5539s. Every original assertion retained, strict runtime/API/console arrays empty/all owned service groups stopped (`/private/tmp/void-rl-outline-*-regression`). Integrated `/private/tmp/void-rl-outline-integrated-recovery` **passes58files/10DBs/3links/1explicitomission**, physical source deletion verified; seed11.4712s/restored8.6814s, restored62763/62766/62785 stopped(-15/143/0), original native sessions/checkpoints/discovery/research/comments/confirmed localMLflow/offlineW&B retained. Manifestff06c0cc2dd446a5251e79d5b7c33c9a610327f4c70e627abbea825b75c4e36a.16nativepin union/schema/dependency audit againstcebf7f5 unchanged; coverage/diffcheck current. User8258/8000 still running untouched. Required full native still running, do not claim final count or commit acceptance yet. Missing hosted-native retry still live; preserve before master push.
+
+**Next-scope investigation, no implementation yet:** local code confirms production agent_adapter.py currently allows only prompt/chat_model/set_state and text output; structured_output native op already exists with typed schema validation/retry/provenance. A separate versioned JSON-output serving adapter/registration node could extend real agent production without modifying either legacy adapter or any16identity-source file. Additive dispatch lives in production/runtime.py/control production API/monitor/editor (outside legacy16pins); legacy registered text/conversation versions must still run with identical source hashes, while new JSON versions pin their own adapter plus native dependencies. Contract would require bounded explicit object schema/local Ollama/fail-closed native validation, isolated actual LangGraph execution and no tools/memory/retrieval effects; monitoring must measure recorded JSON agreement/descriptive output size rather than treating object-field count as text length. Must verify real source→register→release→request/trace/replay/capture-off/cancel/limits/schema refusal/legacy compatibility and live Ollama JSON, plus real browser/curl/recovery/full checks. This is a proposal toward broader production serving, not an implemented/accepted capability. NextADR0045; do not narrow whole VISION to this scope.
+
+
+### Final Mac RL structure acceptance
+
+Required native `.venv/bin/pytest -q -o faulthandler_timeout=240` **1221passed,1skipped,12deselected1941warnings488.80s**, `/private/tmp/void-rl-outline-full.log`; actual `.venv/bin/pytest -q -m live` **12passed,1222deselected24.10s**, `/private/tmp/void-rl-outline-live.log`. Final33Node176.6019ms/build279/typecheck/coveragecurrent/diffcheck/16nativeidentity-source+schema/dependency audit pass. Focused native2pass3.86s, final actual Chrome7.2430s/current-report/pending/keyboardheading/nativecontracts,5exactcurlcases/all11originaleditor+nativebaseline/source-deleted58-file/10DB/localtracker recovery above all pass. All original assertions retained, exact absent-field assertions added, screenshots inspected, strict error arrays empty and every owned service stopped. User8258/8000 remains untouched. No native/schema/modelpin/dependency change or retraining/reinstall.
+
+RL scope now Mac accepted; commit locally, excluding any independent next-scope implementation. Hosted native retry37368880361 job112049889993 still actually running; preserve before next master push. Its source442b3e4 cannot verify the later RL scope. Next default must run new RL stage plus every original browser/native/recovery check. NextADR0045; additive structured-output serving is investigated only, not implemented. Continue alone with quota reserve and whole-VISION scope intact.

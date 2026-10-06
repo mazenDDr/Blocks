@@ -699,7 +699,7 @@ function Workbench() {
           setUi((u) => ({ ...u, synthetic: d.synthetic, description: `Imported ${d.kind}; synthetic=${d.synthetic} (user declared); ${d.license.declaration}` }));
         }} />}
       {view === "graph" && rl && (
-        <RLWorkspace projectId={projectId} graph={graph} setGraph={setGraph} ui={ui} validation={rv ?? null} allRuns={allRuns} reloadRuns={reloadRuns} ensureSaved={ensureSaved} />
+        <RLWorkspace projectId={projectId} graph={graph} setGraph={setGraph} ui={ui} validation={rv ?? null} validationPending={rootValidation.pending} validationError={rootValidation.error} ops={ops} allRuns={allRuns} reloadRuns={reloadRuns} ensureSaved={ensureSaved} />
       )}
       {view === "backends" && !tabular && !agent && !rl && (
         <BackendWorkspace graph={graph} setBackend={(b) => setGraph((g) => ({ ...g, backend: b }))} report={compat.data} pending={compat.pending} error={compat.error} backends={backendList} onExport={() => setShowCode(true)} />

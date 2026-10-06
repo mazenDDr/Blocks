@@ -112,6 +112,9 @@ jobs:
       - name: Real browser specialized native agent outline
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_agent_outline_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-agent-outline-smoke
+      - name: Real browser specialized native RL outline
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .venv/bin/python tools/editor_rl_outline_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-rl-outline-smoke
       - name: Real browser, backup and restored native state journey
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/recovery_smoke.py --trackers --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
@@ -175,5 +178,9 @@ jobs:
             /tmp/void-ci-agent-outline-smoke/evidence.json
             /tmp/void-ci-agent-outline-smoke/*.log
             /tmp/void-ci-agent-outline-smoke/*.png
+            /tmp/void-ci-rl-outline-smoke/runner.json
+            /tmp/void-ci-rl-outline-smoke/evidence.json
+            /tmp/void-ci-rl-outline-smoke/*.log
+            /tmp/void-ci-rl-outline-smoke/*.png
           if-no-files-found: warn
           retention-days: 7
