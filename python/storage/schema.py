@@ -8,8 +8,10 @@ from __future__ import annotations
 from contextlib import closing
 from functools import lru_cache
 from pathlib import Path
+import random
 import re
 import sqlite3
+import time
 
 OWNERS = {name: 0x564F0000 + i for i, name in enumerate(
     ('meta', 'production', 'connections', 'studies', 'integrations', 'research',
@@ -103,6 +105,21 @@ def migrate(db, kind, steps):
         db.rollback()
         raise
     return len(steps)
+
+
+def enable_wal(db, timeout=30.0):
+    """Switch to WAL, retrying SQLite's immediate SQLITE_BUSY.
+
+    The switch holds SHARED and then needs EXCLUSIVE; if another connection's commit took PENDING in between, SQLite returns
+    "database is locked" without calling the busy handler (deadlock avoidance). Re-running the statement is the remedy."""
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            return db.execute("PRAGMA journal_mode=WAL").fetchone()[0]
+        except sqlite3.OperationalError as error:
+            if "locked" not in str(error) or time.monotonic() >= deadline:
+                raise
+            time.sleep(0.02 + random.random() * 0.08)
 
 
 def open_database(path, kind, schema, *, timeout=30, **kwargs):

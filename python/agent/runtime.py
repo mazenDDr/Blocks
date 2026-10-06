@@ -327,7 +327,9 @@ def open_checkpointer(workbench: Path):
     p = Path(workbench) / "agent" / "checkpoints.sqlite"
     p.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(p, check_same_thread=False, timeout=30)
-    conn.execute("PRAGMA journal_mode=WAL")
+    from storage.schema import enable_wal
+
+    enable_wal(conn)
     return SqliteSaver(conn)
 
 

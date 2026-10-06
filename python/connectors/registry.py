@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
-from storage.schema import open_database
+from storage.schema import enable_wal, open_database
 import threading
 import time
 from contextlib import closing
@@ -63,7 +63,7 @@ class ConnectionRegistry:
         self.path = self.workbench / "connections.db"
         self._lock = threading.RLock()
         with self._lock, closing(self._db()) as db, db:
-            db.execute("PRAGMA journal_mode=WAL")
+            enable_wal(db)
             # Explicit migration and downgrade checks run in the connection factory.
 
     def _db(self) -> sqlite3.Connection:

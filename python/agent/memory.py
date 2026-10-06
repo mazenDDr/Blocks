@@ -12,7 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from storage.schema import open_database
+from storage.schema import enable_wal, open_database
 import time
 import uuid
 from contextlib import closing
@@ -53,7 +53,7 @@ class MemoryStore:
     def _db(self) -> sqlite3.Connection:
         db = open_database(self.path, "memory", SCHEMA, timeout=30)
         db.row_factory = sqlite3.Row
-        db.execute("PRAGMA journal_mode=WAL")
+        enable_wal(db)
         return db
 
     def _q(self, sql: str, args: tuple = (), write: bool = False) -> list[sqlite3.Row]:

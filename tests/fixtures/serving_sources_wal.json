@@ -1,0 +1,9 @@
+{
+  "decision": "HANDOFF 78 deliberately changes storage pins (WAL switch retry); agent families require re-registration",
+  "files": {
+    "agent/memory.py": "c36340a855e0729e82305768748504e8e8f11e76ac0cc2cc14490a8f743c02aa",
+    "agent/runtime.py": "89988144b16424174c95735bb89dc229b9c21d528ffc28f786b3417c1bb2d7ad",
+    "artifact_store/store.py": "acf3797b7cebf14a39210e6ca26400ee66e00079cad5c2a0741b4be5b35d479b",
+    "storage/schema.py": "c89f562888a55a0536fea413e9c598c5b09a23d03b3fac747dcf453e70615cdc"
+  }
+}

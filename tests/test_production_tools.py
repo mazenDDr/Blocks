@@ -161,6 +161,11 @@ def test_adapter_storage_pins_match_explicit_migration_compatibility_decision():
     for name in set(changed) & set(expected):
         assert changed[name] != expected[name], "ADR0066 declares an intentional pin change"
     expected.update(changed)
+    wal = json.loads((Path(__file__).parent / "fixtures/serving_sources_wal.json").read_text())["files"]
+    assert set(wal) == {"agent/memory.py", "agent/runtime.py", "artifact_store/store.py", "storage/schema.py"}
+    for name in wal:
+        assert wal[name] != expected[name], "HANDOFF 78 declares an intentional pin change"
+    expected.update(wal)
     for mod in (agent_adapter, conversation_adapter, retrieval_agent_adapter):
         for name, current in mod.implementation().items():
             assert expected[name] == current

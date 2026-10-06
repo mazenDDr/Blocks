@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §76 — container deployment (ADR0074).** §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §78 — WAL switch race (hosted CI failure on f9a7c1d).** §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2820,3 +2820,40 @@ Built on gpu-box (`docker build -f deploy/Dockerfile -t project-void:dev .`, log
 `~/project-void-worker/docker-build.log`), run as `void-control` with `~/project-void-deploy` (0700) mounted,
 checked from the Mac (`/private/tmp/void-deploy-check.json`), restarted, then removed.
 The local Mac Docker daemon was not running; nothing was started on the Mac.
+
+## 77. TD3 wording in the RL workspace — 2026-10-06 (follow-up to ADR0068)
+
+TD3 reuses DQN's event field names, and the RL workspace described TD3 runs in DQN terms ("TD loss",
+"ε-greedy", "greedy evaluation", target syncs). Buffer/trace requests failed with "it did not finish".
+Now the wording follows the selected run's `algorithm`: critic loss, mean Q1 and the clipped double-Q target,
+exploration noise σ, deterministic actor evaluation, soft target updates, gradient norm "not recorded".
+Rollouts/Replay buffer/Transition trace tabs are hidden for TD3 with a note on the Run tab, and the
+buffer/trace APIs say "TD3 runs do not record ...; only DQN runs do (ADR 0068)". The Evaluation protocol
+line uses the report's `policy`. Tests: `test_rl_td3.py` API assertions; the TD3 journey checks the
+wording and the hidden tabs (`/private/tmp/void-td3-wording-3`). The first two journey runs failed on the
+check itself: CSS-uppercased headings via innerText, then not waiting for the asynchronous Evaluation tab.
+
+## 78. Hosted CI failure on f9a7c1d: WAL switch race — 2026-10-06
+
+Hosted run (f9a7c1d): browser SUCCESS (the JAX journey repair from §74 holds); native FAILURE, 1 of 1403:
+`test_storage_schema.py::test_concurrent_real_processes_adopt_once_and_preserve_both_writes` — one of two
+processes opening the same legacy `meta.db` died with `sqlite3.OperationalError: database is locked` at
+`PRAGMA journal_mode=WAL` in `ArtifactStore.__init__`. Not reproduced locally (macOS 15 repeats; a
+6-process × 30/40-trial stress on this Mac and on gpu-box Linux, scratch `walrace.py`: 0 failures).
+Mechanism (SQLite locking): the switch holds SHARED and then needs EXCLUSIVE; when another
+connection's commit takes PENDING in between, SQLite returns BUSY immediately without the busy
+handler (deadlock avoidance). Fix: `storage.schema.enable_wal` re-runs the statement on "locked" with
+jittered backoff up to 30 s (other errors propagate), used by every store that switches to WAL
+(artifact store, production, agent memory, connectors, studies, agent checkpointer). Test: a
+connection that reports "locked" twice succeeds on the third attempt; non-lock errors and an exhausted
+deadline still raise. The race itself remains timing-dependent and is not deterministically reproduced.
+Compatibility: `storage/schema.py`, `artifact_store/store.py` and `agent/runtime.py` are pinned
+implementation files of agent serving families; versions registered before this change must be
+re-registered (same consequence as after ADR0066).
+Pin ledger: `tests/fixtures/serving_sources_wal.json` declares the four changed pinned files
+(agent/memory.py, agent/runtime.py, artifact_store/store.py, storage/schema.py); the first full run failed
+only `test_adapter_storage_pins_match_explicit_migration_compatibility_decision` because the change was
+undeclared — the ledger caught it as designed. Verification for §77+§78 together: full native 1410 passed,
+1 failed (that ledger test; source unchanged since, the test now passes with the declaration), 1 skipped,
+27 deselected 546.12s (`/private/tmp/void-wal-full.log`); live Ollama 25 passed; build, 50 Node tests and
+all 23 editor journeys pass (`/private/tmp/void-wal-regressions`).

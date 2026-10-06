@@ -163,3 +163,25 @@ def test_readonly_inventory_offline_cli_preserves_native_checkpoint_and_cas(tmp_
     assert json.loads(actual.stdout)['after']['databases'][0]['version']==1
     assert checkpoint.read_bytes()==native
     assert len(list(tmp_path.glob('*.db')))==1  # absent optional databases not fabricated
+
+
+class _Busy:
+    """A connection whose WAL switch hits SQLite's deadlock-avoidance SQLITE_BUSY a given number of times."""
+    def __init__(self, busy, message='database is locked'):
+        self.busy, self.message, self.calls = busy, message, 0
+
+    def execute(self, sql):
+        self.calls += 1
+        if self.calls <= self.busy:
+            raise sqlite3.OperationalError(self.message)
+        return sqlite3.connect(':memory:').execute("SELECT 'wal'")
+
+
+def test_wal_switch_retries_immediate_busy_and_still_reports_other_errors():
+    from storage.schema import enable_wal
+    db = _Busy(2)
+    assert enable_wal(db) == 'wal' and db.calls == 3
+    with pytest.raises(sqlite3.OperationalError, match='disk I/O'):
+        enable_wal(_Busy(1, 'disk I/O error'))
+    with pytest.raises(sqlite3.OperationalError, match='locked'):
+        enable_wal(_Busy(10**6), timeout=0.2)
