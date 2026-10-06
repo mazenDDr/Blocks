@@ -1159,3 +1159,9 @@ concurrency, repeated trials. `benchmarks/results/tabular_scale_summary.md`.
 Research-run chat calls to any `/chat/completions` server over httpx, streamed and not, provider-reported
 usage, optional key reference (https or loopback only), optional reasoning effort. Not provided: serving with
 it, tool calling, response_format, embeddings, hosted APIs verified with real keys.
+
+### Agent evaluation runs (ADR0077; Mac verified incl. live Ollama, HANDOFF§84)
+
+Labelled cases → real child agent runs → literal checks → pass rate with Wilson 95% interval and recorded
+failures; Evaluate tab. Measured: qwen3.5:0.8b 12/20, qwen3.5:2b 16/20 on SYNTHETIC computable questions.
+Not provided: model-graded checks, repeats/seeds, parallel cases, evaluation of releases.

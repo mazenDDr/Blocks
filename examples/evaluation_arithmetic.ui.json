@@ -1,0 +1,287 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {},
+  "synthetic": true,
+  "description": "SYNTHETIC evaluation example: a local Ollama model answers 20 questions with computable answers (arithmetic, capitalisation, reversal); the Evaluate tab scores them with literal checks. A pass rate over these cases, not a general quality claim.",
+  "defaultInput": {
+    "question": "SYNTHETIC: what is 12 + 30? Reply with the number only."
+  },
+  "evaluationCases": [
+    {
+      "id": "arith-00",
+      "input": {
+        "question": "SYNTHETIC: what is 75 + 22? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": 97,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-01",
+      "input": {
+        "question": "SYNTHETIC: what is 98 - 48? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": 50,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-02",
+      "input": {
+        "question": "SYNTHETIC: what is 48 * 77? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": 3696,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-03",
+      "input": {
+        "question": "SYNTHETIC: what is 37 + 83? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": 120,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-04",
+      "input": {
+        "question": "SYNTHETIC: what is 41 - 79? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": -38,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-05",
+      "input": {
+        "question": "SYNTHETIC: what is 92 * 79? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": 7268,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-06",
+      "input": {
+        "question": "SYNTHETIC: what is 81 + 16? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": 97,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-07",
+      "input": {
+        "question": "SYNTHETIC: what is 25 - 13? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": 12,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-08",
+      "input": {
+        "question": "SYNTHETIC: what is 42 * 26? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": 1092,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-09",
+      "input": {
+        "question": "SYNTHETIC: what is 22 + 44? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": 66,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-10",
+      "input": {
+        "question": "SYNTHETIC: what is 71 - 85? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": -14,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "arith-11",
+      "input": {
+        "question": "SYNTHETIC: what is 66 * 59? Reply with the number only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "number_close",
+          "value": 3894,
+          "tolerance": 0
+        }
+      ]
+    },
+    {
+      "id": "upper-0",
+      "input": {
+        "question": "SYNTHETIC: write the word harbor in capital letters. Reply with the word only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "equals",
+          "value": "HARBOR",
+          "case_sensitive": true
+        }
+      ]
+    },
+    {
+      "id": "upper-1",
+      "input": {
+        "question": "SYNTHETIC: write the word lantern in capital letters. Reply with the word only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "equals",
+          "value": "LANTERN",
+          "case_sensitive": true
+        }
+      ]
+    },
+    {
+      "id": "upper-2",
+      "input": {
+        "question": "SYNTHETIC: write the word meadow in capital letters. Reply with the word only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "equals",
+          "value": "MEADOW",
+          "case_sensitive": true
+        }
+      ]
+    },
+    {
+      "id": "upper-3",
+      "input": {
+        "question": "SYNTHETIC: write the word quartz in capital letters. Reply with the word only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "equals",
+          "value": "QUARTZ",
+          "case_sensitive": true
+        }
+      ]
+    },
+    {
+      "id": "reverse-0",
+      "input": {
+        "question": "SYNTHETIC: spell the word violet backwards. Reply with the reversed word only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "equals",
+          "value": "teloiv"
+        }
+      ]
+    },
+    {
+      "id": "reverse-1",
+      "input": {
+        "question": "SYNTHETIC: spell the word cobalt backwards. Reply with the reversed word only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "equals",
+          "value": "tlaboc"
+        }
+      ]
+    },
+    {
+      "id": "reverse-2",
+      "input": {
+        "question": "SYNTHETIC: spell the word orchid backwards. Reply with the reversed word only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "equals",
+          "value": "dihcro"
+        }
+      ]
+    },
+    {
+      "id": "reverse-3",
+      "input": {
+        "question": "SYNTHETIC: spell the word summit backwards. Reply with the reversed word only."
+      },
+      "checks": [
+        {
+          "field": "answer",
+          "kind": "equals",
+          "value": "timmus"
+        }
+      ]
+    }
+  ]
+}

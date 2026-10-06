@@ -9,12 +9,13 @@ import { AgentOutline } from "./AgentOutline";
 import { ContextTab } from "./ContextInspector";
 import { IndexesTab } from "./IndexesPanel";
 import { MemoryTab } from "./MemoryPanel";
+import { EvalTab } from "./EvalTab";
 import { AgentRunTab } from "./RunTrace";
 import { StateTab } from "./StatePanel";
 import { usePolling } from "../../hooks";
 import type { AgentRunSummary, Trace } from "./types";
 
-type Tab = "canvas" | "state" | "run" | "context" | "memory" | "indexes";
+type Tab = "canvas" | "state" | "run" | "context" | "memory" | "indexes" | "eval";
 
 /** The agent graph workspace (VISION 4, 12): canvas, state schema and routes, run + trace, context inspector, memory, indexes. */
 export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validation, validationPending, validationError, ops, allRuns, reloadRuns, setMessage, requestedRunId, clipboard, setClipboard }: {
@@ -45,7 +46,7 @@ export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validati
     return w;
   }, [validation]);
   const errCount = validation?.diagnostics.filter((d) => d.severity === "error").length ?? 0;
-  const tabs: [Tab, string][] = [["canvas", "Canvas"], ["state", "State & routes"], ["run", "Run & trace"], ["context", "Context inspector"], ["memory", "Memory"], ["indexes", "Indexes"]];
+  const tabs: [Tab, string][] = [["canvas", "Canvas"], ["state", "State & routes"], ["run", "Run & trace"], ["context", "Context inspector"], ["memory", "Memory"], ["indexes", "Indexes"], ["eval", "Evaluate"]];
   const runValues = (nodeId: string) => {
     const step = trace.data ? [...trace.data.steps].reverse().find((s) => s.node === nodeId) : undefined;
     return step?.reads as Record<string, any> | undefined;
@@ -70,6 +71,7 @@ export function AgentWorkspace({ projectId, graph, setGraph, ui, setUi, validati
         {tab === "memory" && <div className="scroll pad"><MemoryTab graph={graph} setGraph={setGraph} ui={ui} projectId={projectId} runs={runs} runId={runId} setRunId={setRunId} callId={callId} setCallId={setCallId}
           focusRecord={focusRecord} onRerun={(id) => { reloadRuns(); setRunId(id); setTab("run"); }} /></div>}
         {tab === "indexes" && <div className="scroll pad"><IndexesTab graph={graph} setGraph={setGraph} /></div>}
+        {tab === "eval" && <EvalTab key={`eval:${projectId}`} projectId={projectId} graph={graph} ui={ui} allRuns={allRuns} reloadRuns={reloadRuns} openRun={(id) => { reloadRuns(); setRunId(id); setTab("run"); }} />}
       </div>
     </div>
   );

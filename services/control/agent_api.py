@@ -276,6 +276,18 @@ def register(app: FastAPI, sv) -> None:
             return {"available": False, "reason": "the run has not completed"}
         return {"available": True, "values": json.loads(store.read_artifact(a[-1]["sha256"])), "provenance": {"runId": rid, "artifactSha256": a[-1]["sha256"]}}
 
+    # ------------------------------------------------------------------ evaluations (ADR 0077)
+    @app.get("/api/agent/evals/{rid}")
+    def evaluation(rid: str):
+        row = store.get_run(rid)
+        if row is None or row["config"].get("kind") != "agent_eval":
+            raise HTTPException(404, {"code": "not_found", "message": f"no agent evaluation '{rid}'"})
+        a = store.artifacts(rid, "agent_eval_report")
+        cases = [e["data"] for e in store.events(rid, -1, ("eval_case",))]
+        return {"runId": rid, "status": row["status"], "error": row["error"], "name": row["config"].get("name"), "caseCount": len(row["config"].get("cases", [])),
+                "cases": cases, "report": json.loads(store.read_artifact(a[-1]["sha256"])) if a else None,
+                "provenance": {"runId": rid, "graphHash": row["graph_hash"], "reportSha256": a[-1]["sha256"] if a else None}}
+
     # ------------------------------------------------------------------ memory
     @app.get("/api/agent/memory/records")
     def list_records(namespace: str | None = None, scope: str | None = None, kind: str | None = None, deleted: bool = False):

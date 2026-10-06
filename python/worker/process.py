@@ -52,7 +52,10 @@ def _child(graph_json: dict, cfg_json: dict, root: str, run_id: str, cancel_even
         return cancel_event.is_set() or store.get_run(run_id)["status"] == "cancelling"
 
     graph = Graph.model_validate(graph_json)
-    if graph.graphKind == "agent":
+    if graph.graphKind == "agent" and cfg_json.get("kind") == "agent_eval":
+        from .agent_eval import AgentEvalConfig, run_agent_eval
+        run_agent_eval(graph, AgentEvalConfig.model_validate(cfg_json), store, run_id, should_cancel)
+    elif graph.graphKind == "agent":
         run_agent(graph, AgentRunConfig.model_validate(cfg_json), store, run_id, should_cancel, resume)
     elif graph.graphKind == "rl":
         run_rl(graph, RLRunConfig.model_validate(cfg_json), store, run_id, should_cancel)

@@ -312,6 +312,12 @@ class Services:
             return self.procedure_summary(row)
         if row["config"].get("kind") == "agent":
             return self.agent_summary(row)
+        if row["config"].get("kind") == "agent_eval":
+            s = self.store.last_event(rid, "eval_summary")
+            done = len(self.store.events(rid, -1, ("eval_case",)))
+            return {"kind": "agent_eval", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": {k: v for k, v in row["config"].items() if k != "cases"},
+                    "createdAt": row["created_at"], "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "name": row["config"].get("name"),
+                    "cases": len(row["config"].get("cases", [])), "casesDone": done, "summary": s["data"] if s else None}
         if row["config"].get("kind") == "sandbox":
             return {"kind": "sandbox", "id": rid, "status": row["status"], "error": row["error"], "graphHash": row["graph_hash"], "config": row["config"],
                     "createdAt": row["created_at"], "updatedAt": row["updated_at"], "maxSeq": self.store.max_seq(rid), "parent": row["config"].get("parent"), "step": row["config"].get("step")}
@@ -582,8 +588,12 @@ def create_app(workbench: str | Path | None = None, api_token: str | None = None
         rl = graph.graphKind == "rl"
         agent = graph.graphKind == "agent"
         procedure = graph.graphKind == "model" and req.config.get("kind") == "procedure"
+        evaluation = agent and req.config.get("kind") == "agent_eval"
         try:
-            if agent:
+            if evaluation:
+                from worker.agent_eval import AgentEvalConfig
+                cfg = AgentEvalConfig.model_validate({**req.config, "project_id": req.projectId or req.config.get("project_id")})
+            elif agent:
                 cfg = AgentRunConfig.model_validate({**req.config, "kind": "agent", "project_id": req.projectId or req.config.get("project_id"),
                                                      "thread_id": req.config.get("thread_id") or f"th-{hashlib.sha256(idempotency_key.encode()).hexdigest()[:8]}"})
             elif procedure:
@@ -606,6 +616,12 @@ def create_app(workbench: str | Path | None = None, api_token: str | None = None
                 if prior["request_hash"] != req_hash:
                     raise _err(409, "this Idempotency-Key was already used with a different request", code="idempotency_key_reused")
                 return JSONResponse({"runId": prior["run_id"], "idempotentReplay": True, "status": sv.store.get_run(prior["run_id"])["status"]})
+            if evaluation:
+                agent_preflight(graph, cfg)
+                handle = submit_run(graph, cfg, sv.workbench)
+                sv.handles[handle.run_id] = handle
+                sv.store.put_idempotent(idempotency_key, req_hash, handle.run_id)
+                return JSONResponse({"runId": handle.run_id, "idempotentReplay": False, "status": "queued", "graphHash": semantic_hash(graph), "cases": len(cfg.cases)}, status_code=201)
             if agent:
                 agent_preflight(graph, cfg)
                 busy = [r["id"] for r in sv.store.list_runs() if r["config"].get("kind") == "agent" and r["config"].get("thread_id") == cfg.thread_id

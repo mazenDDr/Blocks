@@ -133,6 +133,9 @@ jobs:
       - name: Real browser OpenAI-compatible provider settings
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_provider_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-provider-smoke
+      - name: Real browser agent evaluation run
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .venv/bin/python tools/editor_agent_eval_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-agent-eval-smoke
       - name: Real browser accessibility-tree audit
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_accessibility_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-accessibility-smoke
@@ -277,6 +280,10 @@ jobs:
             /tmp/void-ci-provider-smoke/evidence.json
             /tmp/void-ci-provider-smoke/*.log
             /tmp/void-ci-provider-smoke/*.png
+            /tmp/void-ci-agent-eval-smoke/runner.json
+            /tmp/void-ci-agent-eval-smoke/evidence.json
+            /tmp/void-ci-agent-eval-smoke/*.log
+            /tmp/void-ci-agent-eval-smoke/*.png
             /tmp/void-ci-accessibility-smoke/runner.json
             /tmp/void-ci-accessibility-smoke/evidence.json
             /tmp/void-ci-accessibility-smoke/*.log

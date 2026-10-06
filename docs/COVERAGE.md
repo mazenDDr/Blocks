@@ -321,7 +321,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `agent.memory_write` | agent | langgraph | yes | agent | 3 |
 | `agent.prompt` | agent | langgraph | yes | agent | 8 |
 | `agent.retrieve` | agent | langgraph | yes | agent | 5 |
-| `agent.set_state` | agent | langgraph | yes | agent | 10 |
+| `agent.set_state` | agent | langgraph | yes | agent | 11 |
 | `agent.structured_output` | agent | langgraph | yes | agent | 4 |
 | `agent.tool_call` | agent | langgraph | yes | agent | 6 |
 | `domain.audio_features` | domain | python | yes | audio_features | 1 |

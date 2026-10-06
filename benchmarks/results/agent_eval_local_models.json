@@ -1,0 +1,129 @@
+{
+  "benchmark": "agent evaluation on 20 SYNTHETIC cases with computable answers",
+  "host": "mazens-MacBook-Pro.local",
+  "platform": "Darwin arm64",
+  "ollama": {
+    "runtimeVersion": null,
+    "reachable": true
+  },
+  "settings": "temperature 0, seed 7, think off, max_tokens 32",
+  "results": [
+    {
+      "model": "qwen3.5:0.8b",
+      "status": "completed",
+      "cases": 20,
+      "passed": 12,
+      "passRate": 0.6,
+      "wilson95": [
+        0.3866,
+        0.7812
+      ],
+      "byFamily": {
+        "arith": {
+          "passed": 8,
+          "cases": 12
+        },
+        "upper": {
+          "passed": 4,
+          "cases": 4
+        },
+        "reverse": {
+          "passed": 0,
+          "cases": 4
+        }
+      },
+      "totalSeconds": 5.17,
+      "failures": [
+        {
+          "case": "arith-02",
+          "expected": 3696,
+          "observed": "3616"
+        },
+        {
+          "case": "arith-05",
+          "expected": 7268,
+          "observed": "6858"
+        },
+        {
+          "case": "arith-09",
+          "expected": 66,
+          "observed": "86"
+        },
+        {
+          "case": "arith-11",
+          "expected": 3894,
+          "observed": "3714"
+        },
+        {
+          "case": "reverse-0",
+          "expected": "teloiv",
+          "observed": "tivouit"
+        },
+        {
+          "case": "reverse-1",
+          "expected": "tlaboc",
+          "observed": "latoicboc"
+        },
+        {
+          "case": "reverse-2",
+          "expected": "dihcro",
+          "observed": "dithroop"
+        },
+        {
+          "case": "reverse-3",
+          "expected": "timmus",
+          "observed": "MITMOTUM"
+        }
+      ]
+    },
+    {
+      "model": "qwen3.5:2b",
+      "status": "completed",
+      "cases": 20,
+      "passed": 16,
+      "passRate": 0.8,
+      "wilson95": [
+        0.584,
+        0.9193
+      ],
+      "byFamily": {
+        "arith": {
+          "passed": 12,
+          "cases": 12
+        },
+        "upper": {
+          "passed": 4,
+          "cases": 4
+        },
+        "reverse": {
+          "passed": 0,
+          "cases": 4
+        }
+      },
+      "totalSeconds": 6.0,
+      "failures": [
+        {
+          "case": "reverse-0",
+          "expected": "teloiv",
+          "observed": "TILIVOT"
+        },
+        {
+          "case": "reverse-1",
+          "expected": "tlaboc",
+          "observed": "TOLBACO"
+        },
+        {
+          "case": "reverse-2",
+          "expected": "dihcro",
+          "observed": "DROCHIL"
+        },
+        {
+          "case": "reverse-3",
+          "expected": "timmus",
+          "observed": "MUTTSISY"
+        }
+      ]
+    }
+  ],
+  "notes": "One run per model. Literal checks (number/exact string); a pass rate over these cases only, not a general quality claim."
+}

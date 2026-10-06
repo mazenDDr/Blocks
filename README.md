@@ -1469,3 +1469,17 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_openai_compatible.py -m 'live or not live'
 .venv/bin/python tools/editor_provider_smoke.py --output /private/tmp/void-provider-4
 ```
+
+## Evaluating agent graphs
+
+Agent → Evaluate runs the graph over labelled cases (each a real recorded run) and reports
+the pass rate with a 95% interval and every failed check. On 20 SYNTHETIC computable
+questions, local qwen3.5:0.8b passed 12/20 and qwen3.5:2b 16/20. See ADR 0077.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_agent_eval.py -m 'live or not live'
+.venv/bin/python benchmarks/agent_eval_quality.py --models qwen3.5:0.8b qwen3.5:2b --out benchmarks/results/agent_eval_local_models.json
+.venv/bin/python tools/editor_agent_eval_smoke.py --output /private/tmp/void-agent-eval-2
+```

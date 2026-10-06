@@ -1,0 +1,121 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "prompt",
+      "type": "agent.prompt",
+      "version": "1.0.0",
+      "config": {
+        "output_field": "messages",
+        "items": [
+          {
+            "kind": "template",
+            "role": "system",
+            "template": "Answer with only the requested value, no explanation."
+          },
+          {
+            "kind": "template",
+            "role": "user",
+            "template": "{question}"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "reply",
+      "type": "agent.chat_model",
+      "version": "1.0.0",
+      "config": {
+        "messages_field": "messages",
+        "output_field": "answer",
+        "model": {
+          "provider": "ollama",
+          "model": "qwen3.5:2b",
+          "temperature": 0.0,
+          "max_tokens": 32,
+          "seed": 7,
+          "think": false,
+          "timeout_s": 60
+        }
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "START__prompt",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "prompt",
+        "port": "in"
+      }
+    },
+    {
+      "id": "prompt__reply",
+      "kind": "control",
+      "from": {
+        "node": "prompt",
+        "port": "out"
+      },
+      "to": {
+        "node": "reply",
+        "port": "in"
+      }
+    },
+    {
+      "id": "reply__END",
+      "kind": "control",
+      "from": {
+        "node": "reply",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "question",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "messages",
+        "type": "messages",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "answer",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      }
+    ],
+    "limits": {
+      "maxSteps": 6,
+      "maxModelCalls": 1,
+      "maxSeconds": 60
+    }
+  }
+}

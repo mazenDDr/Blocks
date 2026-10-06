@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §83 — OpenAI-compatible provider (ADR0076).** §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §84 — agent evaluation runs (ADR0077).** §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2954,3 +2954,16 @@ failure was `test_agent_api.py` asserting the exact provider set; updated to inc
 (11 passed); live Ollama 26 passed; build, 50 Node tests, base + 25 editor journeys and the recovery journey with CI flags
 pass with zero console warnings (`/private/tmp/void-prov-regressions`). An earlier verification run was discarded because
 a `git stash` to push a commit ran while it read the working tree.
+
+## 84. Agent evaluation runs — 2026-10-06 (ADR0077)
+
+New `worker/agent_eval.py`, `components/agent/EvalTab.tsx`, `examples/make_agent_eval_fixture.py` (+ `evaluation_arithmetic.*`),
+`benchmarks/agent_eval_quality.py` → `benchmarks/results/agent_eval_local_models.json`, `tests/test_agent_eval.py` (12 + 1 live),
+`smoke/agentEval.mjs`, `tools/editor_agent_eval_smoke.py` (+ CI stage). Changed: `worker/process.py` (dispatch), `app.py`
+(submission, run summary), `agent_api.py` (report endpoint), `AgentWorkspace.tsx` (tab). No pinned serving file changed.
+First journey run failed: the tab sent both `projectId` and `graph` (the API requires one); fixed. Failures in the benchmark
+were inspected (wrong products, garbled reversals) — genuine model errors, not check bugs.
+Verification: full native 1439 passed, 1 failed, 1 skipped, 29 deselected 552.51s (`/private/tmp/void-eval-full.log`). The failure:
+`test_agent_api.py::test_example_projects_are_listed_open_and_valid` owns every `examples/agent_*.json` for its generator; the new
+example was renamed `evaluation_arithmetic` (test then 23 passed with test_agent_eval). Live 27 passed; build, 50 Node tests, base +
+26 editor journeys and the recovery journey pass with zero console warnings (`/private/tmp/void-eval-regressions`).
