@@ -2794,3 +2794,12 @@ role `img`; Chrome uses `image`), `-2` (self-check added: caught the gap), `-3` 
 `-4` (strict pass: 27 views, 0 violations, self-check 3/3).
 Verification: build, 50 Node tests and all 23 editor journeys incl. accessibility pass (`/private/tmp/void-a11y-regressions`);
 no Python changed in this scope, so the native suite was not rerun (last: 1403 passed in §72).
+
+## Hosted CI failure on 2ec21db (Keras/JAX training) and repair — 2026-10-06
+
+Hosted run 37464761630: native SUCCESS; browser FAILURE only at "Real browser JAX training run":
+POST /api/runs returned 422 because the journey trained on `examples/data/shapes10`, which is generated
+and gitignored (present only on this Mac). Every other browser stage passed. Repair: the runner now
+generates a SYNTHETIC shapes folder (`examples/make_shapes10.py`, 6 per class) in a temp directory and
+the journey sets the Train tab dataset folder to it. Re-verified with the local folder moved away:
+`/private/tmp/void-backend-training-smoke-3` passes (JAX run completed). The ADR0070 code was not at fault.

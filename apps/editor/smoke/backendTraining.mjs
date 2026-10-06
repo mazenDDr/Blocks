@@ -17,6 +17,8 @@ const setInput=async(selector,value)=>{const el=await page.waitForSelector(selec
 try{
   await page.goto(process.env.VOID_SMOKE_URL);
   await page.waitForFunction(()=>document.querySelector('input[aria-label="project id"]').value==='reference_cnn'&&document.querySelectorAll('.react-flow__node').length===10);
+  // A freshly generated folder (VOID_SHAPES_DIR): the repository's examples/data is not tracked.
+  await page.$$eval('label',(ls,dir)=>{const i=ls.find(x=>x.textContent.trim().startsWith('Dataset folder')).querySelector('input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(i,dir);i.dispatchEvent(new Event('input',{bubbles:true}));},process.env.VOID_SHAPES_DIR);
   await page.select('select[aria-label="training backend"]','jax');
   const epochs=await page.$$eval('label',ls=>{const l=ls.find(x=>x.textContent.trim().startsWith('Epochs'));return !!l;});assert(epochs);
   await page.$$eval('label',ls=>{const i=ls.find(x=>x.textContent.trim().startsWith('Epochs')).querySelector('input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(i,'1');i.dispatchEvent(new Event('input',{bubbles:true}));});
