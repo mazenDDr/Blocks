@@ -1487,3 +1487,6 @@ Commands actually run:
 Evaluations can repeat each case with several seeds, load cases from `.json`/`.jsonl` files, and
 run against a deployed release from Production → Release (each case a recorded request as its own
 user). See ADR 0078.
+
+Large tabular intermediate tables are stored gzip-compressed (ADR 0079): about 2.7× the CSV size
+instead of 5.5×, for 7–17% more run time.

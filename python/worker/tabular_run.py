@@ -5,6 +5,7 @@ validation_error, cancel_acknowledged, error, run_finished. Artifacts (kind `nod
 value kind, graph hash and, for tables, partition and split lineage; the graph itself is stored as the `graph` artifact by the submitter."""
 from __future__ import annotations
 
+import gzip
 import traceback
 from typing import Callable, Literal
 
@@ -58,6 +59,9 @@ def _advance(store: ArtifactStore, run_id: str, new: str) -> None:
             raise
 
 
+# Table outputs above this size are stored gzip-compressed (ADR 0079); smaller ones stay plain CSV.
+COMPRESS_ABOVE = 64 * 1024
+
 def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_id: str, should_cancel: Callable[[], bool] = lambda: False) -> str:
     graph_hash = semantic_hash(graph)  # identity of the stored graph; a run-level seed override is recorded separately
     em = Emitter(store, run_id, graph_hash)
@@ -106,9 +110,13 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
             arts = []
             for port, v in o.outs.items():
                 meta = {"node": o.node, "port": port, "graph_hash": graph_hash, **describe_value(v)}
+                raw = artifact_bytes(v)
                 if isinstance(v, Table):
                     meta["lineage"] = clean({k: x for k, x in v.lineage.items() if k in ("source", "sources", "join", "split")})
-                a = store.add_artifact(run_id, "node_output", artifact_bytes(v), "complete", None, meta)
+                    if len(raw) > COMPRESS_ABOVE:
+                        # Deterministic gzip (mtime 0): equal tables keep equal hashes, so the CAS still deduplicates them.
+                        raw, meta["encoding"], meta["rawBytes"] = gzip.compress(raw, compresslevel=1, mtime=0), "gzip", len(raw)
+                a = store.add_artifact(run_id, "node_output", raw, "complete", None, meta)
                 arts.append({"port": port, "sha256": a["sha256"], "size": a["size"], **{k: meta[k] for k in ("valueKind",)}})
             # the summary (profile, fitted state, metrics, ...) is its own artifact so large ones stay out of the event stream
             s = store.add_artifact(run_id, "node_summary", dumps(o.summary).encode(), "complete", None, {"node": o.node, "type": o.type, "graph_hash": graph_hash})

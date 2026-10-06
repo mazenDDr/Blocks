@@ -111,7 +111,7 @@ def _table(tr: TabularRun, node: str, req) -> dict[str, Any]:
     limit = max(1, min(req.limit or DEFAULT_ROWS, MAX_ROWS))
     offset = max(0, min(req.offset, max(0, total - 1)))
     path = tr.store.path_of(a["sha256"])
-    df = pd.read_csv(path, skiprows=range(1, offset + 1), nrows=limit)
+    df = pd.read_csv(path, skiprows=range(1, offset + 1), nrows=limit, compression="gzip" if meta.get("encoding") == "gzip" else None)
     ids = [int(i) for i in df.pop("row_id")]
     lineage = meta.get("lineage") or {}
     prov = tr.prov(node, port, partition=meta.get("partition"), artifactSha256=a["sha256"], rowsTotal=total)

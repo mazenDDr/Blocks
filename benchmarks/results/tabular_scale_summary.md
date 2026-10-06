@@ -35,3 +35,15 @@ Findings:
 - Accuracy equals the label rule's ceiling for a linear model on `signal` (1 − arctan(0.25)/π ≈ 0.922) from
   1M rows on — a sanity check that results are correct at scale, not a quality benchmark.
 Not measured: data larger than memory, Postgres/JSONL sources at scale, concurrent runs, repeated trials.
+
+## After ADR 0079 (table outputs over 64 KiB gzip level 1), Mac
+
+| rows | run s | µs/row | peak RSS MiB | artifacts MB | stored/CSV |
+|---:|---:|---:|---:|---:|---:|
+| 10,000 | 0.09 | 9.1 | 444 | 0.6 | 3.0× |
+| 100,000 | 0.49 | 4.9 | 515 | 5.4 | 2.6× |
+| 1,000,000 | 4.47 | 4.5 | 893 | 55.2 | 2.7× |
+| 3,000,000 | 13.29 | 4.4 | 1466 | 168.6 | 2.7× |
+| 10,000,000 | 44.77 | 4.5 | 3398 | 565.3 | 2.7× |
+
+Storage roughly halves (5.5× → 2.7× the CSV) for about 7–17% more run time; level 6 was measured at 10M rows (521 MB, 78.7 s) and rejected as too slow.

@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §85 — evaluation seeds, files, releases (ADR0078).** §84 agent evaluation; §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §86 — compressed table outputs (ADR0079).** §85 evaluation extensions; §84 agent evaluation; §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2980,3 +2980,15 @@ The failure is pre-existing and unrelated (traffic code untouched since 51eceb8)
 saw `droppedAtGenerator == 0` once under full-suite load; it passed 5/5 alone and in every other full run today. Each request
 sleeps 35 ms while burst arrivals come every ~5 ms with concurrency 1, so drops should be certain; the cause is not yet found.
 Recorded as an intermittent failure to investigate, not loosened.
+Follow-up: the burst window was 0.2 s; a scheduler thread descheduled for most of it ends after one send with nothing
+dropped (likely mechanism, not proven). The test now uses a 1 s window (assertions unchanged; maxRequests still caps at 30).
+
+## 86. Compressed table outputs — 2026-10-06 (ADR0079)
+
+Changed `worker/tabular_run.py` (gzip above 64 KiB, `COMPRESS_ABOVE`), `services/control/tabular_inspection.py` (decode).
+New `tests/test_tabular_compression.py`, `benchmarks/results/tabular_scale_mac_compressed.json`, summary section. Level 6 was
+tried first (measured at 10M rows: 521 MB, 78.7 s) and replaced by level 1 (565 MB, 44.8 s). Also in this commit: the traffic
+burst test window (HANDOFF§85 follow-up). No pinned serving file changed.
+Verification: full native 1443 passed, 1 skipped, 29 deselected 553.68s (`/private/tmp/void-cmp-full.log`, the widened traffic test
+included); build, 50 Node tests, base + 26 journeys and the recovery journey pass with zero console warnings (`/private/tmp/void-cmp-regressions`).
+No agent/provider code changed, so the live suite was not rerun.

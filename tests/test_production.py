@@ -398,7 +398,8 @@ def test_arrival_patterns_and_generator_saturation_are_measured(lab,pattern,monk
         while not server.started and time.monotonic()<deadline:
             time.sleep(0.01)
         runner = app.state.services.traffic
-        spec = TrafficSpec(releaseId=r["id"],payloads=[request().records],pattern=pattern,rate=100,durationSeconds=0.2,concurrency=1,warmupRequests=0,maxRequests=30)
+        # A 1 s window: with 0.2 s, a scheduler thread descheduled under full-suite load could end after one send with nothing dropped.
+        spec = TrafficSpec(releaseId=r["id"],payloads=[request().records],pattern=pattern,rate=100,durationSeconds=1.0,concurrency=1,warmupRequests=0,maxRequests=30)
         job = runner.start(spec,port)
         with pytest.raises(ProductionError) as e:
             runner.start(spec,port)

@@ -1171,3 +1171,8 @@ Not provided: model-graded checks, repeats/seeds, parallel cases, evaluation of 
 Per-seed repeats with per-seed intervals and stability; cases from JSON/JSONL files; evaluation of a
 deployed release through its route with per-case isolated users. Not provided: parallel cases,
 comparison views, seeds for releases.
+
+### Compressed table outputs (ADR0079; Mac measured, HANDOFF§86)
+
+Table outputs over 64 KiB are stored as deterministic gzip (level 1) with the encoding in metadata;
+stored size about halves (10M rows: 1.15 GB → 565 MB) for ≈+17% run time. Older artifacts unchanged.
