@@ -124,6 +124,9 @@ jobs:
       - name: Real browser TD3 continuous-control run
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_td3_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-td3-smoke
+      - name: Real browser JAX training run
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .venv/bin/python tools/editor_backend_training_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-backend-training-smoke
       - name: Real browser specialized native RL outline
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_rl_outline_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-rl-outline-smoke
@@ -253,6 +256,10 @@ jobs:
             /tmp/void-ci-td3-smoke/evidence.json
             /tmp/void-ci-td3-smoke/*.log
             /tmp/void-ci-td3-smoke/*.png
+            /tmp/void-ci-backend-training-smoke/runner.json
+            /tmp/void-ci-backend-training-smoke/evidence.json
+            /tmp/void-ci-backend-training-smoke/*.log
+            /tmp/void-ci-backend-training-smoke/*.png
             /tmp/void-ci-rl-outline-smoke/runner.json
             /tmp/void-ci-rl-outline-smoke/evidence.json
             /tmp/void-ci-rl-outline-smoke/*.log

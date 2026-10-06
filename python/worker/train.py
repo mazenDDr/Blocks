@@ -36,6 +36,7 @@ class RunConfig(BaseModel):
     project_id: str | None = None  # which saved project this run came from (informational)
     trial: dict | None = None  # study identity (study, trial, attempt, seed, fold) when the run is a sweep trial; informational
     device: Literal["cpu", "cuda"] = "cpu"  # explicit: CUDA is never chosen automatically, and is refused when unavailable
+    backend: Literal["pytorch", "keras", "jax"] = "pytorch"  # keras/jax: plain SGD on the portable subset, PyTorch-format checkpoints (ADR 0070)
 
     @property
     def effective_split_seed(self) -> int:
@@ -150,6 +151,9 @@ def run_training(graph: Graph, cfg: RunConfig, store: ArtifactStore, run_id: str
             for d in e.diagnostics:
                 em.emit("validation_error", d.nodeId, **d.to_json())
             return finish("failed", str(e))
+        if cfg.backend != "pytorch" and (cfg.optimizer != "sgd" or cfg.momentum != 0 or cfg.device != "cpu"):
+            raise UnsupportedGraph(f"E_BACKEND_OPTIMIZER: {cfg.backend} training supports plain SGD (momentum 0) on CPU only; "
+                                   f"got optimizer={cfg.optimizer}, momentum={cfg.momentum}, device={cfg.device}")
         hardware = device_info(cfg.device)
         torch.manual_seed(cfg.seed)
         model = lower_graph(graph, report)
@@ -163,6 +167,8 @@ def run_training(graph: Graph, cfg: RunConfig, store: ArtifactStore, run_id: str
                  "val_labels": data.y_val.tolist()}
         store.add_artifact(run_id, "split", json.dumps(split).encode(), "complete", None, {"n_train": len(data.train_files), "n_val": len(data.val_files)})
         model.to(cfg.device)  # parameters are initialized on CPU from the seed, then moved
+        if cfg.backend != "pytorch":
+            return _train_on_backend(graph, cfg, store, run_id, em, finish, model, data, n_classes, report, hardware, graph_hash, should_cancel)
         opt = (torch.optim.SGD(model.parameters(), lr=cfg.lr, momentum=cfg.momentum) if cfg.optimizer == "sgd"
                else torch.optim.Adam(model.parameters(), lr=cfg.lr))
         model.train()
@@ -215,3 +221,93 @@ def _cancel(store, em, run_id, model, opt, step, epoch, graph_hash) -> str:
     store.set_status(run_id, "cancelled")
     em.emit("run_finished", status="cancelled", error=None, steps=step)
     return "cancelled"
+
+
+def _free(graph: Graph, base: str) -> str:
+    ids, name, i = {n.id for n in graph.nodes}, base, 2
+    while name in ids:
+        name, i = f"{base}_{i}", i + 1
+    return name
+
+
+def _training_graph(graph: Graph, output_id: str) -> tuple[Graph, str]:
+    """The model graph plus an int64 target input and a mean cross-entropy loss node: what the portable executables differentiate."""
+    TARGET, LOSS = _free(graph, "train_target"), _free(graph, "train_loss")
+    d = graph.to_json()
+    d["nodes"] = [*d["nodes"],
+                  {"id": TARGET, "type": "core.tensor_input", "version": "1.0.0", "config": {"shape": ["N"], "dtype": "int64"}, "stateRef": None},
+                  {"id": LOSS, "type": "pytorch.loss.cross_entropy", "version": "1.0.0", "config": {"reduction": "mean"}, "stateRef": None}]
+    d["edges"] = [*d["edges"],
+                  {"id": f"{LOSS}_logits", "kind": "tensor", "from": {"node": output_id, "port": "output"}, "to": {"node": LOSS, "port": "logits"}},
+                  {"id": f"{LOSS}_target", "kind": "tensor", "from": {"node": TARGET, "port": "value"}, "to": {"node": LOSS, "port": "target"}}]
+    return Graph.model_validate(d), TARGET
+
+
+def _train_on_backend(graph, cfg, store, run_id, em, finish, model, data, n_classes, report, hardware, graph_hash, should_cancel) -> str:
+    """Keras/JAX training (ADR 0070): the seeded PyTorch initialization is copied in, every batch is one plain SGD step on the chosen
+    backend, evaluation runs on that backend, and checkpoints are the backend's parameters converted back to the PyTorch state dict,
+    so inference, serving and the portable adapters load them unchanged."""
+    import numpy as np
+    from importlib.metadata import version
+
+    from backends import compile_graph
+
+    input_id, output_id = model.input_ids[0], model.output_ids[0]
+    torch_exec = compile_graph(graph, "pytorch", compiled=False)
+    torch_exec.model.load_state_dict(model.state_dict(), strict=True)  # the same seeded initialization as a PyTorch run
+    training_graph, TARGET = _training_graph(graph, output_id)
+    trainer = compile_graph(training_graph, cfg.backend, compiled=True)
+    trainer.set_params(torch_exec.get_params())
+    evaluator = compile_graph(graph, cfg.backend, compiled=True)
+    libraries = {"keras": ("keras", "tensorflow"), "jax": ("jax", "jaxlib")}[cfg.backend]
+    _advance(store, run_id, "running")
+    em.emit("run_started", total_params=report.total_params, classes=data.classes, n_train=len(data.x_train), n_val=len(data.x_val),
+            dataset_sha256=data.files_sha256, torch=torch.__version__, split_seed=data.split_seed, val_fraction=data.val_fraction,
+            val_files=data.val_files, hardware=hardware, backend=cfg.backend, backendVersions={k: version(k) for k in libraries},
+            optimizer="plain SGD on the backend (p <- p - lr * grad)", initialization="seeded PyTorch lowering, parameters copied in graph layout")
+
+    def checkpoint(step, epoch, status):
+        torch_exec.set_params(trainer.get_params())
+        buf = io.BytesIO()
+        torch.save({"model": _cpu(torch_exec.model.state_dict()), "optimizer": {}, "rng": {"torch_cpu": torch.get_rng_state()}, "step": step, "epoch": epoch,
+                    "graph_hash": graph_hash, "run_id": run_id, "status": status, "backend": cfg.backend}, buf)
+        return buf.getvalue()
+
+    step, n = 0, len(data.x_train)
+    for epoch in range(cfg.epochs):
+        order = torch.randperm(n, generator=torch.Generator().manual_seed(cfg.seed * 100003 + epoch))
+        epoch_loss, seen = 0.0, 0
+        for b, start in enumerate(range(0, n, cfg.batch_size)):
+            if should_cancel():
+                _advance(store, run_id, "cancelling")
+                em.emit("cancel_acknowledged", step=step)
+                art = store.add_artifact(run_id, "checkpoint", checkpoint(step, epoch, "partial"), "partial", step, {"epoch": epoch, "graph_hash": graph_hash, "reason": "cancelled"})
+                em.emit("checkpoint", **art)
+                store.set_status(run_id, "cancelled")
+                em.emit("run_finished", status="cancelled", error=None, steps=step)
+                return "cancelled"
+            idx = order[start:start + cfg.batch_size]
+            loss = float(np.asarray(trainer.sgd_step({input_id: data.x_train[idx].numpy(), TARGET: data.y_train[idx].numpy().astype("int64")}, cfg.lr)))
+            step += 1
+            epoch_loss += loss * len(idx)
+            seen += len(idx)
+            em.emit("train_step", step=step, epoch=epoch, batch=b, loss=loss)
+        evaluator.set_params(trainer.get_params())
+        losses, preds = [], []
+        for i in range(0, len(data.x_val), cfg.batch_size):
+            z = np.asarray(evaluator.forward({input_id: data.x_val[i:i + cfg.batch_size].numpy()}).outputs[output_id], dtype="float64")
+            y = data.y_val[i:i + cfg.batch_size].numpy()
+            zmax = z.max(1, keepdims=True)
+            logp = z - zmax - np.log(np.exp(z - zmax).sum(1, keepdims=True))
+            losses.append(-logp[np.arange(len(y)), y])
+            preds.append(z.argmax(1))
+        loss_v, pred = np.concatenate(losses), np.concatenate(preds)
+        y_all = data.y_val.numpy()
+        conf = np.zeros((n_classes, n_classes), dtype=int)
+        for t, p in zip(y_all.tolist(), pred.tolist()):
+            conf[t, p] += 1
+        em.emit("epoch_end", epoch=epoch, step=step, train_loss=epoch_loss / seen, val_loss=float(loss_v.mean()), val_acc=float((pred == y_all).mean()))
+        em.emit("val_detail", epoch=epoch, step=step, confusion=conf.tolist(), sample_loss=[float(v) for v in loss_v], pred=pred.tolist(), label=y_all.tolist())
+        art = store.add_artifact(run_id, "checkpoint", checkpoint(step, epoch, "complete"), "complete", step, {"epoch": epoch, "graph_hash": graph_hash, "backend": cfg.backend})
+        em.emit("checkpoint", **art)
+    return finish("completed", steps=step)

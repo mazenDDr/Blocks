@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §70 — TD3 policy serving (ADR0069).** §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §71 — Keras/JAX training runs (ADR0070).** §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2763,3 +2763,15 @@ stores the graph artifact like `submit_run`. TD3 journey extended to the Product
 finished loading after reload, and the load reset the view (journey now waits for the RL bar).
 Verification: full native 1395 passed, 1 skipped, 27 deselected 553.24s (`/private/tmp/void-td3serve-full.log`);
 all 21 editor journeys pass (`/private/tmp/void-td3serve-regressions`).
+
+Hosted CI ebc9355 (TD3): SUCCESS; fb8453d (TD3 serving) pushed after it.
+
+## 71. Keras/JAX training runs — 2026-10-06 (ADR0070)
+
+`worker/train.py`: `backend` field, `_training_graph`, `_train_on_backend`; Train tab Backend select;
+`tests/test_backend_training.py` (5); journey `smoke/backendTraining.mjs` + tool + CI stage.
+First test run failed: added node ids `__target__`/`__loss__` are not valid module names
+(E_BAD_ID); now `train_target`/`train_loss` with collision suffixes. First journey run clicked
+a different primary "Run" button; it now targets the Train tab button by title.
+Verification: full native 1400 passed, 1 skipped, 27 deselected 536.12s (`/private/tmp/void-bktrain-full.log`);
+all 22 editor journeys incl. backend_training pass; build and 50 Node tests pass. Hosted fb8453d: SUCCESS.

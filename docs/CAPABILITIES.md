@@ -1102,3 +1102,10 @@ Not provided: TD3 serving, trace/frames/buffer browsing for TD3, vector envs, SA
 the run's actor; observation bounds enforced; MAE against supplied action vectors;
 per-dimension drift. Not provided: production environment returns, stochastic
 policies, GPU serving.
+
+### Keras/JAX training runs (ADR0070; Mac verified, HANDOFF§71)
+
+`backend: keras|jax` model-graph runs: shared seeded PyTorch initialization, plain SGD
+steps on the backend, backend evaluation, PyTorch-format checkpoints. Loss trajectories
+match PyTorch on the reference CNN. Not provided: Adam/momentum, GPU, native Keras/JAX
+checkpoint formats, graphs outside the portable subset.

@@ -1350,3 +1350,16 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_production_td3.py
 .venv/bin/python tools/editor_td3_smoke.py --output /private/tmp/void-td3-smoke-4
 ```
+
+## Training on Keras or JAX
+
+In the Train tab choose **Backend: keras** or **jax** (plain SGD, momentum 0, CPU).
+The run starts from the same seeded weights as PyTorch, takes each SGD step on the
+chosen backend and saves PyTorch-format checkpoints. See ADR 0070.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_backend_training.py
+.venv/bin/python tools/editor_backend_training_smoke.py --output /private/tmp/void-backend-training-smoke-2
+```
