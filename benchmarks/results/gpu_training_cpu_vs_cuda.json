@@ -1,0 +1,73 @@
+{
+ "fixture": "SYNTHETIC shapes10, 200 images/class (2000), reference_cnn, seed 3, batch 64, 8 epochs, Adam lr 1e-3",
+ "machine": {
+  "python": "3.11.14",
+  "torch": "2.10.0+cu128",
+  "cpuThreads": 12
+ },
+ "runs": {
+  "cpu": {
+   "status": "completed",
+   "error": null,
+   "wallSeconds": 14.29,
+   "hardware": {
+    "device": "cpu",
+    "deterministicKernels": "CPU float kernels; same seed and machine reproduce results"
+   },
+   "valAcc": [
+    0.12,
+    0.2175,
+    0.2575,
+    0.3125,
+    0.41,
+    0.4925,
+    0.55,
+    0.5525
+   ],
+   "trainLoss": [
+    2.2908,
+    2.2211,
+    2.0914,
+    1.976,
+    1.8651,
+    1.7517,
+    1.6374,
+    1.5294
+   ]
+  },
+  "cuda": {
+   "status": "completed",
+   "error": null,
+   "wallSeconds": 3.03,
+   "hardware": {
+    "device": "cuda",
+    "name": "NVIDIA GeForce RTX 5060 Ti",
+    "capability": "12.0",
+    "memoryBytes": 17102864384,
+    "cudaRuntime": "12.8",
+    "cudnn": 91002,
+    "deterministicKernels": "not guaranteed: CUDA/cuDNN kernels may differ run to run and from CPU; seeds fix data order and initialization only"
+   },
+   "valAcc": [
+    0.1175,
+    0.2375,
+    0.2525,
+    0.32,
+    0.43,
+    0.4875,
+    0.5575,
+    0.5725
+   ],
+   "trainLoss": [
+    2.2906,
+    2.2205,
+    2.0899,
+    1.973,
+    1.8619,
+    1.7472,
+    1.6332,
+    1.5256
+   ]
+  }
+ }
+}

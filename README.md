@@ -1309,3 +1309,16 @@ acceptance from the final3 run below (HANDOFF§67).
 Completed targeted compatibility checks:72 pass, research20 pass; full live25,
 all21 editor journeys and legacy schema recovery pass. Final3 full native then passed
 (1386/1 skip/25 deselected). Earlier interrupted failures remain preserved in §65.
+
+## Training on an NVIDIA GPU
+
+Choose **Device: cuda** in the Train tab (or `"device": "cuda"` in the run config) when
+the worker runs on a machine with a usable NVIDIA GPU; otherwise the run fails with
+`E_DEVICE_UNAVAILABLE`. Checkpoints are saved as CPU tensors, so serving works on any
+machine. CUDA results are not bitwise reproducible. See ADR 0067.
+
+Commands actually run (on the GPU machine, in its `main` conda env):
+
+```bash
+PYTHONPATH=python:services:tests python -m pytest -q -m gpu tests/test_training_device.py
+```

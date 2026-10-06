@@ -1081,3 +1081,10 @@ SQLite triggers; all rollback/restart/competition assertions remain. The backup 
 fixture records committed evidence in declared events rather than adding an
 undeclared table to owned metadata; WAL presence and exact recovery checks remain.
 Full native acceptance remains pending until a complete fresh run passes.
+
+### Explicit CUDA training (ADR0067; verified on a real RTX 5060 Ti, HANDOFF§68)
+
+Model-graph training `device: cpu|cuda` (explicit, refused when unavailable), CPU-only
+checkpoints, hardware recorded per run, editor Device select. Measured CPU 14.29 s vs
+CUDA 3.03 s on a 2000-image SYNTHETIC run with similar accuracy. Not provided: GPU for
+other run kinds, multi-GPU, mixed precision, MPS, GPU serving, GPU hosted CI.

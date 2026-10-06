@@ -17,7 +17,7 @@ export interface RunPanelProps {
 }
 
 // ---------------------------------------------------------------------------------------- train
-const DEFAULT_CFG = { data: "examples/data/shapes10", epochs: 2, batch_size: 16, lr: 0.05, optimizer: "sgd" as const, momentum: 0, seed: 0, val_fraction: 0.2, split_seed: "" as number | "" };
+const DEFAULT_CFG = { data: "examples/data/shapes10", epochs: 2, batch_size: 16, lr: 0.05, optimizer: "sgd" as const, device: "cpu" as "cpu" | "cuda", momentum: 0, seed: 0, val_fraction: 0.2, split_seed: "" as number | "" };
 
 function TrainTab({ p }: { p: RunPanelProps }) {
   const [cfg, setCfg] = useState(DEFAULT_CFG);
@@ -62,6 +62,7 @@ function TrainTab({ p }: { p: RunPanelProps }) {
         <label>Dataset folder (relative to the server's working dir)<input value={cfg.data} onChange={(e) => set("data", e.target.value)} /></label>
         {num("epochs", "Epochs", "1")}{num("batch_size", "Batch size", "1")}{num("lr", "Learning rate")}
         <label>Optimizer<select value={cfg.optimizer} onChange={(e) => set("optimizer", e.target.value as "sgd")}><option value="sgd">sgd</option><option value="adam">adam</option></select></label>
+        <label title="CUDA runs only where the worker has a usable NVIDIA GPU; otherwise the run fails with E_DEVICE_UNAVAILABLE. CUDA results are not bitwise reproducible.">Device<select aria-label="training device" value={cfg.device} onChange={(e) => set("device", e.target.value as "cpu" | "cuda")}><option value="cpu">cpu</option><option value="cuda">cuda (NVIDIA GPU)</option></select></label>
         {num("momentum", "Momentum")}{num("seed", "Seed", "1")}{num("val_fraction", "Val fraction")}
         <label>Split seed (blank = seed)<input type="number" value={cfg.split_seed} onChange={(e) => set("split_seed", e.target.value === "" ? "" : Number(e.target.value))} /></label>
         <div className="actions">

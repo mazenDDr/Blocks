@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §67 — schema migrations accepted; GPU work next.** §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §68 — explicit CUDA training verified on gpu-box (ADR0067).** §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2720,3 +2720,23 @@ Codex's final3 full native (PID46936) completed: **1386 passed, 1 skipped, 25 de
 ADR0066; item6 committed and pushed. Hosted result is recorded below when observed.
 Previous hosted run on bf3d090 was complete (success) before this push.
 User reports the gpu-box connection is fixed; GPU work (§59 item5) starts next.
+
+## 68. Explicit CUDA training on the real GPU — 2026-10-06 (ADR0067)
+
+User fixed gpu-box connectivity. Preflight: Tailscale up, `ssh gpu-box` ok, RTX 5060 Ti
+idle (1252 MiB used, 0 %), no tmux sessions, `~/project-void` absent before the first sync.
+Code synced with plain rsync (no helper files added to the repo):
+`rsync -az --exclude .git --exclude .venv --exclude node_modules --exclude .workbench ./ gpu-box:project-void/`.
+Its `main` env (Python 3.11, torch 2.10.0+cu128) lacked project pins `psycopg[binary]==3.3.6`
+and `gymnasium==1.3.0`; installed there (torch/numpy unchanged). The first GPU test run
+failed because of that missing import (the CPU run hit the import error; the CUDA run in the
+same process then ran against a partly imported registry and its result was discarded).
+
+Changes: `worker/train.py` (`device`, `device_info`, CPU-only checkpoints, per-batch moves,
+hardware event), editor Train tab Device select, `gpu` pytest marker (deselected by default),
+`tests/test_training_device.py` (3 Mac + 2 gpu), `benchmarks/results/gpu_training_cpu_vs_cuda.json`.
+GPU results: `pytest -m gpu` 2 passed on gpu-box. Next per §59/§66: broader RL, Keras/JAX
+training, providers (credentials), cloud/distributed, long-term memory, accessibility.
+Mac verification: full native 1389 passed, 1 skipped, 27 deselected 533.70s
+(`/private/tmp/void-gpu-full.log`); all 20 editor journeys pass (`/private/tmp/void-gpu-regressions`);
+build and 50 Node tests pass. No agent/provider code changed, so the live suite was not rerun.

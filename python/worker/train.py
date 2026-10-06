@@ -35,6 +35,7 @@ class RunConfig(BaseModel):
     split_seed: int | None = None  # seed of the train/val split; None means "same as seed"
     project_id: str | None = None  # which saved project this run came from (informational)
     trial: dict | None = None  # study identity (study, trial, attempt, seed, fold) when the run is a sweep trial; informational
+    device: Literal["cpu", "cuda"] = "cpu"  # explicit: CUDA is never chosen automatically, and is refused when unavailable
 
     @property
     def effective_split_seed(self) -> int:
@@ -45,9 +46,32 @@ class UnsupportedGraph(Exception):
     pass
 
 
+def _cpu(value):
+    """Checkpoints hold CPU tensors only, so a CUDA-trained run loads on any machine (weights_only, no map_location)."""
+    if isinstance(value, torch.Tensor):
+        return value.detach().cpu()
+    if isinstance(value, dict):
+        return {k: _cpu(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return type(value)(_cpu(v) for v in value)
+    return value
+
+
+def device_info(device: str) -> dict:
+    """The actual execution device, or a refusal when CUDA was requested but is not usable here."""
+    if device == "cpu":
+        return {"device": "cpu", "deterministicKernels": "CPU float kernels; same seed and machine reproduce results"}
+    if not torch.cuda.is_available():
+        raise UnsupportedGraph("E_DEVICE_UNAVAILABLE: device 'cuda' was requested but torch.cuda.is_available() is False on this machine")
+    p = torch.cuda.get_device_properties(0)
+    return {"device": "cuda", "name": p.name, "capability": f"{p.major}.{p.minor}", "memoryBytes": p.total_memory,
+            "cudaRuntime": torch.version.cuda, "cudnn": torch.backends.cudnn.version(),
+            "deterministicKernels": "not guaranteed: CUDA/cuDNN kernels may differ run to run and from CPU; seeds fix data order and initialization only"}
+
+
 def _checkpoint_bytes(model, opt, step, epoch, graph_hash, run_id, status) -> bytes:
     buf = io.BytesIO()
-    torch.save({"model": model.state_dict(), "optimizer": opt.state_dict(), "rng": {"torch_cpu": torch.get_rng_state()},
+    torch.save({"model": _cpu(model.state_dict()), "optimizer": _cpu(opt.state_dict()), "rng": {"torch_cpu": torch.get_rng_state()},
                 "step": step, "epoch": epoch, "graph_hash": graph_hash, "run_id": run_id, "status": status}, buf)
     return buf.getvalue()
 
@@ -79,14 +103,14 @@ def _weight_stats(model: GraphModule, em: Emitter, step: int, epoch: int) -> Non
 
 
 @torch.no_grad()
-def _evaluate(model: GraphModule, x, y, batch_size: int, n_classes: int) -> dict:
+def _evaluate(model: GraphModule, x, y, batch_size: int, n_classes: int, device: str = "cpu") -> dict:
     """Validation pass: mean loss, accuracy, confusion matrix [true][pred], per-sample loss and prediction."""
     model.eval()
     losses, preds = [], []
     for i in range(0, len(x), batch_size):
-        logits = model(x[i:i + batch_size])
-        losses.append(F.cross_entropy(logits, y[i:i + batch_size], reduction="none"))
-        preds.append(logits.argmax(1))
+        logits = model(x[i:i + batch_size].to(device))
+        losses.append(F.cross_entropy(logits, y[i:i + batch_size].to(device), reduction="none").cpu())
+        preds.append(logits.argmax(1).cpu())
     model.train()
     loss, pred = torch.cat(losses), torch.cat(preds)
     conf = torch.zeros(n_classes, n_classes, dtype=torch.int64)
@@ -126,6 +150,7 @@ def run_training(graph: Graph, cfg: RunConfig, store: ArtifactStore, run_id: str
             for d in e.diagnostics:
                 em.emit("validation_error", d.nodeId, **d.to_json())
             return finish("failed", str(e))
+        hardware = device_info(cfg.device)
         torch.manual_seed(cfg.seed)
         model = lower_graph(graph, report)
         height, n_classes = _io_contract(graph, report, model)
@@ -137,13 +162,14 @@ def run_training(graph: Graph, cfg: RunConfig, store: ArtifactStore, run_id: str
                  "dataset_sha256": data.files_sha256, "train": data.train_files, "val": data.val_files,
                  "val_labels": data.y_val.tolist()}
         store.add_artifact(run_id, "split", json.dumps(split).encode(), "complete", None, {"n_train": len(data.train_files), "n_val": len(data.val_files)})
+        model.to(cfg.device)  # parameters are initialized on CPU from the seed, then moved
         opt = (torch.optim.SGD(model.parameters(), lr=cfg.lr, momentum=cfg.momentum) if cfg.optimizer == "sgd"
                else torch.optim.Adam(model.parameters(), lr=cfg.lr))
         model.train()
         _advance(store, run_id, "running")
         em.emit("run_started", total_params=report.total_params, classes=data.classes, n_train=len(data.x_train),
                 n_val=len(data.x_val), dataset_sha256=data.files_sha256, torch=torch.__version__,
-                split_seed=data.split_seed, val_fraction=data.val_fraction, val_files=data.val_files)
+                split_seed=data.split_seed, val_fraction=data.val_fraction, val_files=data.val_files, hardware=hardware)
 
         step, n = 0, len(data.x_train)
         for epoch in range(cfg.epochs):
@@ -153,7 +179,7 @@ def run_training(graph: Graph, cfg: RunConfig, store: ArtifactStore, run_id: str
                 if should_cancel():
                     return _cancel(store, em, run_id, model, opt, step, epoch, graph_hash)
                 idx = order[start:start + cfg.batch_size]
-                loss = F.cross_entropy(model(data.x_train[idx]), data.y_train[idx])
+                loss = F.cross_entropy(model(data.x_train[idx].to(cfg.device)), data.y_train[idx].to(cfg.device))
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
@@ -161,7 +187,7 @@ def run_training(graph: Graph, cfg: RunConfig, store: ArtifactStore, run_id: str
                 epoch_loss += loss.item() * len(idx)
                 seen += len(idx)
                 em.emit("train_step", step=step, epoch=epoch, batch=b, loss=loss.item())
-            ev = _evaluate(model, data.x_val, data.y_val, cfg.batch_size, n_classes)
+            ev = _evaluate(model, data.x_val, data.y_val, cfg.batch_size, n_classes, cfg.device)
             em.emit("epoch_end", epoch=epoch, step=step, train_loss=epoch_loss / seen, val_loss=ev["val_loss"], val_acc=ev["val_acc"])
             em.emit("val_detail", epoch=epoch, step=step, confusion=ev["confusion"], sample_loss=ev["sample_loss"],
                     pred=ev["pred"], label=ev["label"])
