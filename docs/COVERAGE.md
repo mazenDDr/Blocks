@@ -341,8 +341,9 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `rl.environment` | rl | gymnasium | yes | rl_environment | 1 |
 | `rl.evaluation` | rl | gymnasium | yes | rl_evaluation | 1 |
 | `rl.q_network` | rl | gymnasium | yes | rl_network | 1 |
-| `rl.replay_buffer` | rl | gymnasium | yes | rl_buffer | 1 |
+| `rl.replay_buffer` | rl | gymnasium | yes | rl_buffer | 2 |
 | `rl.reward` | rl | gymnasium | yes | rl_reward | 1 |
+| `rl.td3_learner` | rl | gymnasium | yes | rl_learner | 0 |
 | `s3.csv_source` | tabular | s3 | yes | connector_source | 1 |
 | `s3.object_listing` | tabular | s3 | yes | connector_source | 1 |
 | `scipy.gamma_distribution` | tabular | scipy | yes | distribution | 1 |

@@ -1322,3 +1322,17 @@ Commands actually run (on the GPU machine, in its `main` conda env):
 ```bash
 PYTHONPATH=python:services:tests python -m pytest -q -m gpu tests/test_training_device.py
 ```
+
+## Continuous-action RL with TD3
+
+Open the **rl_pendulum_td3** example: reward → environment → TD3 learner →
+evaluation. TD3 trains continuous-action Gymnasium environments (Pendulum-v1 in the
+catalog) and evaluates the deterministic actor on declared seeds. A 20,000-step run
+reached a mean task return near −172. Choose the device in the RL bar. See ADR 0068.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_rl_td3.py
+.venv/bin/python tools/editor_td3_smoke.py --output /private/tmp/void-td3-smoke-2
+```

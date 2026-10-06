@@ -29,6 +29,7 @@ export function RLWorkspace({ projectId, graph, setGraph, ui, validation, valida
   const [tab, setTab] = useState<Tab>(initialTab ?? "env");
   const [runId, setRunId] = useState<string | null>(null);
   const [tid, setTid] = useState<number | null>(null);
+  const [device, setDevice] = useState<"cpu" | "cuda">("cpu");
   const [seed, setSeed] = useState(0);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -44,11 +45,12 @@ export function RLWorkspace({ projectId, graph, setGraph, ui, validation, valida
   const errCount = validation?.diagnostics.filter((d) => d.severity === "error").length ?? 0;
   const blocked = !validation?.ok;
 
+  const td3 = graph.nodes.some((n) => n.type === "rl.td3_learner");
   async function start() {
     setBusy(true); setErr(null);
     try {
       await ensureSaved();
-      const body = { projectId, config: { seed } };
+      const body = { projectId, config: td3 ? { seed, device } : { seed } };
       const sig = JSON.stringify(body) + validation?.graphHash;
       if (key.current.sig !== sig) key.current = { sig, id: uid() };
       const r = await api.post<{ runId: string }>("/api/runs", body, { "Idempotency-Key": key.current.id });
@@ -67,7 +69,8 @@ export function RLWorkspace({ projectId, graph, setGraph, ui, validation, valida
         {TABS.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}{k === "env" && errCount ? ` (${errCount} errors)` : ""}</button>)}
       </div>
       <div className="rlbar">
-        <span className="badge kind" title="RL agents are not language-model agents">RL · DQN</span>
+        <span className="badge kind" title="RL agents are not language-model agents">RL · {td3 ? "TD3" : "DQN"}</span>
+        {td3 && <label className="small" title="CUDA needs a usable NVIDIA GPU on the worker machine; otherwise the run fails with E_DEVICE_UNAVAILABLE">device <select aria-label="rl device" value={device} onChange={(e) => setDevice(e.target.value as "cpu" | "cuda")}><option value="cpu">cpu</option><option value="cuda">cuda</option></select></label>}
         <label className="small">seed <Num label="run seed" integer value={seed} onChange={(n) => setSeed(n ?? 0)} /></label>
         <button className="primary" disabled={busy || blocked || live} onClick={start} title={blocked ? "Fix the graph errors first" : "Save the project and train in a worker process"}>Run</button>
         <button disabled={!live || run?.status === "cancelling"} onClick={cancel}>Cancel</button>

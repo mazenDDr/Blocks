@@ -10,16 +10,38 @@ from .train import RLSpec
 
 BACKEND = "gymnasium"
 REQUIRED = ("rl.reward", "rl.environment", "rl.q_network", "rl.replay_buffer", "rl.dqn_learner", "rl.evaluation")
+TD3_REQUIRED = ("rl.reward", "rl.environment", "rl.td3_learner", "rl.evaluation")
+
+
+def is_td3(graph: Graph) -> bool:
+    return any(n.type == "rl.td3_learner" for n in graph.nodes)
 
 
 def validate_rl(graph: Graph) -> Report:
     r = validate_tabular(graph, "rl", BACKEND)
-    for t in REQUIRED:
+    required = TD3_REQUIRED if is_td3(graph) else REQUIRED
+    for extra in (set(REQUIRED) - set(TD3_REQUIRED) if is_td3(graph) else ()):
+        if any(x.type == extra for x in graph.nodes):
+            r.diagnostics.append(Diagnostic("E_RL_NODE_COUNT", f"A TD3 graph owns its networks and replay; remove '{extra}'.", "error", None, None, "/nodes", [Fix(f"Remove {extra}")]))
+    for t in required:
         n = sum(1 for x in graph.nodes if x.type == t)
         if n != 1:
             r.diagnostics.append(Diagnostic("E_RL_NODE_COUNT", f"An rl graph needs exactly one '{t}' node; found {n}.", "error", None, None, "/nodes",
                                             [Fix(f"{'Add' if n == 0 else 'Remove the extra'} {t}")]))
     return r
+
+
+def td3_spec_from_graph(graph: Graph):
+    """(env, reward, TD3 config, evaluation config) of a valid TD3 graph."""
+    from graph_core import registry
+
+    from .envs import EnvSpec, RewardSpec
+    from .td3 import TD3Config
+    from .train import EvalConfig
+
+    cfg = {t: registry.get_op(t).Config.model_validate(next(x for x in graph.nodes if x.type == t).config).model_dump(mode="json") for t in TD3_REQUIRED}
+    return (EnvSpec.model_validate(cfg["rl.environment"]), RewardSpec.model_validate(cfg["rl.reward"]),
+            TD3Config.model_validate(cfg["rl.td3_learner"]), EvalConfig.model_validate(cfg["rl.evaluation"]))
 
 
 def spec_from_graph(graph: Graph) -> RLSpec:

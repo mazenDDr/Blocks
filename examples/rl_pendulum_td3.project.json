@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "rl",
+  "backend": "gymnasium",
+  "nodes": [
+    {
+      "id": "reward",
+      "type": "rl.reward",
+      "version": "1.0.0",
+      "config": {
+        "components": []
+      }
+    },
+    {
+      "id": "env",
+      "type": "rl.environment",
+      "version": "1.0.0",
+      "config": {
+        "env_id": "Pendulum-v1"
+      }
+    },
+    {
+      "id": "learner",
+      "type": "rl.td3_learner",
+      "version": "1.0.0",
+      "config": {
+        "total_steps": 15000
+      }
+    },
+    {
+      "id": "evaluation",
+      "type": "rl.evaluation",
+      "version": "1.0.0",
+      "config": {
+        "seeds": [
+          1000,
+          1001,
+          1002,
+          1003,
+          1004
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "kind": "reward_spec",
+      "from": {
+        "node": "reward",
+        "port": "reward"
+      },
+      "to": {
+        "node": "env",
+        "port": "reward"
+      }
+    },
+    {
+      "id": "e1",
+      "kind": "env",
+      "from": {
+        "node": "env",
+        "port": "env"
+      },
+      "to": {
+        "node": "learner",
+        "port": "env"
+      }
+    },
+    {
+      "id": "e2",
+      "kind": "learner",
+      "from": {
+        "node": "learner",
+        "port": "learner"
+      },
+      "to": {
+        "node": "evaluation",
+        "port": "learner"
+      }
+    }
+  ]
+}

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import traceback
-from typing import Any, Callable
+from typing import Literal, Any, Callable
 
 from pydantic import BaseModel
 
@@ -28,6 +28,7 @@ class RLRunConfig(BaseModel):
     # the run seed: training environment seeds (seed + env index), network initialisation, exploration, buffer sampling. Evaluation seeds are separate (the evaluation node).
     seed: int = 0
     trial: dict | None = None
+    device: Literal["cpu", "cuda"] = "cpu"  # TD3 only (ADR 0068); DQN runs stay on CPU
 
 
 def _advance(store: ArtifactStore, run_id: str, new: str) -> None:
@@ -73,8 +74,10 @@ def run_rl(graph: Graph, cfg: RLRunConfig, store: ArtifactStore, run_id: str, sh
         import gymnasium, numpy, torch
 
         from rl.train import Cancelled, train
-        from rl.validate import spec_from_graph
+        from rl.validate import is_td3, spec_from_graph
 
+        if is_td3(graph):
+            return _run_td3(graph, cfg, store, run_id, em, finish, report, graph_hash)
         spec = spec_from_graph(graph)
         _advance(store, run_id, "running")
         em.emit("run_started", kind="rl", order=report.order, libraries={"gymnasium": gymnasium.__version__, "torch": torch.__version__, "numpy": numpy.__version__},
@@ -97,3 +100,31 @@ def run_rl(graph: Graph, cfg: RLRunConfig, store: ArtifactStore, run_id: str, sh
     except Exception as e:  # noqa: BLE001
         em.emit("error", message=str(e), traceback=traceback.format_exc())
         return finish("failed", f"{type(e).__name__}: {e}")
+
+
+def _run_td3(graph, cfg, store, run_id, em, finish, report, graph_hash) -> str:
+    """Continuous-action TD3 (ADR 0068): same run lifecycle, artifacts and evaluation report shape as DQN."""
+    import gymnasium, numpy, torch
+
+    from rl import td3
+    from rl.validate import td3_spec_from_graph
+
+    env, reward, tcfg, ecfg = td3_spec_from_graph(graph)
+    if cfg.device == "cuda" and not torch.cuda.is_available():
+        return finish("failed", "E_DEVICE_UNAVAILABLE: device 'cuda' was requested but torch.cuda.is_available() is False on this machine")
+    _advance(store, run_id, "running")
+    em.emit("run_started", kind="rl", order=report.order, libraries={"gymnasium": gymnasium.__version__, "torch": torch.__version__, "numpy": numpy.__version__},
+            seed=cfg.seed, trial=cfg.trial, spec={"env": env.model_dump(mode="json"), "reward": reward.model_dump(mode="json"), "td3": tcfg.model_dump(mode="json"),
+                                                  "eval": ecfg.model_dump(mode="json")}, algorithm="TD3", totalSteps=tcfg.total_steps, device=cfg.device)
+    sink = StoreSink(store, run_id, em)
+    try:
+        res = td3.train_td3(env, reward, tcfg, ecfg.seeds, cfg.seed, sink, lambda: store.get_run(run_id)["status"] == "cancelling", device=cfg.device)
+    except td3.Cancelled:
+        store.set_status(run_id, "cancelled")
+        em.emit("run_finished", status="cancelled", error=None)
+        return "cancelled"
+    final = res["final"]
+    store.add_artifact(run_id, "rl_eval_report", json.dumps({"final": final, "history": [{k: v for k, v in e.items() if k != "episodes"} for e in res["evals"]],
+                                                             "seed": cfg.seed, "evaluationSeeds": ecfg.seeds, "algorithm": "TD3"}).encode(), "complete", None, {"graph_hash": graph_hash})
+    store.add_artifact(run_id, "rl_summary", json.dumps({**res["summary"], "components": list(final["componentReturns"]), "graphHash": graph_hash}).encode(), "complete", None, {})
+    return finish("completed", summary=res["summary"])

@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §68 — explicit CUDA training verified on gpu-box (ADR0067).** §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §69 — TD3 continuous-action RL (ADR0068).** §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2740,3 +2740,16 @@ training, providers (credentials), cloud/distributed, long-term memory, accessib
 Mac verification: full native 1389 passed, 1 skipped, 27 deselected 533.70s
 (`/private/tmp/void-gpu-full.log`); all 20 editor journeys pass (`/private/tmp/void-gpu-regressions`);
 build and 50 Node tests pass. No agent/provider code changed, so the live suite was not rerun.
+
+## 69. TD3 continuous-action RL — 2026-10-06 (ADR0068)
+
+New `python/rl/td3.py`, `rl.td3_learner` op, two-shape `validate_rl`, `td3_spec_from_graph`,
+worker `_run_td3` (+ `device` on RLRunConfig), `samples.pendulum_td3_graph`, example
+`rl_pendulum_td3`, editor TD3 panel/badge/device, `tests/test_rl_td3.py` (4), journey
+`smoke/td3.mjs` + `tools/editor_td3_smoke.py` (+ CI stage). First journey attempt failed:
+the panel showed blank fields for omitted defaults (fixed: defaults shown) and the journey
+appended digits by typing into pre-filled inputs (fixed: value setter). The RL curves API
+initially would have 500ed on TD3 events; TD3 now emits DQN-compatible events (API test).
+Hosted CI for 09f7142 (GPU training): SUCCESS.
+Verification: full native 1393 passed, 1 skipped, 27 deselected 532.19s (`/private/tmp/void-td3-full.log`);
+all 21 editor journeys incl. td3 pass (`/private/tmp/void-td3-regressions`); build and 50 Node tests pass.

@@ -1088,3 +1088,10 @@ Model-graph training `device: cpu|cuda` (explicit, refused when unavailable), CP
 checkpoints, hardware recorded per run, editor Device select. Measured CPU 14.29 s vs
 CUDA 3.03 s on a 2000-image SYNTHETIC run with similar accuracy. Not provided: GPU for
 other run kinds, multi-GPU, mixed precision, MPS, GPU serving, GPU hosted CI.
+
+### TD3 continuous-action RL (ADR0068; Mac + GPU machine verified, HANDOFF§69)
+
+`rl.td3_learner` (twin critics, smoothing, delayed actor) for 1-D Box actions with its
+own float replay and deterministic evaluation; DQN-compatible events/reports; cpu/cuda
+device; editor panel and example. Pendulum-v1 20k steps: −985 → −172 mean task return.
+Not provided: TD3 serving, trace/frames/buffer browsing for TD3, vector envs, SAC/PPO.

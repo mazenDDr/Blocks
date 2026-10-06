@@ -46,3 +46,16 @@ def gridworld_graph(total_steps: int = 6000, grid: dict[str, Any] | None = None,
     dqn = {"total_steps": total_steps, "learning_starts": 200, "eps_decay_steps": max(1, total_steps // 2), "target_update_interval": 100, "lr": 1e-3, "batch_size": 64, **kw.pop("dqn", {})}
     return rl_graph(env={"env_id": GRID_ID, "kwargs": g, "max_episode_steps": 60, "seed": 0}, obs_dim=obs, n_actions=4, reward=reward, hidden=(64,), dqn=dqn,
                     buffer={"capacity": 5000}, evaluation=kw.pop("evaluation", {"seeds": list(range(1000, 1008))}), **kw)
+
+
+def pendulum_td3_graph(total_steps: int = 15000, td3: dict[str, Any] | None = None, evaluation: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Continuous-action TD3 on Pendulum-v1 (ADR 0068): reward -> environment -> td3_learner -> evaluation."""
+    nodes = [
+        {"id": "reward", "type": "rl.reward", "version": "1.0.0", "config": {"components": []}},
+        {"id": "env", "type": "rl.environment", "version": "1.0.0", "config": {"env_id": "Pendulum-v1"}},
+        {"id": "learner", "type": "rl.td3_learner", "version": "1.0.0", "config": {"total_steps": total_steps, **(td3 or {})}},
+        {"id": "evaluation", "type": "rl.evaluation", "version": "1.0.0", "config": evaluation or {"seeds": list(range(1000, 1005))}},
+    ]
+    edges = [_edge(0, ("reward", "reward"), ("env", "reward"), "reward_spec"), _edge(1, ("env", "env"), ("learner", "env"), "env"),
+             _edge(2, ("learner", "learner"), ("evaluation", "learner"), "learner")]
+    return {"schemaVersion": "1.0.0", "graphKind": "rl", "backend": "gymnasium", "nodes": nodes, "edges": edges}

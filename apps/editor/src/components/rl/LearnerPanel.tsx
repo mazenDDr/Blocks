@@ -4,7 +4,48 @@ import type { Graph, Validation } from "../../types";
 import { Check, ErrorLine, Num, Row, Sel, useAction } from "../agent/common";
 import { Collapsible, nodeOfType, patchConfig } from "./common";
 
-export function LearnerPanel({ graph, setGraph, validation }: { graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; validation: Validation | null }) {
+export function LearnerPanel(props: { graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; validation: Validation | null }) {
+  return nodeOfType(props.graph, "rl.td3_learner") ? <TD3Panel {...props} /> : <DQNPanel {...props} />;
+}
+
+const TD3_FIELDS: [string, string, { integer?: boolean; min?: number; max?: number }][] = [
+  ["total_steps", "Environment steps", { integer: true, min: 100 }], ["learning_starts", "Random steps before learning", { integer: true, min: 1 }],
+  ["buffer_capacity", "Replay capacity", { integer: true, min: 1000 }], ["batch_size", "Batch size", { integer: true, min: 8 }],
+  ["gamma", "Discount gamma", { min: 0, max: 1 }], ["tau", "Target tracking tau", { min: 0, max: 1 }],
+  ["actor_lr", "Actor learning rate", { min: 0 }], ["critic_lr", "Critic learning rate", { min: 0 }],
+  ["exploration_noise", "Exploration noise (fraction of half-range)", { min: 0, max: 1 }], ["policy_noise", "Target smoothing noise", { min: 0, max: 1 }],
+  ["noise_clip", "Smoothing noise clip", { min: 0, max: 1 }], ["policy_delay", "Critic updates per actor update", { integer: true, min: 1, max: 10 }],
+  ["eval_every", "Evaluate every (steps)", { integer: true, min: 100 }],
+];
+
+// Mirrors python/rl/td3.py TD3Config defaults, so fields the saved node omits show the value the worker will actually use.
+const TD3_DEFAULTS: Record<string, number> = { total_steps: 20000, learning_starts: 1000, buffer_capacity: 100000, batch_size: 256, gamma: 0.99, tau: 0.005, actor_lr: 3e-4,
+  critic_lr: 3e-4, exploration_noise: 0.1, policy_noise: 0.2, noise_clip: 0.5, policy_delay: 2, eval_every: 5000 };
+
+/** Continuous-action TD3 (ADR 0068): owns its actor/critic MLPs and float-action replay. */
+function TD3Panel({ graph, setGraph, validation }: { graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; validation: Validation | null }) {
+  const learner = nodeOfType(graph, "rl.td3_learner");
+  const evalNode = nodeOfType(graph, "rl.evaluation");
+  const c = { ...TD3_DEFAULTS, ...((learner?.config ?? {}) as Record<string, any>) };
+  const [hidden, setHidden] = useState(((c.hidden as number[] | undefined) ?? [256, 256]).join(", "));
+  const [seedText, setSeedText] = useState((((evalNode?.config ?? {}) as Record<string, any>).seeds ?? []).join(", "));
+  const set = (patch: Record<string, unknown>) => patchConfig(setGraph, "rl.td3_learner", patch);
+  const diags = (validation?.diagnostics ?? []).filter((d) => [learner?.id, evalNode?.id].includes(d.nodeId ?? ""));
+  return (
+    <div className="scroll pad rllearner">
+      <h3>Learner <span className="badge">TD3</span> <span className="badge">continuous actions</span> <span className="badge">native torch</span></h3>
+      <p className="small muted">Twin critics with clipped double-Q targets, target policy smoothing and delayed actor updates. Collection adds Gaussian noise; evaluation uses the deterministic actor. The time limit does not stop bootstrapping; termination does.</p>
+      {diags.map((d, i) => <ErrorLine key={i} text={`${d.code}: ${d.message}`} />)}
+      {TD3_FIELDS.map(([k, label, o]) => <Row key={k} label={label}><Num label={label} value={c[k]} integer={o.integer} min={o.min} max={o.max} onChange={(n) => n != null && set({ [k]: n })} /></Row>)}
+      <Row label="Hidden layer sizes" hint="actor and both critics; 1–4 layers"><input aria-label="td3 hidden sizes" value={hidden} size={16}
+        onChange={(e) => { setHidden(e.target.value); const h = e.target.value.split(",").map((x) => parseInt(x.trim(), 10)).filter((x) => Number.isFinite(x) && x > 0); if (h.length >= 1 && h.length <= 4) set({ hidden: h }); }} /></Row>
+      <Row label="Evaluation seeds" hint="one deterministic episode per seed on a separate environment instance"><input aria-label="evaluation seeds" value={seedText} size={30}
+        onChange={(e) => { setSeedText(e.target.value); const s = e.target.value.split(",").map((x) => parseInt(x.trim(), 10)).filter((x) => Number.isFinite(x)); if (s.length) patchConfig(setGraph, "rl.evaluation", { seeds: s }); }} /></Row>
+    </div>
+  );
+}
+
+function DQNPanel({ graph, setGraph, validation }: { graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; validation: Validation | null }) {
   const learner = nodeOfType(graph, "rl.dqn_learner");
   const buffer = nodeOfType(graph, "rl.replay_buffer");
   const evalNode = nodeOfType(graph, "rl.evaluation");

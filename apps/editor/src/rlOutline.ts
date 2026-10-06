@@ -9,7 +9,7 @@ export function rlOutline(graph: Graph, ops: Record<string, OpInfo>, validation:
     const node = matches.length === 1 ? matches[0] : null;
     const panel = node && graph.nodes.filter(n => n.type === node.type).length === 1
       ? ["rl.environment", "rl.reward"].includes(node.type) ? "env" as const
-        : ["rl.q_network", "rl.replay_buffer", "rl.dqn_learner", "rl.evaluation"].includes(node.type) ? "learner" as const : null
+        : ["rl.q_network", "rl.replay_buffer", "rl.dqn_learner", "rl.td3_learner", "rl.evaluation"].includes(node.type) ? "learner" as const : null
       : null;
     return { ...row, node, panel };
   });

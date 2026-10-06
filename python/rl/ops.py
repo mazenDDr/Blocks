@@ -17,6 +17,7 @@ from .envs import CATALOG, GRID_ID, EnvSpec, RewardSpec, env_spaces
 from .networks import NetworkError, check_network, mlp_graph
 from .train import BufferConfig, EvalConfig
 from .trace import TraceConfig
+from .td3 import TD3Config, td3_compatibility
 
 REWARD_SPEC, ENV, NETWORK, BUFFER, LEARNER, EVAL_REPORT = "reward_spec", "env", "network", "buffer", "learner", "eval_report"
 
@@ -214,6 +215,35 @@ class DQNLearnerOp(RLOperation):
         e = dqn_explain(cfg)
         return {"equation": e["targetEquation"], "rule": e["lossEquation"] + "  |  " + e["update"] + "  |  " + e["targetUpdate"], "dqn": e,
                 "note": e["boundaries"]}
+
+
+# ------------------------------------------------------------------------------------------------ TD3 learner (continuous actions)
+@register
+class TD3LearnerOp(RLOperation):
+    """Continuous-action learner (ADR 0068). Owns its actor/critic MLPs and float-action replay; wired directly to the environment."""
+    type = "rl.td3_learner"
+    inputs = ("env",)
+    outputs = ("learner",)
+    in_kinds = {"env": ENV}
+    out_kinds = {"learner": LEARNER}
+    Config = TD3Config
+    summary_kind = "rl_learner"
+
+    def infer(self, cfg, ins, node_id):
+        e = ins["env"].info
+        probs = env_problems(EnvSpec.model_validate(e["spec"])) or td3_compatibility(EnvSpec.model_validate(e["spec"]))
+        if probs:
+            raise OpError(probs[0][0], probs[0][1], "env")
+        if cfg.total_steps <= cfg.learning_starts:
+            raise OpError("E_RL_BUDGET", f"total_steps={cfg.total_steps} does not exceed learning_starts={cfg.learning_starts}: no gradient step would ever happen.", None,
+                          [Fix("Raise total_steps", node_id, "total_steps", cfg.learning_starts * 4)])
+        return {"learner": VType(LEARNER, {"algorithm": "TD3", "env": e["spec"], "envInfo": {k: e[k] for k in ("actionSpace", "observationSpace", "components", "weights")},
+                                           "config": cfg.model_dump(mode="json")})}
+
+    def explain(self, cfg, inputs, outputs):
+        return {"equation": "y = r + gamma (1 - terminated) min_i Q'_i(s', clip(mu'(s') + clip(eps, -c, c), low, high)),  eps ~ N(0, sigma)",
+                "rule": f"Twin critics regress to y (MSE); the actor maximises Q_1(s, mu(s)) every {cfg.policy_delay} critic updates; targets track with tau={cfg.tau}.",
+                "note": "Collection adds Gaussian noise; evaluation uses the deterministic actor. Truncation (time limit) does not stop bootstrapping; termination does."}
 
 
 # ------------------------------------------------------------------------------------------------ evaluation
