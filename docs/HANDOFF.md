@@ -1724,3 +1724,19 @@ is clicked), and a frame selection was overwritten by the same batch's card
 deselection (fixed in App: frame selection wins).
 All 16 editor journeys pass on this scope (`/private/tmp/void-layout-groups-regressions`), and the
 selection benchmark is unchanged (1000-node p95 48.9 ms; no groups in that fixture). No Python changed.
+
+## Compatibility note for §45–§55 (recorded 2026-10-06)
+
+Agent, conversation and JSON-agent production versions pin broad implementation file
+lists (`production/agent_adapter.py::FILES`, `conversation_adapter.FILES`,
+`json_agent_adapter.FILES`). This session changed pinned files: `agent/models.py`
+(streaming, c6a54ad), `artifact_store/store.py` (worker leases, 92f45ef) and, for JSON
+agents only, `production/runtime.py`, `production/monitor.py` and
+`services/control/production_api.py` (fitted unsupervised + accounts, 51eceb8). Versions
+of those three families registered before these commits now refuse to serve with
+E_SERVING_ENVIRONMENT and must be re-registered and warmed from their source runs; no
+source run, checkpoint or conversation data is lost. This is the existing conservative
+identity convention, not a regression in serving, but it was not stated in ADR0053/
+0055/0057 when committed. Tabular (ADR0012), unsupervised (ADR0020), model-graph, RL
+and domain versions pin none of the changed files and keep serving. Live tests register
+fresh versions, which is why they did not surface this.

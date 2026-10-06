@@ -935,3 +935,8 @@ measured cards drawn behind them; frame drag moves exactly the members (one Undo
 edit); frame click selects members; panel create/rename/add/remove/select/delete;
 card rename keeps membership. Graph/hash unchanged. Not provided: nesting,
 collapse, colors, agent/RL canvases, clipboard transfer, group-aware auto-layout.
+
+**Compatibility (2026-10-06):** agent, conversation and JSON-agent versions registered
+before c6a54ad/51eceb8/92f45ef must be re-registered: their pinned implementation files
+changed (streaming, accounts/fitted-unsupervised API edits, worker leases). Other
+serving families are unaffected. Details in HANDOFF "Compatibility note for §45–§55".
