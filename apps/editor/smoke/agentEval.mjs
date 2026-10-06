@@ -59,6 +59,8 @@ try {
   await page.goto(process.env.VOID_SMOKE_URL);
   await page.waitForSelector('select[aria-label="open project"] option[value="example:serving_state"]');
   await page.select('select[aria-label="open project"]','example:serving_state');await page.waitForSelector('.aworkspace');
+  // The load toast stays until clicked and can cover the workspace tabs on narrower font metrics (seen on CI); dismiss it like a user would.
+  await page.waitForSelector('.toast');await page.$eval('.toast',e=>e.click());await page.waitForFunction(()=>!document.querySelector('.toast'));
   await click('Evaluate');
   // Cases from a real .jsonl file through the file input; two seeds (each set on every model block) give one run per case and seed.
   const jsonl=path.join(output,'cases.jsonl');fs.writeFileSync(jsonl,CASES.map(c=>JSON.stringify(c)).join('\n')+'\n');

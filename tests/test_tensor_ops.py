@@ -297,3 +297,11 @@ def test_every_new_op_has_explain_codegen_and_registry_metadata():
     assert len(new) >= 30
     missing = [o.type for o in new if o.type not in META]
     assert not missing, missing
+
+
+def test_every_registered_op_has_library_metadata():
+    """A missing entry shows the raw type under 'Other' in the editor library (found for agent.tool_agent and rl.td3_learner)."""
+    import control.app  # noqa: F401  (registers every op family)
+    from control.registry_meta import META
+    from graph_core.registry import all_ops
+    assert [o.type for o in all_ops() if o.type not in META] == []

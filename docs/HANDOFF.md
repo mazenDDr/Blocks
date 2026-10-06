@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §87 — model-chosen tools (ADR0080).** §86 compression; §85 evaluation extensions; §84 agent evaluation; §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §88 — hosted CI repairs for e3ea298.** §87 model-chosen tools; §86 compression; §85 evaluation extensions; §84 agent evaluation; §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -3003,3 +3003,22 @@ qwen3.5:2b, which did not call the tool without thinking (probed directly agains
 compared); the live test uses qwen3.5:4b, with that reason in the test.
 Verification: full native 1446 passed, 1 skipped, 31 deselected 562.47s (`/private/tmp/void-ta-full.log`); live Ollama 29 passed;
 build, 50 Node tests, base + 27 editor journeys and the recovery journey pass with zero console warnings (`/private/tmp/void-ta-regressions`).
+
+## 88. Hosted CI on e3ea298 and repairs — 2026-10-06
+
+Run 37504594561: browser job cancelled at its 15-minute limit after "Real browser agent evaluation run" failed; native
+1 failed / 1445 passed. Findings and fixes:
+1. Browser job time limit: 28 journeys exceed 15 minutes on the hosted runner; raised to 30.
+2. Agent evaluation journey: the "Loaded example" toast (persistent until clicked) covered the Evaluate tab on the
+   runner's font metrics, so the coordinate click hit the toast (screenshot shows the Canvas tab still active). The
+   evaluation, provider and tool-agent journeys now dismiss the toast like a user before clicking tabs. The toast
+   behaviour itself is unchanged.
+3. The same screenshot showed the Library listing `agent.tool_agent` as a raw type under "Other": it had no display
+   metadata. A new test requiring metadata for every registered op found `rl.td3_learner` (ADR0068) missing too;
+   both added ("Tool agent" in Tools, "TD3 learner" in Reinforcement learning).
+4. `test_conversation_history.py::test_no_inference_corrupt_source_and_busy_lock_refused` (pre-existing): a release
+   with `timeoutSeconds: 0.2` whose warmup turn exceeded 0.2 s on the slow runner. The timeout only bounds a
+   busy-lock wait; now 1 s. The sibling deadline test uses the same release shape and its injected delay was raised
+   from 0.25 s to 1.1 s so it still passes the deadline.
+Verification: full native 1447 passed, 1 skipped, 31 deselected 555.39s (`/private/tmp/void-ci88-full.log`); build, 50 Node tests,
+base + 27 editor journeys and the recovery journey pass (`/private/tmp/void-ci88-regressions`).

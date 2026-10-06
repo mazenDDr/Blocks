@@ -223,7 +223,7 @@ def test_no_inference_corrupt_source_and_busy_lock_refused(tmp_path,monkeypatch)
         action(rt,rel['id'],'restore',corrupt)
     assert e.value.code=='E_ARTIFACT_INTEGRITY' and head(rt,rel)==before
     monkeypatch.undo()
-    short=rt.create_release(ReleaseCreate(versionId=v['id'],config={'maxBatch':1,'sessionMode':'conversation','timeoutSeconds':.2}))
+    short=rt.create_release(ReleaseCreate(versionId=v['id'],config={'maxBatch':1,'sessionMode':'conversation','timeoutSeconds':1.0}))  # bounds the busy-lock wait; 0.2 s was too tight for a slow runner's warmup turn
     rt.activate(short['id'],rel['id'])
     assert rt.predict('local','lab',req('short'))['status']==200
     review=reviewed(rt,short,id_='busy',source='short')
@@ -300,14 +300,14 @@ def test_deadline_after_clone_or_receipt_cas_never_changes_head(tmp_path,monkeyp
     import time
     from production.models import ReleaseCreate
     lab,rt,v,rel,_=seed(tmp_path)
-    short=rt.create_release(ReleaseCreate(versionId=v['id'],config={'maxBatch':1,'sessionMode':'conversation','timeoutSeconds':.2}))
+    short=rt.create_release(ReleaseCreate(versionId=v['id'],config={'maxBatch':1,'sessionMode':'conversation','timeoutSeconds':1.0}))  # 1 s leaves room for a slow runner's warmup turn; the write below sleeps past it
     rt.activate(short['id'],rel['id'])
     assert rt.predict('local','lab',req('short'))['status']==200
     before=head(rt,short)
     review=reviewed(rt,short,source='short')
     put=lab.store.put_bytes
     def slow(raw):
-        if json.loads(raw).get('operation')=='restore':time.sleep(.25)
+        if json.loads(raw).get('operation')=='restore':time.sleep(1.1)
         return put(raw)
     monkeypatch.setattr(lab.store,'put_bytes',slow)
     with pytest.raises(ProductionError) as e:

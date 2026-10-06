@@ -58,6 +58,8 @@ try {
   await page.goto(process.env.VOID_SMOKE_URL);
   await page.waitForSelector('select[aria-label="open project"] option[value="example:serving_agent"]');
   await page.select('select[aria-label="open project"]','example:serving_agent');await page.waitForSelector('.aworkspace');
+  // The load toast stays until clicked and can cover the workspace tabs on narrower font metrics (seen on CI); dismiss it like a user would.
+  await page.waitForSelector('.toast');await page.$eval('.toast',e=>e.click());await page.waitForFunction(()=>!document.querySelector('.toast'));
   await (await page.waitForSelector('.react-flow__node[data-id="reply"]')).click();
   await page.waitForSelector('select[aria-label="provider"]');
   // Omitted settings show the op's declared defaults (the example relies on them), never "(not declared)" / "undefined".

@@ -57,6 +57,8 @@ try {
   await page.goto(process.env.VOID_SMOKE_URL);
   await page.waitForSelector('select[aria-label="open project"] option[value="example:tool_agent_calculator"]');
   await page.select('select[aria-label="open project"]','example:tool_agent_calculator');await page.waitForSelector('.aworkspace');
+  // The load toast stays until clicked and can cover the workspace tabs on narrower font metrics (seen on CI); dismiss it like a user would.
+  await page.waitForSelector('.toast');await page.$eval('.toast',e=>e.click());await page.waitForFunction(()=>!document.querySelector('.toast'));
   const card=await page.$eval('.react-flow__node[data-id="solve"]',e=>e.textContent);assert(card.includes('may call calculator')&&card.includes('≤3 calls'),card);
   await (await page.waitForSelector('.react-flow__node[data-id="solve"]')).click();
   assert.equal(await page.$eval('input[aria-label="offer tool calculator"]',e=>e.checked),true);

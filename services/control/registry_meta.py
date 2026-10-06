@@ -97,6 +97,7 @@ META: dict[str, tuple[str, str, str]] = {
     "agent.retrieve": ("Retriever", "Retrieval", "Top-k similarity search over a persisted index with a score threshold; scores and the cut-off chunks are recorded."),
     "agent.citations": ("Citation check", "Retrieval", "Checks [chunk_id] markers in generated text against the chunks actually retrieved; invalid markers are flagged, never invented."),
     "agent.tool_call": ("Tool", "Tools", "Calls a tool with declared effects and bounded capabilities. External effects require an approval interrupt and run once."),
+    "agent.tool_agent": ("Tool agent", "Tools", "The model may call the offered effect-free tools (calculator, bounded file reading) up to a limit before answering; every call is recorded."),
     "agent.human_interrupt": ("Human input", "Control", "Pauses the thread with a pending-input form (approve / reject / edit); resumes from the checkpoint."),
     "agent.memory_select": ("Memory selection", "Memory", "Applies a visual memory policy (retrieve, filter, rank, deduplicate, token budget, summarize) and records every record's decision."),
     "agent.memory_write": ("Memory write", "Memory", "Writes to the thread's conversation or the long-term store with validation, scope, evidence and an audit entry; optionally behind an accept/reject stage."),
@@ -106,6 +107,7 @@ META: dict[str, tuple[str, str, str]] = {
     "rl.q_network": ("Q-network", "Reinforcement learning", "A model graph mapping an observation to one Q-value per discrete action (the same lowering as every model graph)."),
     "rl.replay_buffer": ("Replay buffer", "Reinforcement learning", "Uniform replay with a global transition id, episode, step, policy version and the true next observation for every transition."),
     "rl.dqn_learner": ("DQN learner", "Reinforcement learning", "Target-network DQN: y = r + gamma (1 - terminated) max Q_target(s', a'); Huber or squared TD loss; epsilon-greedy collection."),
+    "rl.td3_learner": ("TD3 learner", "Reinforcement learning", "Twin-delayed deep deterministic policy gradient for continuous actions: twin critics, target smoothing, delayed actor updates (ADR 0068)."),
     "rl.evaluation": ("Evaluation", "Reinforcement learning", "Greedy episodes on separate environment instances with declared seeds; return, length, termination vs truncation, success."),
     # ---- unsupervised nodes (tabular graph kind, Milestone 5)
     "sklearn.kmeans": ("K-means", "Unsupervised", "Lloyd / k-means++ clustering with inertia, per-cluster objective contributions and assignment distances."),
