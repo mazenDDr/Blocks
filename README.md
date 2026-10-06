@@ -810,3 +810,30 @@ Use fresh evidence directory names. The JSON recovery option requires actual loc
 Ollama; omit it for provider-free native cache/conversation/tracker recovery.
 Default hosted CI runs the new cache browser and source-deletion recovery alongside
 every original browser stage; it does not substitute an Ollama fixture.
+
+
+## Measured large-graph selection
+
+Canvas card and wire metadata remain stable while selecting another node; graph,
+layout, card-size or native report changes still update them. Actual warm Chrome
+measurements on declared100/500/1000node metadata-only teaching chains are in
+`benchmarks/results/editor_selection_summary.md`, with raw samples/environment/
+source hashes beside it. The500-node outline-selection p95 changed181→54ms on
+this Mac/dev build;1000nodes still measured149.8ms. This does not certify all
+routine editing, pan/zoom, representative models or other platforms.
+
+Commands actually run (use a fresh evidence path):
+
+```bash
+.venv/bin/python tools/editor_performance_benchmark.py --output /private/tmp/void-editor-performance-stable-cards-wires
+.venv/bin/pytest -q -o faulthandler_timeout=240
+.venv/bin/pytest -q -m live
+pnpm -C apps/editor build
+pnpm -C apps/editor exec tsc --noEmit
+node --test apps/editor/tests/*.test.mjs
+.venv/bin/python tools/recovery_smoke.py --trackers --json-agent --cache-retention --output /private/tmp/void-editor-selection-integrated-recovery
+.venv/bin/python -m backends.coverage --check
+```
+
+HANDOFF§44/ADR0047 record the final correctness and recovery evidence separately
+from descriptive timing. No existing serving identity or dependency was changed.

@@ -1,0 +1,348 @@
+{
+  "status": "passed",
+  "fixture": "SYNTHETIC tensor input → ReLU chains; metadata only, no native execution/model quality claim",
+  "methodology": {
+    "sizes": [
+      100,
+      500,
+      1000
+    ],
+    "validationSamples": 20,
+    "loadSamples": 10,
+    "selectionSamples": 20,
+    "percentile": "nearest rank: sorted[ceil(p*n)-1]",
+    "validation": "Warm browser fetch POST /api/validate through Vite proxy, including HTTP/JSON; no data scan/dry run.",
+    "load": "Existing project select change → matching project ID/load receipt/current native hash/all canvas node DOMs/two animation frames; includes native validation debounce and observer frames. App already warm.",
+    "selection": "Existing outline Inspect-node button click → exact inspector ID/two animation frames. Does not measure add/update, pointer travel or canvas pan/zoom.",
+    "exclusions": "One headless browser/laptop/dev build/CPU; bounded synthetic chain only; no CPU isolation, existing user services remain running. Animation-frame observers add readiness latency. No independent cold process repetitions, representative trained architectures, user productivity, heap/RSS, GPU/frame-time or universal platform certification."
+  },
+  "runtimeErrors": [],
+  "apiErrors": [],
+  "consoleWarnings": [],
+  "measurements": [
+    {
+      "nodes": 100,
+      "edges": 99,
+      "graphHash": "e1a4416bcb98ed2d3f49621dc5348ebf648f7108d74f84689bef4b49277f26f2",
+      "nativeOk": true,
+      "canvasNodes": 100,
+      "outlineRows": 50,
+      "validation": {
+        "samples": [
+          7,
+          6.4000000059604645,
+          6.5999999940395355,
+          6.5999999940395355,
+          6.300000011920929,
+          6.199999988079071,
+          6.5999999940395355,
+          6.700000017881393,
+          6.799999982118607,
+          6.5,
+          7,
+          6.4000000059604645,
+          6.199999988079071,
+          6.300000011920929,
+          6.300000011920929,
+          6.699999988079071,
+          6.199999988079071,
+          6.300000011920929,
+          6.300000011920929,
+          6.5
+        ],
+        "unit": "ms",
+        "n": 20,
+        "min": 6.199999988079071,
+        "median": 6.4000000059604645,
+        "p95": 7,
+        "max": 7
+      },
+      "projectLoad": {
+        "samples": [
+          450,
+          368.69999998807907,
+          366.09999999403954,
+          349.2000000178814,
+          319,
+          355,
+          402.5,
+          369.19999998807907,
+          405.09999999403954,
+          332.39999997615814
+        ],
+        "unit": "ms",
+        "n": 10,
+        "min": 319,
+        "median": 366.09999999403954,
+        "p95": 450,
+        "max": 450
+      },
+      "outlineSelection": {
+        "samples": [
+          16.599999994039536,
+          32,
+          32.69999998807907,
+          33,
+          32.5,
+          33.099999994039536,
+          32.70000001788139,
+          32.599999994039536,
+          32.900000005960464,
+          32.70000001788139,
+          31,
+          34.400000005960464,
+          54.5,
+          48.099999994039536,
+          26.599999994039536,
+          32.20000001788139,
+          34.099999994039536,
+          32.80000001192093,
+          32.69999998807907,
+          32.80000001192093
+        ],
+        "unit": "ms",
+        "n": 20,
+        "min": 16.599999994039536,
+        "median": 32.70000001788139,
+        "p95": 48.099999994039536,
+        "max": 54.5
+      }
+    },
+    {
+      "nodes": 500,
+      "edges": 499,
+      "graphHash": "1155a2c771d800ae8ce8e1c568352b04c6c3aeadf1b18a14c62a383bbf57aa41",
+      "nativeOk": true,
+      "canvasNodes": 500,
+      "outlineRows": 50,
+      "validation": {
+        "samples": [
+          23.5,
+          23.599999994039536,
+          23.80000001192093,
+          24.19999998807907,
+          24,
+          23.599999994039536,
+          24.099999994039536,
+          30.30000001192093,
+          24,
+          23.30000001192093,
+          23.799999982118607,
+          23.30000001192093,
+          23.799999982118607,
+          150.30000001192093,
+          25.099999994039536,
+          23.80000001192093,
+          23.19999998807907,
+          24,
+          24.30000001192093,
+          23
+        ],
+        "unit": "ms",
+        "n": 20,
+        "min": 23,
+        "median": 23.80000001192093,
+        "p95": 30.30000001192093,
+        "max": 150.30000001192093
+      },
+      "projectLoad": {
+        "samples": [
+          785.7999999821186,
+          663.3000000119209,
+          749.8000000119209,
+          683.3000000119209,
+          647,
+          619.2000000178814,
+          847.3999999761581,
+          742.6999999880791,
+          690.6999999880791,
+          681
+        ],
+        "unit": "ms",
+        "n": 10,
+        "min": 619.2000000178814,
+        "median": 683.3000000119209,
+        "p95": 847.3999999761581,
+        "max": 847.3999999761581
+      },
+      "outlineSelection": {
+        "samples": [
+          54,
+          44.19999998807907,
+          44.5,
+          43.099999994039536,
+          46.80000001192093,
+          41.29999998211861,
+          48,
+          41.69999998807907,
+          46.400000005960464,
+          108.7999999821186,
+          45,
+          42,
+          46.80000001192093,
+          40.69999998807907,
+          45.900000005960464,
+          43.5,
+          44.599999994039536,
+          42.69999998807907,
+          46.400000005960464,
+          40.5
+        ],
+        "unit": "ms",
+        "n": 20,
+        "min": 40.5,
+        "median": 44.5,
+        "p95": 54,
+        "max": 108.7999999821186
+      }
+    },
+    {
+      "nodes": 1000,
+      "edges": 999,
+      "graphHash": "7fad246dafdb5a86aa1f30554ddb9cf623ee20bb7008bec44b60e6d3a84bfb12",
+      "nativeOk": true,
+      "canvasNodes": 1000,
+      "outlineRows": 50,
+      "validation": {
+        "samples": [
+          45.29999998211861,
+          45.20000001788139,
+          44.599999994039536,
+          174.19999998807907,
+          44.30000001192093,
+          55.30000001192093,
+          45.19999998807907,
+          44,
+          44.900000005960464,
+          174.2999999821186,
+          48.400000005960464,
+          46,
+          46.30000001192093,
+          44.29999998211861,
+          45.20000001788139,
+          180.7999999821186,
+          45,
+          45.80000001192093,
+          44.69999998807907,
+          44.80000001192093
+        ],
+        "unit": "ms",
+        "n": 20,
+        "min": 44,
+        "median": 45.20000001788139,
+        "p95": 174.2999999821186,
+        "max": 180.7999999821186
+      },
+      "projectLoad": {
+        "samples": [
+          1436.7000000178814,
+          1253.199999988079,
+          1377.7000000178814,
+          1415.0999999940395,
+          1362.9000000059605,
+          1452.5999999940395,
+          1379.2000000178814,
+          1397.0999999940395,
+          1435.7999999821186,
+          1444
+        ],
+        "unit": "ms",
+        "n": 10,
+        "min": 1253.199999988079,
+        "median": 1397.0999999940395,
+        "p95": 1452.5999999940395,
+        "max": 1452.5999999940395
+      },
+      "outlineSelection": {
+        "samples": [
+          87.69999998807907,
+          76,
+          83.90000000596046,
+          75.7999999821186,
+          188.59999999403954,
+          75.89999997615814,
+          86.69999998807907,
+          75.59999999403954,
+          86.7000000178814,
+          74.90000000596046,
+          84.69999998807907,
+          78.2000000178814,
+          84.40000000596046,
+          76.40000000596046,
+          84.30000001192093,
+          75.69999998807907,
+          149.7999999821186,
+          75.59999999403954,
+          81.39999997615814,
+          75.19999998807907
+        ],
+        "unit": "ms",
+        "n": 20,
+        "min": 74.90000000596046,
+        "median": 78.2000000178814,
+        "p95": 149.7999999821186,
+        "max": 188.59999999403954
+      }
+    }
+  ],
+  "environment": {
+    "revision": "25ec83fee4615993d5d36c799c7039d3ad9dc37a",
+    "nativeDependencies": {
+      "python": "3.13.12",
+      "packages": {
+        "fastapi": "0.142.2",
+        "pydantic": "2.13.5",
+        "torch": "2.14.1",
+        "numpy": "2.5.3"
+      },
+      "editorSourceSha256": {
+        "apps/editor/src/App.tsx": "e30aeabc7b9a2cf41351ea8483103381500717c2f7be6300a8b63a8f3244de2d",
+        "apps/editor/src/graphOutline.ts": "9d5fb04368ce68ef92c88d42d5e40e5fd42e91aa6bc15995cf1c03e2571d37ea",
+        "apps/editor/src/components/OpNode.tsx": "4db0e680c8e94f6ebc16eca58bbda04c0ea184781ab5bb899a11a61d8dadb75c",
+        "apps/editor/src/components/GraphOutline.tsx": "04cd2e095b28b214b61b0de66288062f1b3145fc2326169bca762ff6258252d9"
+      },
+      "benchmarkSourceSha256": {
+        "tools/editor_performance_benchmark.py": "8de064b0149c788a37fdbffd32909a2cf89519be58f021ba15f4d3153e419c8e",
+        "apps/editor/smoke/performance.mjs": "dc8133a65bdb69b40179fd443c059a5a8aad67750530426d713363aaea2c6019"
+      }
+    },
+    "node": "v25.9.0",
+    "platform": "darwin",
+    "release": "27.0.0",
+    "arch": "arm64",
+    "cpu": "Apple M4 Pro",
+    "logicalCpus": 12,
+    "totalMemoryBytes": 25769803776,
+    "viewport": {
+      "width": 1600,
+      "height": 1100
+    },
+    "editor": "Vite dev server; React development mode",
+    "browser": "Chrome/154.0.8037.98",
+    "native": {
+      "candidates": [],
+      "versions": [],
+      "releases": [],
+      "routes": [],
+      "aliases": [],
+      "lifecycle": [],
+      "traffic": [],
+      "capabilities": {
+        "adapter": "native scikit-learn tabular pipeline; native PyTorch vision/NLP/speech domain models (1-4 records per request); PyTorch model-graph image classifiers (1-32 images); greedy DQN policies (1-256 observations); k-means / Gaussian mixture / PCA (1-128 rows)",
+        "targets": [
+          "local",
+          "staging"
+        ],
+        "replicas": 1,
+        "mode": "real native serving in this local FastAPI process; Ollama model device managed by its runtime; staging is a separate local route",
+        "remoteDeployment": "not implemented: no infrastructure configured",
+        "batch": "bounded synchronous batch",
+        "streaming": "not implemented",
+        "agent": "isolated native LangGraph text or schema-validated JSON turns; local Ollama pinned by installed digest/runtime; bounded native persistent text conversations; no tool/retrieval/memory effects",
+        "session": "optional durable per-release/user/session counter for other families; conversation graphs require explicit sessions; stateless graphs keep stateless mode",
+        "authentication": "single-user local workbench; user/session fields are caller-declared identities, not authentication",
+        "limits": "latest 100 records per family / 100 lifecycle events; full source lineage stays in CAS"
+      }
+    }
+  }
+}

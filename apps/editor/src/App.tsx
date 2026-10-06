@@ -491,32 +491,38 @@ function Workbench() {
   };
 
 
-  const rfNodes: AnyNode[] = useMemo(() => {
+  // Selection changes preserve card data/geometry identities for every other node.
+  // Native report, graph, layout and measured-size changes still rebuild their data.
+  const baseRfNodes: AnyNode[] = useMemo(() => {
     const out: AnyNode[] = [];
     cur.nodes.forEach((n, i) => {
       const nv: NodeView | undefined = own(v?.nodes, n.id);
       const structural = ["core.composite", "core.repeat", "core.select"].includes(n.type);
       const grp = expandedGroups.find((g) => g.path === n.id);
       if (grp) {
-        out.push({ id: n.id, type: "group", position: posOf(n.id, i), selected: selNodes.includes(n.id), style: { width: grp.w, height: grp.h },
+        out.push({ id: n.id, type: "group", position: posOf(n.id, i), selected: false, style: { width: grp.w, height: grp.h },
           data: { path: n.id, module: grp.inst.module, version: grp.inst.version, kind: grp.inst.kind, inputs: grp.inst.inputs, outputs: grp.inst.outputs, width: grp.w, height: grp.h, note: grp.inst.note,
             params: grp.inst.params, errors: grp.inst.diagnostics.filter((d) => d.severity === "error").length, sharedWith: grp.inst.sharedWith, onCollapse: () => toggleExpand(n.id), onOpen: () => openInstance(n.id) } });
         for (const m of grp.members) {
           const fv = rv!.flat![m];
           const op = opsByType[fv.type ?? ""];
-          out.push({ id: m, type: "card", parentId: n.id, extent: "parent", draggable: false, position: grp.lay[m], selected: selNodes.includes(m),
+          out.push({ id: m, type: "card", parentId: n.id, extent: "parent", draggable: false, position: grp.lay[m], selected: false,
             data: { gnode: { id: m, type: fv.type ?? "", version: fv.nodeVersion ?? "1.0.0", config: (fv.resolvedConfig ?? {}) as Record<string, unknown> }, op, view: fv, pending: false, inner: true, localName: m.slice(n.id.length + 1), compat: compatFor(m) } });
         }
         return;
       }
       out.push({
-        id: n.id, type: "card" as const, position: posOf(n.id, i), selected: selNodes.includes(n.id),
+        id: n.id, type: "card" as const, position: posOf(n.id, i), selected: false,
         data: { gnode: n, op: opsByType[n.type], view: nv, pending: validation.pending, compat: def ? undefined : compatFor(n.id), runStatus: tabRun?.nodes.find((x) => x.node === n.id),
           onOpen: structural ? () => openInstance(n.id) : undefined, onToggle: structural && !def && n.type !== "core.select" ? () => toggleExpand(n.id) : undefined, expanded: expandedPaths.has(n.id) },
       });
     });
     return out.map(node => ({ ...node, measured: measurements[node.id] }));
-  }, [cur.nodes, ui.positions, selNodes, opsByType, v, rv, validation.pending, tabRun, expandedGroups, def, compatFor, measurements]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cur.nodes, ui.positions, opsByType, v, rv, validation.pending, tabRun, expandedGroups, def, compatFor, measurements]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rfNodes: AnyNode[] = useMemo(() => {
+    const selected = new Set(selNodes);
+    return baseRfNodes.map(node => selected.has(node.id) ? { ...node, selected: true } : node);
+  }, [baseRfNodes, selNodes]);
   const flowMembership = JSON.stringify(rfNodes.map(node => [node.id, node.type]));
   useEffect(() => {
     const ids = JSON.parse(flowMembership).map((node: string[]) => node[0]);
@@ -557,12 +563,12 @@ function Workbench() {
     } catch (error) { setMessage(errorText(error)); }
   };
 
-  const rfEdges: Edge[] = useMemo(() => {
+  const baseRfEdges: Edge[] = useMemo(() => {
     const base = cur.edges.map((e) => {
       const t = own(v?.nodes, e.from.node)?.outputShapes?.[e.from.port];
       const bad = (own(v?.nodes, e.to.node)?.diagnostics ?? []).some((d) => d.severity === "error" && d.port === e.to.port);
       return {
-        id: e.id, source: e.from.node, sourceHandle: e.from.port, target: e.to.node, targetHandle: e.to.port, selected: selEdges.includes(e.id),
+        id: e.id, source: e.from.node, sourceHandle: e.from.port, target: e.to.node, targetHandle: e.to.port, selected: false,
         label: bad ? `${fmtShape(t)} ✖` : fmtShape(t), interactionWidth: 28, markerEnd: { type: MarkerType.ArrowClosed },
         style: bad ? { stroke: "#c62828", strokeWidth: 2 } : undefined, labelStyle: { fontSize: 10, fill: bad ? "#c62828" : "#444" },
         labelBgStyle: { fill: "#fff", fillOpacity: 0.85 }, labelBgPadding: [3, 2] as [number, number],
@@ -578,7 +584,11 @@ function Workbench() {
       }
     }
     return base;
-  }, [cur.edges, selEdges, v, expandedGroups]);
+  }, [cur.edges, v, expandedGroups]);
+  const rfEdges: Edge[] = useMemo(() => {
+    const selected = new Set(selEdges);
+    return baseRfEdges.map(edge => edge.selectable !== false && selected.has(edge.id) ? { ...edge, selected: true } : edge);
+  }, [baseRfEdges, selEdges]);
 
   const onNodesChange = useCallback((changes: NodeChange<AnyNode>[]) => {
     rememberDimensions(changes);

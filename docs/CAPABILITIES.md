@@ -808,3 +808,20 @@ erasure or result-cache support for other graph families. No saved model/source
 identity, native execution/cache semantics, dependencies or weights were changed.
 The separate policy metadata transaction can lose a receipt after a process crash;
 a later check recomputes actual candidates. See HANDOFF§43 for exact evidence.
+
+
+### Measured large-graph selection (ADR0047; Mac verified, HANDOFF§44)
+
+Declared native-valid100/500/1000node metadata chains, actual warm headlessChrome,
+20nativeHTTPvalidation/10projectload/20outline-selection observations per size,
+nearest-rank quantiles, exact graph/UI/hash/noUndo change and source/environment
+provenance. Raw before/after evidence and limitations are in benchmarks/results/
+editor_selection_summary.md. Stable canvas card/wire metadata changes500-node
+outline-selection p95 from181→54ms;1000nodes still149.8ms. No load improvement
+or full routine-editing/frame-time/heap/GPU/representative model/platform/user
+certification. Native data/geometry changes still invalidate card/wire metadata.
+Full1239pass/1skip/14deselected559.86s,14actualOllama live/33Node tests,280module
+build/typecheck/ledger/source-pin audit, literalcurl matching native hashes/typed
+ports, all12originaleditorjourneys and137file/11DB source-deletion recovery pass.
+Existing native models/source pins/dependencies remain unchanged. Hosted outcomes
+are recorded separately in§44; no whole-VISION completion is claimed.

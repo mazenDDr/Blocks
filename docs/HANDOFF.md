@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §43 — optional automatic cache retention is Mac verified; read its final acceptance/publication checkpoint.** JSON96cb454 now has green hosted native/browser verification37399325114. Broad VISION work remains; nextADR0047. Preserve each active code CI before another master push.
+> **Latest continuation: §44 — measured large-graph selection is Mac verified; read its final acceptance/publication checkpoint.** Cache25ec83f is pushed (§43); its hosted outcome is recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0046`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0047`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -73,7 +73,8 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Specialized native agent outline | Mac and hosted native/browser verified §40–§42 | 442b3e4 |
 | Specialized native RL Structure/inspector | Mac and hosted native/browser verified through96cb454, §43 | 8204871 |
 | Isolated native JSON agent production | Mac native/live/browser/curl/recovery verified; hosted native/provider-free browser green, §42–§43 | 96cb454 |
-| Optional automatic tabular cache retention | Mac native/live/browser/curl/source-deletion recovery verified, §43/ADR0046; hosted outcome separate | current accepted scope |
+| Optional automatic tabular cache retention | Mac native/live/browser/curl/recovery verified; hosted native outcome below, browser passed §43–§44 | 25ec83f |
+| Measured large-graph selection with stable card/wire metadata | Mac native/live/browser/curl/137-file recovery verified; descriptive timings §44/ADR0047 | current accepted scope |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -137,7 +138,7 @@ Run `git status`. If there are uncommitted files, a previous session was cut off
 
 ## 5. Remaining work
 
-> **Superseded: the current remaining-work list is the latest continuation checkpoint (§43), with broad remaining VISION scope in§32/§40, supplemented by CAPABILITIES.** The entries below are the historical milestone acceptance references, all completed.
+> **Superseded: the current remaining-work list is the latest continuation checkpoint (§44), with broad remaining VISION scope in§32/§40, supplemented by CAPABILITIES.** The entries below are the historical milestone acceptance references, all completed.
 
 ### 6b — completed domain scope (VISION §9.7, §9.8, §23 Milestone 6 "Domain evidence", A56, A57, A58)
 
@@ -1428,3 +1429,47 @@ Previous default [37399325114](https://github.com/mazenDDr/project-void/actions/
 
 
 Final labelled-fields Chrome `/private/tmp/void-cache-retention-editor-labelled-fields` **passes11.325156333s**,75518/75521/75540 stopped(-15/143/0), every strict error array empty. Actual preview/prune/disable and invalid-scope guard unchanged, readable field units/ranges visually inspected. Final280module build/typecheck/33Node191.732334ms pass. This only improves presentation; final native/full/live evidence above remains applicable. Mac cache scope accepted; commit/push next after completedJSONCI evidence preserved. Latest account53%five-hour/82%weekly; continue alone, no reset credit used, nextADR0047. All owned services stopped; user8258/8000 remains untouched.
+
+
+### Cache publication and additive benchmark draft
+
+Accepted cache-retention **25ec83fee4615993d5d36c799c7039d3ad9dc37a is pushed to origin/master**. New default [37401378340](https://github.com/mazenDDr/project-void/actions/runs/37401378340) genuinely inprogress; preserve both jobs/artifacts before another codepush. EarlierJSON37399325114 completedgreen above. Cache newhosted outcome notyetclaimed. No user8258/8000 changes.
+
+Additive unaccepted next-scope draft `tools/editor_performance_benchmark.py`/`apps/editor/smoke/performance.mjs`: actual owned headlessChrome/Vite/nativeHTTP timing on declared100/500/1000node metadata-only tensorinput→ReLUchains;20warmvalidation/10load/20outline-selection samples, nearest-rank quantiles/rawvalues/environment and exact savedgraph/UI/hash/noUndochange. Descriptive measurement, no latencythreshold success claim, no modeltraining/quality/GPU/RSS/canvasframe-time/outside-user certification. Initial `/private/tmp/void-editor-performance-first` fails5.508650208s before timing because fixture used output instead of actual tensorinput value port (E_UNKNOWN_PORT/E_MISSING_INPUT); ports corrected/nativevalidity assertions retained. All75773/75774/75793 ownedgroups stopped(-15/143/1), strictarrays empty. Rerun `/private/tmp/void-editor-performance-native-ports` genuinely running; no measurementaccepted yet. Final artifacts/docs/ADR0047/HTTP/pin/cleanup needed before committing; core product code/pins/deps unchanged. Account55%five-hour83%weekly; finish useful work near85%reserve, noresetcredit used.
+
+
+## 44. Measured large-graph selection — 2026-10-06 (draft under verification)
+
+Cache25ec83f pushed; its active37401378340 native112069099385/browser112069099663 must complete before nextcodepush. Additive benchmark declared in§43 now passes actual100/500/1000nativevalid chain/load/outlineinspection/no graph/UI/hash/historychange. Corrected owned-dialog repeat `/private/tmp/void-editor-performance-owned-dialogs`51.82207675s75956/75957/75976 stopped(-15/143/0). Final-environment baseline `/private/tmp/void-editor-performance-final-environment`51.461373667s76113/76114/76133 stopped, currentPython/packageversions and benchmarksourcehashes recorded, strictarrays empty. Baseline product is25ec83f. At500nodes p95nativeHTTPvalidation28.4ms/load746.2ms/outlineInspect181ms. At1000nodes176.3ms/1470.9ms/285.4ms. These are one warm headless Chrome/M4Pro/24GiB/dev-mode syntheticchain run, no target/platform/heap/GPU/modelquality certification. Tenloads/20validation/20selection samples, nearest-rank p95 includes animation-frame readiness observers/debounce. Failed native-ports runner got stuck on missing ownedfixture discard-dialog handler; stopped only own exact private browser path75892, owner cleaned75866/75873(-15/143/1),103.245995708s. No userworkbench/server touched.
+
+Measured issue: selecting one node rebuilt every canvascard data object and, because empty edge selection is cleared, every wire object. Draft App.tsx separates native graph/layout/report/card geometry and wire metadata from selection overlays, preserving all unselected object identities. Real native graph/report/geometry updates still rebuild data; expanded group/internal boundary semantics retained. Card-only intermediate `/private/tmp/void-editor-performance-stable-card-data`48.022501209s76269/76270/76289 stopped;500selectionp95 improves137.4ms but still slow, so now wire metadata also preserved. Final currenteditor/benchmark hashes captured by runner. Current `/private/tmp/void-editor-performance-stable-cards-wires` genuinelyrunning, final build/types/Node logs under `/private/tmp/void-editor-selection-final-*`; no accepted optimizationclaim until finalmeasurements/full/live/alloriginal/cache/recovery/curl/pin/docs/ADR0047gates pass. No native/backend/modelidentity/dependency changes. Account59%five-hour83%weekly; finish/publish near85%reserve, noresetcredit/subagents used.
+
+
+### Final measured selection draft; required native finishing
+
+Final `/private/tmp/void-editor-performance-stable-cards-wires` **passes45.658907375s**,76415/76421/76440 stopped(-15/143/0), all strictarrays empty. Published exact rawbefore/after and methodology in benchmarks/results/editor_selection_{before,after}.json/editor_selection_summary.md; no generatedworkbench/dataset/CAS/profile/token included. Same nativehashes/typedports/savegraphUI/noUndo. Actual500nodep95selection181→54ms,1000node285.4→149.8ms;500load746.2→847.4ms, no loadimprovement or fullVISIONperformancecertificationclaim. NativeHTTPp95numbers, fullsamplecounts/environment/sourcehashes retained; screenshotinspected. Finalbuild280modules/typecheck/33Node191.00025ms pass. Literalcurl3cases100/500/1000native typednodecounts and exactbrowsergraphhashes match,76915/65124stopped-15 (`/private/tmp/void-editor-selection-curl/evidence.json`).
+
+Actual fulllive14pass1240deselected33.84s. Requiredfullnative `/private/tmp/void-editor-selection-full.log` exec83478 stillactive, do notinventfinalcounts. Alloriginaleditor first3pass(history7.834920833/clipboard7.822892291/outline8.299930917) then arrangement7.291079667fails50!=60. Captured baselinewasoldreference defaulty60; actionusedactualnewseedlayouty50, exposing same-ID asyncfixtureloadrace, not a geometrymutation. TestnowwaitsfreshnativeLoadreceipt and compares exactGETcanonicalseed graph/UI/hashbeforeactions; everyoriginalgeometry/identity/Undo/Redo assertion retained. Remaining9 rerun `/private/tmp/void-editor-selection-ready-regressions.json` exec86977 active, no acceptanceuntilpass.
+
+Final native+actualOllamaJSON+cachepolicy+localtracker recovery `/private/tmp/void-editor-selection-integrated-recovery` **passes137files/11DBs/3internallinks/1explicitexternalW&Bdebuglogomission/sourceDeletedtrue**, manifestcb6b515ea5410f0c16976a1b34f5d348f5bd5f131099c0f4820b8343da537047. Allsixownedgroupsstopped/strictarrays empty; originalconversations/history/discovery/research/comments/actualtrackers and currentJSONmanifest/freshmodelcall/cachepolicy/revision/receipts/artifacts exact after physicalsource deletion. Final pin/cleanup/fullnative/alloriginal/docsADR0047acceptance/commitpushstillpending. Nativecode/schema/dependencies/modelpins untouched.
+
+Cache37401378340 **hostedbrowser112069099663SUCCESS**, native112069099385stillactive. Download currentbrowserartifacts/log before nextcodepush; no hostedwholeworkflow claim untilnativecompletes. Currentaccount62%five-hour84%weekly. Finish verification/publish/handoff near85reserve; no newlargescope, noresetcreditused. User8258/8000untouched. Broader§32/§40remainingVISION remains unfinished.
+
+
+All12originaleditor regressions nowpass; last9 `/private/tmp/void-editor-selection-ready-regressions.json`: arrangement13.820730041s/comments10.788775042/insertion9.191527208/commands7.201411542/movement9.911044917/moduleclipboard8.208161291/diagnostic9.675967500/agentoutline7.189126459/RLoutline7.545778583. Strictarrays empty/groups stopped. Current source/raw-quantile/pin audit `/private/tmp/void-editor-selection-final-audit.json` passes against25ec83f; published finalbenchmark editor/source hashes matchcurrentfiles and all nearest-rank quantiles independently recomputed. New smoke setup only waitsactualnativefreshloadreceipt/authoritativeGETseed; no productgeometry/testassertion weakened. Integratedrecovery originalseed13.512108584/JSONseed13.261959958/cacheseed11.990705042; all finalrecoveryvalues in ownrunnerJSON. All accepted-check owned PIDs stopped, user8258 present (inspect actual audit count if different). Mandatorynativefullstillrunning; no final countclaimed.
+
+Downloaded `/private/tmp/void-cache-retention-ci-browser` from37401378340 independently **17ownedbrowserjourneys pass** (13editor stages includingactualcache18.211836665s; originalseed22.265030097/restored19.158842514/cachepolicyseed18.168387860/restored11.258372555). Allstrictarrays empty/cleanuprecordsexact/stopped. Source-deletion124files/11DBs/3links/1explicitomission manifest6367671bf55892cd533b8e162bce29de045711dc449e82291ddb31dcd83879ba/sourceDeletedtrue. HostedLinuxhasnoOllamaJSON, honestprovider-freecache/native/trackerrecoveryonly. Native112069099385stillactive; no fullworkflowgreen yet. Attemptedjoblog whilewholeworkflowactive unavailable; retry onterminal, artifactisactualproofalready. New selectionoptimization is not covered bythat25ec83fCI, finalnewcodeCI needed afterpush.
+
+
+Final geometry-reload readiness repair is additive in apps/editor/smoke/arrangement.mjs only. Native code, actual final measured App.tsx and benchmark sources remain unchanged since the full/native and finaltiming started. The exact savedfixture comparison is stronger than the old immediate disabledUndo wait. Syntax/help/coverage/diffchecks pass; currentfullsuite has progressed beyond69% with no failures, finalresultstillpending. Do not restart/cancel thisgenuinelyactiveverification to hurry publication.
+
+Next scope after acceptance isADR0048. Priority: broaden measured editor500-node add/config/drag/zoom plus1000-node selection latency and real production-build/heap/platform samples; retain correct native/geometry/history provenance. Existing500-node outlineInspect54ms is only one bounded workflow, not allroutineediting. Persistent collapsedgroup containers/auto-layout/Agent-RLclipboard and broadproductionretrieval/effects/streaming/multipleproviders, broaderMLadapters, caches/import/dataquality, security/ownership/TLS/privacyerasure/migrations/onlineencryptedbackup and actualGPU/cloud/distributed infrastructure remain unimplemented or unevidenced as listed§32/§40/CAPABILITIES. ExistingGPUhardware should be investigated through applicable GPU skill only when actually undertaking that authorized scope; do not claim hardware absent or CUDA/distributed support without evidence. Anthropic/onlineMLflowW&B still need suppliedcredentials/accounts. Outside-useronboarding and formalaccessibilitycertification remain gaps. No whole-VISION completionclaim.
+
+
+### Final Mac measured-selection acceptance
+
+This supersedes §44 draft/pending notes. Final required native **1239passed,1skipped,14deselected,1941warnings559.86s**, `/private/tmp/void-editor-selection-full.log` exec83478exit0. Actualfulllive **14passed,1240deselected33.84s**. Final280module build/types/33Node191.00025ms/ledgercurrent/diff/sourcehash/pin/quantile audits pass. Existing skip is Anthropic without a key; native library warnings retained. Actual final45.658907375s benchmark,3curlcases/all12originaleditorjourneys and final137file/11DB/3link/1explicitomission physically source-deleted recovery allpass as above. Remaining final recoveryrunner times: originalrestored9.428353584s/JSONrestored7.329177083/cachepolicystored5.750382375; every stricterrorarray empty/58knownownedPIDs stopped. User8258/8000present and unchanged. Native/backend/source-model/dependency files unchanged; no retraining/reinstall/re-registration required. Real new native graph/layout/geometry/report changes still invalidate card/wire metadata; no comparator hides native changes.
+
+Both source benchmark scripts and exact before/after raw20validation/10load/20selection samples/environment/source/nativegraph hashes are versioned. Scope is actual metadata-only100/500/1000node tensor/ReLUchains in warm headlessChrome/Vite dev on AppleM4Pro/24GiB.500nodeoutlineInspectp95181→54ms,1000nodes285.4→149.8ms;500loadp95746.2→847.4ms, no loadimprovement claimed. Frameobserver/debounce/method/noCPUisolation/lowN limitations are explicit. Broader performance targets remain unfulfilled; no GPU/modelquality/fullroutineediting/otherplatform/outside-user certification. Original testsetup failures/retained evidence are above.
+
+Mac selection scope accepted. Commit locally now; **push only after cache37401378340 native112069099385 actually finishes and its JUnit/logs are preserved**. Hostedcachebrowser17journeys/provider-free124file11DB source-deletionrecovery passed; selection optimization requires its own next hostedCI. Final publication checkpoint will give exact SHAs/status. Latest account65%five-hour84%weekly; finish verifiedpublication/handoff then stop near agreed85%reserve. Userrequested continuousworkuntilusage stop; noresetcredit or subagents used. Wholeprojectgoal is not complete; nextADR0048/prioritizedremainingwork immediately above and§32/§40/CAPABILITIES remain authoritative.

@@ -81,8 +81,13 @@ try{
   const ids=['conv_1','pool_1','fc'];
   const source={graph:baseline.graph,ui:{...baseline.ui,positions:{...baseline.ui.positions,conv_1:{x:120,y:50},pool_1:{x:660,y:340},fc:{x:1480,y:720}},arrangementEvidence:'SYNTHETIC user-authored layout fixture; no training/quality claim'}};
   await page.evaluate(async source=>{const r=await fetch('/api/projects/SYNTHETIC_arrangement',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(source)});if(!r.ok)throw Error('Seed layout '+r.status);},source);
-  await page.select('select[aria-label="open project"]','project:SYNTHETIC_arrangement');await page.waitForFunction(()=>document.querySelector('button[aria-label="undo draft edit"]').disabled);
-  baseline=await save();const validated=await native(baseline.graph);assert(validated.ok);assert.equal(validated.totalParams,20042);assert.equal(validated.graphHash,baseline.graphHash);evidence.baseline=baseline;evidence.native=validated;evidence.actions=[];
+  const expected=await page.evaluate(async()=>{const r=await fetch('/api/projects/SYNTHETIC_arrangement');if(!r.ok)throw Error('Read native layout seed '+r.status);return r.json();});
+  if(await page.$('.toast[role="status"]')){await page.click('.toast[role="status"]');await page.waitForFunction(()=>!document.querySelector('.toast[role="status"]'));}
+  await page.select('select[aria-label="open project"]','project:SYNTHETIC_arrangement');
+  await page.waitForFunction(()=>document.querySelector('.toast[role="status"]')?.textContent.includes("Loaded project 'SYNTHETIC_arrangement'"));
+  await page.waitForFunction(()=>document.querySelector('button[aria-label="undo draft edit"]').disabled);
+  baseline=await save();assert.deepEqual(baseline.graph,expected.graph);assert.deepEqual(baseline.ui,expected.ui);assert.equal(baseline.graphHash,expected.graphHash);
+  const validated=await native(baseline.graph);assert(validated.ok);assert.equal(validated.totalParams,20042);assert.equal(validated.graphHash,baseline.graphHash);evidence.baseline=baseline;evidence.native=validated;evidence.actions=[];
   for(const op of ['Align left','Align right','Align top','Align bottom','Center horizontally','Center vertically','Distribute horizontally','Distribute vertically']){
     evidence.stage=op;await select(ids);await page.waitForFunction(()=>[...document.querySelectorAll('.arrangement-actions button')].every(b=>!b.disabled));const dimensions=await boxes(ids);
     await click(op);const moved=await save();checkGeometry(baseline,moved,ids,dimensions,op);
