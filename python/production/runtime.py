@@ -12,8 +12,8 @@ from .store import ProductionStore
 
 
 
-AGENT_ADAPTERS = ("agent", "conversation", "agent_json", "conversation_json", "agent_retrieval", "agent_tools")
-CONVERSATION_ADAPTERS = ("conversation", "conversation_json")  # native checkpoints per release/user/session
+AGENT_ADAPTERS = ("agent", "conversation", "agent_json", "conversation_json", "agent_retrieval", "agent_tools", "conversation_approval")
+CONVERSATION_ADAPTERS = ("conversation", "conversation_json", "conversation_approval")  # native checkpoints per release/user/session
 JSON_ADAPTERS = ("agent_json", "conversation_json")  # validated JSON object per turn
 PORTABLE_ADAPTERS = ("model_keras", "model_jax")  # PyTorch-trained image classifiers served on Keras/JAX
 
@@ -50,9 +50,9 @@ class ProductionRuntime:
     def pipeline(self, version_id):
         version = self.ps.get("version", version_id)
         if version.get("adapter") in AGENT_ADAPTERS:
-            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter
+            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter, approval_adapter
             adapter = {"agent": agent_adapter, "conversation": conversation_adapter, "agent_json": json_agent_adapter,
-                       "conversation_json": json_conversation_adapter, "agent_retrieval": retrieval_agent_adapter, "agent_tools": tools_agent_adapter}[version["adapter"]]
+                       "conversation_json": json_conversation_adapter, "agent_retrieval": retrieval_agent_adapter, "agent_tools": tools_agent_adapter, "conversation_approval": approval_adapter}[version["adapter"]]
             AgentPipeline = (json_agent_adapter.JsonAgentPipeline if adapter is json_agent_adapter
                              else json_conversation_adapter.JsonConversationPipeline if adapter is json_conversation_adapter
                              else tools_agent_adapter.ToolsPipeline if adapter is tools_agent_adapter
@@ -104,11 +104,12 @@ class ProductionRuntime:
         if row is None or row["status"] != "completed":
             raise ProductionError("E_REGISTER_RUN", "Registration requires a completed recorded run.")
         if row["config"].get("kind") == "agent":
-            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter
+            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter, approval_adapter
             adapter, name = {conversation_adapter.NODE: (conversation_adapter, "conversation"), json_agent_adapter.NODE: (json_agent_adapter, "agent_json"),
                              json_conversation_adapter.NODE: (json_conversation_adapter, "conversation_json"),
                              retrieval_agent_adapter.NODE: (retrieval_agent_adapter, "agent_retrieval"),
-                             tools_agent_adapter.NODE: (tools_agent_adapter, "agent_tools")}.get(req.node, (agent_adapter, "agent"))
+                             tools_agent_adapter.NODE: (tools_agent_adapter, "agent_tools"),
+                             approval_adapter.NODE: (approval_adapter, "conversation_approval")}.get(req.node, (agent_adapter, "agent"))
             manifest = adapter.build_manifest(self.store, req.runId, req.node)
             sha = self.store.put_bytes(dumps(manifest).encode())
             return self.ps.save("version", {**req.model_dump(), "adapter": name, "family": manifest["family"],
@@ -189,10 +190,11 @@ class ProductionRuntime:
         p.validate_records(records, req.config.maxBatch)
         result, timing = p.predict(records, deadline=time.perf_counter()+req.config.timeoutSeconds) if agent else p.predict(records)
         timing.pop("_checkpoint", None)  # isolated warmup never commits conversation state
+        timing.pop("_status", None)
         r = self.ps.save("release", {"versionId": v["id"], "pipelineSha256": v["pipelineSha256"], "config": req.config.model_dump(),
                                      "adapter": "local FastAPI / native LangGraph / local Ollama" if agent else f"local FastAPI / PyTorch-trained {v['family']} on {v['adapter'][6:]} CPU" if v.get("adapter") in PORTABLE_ADAPTERS else f"local FastAPI / native PyTorch {v['family']} CPU" if v.get("adapter") in ("domain", "model", "rl") else "local FastAPI / native scikit-learn CPU",
                                      "replicas": 1, "mode": "real local endpoint",
-                                     "conversationPolicy": "Native state/history persists per release/user/session even when trace capture is off; only successful END turns commit; research history never copied." if conversation else None,
+                                     "conversationPolicy": "Native paused/END checkpoints persist per release/user/session; reviewed approve/reject/edit resumes; file effects unsupported." if v.get("adapter") == "conversation_approval" else "Native state/history persists per release/user/session even when trace capture is off; only successful END turns commit; research history never copied." if conversation else None,
                                      "compatibility": {"ok": True, "warmupResultSha256": self.store.put_bytes(dumps(result).encode()), "timings": timing},
                                      "resources": {"placement": "local control process; model device managed by Ollama, not measured" if agent else "same local control process, CPU", "autoscaling": "not implemented", "cost": "not measured"}})
         return r
@@ -208,6 +210,9 @@ class ProductionRuntime:
         if req.expectedRelease and req.expectedRelease != release["id"]:
             raise ProductionError("E_RELEASE_CHANGED", "Target no longer routes the selected release; request not sent.", 409)
         rid, cfg = release["id"], release["config"]
+        approval_family = self.ps.get("version", release["versionId"]).get("adapter") == "conversation_approval"
+        if getattr(req, "approval", None) is not None and not approval_family:
+            raise ProductionError("E_RELEASE_CONFIG", "This release does not support approval resumes.")
         fingerprint = hashlib.sha256(json.dumps({"release": rid, **req.model_dump()}, sort_keys=True).encode()).hexdigest()
         replay = self.ps.begin_request(req.user, req.requestId, fingerprint, rid)
         if replay is not None:
@@ -223,6 +228,8 @@ class ProductionRuntime:
                  "totalMsDefinition": "admission through inference/error handling, excluding trace/session persistence and HTTP encoding; traffic client measures end-to-end latency"}
         if cfg["sessionMode"] == "conversation":
             trace["capturePolicy"] += "; native conversation checkpoint/history persists independently of trace capture"
+        if approval_family:
+            trace["capturePolicy"] += "; pending review payload and submitted approval decision also persist independently of trace capture"
         with self.lock:
             admission = self.admissions.setdefault(rid, Admission(cfg))
             slock = self.session_locks.setdefault(scope, threading.Lock()) if scope else None
@@ -253,9 +260,16 @@ class ProductionRuntime:
                     parent = previous["checkpointSha256"] if previous else None
                     trace["conversationParent"] = {"revision": previous["revision"] if previous else 0, "checkpointSha256": parent}
                     kwargs["checkpoint"] = parent
+                    if approval_family:
+                        from .approval_requests import reviewed_parent
+                        reviewed_parent(previous, getattr(req, "approval", None))
+                        kwargs["approval"] = getattr(req, "approval", None)
+                        trace["approval"] = req.approval.model_dump() if getattr(req, "approval", None) else None
                 result, timing = p.predict(req.records, capture=cfg["captureInputs"], deadline=deadline,
                                           cancelled=lambda: self.ps.cancelled(req.user, req.requestId), **kwargs)
                 candidate = timing.pop("_checkpoint", None)
+                if approval_family:
+                    trace["status"] = timing.pop("_status")
             else:
                 result, timing = p.predict(req.records)
             if not cfg["captureInputs"]:
@@ -269,7 +283,9 @@ class ProductionRuntime:
         finally:
             trace["totalMs"] = (time.perf_counter()-start)*1000
             try:
-                finished = self.ps.finish_request(req.user, req.requestId, trace,
+                from .approval_store import finish_request as finish_approval
+                finish = (lambda *a, **kw: finish_approval(self.ps, *a, **kw)) if approval_family else self.ps.finish_request
+                finished = finish(req.user, req.requestId, trace,
                                                   scope if cfg["sessionMode"] == "counter" else None,
                                                   conversation=(scope, previous, candidate) if cfg["sessionMode"] == "conversation" and scope else None,
                                                   deadline=deadline)

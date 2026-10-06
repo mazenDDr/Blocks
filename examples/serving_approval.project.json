@@ -1,0 +1,178 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "tick",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "n",
+            "kind": "increment",
+            "by": 1
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "draft",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "answer",
+            "kind": "template",
+            "template": "{question}"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "review",
+      "type": "agent.human_interrupt",
+      "version": "1.0.0",
+      "config": {
+        "prompt": "Review the SYNTHETIC proposal.",
+        "show_field": "answer",
+        "edit_field": "answer",
+        "decision_field": "decision",
+        "actions": [
+          "approve",
+          "reject",
+          "edit"
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "finish",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "answer",
+            "kind": "template",
+            "template": "{decision}: {answer} / {n}"
+          }
+        ]
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "START__tick",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "tick",
+        "port": "in"
+      }
+    },
+    {
+      "id": "tick__draft",
+      "kind": "control",
+      "from": {
+        "node": "tick",
+        "port": "out"
+      },
+      "to": {
+        "node": "draft",
+        "port": "in"
+      }
+    },
+    {
+      "id": "draft__review",
+      "kind": "control",
+      "from": {
+        "node": "draft",
+        "port": "out"
+      },
+      "to": {
+        "node": "review",
+        "port": "in"
+      }
+    },
+    {
+      "id": "review__finish",
+      "kind": "control",
+      "from": {
+        "node": "review",
+        "port": "out"
+      },
+      "to": {
+        "node": "finish",
+        "port": "in"
+      }
+    },
+    {
+      "id": "finish__END",
+      "kind": "control",
+      "from": {
+        "node": "finish",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "question",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "n",
+        "type": "integer",
+        "reducer": {
+          "kind": "add"
+        },
+        "scope": "thread",
+        "description": "",
+        "default": 0
+      },
+      {
+        "name": "answer",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "decision",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      }
+    ],
+    "limits": {
+      "maxSteps": 10,
+      "maxSeconds": 10,
+      "maxModelCalls": 1,
+      "maxTokens": 1024
+    }
+  }
+}

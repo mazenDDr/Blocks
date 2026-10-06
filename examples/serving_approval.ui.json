@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "tick": {
+      "x": 100,
+      "y": 100
+    },
+    "draft": {
+      "x": 370,
+      "y": 100
+    },
+    "review": {
+      "x": 640,
+      "y": 100
+    },
+    "finish": {
+      "x": 910,
+      "y": 100
+    }
+  },
+  "description": "SYNTHETIC effect-free approval teaching workflow. Review native paused state, then approve/reject/edit; no file writes or model-quality claim.",
+  "synthetic": true
+}

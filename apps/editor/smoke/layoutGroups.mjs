@@ -33,6 +33,17 @@ const save=async()=>{
 const undo=async()=>{await page.evaluate(()=>document.activeElement?.blur());await page.keyboard.down(process.platform==='darwin'?'Meta':'Control');await page.keyboard.press('z');await page.keyboard.up(process.platform==='darwin'?'Meta':'Control');};
 const open=async sel=>{if(!(await page.$eval(sel,e=>e.open)))await page.click(sel+' summary');};
 const rect=sel=>page.$eval(sel,e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};});
+const settledRect=sel=>page.$eval(sel,async e=>{
+  await document.fonts.ready;
+  let last='',stable=0;
+  for(let i=0;i<180;i++){
+    await new Promise(requestAnimationFrame);
+    const r=e.getBoundingClientRect(),key=[r.x,r.y,r.width,r.height].map(v=>v.toFixed(2)).join(',');
+    stable=key===last?stable+1:0;last=key;
+    if(stable>=8)return {x:r.x,y:r.y,w:r.width,h:r.height};
+  }
+  throw Error('Frame geometry did not settle after loading the saved project');
+});
 const frameSel=`[aria-label="layout group ${LABEL}"]`;
 try{
   await page.goto(process.env.VOID_SMOKE_URL);
@@ -63,8 +74,9 @@ try{
   await page.reload();await page.waitForSelector(`select[aria-label="open project"] option[value="project:${ID}"]`);
   await page.select('select[aria-label="open project"]','project:'+ID);await toast(`Loaded project '${ID}'`);await page.waitForSelector(frameSel);
   evidence.stage='clicking the frame selects its cards; deleting the group leaves cards in place';
-  const h2=await rect(frameSel+' .layout-frame-head');await page.mouse.click(h2.x+h2.w-20,h2.y+h2.h/2);// the header band: wires can cross the frame body
-  await open('.arrangement-tools');await page.waitForFunction(()=>document.querySelector('.arrangement-tools legend')?.textContent.includes('(3)'));
+  await open('.arrangement-tools');
+  const h2=await settledRect(frameSel+' .layout-frame-head');await page.mouse.click(h2.x+10,h2.y+h2.h/2);// the header band: wires can cross the frame body
+  await page.waitForFunction(()=>document.querySelector('.arrangement-tools legend')?.textContent.includes('(3)'));
   await open('.layout-groups');await page.click('button[aria-label="delete layout group group_1"]');await toast('Deleted the layout group');
   const removed=await save();assert.deepEqual(removed.ui.layoutGroups,[]);assert.deepEqual(removed.ui.positions,grouped.ui.positions);
   assert.equal(await page.$(frameSel),null);

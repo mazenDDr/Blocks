@@ -61,6 +61,8 @@ def register(app: FastAPI, sv):
     traffic = TrafficRunner(rt, getattr(sv, "api_token", None))
     sv.production, sv.traffic = rt, traffic
     ps = rt.ps
+    from .approval_api import register as register_approvals
+    register_approvals(app, rt)
 
     @app.exception_handler(ProductionError)
     async def production_error(_: Request, e: ProductionError):
@@ -96,6 +98,11 @@ def register(app: FastAPI, sv):
                 if agent_node:
                     candidates.append({"runId": row["id"], "node": agent_node, "pipelineSha256": None,
                                        "graphHash": row["graph_hash"], "adapter": "agent", "family": "agent_turn"})
+                from production import approval_adapter
+                approval_node = approval_adapter.is_candidate(sv.store, row)
+                if approval_node:
+                    candidates.append({"runId": row["id"], "node": approval_node, "pipelineSha256": None,
+                                       "graphHash": row["graph_hash"], "adapter": "conversation_approval", "family": "agent_turn"})
                 from production import tools_agent_adapter
                 tools_node = tools_agent_adapter.is_candidate(sv.store, row)
                 if tools_node:
@@ -125,7 +132,7 @@ def register(app: FastAPI, sv):
                 "capabilities": {"adapter": "native scikit-learn tabular pipeline; native PyTorch vision/NLP/speech domain models (1-4 records per request); PyTorch model-graph image classifiers (1-32 images); greedy DQN policies (1-256 observations); k-means / Gaussian mixture / PCA (1-128 rows)", "targets": ["local", "staging"], "replicas": 1,
                                  "mode": "real native serving in this local FastAPI process; Ollama model device managed by its runtime; staging is a separate local route",
                                  "remoteDeployment": "not implemented: no infrastructure configured", "batch": "bounded synchronous batch",
-                                 "streaming": "agent SSE: provisional token deltas followed by the authoritative trace", "agent": "isolated native LangGraph text or schema-validated JSON turns; local Ollama pinned by installed digest/runtime; bounded native persistent text conversations; bounded pure calculator turns and pinned retrieval; no file tools, memory effects or approval interrupts",
+                                 "streaming": "agent SSE: provisional token deltas followed by the authoritative trace", "agent": "isolated native LangGraph text or schema-validated JSON turns; local Ollama pinned by installed digest/runtime; bounded native persistent text conversations; bounded pure calculator turns and pinned retrieval; committed human approval checkpoints; no file tools or memory effects",
                                  "session": "optional durable per-release/user/session counter for other families; conversation graphs require explicit sessions; stateless graphs keep stateless mode",
                                  "authentication": "single-user local workbench; user/session fields are caller-declared identities, not authentication",
                                  "limits": "latest 100 records per family / 100 lifecycle events; full source lineage stays in CAS"}}
@@ -393,8 +400,13 @@ def register(app: FastAPI, sv):
         if ps.get("version", trace["versionId"]).get("adapter") in CONVERSATION_ADAPTERS:
             if "conversationParent" not in trace:
                 raise ProductionError("E_REPLAY_CHECKPOINT", "This failed request has no recorded prior checkpoint; replay unavailable.", 409)
-            result, timing = p.predict(trace["records"], capture=True, checkpoint=trace["conversationParent"]["checkpointSha256"])
+            kwargs = {}
+            if ps.get("version", trace["versionId"]).get("adapter") == "conversation_approval":
+                from production.approval_requests import Review
+                kwargs["approval"] = Review.model_validate(trace["approval"]) if trace.get("approval") else None
+            result, timing = p.predict(trace["records"], capture=True, checkpoint=trace["conversationParent"]["checkpointSha256"], **kwargs)
             timing.pop("_checkpoint", None)
+            timing.pop("_status", None)
         else:
             result, timing = p.predict(trace["records"], capture=True) if agent else p.predict(trace["records"])
         return {"result": result, "timings": timing, "sourceTraceSha256": trace["traceSha256"], "releaseId": trace["releaseId"],

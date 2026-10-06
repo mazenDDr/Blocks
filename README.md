@@ -1099,3 +1099,49 @@ pnpm -C apps/editor exec tsc --noEmit
 All 18 `tools/editor_*_smoke.py` runners passed, with individual
 logs and output directories under `/private/tmp/void-tools-regressions`. These paths are
 local execution evidence, not committed artifacts or hosted-provider certification.
+
+## Approval checkpoints in releases
+
+Open the SYNTHETIC `serving_approval` example, run it, then approve its research
+review to reach END. Register its **native conversation with approval checkpoints**
+candidate and preview/deploy a maxBatch=1 conversation release. Warmup pauses privately.
+A served turn returns HTTP202 with a committed native pending review and no prediction.
+In Requests, **Inspect pending approval**, review the proposal/revision, then choose
+**Approve and resume**, **Reject and resume**, or edit the proposal and resume.
+The registered graph defines how each decision changes its result. See
+[ADR0063](docs/adr/0063-committed-approval-checkpoints.md).
+
+Paused state and the approval receipt persist across restart even when trace capture
+is off. Resume preserves the turn inputs and requires the reviewed release, revision,
+checkpoint and interrupt ID; stale or competing decisions refuse. Active execution
+seconds and model/token budgets carry across the pause; human waiting is excluded.
+File tools/effects, fixed parallel forks/joins, repeated interrupts, JSON output and retrieval/memory combinations
+are not supported by this family. Existing stateless JSON-agent versions need
+re-registration because they pin the shared integration files.
+
+Commands actually run (full acceptance/evidence in HANDOFF§61):
+
+```sh
+.venv/bin/pytest -q tests/test_production_approval.py
+.venv/bin/pytest -q -m live tests/test_production_approval_live.py
+.venv/bin/python tools/editor_approval_agent_smoke.py --output /private/tmp/void-approval-editor-1
+pnpm -C apps/editor exec tsc --noEmit
+```
+
+Additional commands actually run for approval verification:
+
+```sh
+.venv/bin/pytest -q -m live
+.venv/bin/python -m backends.coverage --write
+.venv/bin/pytest -q -o faulthandler_timeout=240 --junitxml=/private/tmp/void-approval-native-final.xml
+node --test apps/editor/tests/*.test.mjs
+pnpm -C apps/editor build
+.venv/bin/python tools/recovery_smoke.py --trackers --json-agent --tools-agent --approval-agent --cache-retention --gc --sealed --output /private/tmp/void-approval-recovery-final
+.venv/bin/python tools/editor_layout_groups_smoke.py --output /private/tmp/void-approval-layout-groups-stable-1
+```
+
+All `tools/editor_*_smoke.py` runners were executed with evidence under
+`/private/tmp/void-approval-regressions-final`. The layout-groups runner now waits for
+stable frame geometry before the real selection click after reload; selection,
+member movement, exact saved layout and Undo checks are retained. Hosted failure
+and final acceptance are recorded in HANDOFF§61.

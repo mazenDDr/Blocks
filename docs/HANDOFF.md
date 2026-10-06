@@ -1888,7 +1888,7 @@ Observed so far:
   restored evidence. Dedicated request screenshot was visually inspected.
 - Full native **1300 passed / 1 skipped / 20 deselected**, 535.77s; retained
   1941 existing/provider/framework warnings, `/private/tmp/void-tools-native.log`
-  and JUnit `/private/tmp/void-tools-native.xml`. Hosted CI for new work is not observed.
+  and JUnit `/private/tmp/void-tools-native.xml`. Hosted result recorded below.
 
 Retained development failures: first focused run omitted the max_batch validation
 argument; fixture routes/joins used invalid IDs/edges and reused an incompatible
@@ -1903,4 +1903,90 @@ with the restored two-request report. The runner now records monitoring after al
 requests and checks the exact restored report; the full rerun passed. Original
 evidence retained at `/private/tmp/void-tools-recovery`.
 
-Next work after accepting/publishing this scope remains §59 item2 (approval interrupts).
+Commit **2a58545** published; hosted [37425641129](https://github.com/mazenDDr/project-void/actions/runs/37425641129)
+finished **failure** overall. Linux native **1300 passed / 1 skipped / 20 deselected**,
+1088.92s / 1941 warnings; build/typecheck/Node/coverage passed. Browser failure was
+existing layout-groups frame selection after reload; calculator source/restored execution
+and the other browser journeys passed. Failed evidence and the runner fix are in §61.
+Native hosted log `/private/tmp/void-tools-hosted-native-job.log`, JUnit under
+`/private/tmp/void-tools-hosted-native-evidence`. Hosted acceptance is not claimed.
+
+Next work §59 item2 is implemented and under verification in §61.
+
+## 61. Committed native approval checkpoints — Codex continuation, 2026-10-06
+
+§59 item2: new `approval_adapter.py`, `approval_store.py`, `approval_requests.py`,
+`approval_monitor.py`, `control/approval_api.py`, `ApprovalReview.tsx`, ADR0063,
+SYNTHETIC `serving_approval` example and owned approval browser/recovery journey.
+Native checkpoint/pending writes persist; HTTP202 atomically commits the paused head
+with a terminal request trace. Reviewed release/revision/SHA/interrupt checks resume
+approve/reject/text-edit through native Command; no prior node/model repetition.
+One interrupt in an acyclic graph; no file tools/effects. Model/token budgets and
+active execution time carry across pause, waiting excluded. Old execution source
+bytes remain unchanged; stateless agent_json integration pins require re-registration.
+
+Observed: focused native **16 passed**, 8.32s `/private/tmp/void-approval-focused-4.log`;
+focused live actual Ollama **1 passed**, 4.73s `/private/tmp/void-approval-live-focused.log`;
+owned Chrome source review → register → paused warmup/deploy → edit/approve/reject
+passes14.34s `/private/tmp/void-approval-editor-1` (empty error arrays, owned groups stopped).
+Typecheck passes. Full native/live/editor/recovery checks are not yet accepted.
+
+Retained development failures: first focused run exposed a malformed adapter-dispatch
+entry from a broad replacement; repaired to the exact new-family entry. Second run
+exposed native values-stream interrupt objects (not ordinary JSON state); state-bound
+checks now select declared fields, and pending metadata comes from native get_state.
+`/private/tmp/void-approval-focused-{1,2,3,4}.log`. Native semantics/assertions unchanged.
+
+Calculator commit **2a58545** pushed after previous hosted CI finished; hosted
+[37425641129](https://github.com/mazenDDr/project-void/actions/runs/37425641129)
+was observed in progress (full SHA query). Do not push the next scope until it finishes.
+
+Approval review follow-up: registration now refuses empty/duplicate actions and fixed
+parallel forks/joins; conditional routes remain native and acyclic, so a single
+interrupt has one activation in a logical turn. Full native attempts1/2 were
+interrupted after these bounded-scope corrections; they are not acceptance. Attempt2
+also retained a pytest interruption-report KeyError; final run is fresh at
+`/private/tmp/void-approval-native-final.log`. No weakening of native assertions.
+Live final **21 passed / 1319 deselected**,32.25s `/private/tmp/void-approval-live-final.log`
+(pre final parallel-fork refusal); full final acceptance remains pending.
+
+Hosted calculator run browser job **failed** at existing layout-groups frame selection
+after reload, with empty runtime/API/console errors. Other journeys, including actual
+calculator source + restored execution, passed. Uploaded evidence downloaded into
+`/private/tmp/void-tools-hosted-browser-evidence`, raw job log
+`/private/tmp/void-tools-hosted-browser-job.log`; native CI still in progress at observation.
+The failure screenshot was inspected. The runner now waits for settled header geometry
+after opening the arrangement panel and clicks inside its header; exact selection,
+layout/member movement/Undo assertions remain. Focused repair passes6.28s at
+`/private/tmp/void-approval-layout-groups-stable-1`; timing is an inference until hosted
+verification. This scope will carry the runner correction and preserve the failed CI
+record, rather than report the failed run as accepted.
+
+Final focused approval native checks **19 passed**,9.52s
+`/private/tmp/void-approval-focused-final.log`; final actual live **21 passed /
+1320 deselected**,28.98s `/private/tmp/void-approval-live-final2.log`.
+All **19** `tools/editor_*_smoke.py` runners pass on final code, empty runtime/API/
+console arrays, `/private/tmp/void-approval-regressions-final`; Node50pass0fail,
+build/typecheck pass (existing large-bundle warning), coverage current/diff clean.
+Final integrated baseline + tracker/JSON/calculator/approval/cache + GC/sealed recovery
+**passed** after physical source deletion, **169 files / 11 SQLite databases**,
+`/private/tmp/void-approval-recovery-final/recovery.json`. The exact reviewed paused
+head/payload/trace were compared before native edit/approve/reject continuation;
+restored pending screenshot visually inspected. Full native remains pending.
+
+Hosted calculator run **37425641129 completed with failure**: native `verify` job
+**success**, browser job **failure** solely at the layout-groups selection check.
+Calculator seed/restored browser and sealed/GC/tracker/cache baseline recovery passed
+on Linux. Overall hosted acceptance for 2a58545 is **not claimed**. Previous run is
+finished; the next code push is now permitted by §59's CI concurrency rule.
+
+Final approval native **1319 passed / 1 skipped / 21 deselected**,544.18s,1941 retained
+framework/provider warnings. `/private/tmp/void-approval-native-final.log` and JUnit
+`/private/tmp/void-approval-native-final.xml`. ADR0063 is accepted on Mac; hosted
+acceptance remains separate. React best-practices skill review: interaction-driven
+state updates, labeled edit input/named review region, keyed scope resets and no
+additional polling; actual owned Chrome confirms controls and native decisions.
+
+Next priority is §59 item3: retrieval with conversation/JSON output and bounded
+memory policies in releases. Approval file effects (`write_note`) remain unsupported;
+this scope implements committed human approval machinery, not an external effect ledger.

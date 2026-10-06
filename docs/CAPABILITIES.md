@@ -985,3 +985,22 @@ runtime/API/monitor source pins changed. No dependencies/schema/training change.
 Full native 1300 passed / 1 skipped / 20 deselected; live 20 passed; all 18 editor
 journeys and sealed source-deletion recovery passed. Hosted CI is recorded separately
 in HANDOFF§60.
+
+### Committed native approval checkpoints (ADR0063; Mac native/live/editor/recovery verified, HANDOFF§61)
+
+New `conversation_approval` family accepts effect-free acyclic text conversations
+with one active path and exactly one human interrupt. HTTP202 commits paused native state/pending writes
+and exposes the review; reviewed approve/reject/text-edit requests restore the native
+checkpoint and resume without repeating prior nodes/model calls. Revision/SHA/interrupt/
+release checks, idempotency, deadlines, cancellation and atomic trace/head commit apply.
+Persistent state/review/decision is independent of trace capture. Editor inspection and
+resume controls; monitoring distinguishes pending from errors and counts actual committed
+segment usage; isolated replay; paused reset/fork/restore refused.
+
+Focused native19 passed (including actual SIGKILL restart and independent native-state
+agreement); full native1319 passed / 1 skipped / 21 deselected; live21 passed; all19
+editor journeys and sealed source-deletion recovery passed, including resume of the
+exact restored paused checkpoint. Hosted outcome is recorded separately in HANDOFF§61. No file effects/write_note, retrieval/
+JSON/memory combination, fixed parallel forks/joins, repeated interrupts, arbitrary edit values, distributed
+ownership or exactly-once effect claim. Existing execution adapters unchanged;
+stateless `agent_json` needs re-registration after shared integration updates.
