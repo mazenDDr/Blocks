@@ -1440,3 +1440,19 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_production_memory.py
 .venv/bin/python tools/editor_release_memory_smoke.py --output /private/tmp/void-release-memory-4
 ```
+
+## Tabular data-scale benchmark
+
+`benchmarks/tabular_scale.py` runs the `production_sensors` pipeline on SYNTHETIC CSVs from 10 thousand to
+10 million rows. Results for the Mac and the Linux GPU machine are in
+`benchmarks/results/tabular_scale_summary.md`: linear time (10M rows in 38 s / 56 s), about 3 GiB peak memory,
+and stored intermediate tables about 5.5× the CSV size.
+
+Commands actually run:
+
+```bash
+.venv/bin/python benchmarks/tabular_scale.py --rows 10000 100000 1000000 3000000 10000000 --out benchmarks/results/tabular_scale_mac.json
+# on the GPU machine (conda env main):
+python benchmarks/tabular_scale.py --rows 10000 100000 1000000 3000000 10000000 --out tabular_scale_gpu_box.json
+.venv/bin/pytest -q tests/test_tabular_scale_benchmark.py
+```

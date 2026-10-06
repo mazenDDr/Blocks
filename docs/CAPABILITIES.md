@@ -1145,3 +1145,11 @@ provider manifests, registry, GPU image, editor bundle.
 read); writes commit atomically with successful traces; 200-record cap; list/delete API and
 editor panel. Not provided: cross-release memory, conversation/tool families with memory,
 approved writes, retention, semantic embeddings, quality evaluation.
+
+### Tabular data scale (measured 2026-10-06, HANDOFF§82)
+
+The CSV → split → standardize → logistic regression → metrics pipeline completed at 10k–10M rows on the Mac
+and on Linux: linear time (≈3.8 / 5.6 µs per row), ≈3 GiB peak at 10M rows, accuracy at the SYNTHETIC rule's
+ceiling. Intermediate tables are stored at ≈5.5× the CSV size, the first practical limit. Validation of
+files over 50 MB checks a 20,000-row sample. Not measured: larger-than-memory data, Postgres/JSONL at scale,
+concurrency, repeated trials. `benchmarks/results/tabular_scale_summary.md`.

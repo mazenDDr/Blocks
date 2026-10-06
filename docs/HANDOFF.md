@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §81 — hosted CI failures on 2bc8afb (recovery fixture, worker finishing race).** §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §82 — tabular data-scale benchmark.** §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2930,3 +2930,11 @@ Hosted run 37479251589 (release memory): two failures, neither in the memory cod
    fails on the previous code ('completed' instead of 'finishing') and passes now. Not reproduced by timing locally.
 Verification: full native 1424 passed, 1 skipped, 27 deselected 551.23s (`/private/tmp/void-ci81-full.log`);
 recovery journey with the CI flags passes (`/private/tmp/void-recovery-2`). Journeys unchanged since §80's run.
+
+## 82. Tabular data-scale benchmark — 2026-10-06
+
+`benchmarks/tabular_scale.py` (+ `tests/test_tabular_scale_benchmark.py`), results `benchmarks/results/tabular_scale_mac.json`,
+`tabular_scale_gpu_box.json`, `tabular_scale_summary.md`. Mac log `/private/tmp/void-tabscale-mac.log`; gpu-box ran in tmux
+`voidscale` (finished, exited) with log/result in `~/project-void-worker/`. All sizes completed on both machines. The
+storage amplification (≈5.5× CSV bytes in the CAS) is reported, not changed. The gpu-box numbers use its conda
+`main` environment (Python 3.11, its own package versions), not the pinned project environment.
