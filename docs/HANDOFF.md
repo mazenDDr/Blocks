@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §54 — worker crash recovery (ADR0057).** §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §55 — persistent layout groups (ADR0058).** §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1708,3 +1708,19 @@ it now reads the store directly.
 Final full native on erasure + recovery: 1272 passed, 1 skipped, 16 deselected 496.70s
 (`/private/tmp/void-recovery-full.log`); live 16 passed 27.76s. (Two earlier full runs
 overlapped in-progress edits; both passed, but this run on the final code is the record.)
+
+Hosted [37414310580](https://github.com/mazenDDr/project-void/actions/runs/37414310580) on 51eceb8
+(fitted unsupervised serving + accounts/TLS): SUCCESS; 92f45ef (erasure + recovery) pushed after it.
+
+## 55. Persistent layout groups — 2026-10-06 (ADR0058)
+
+New `src/layoutGroups.ts` (+4 Node tests), `components/LayoutGroups.tsx` (frame node +
+panel), App wiring (frames prepended to canvas nodes, frame drag/selection handling,
+rename keeps membership), styles, owned Chrome journey `smoke/layoutGroups.mjs` +
+`tools/editor_layout_groups_smoke.py`, CI stage. Journey
+`/private/tmp/void-layout-groups-smoke-3` passes. Two earlier attempts failed on the
+frame-click step: the click landed on a wire crossing the frame body (now the header
+is clicked), and a frame selection was overwritten by the same batch's card
+deselection (fixed in App: frame selection wins).
+All 16 editor journeys pass on this scope (`/private/tmp/void-layout-groups-regressions`), and the
+selection benchmark is unchanged (1000-node p95 48.9 ms; no groups in that fixture). No Python changed.

@@ -1001,3 +1001,18 @@ Commands actually run:
 ```bash
 .venv/bin/pytest -q tests/test_worker_recovery.py
 ```
+
+## Layout groups
+
+Select cards, open **Layout groups** above the canvas and press **Group selected
+cards** to draw a named frame around them. Drag the frame's header to move the
+group, click it to select its cards for the move/arrange/copy tools, or rename,
+change and delete it in the panel. Groups are saved with the layout only; the graph
+and its native identity do not change. See ADR 0058.
+
+Commands actually run (use a fresh evidence path):
+
+```bash
+node --test apps/editor/tests/*.test.mjs
+.venv/bin/python tools/editor_layout_groups_smoke.py --output /private/tmp/void-layout-groups-smoke-3
+```

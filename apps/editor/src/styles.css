@@ -496,3 +496,8 @@ table.compat th { background: #f1f3f6; }
 .agent-outline { flex: none; max-height: 35vh; overflow: auto; }
 .agent-outline pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .rl-outline pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 45vh; overflow: auto; }
+/* Persistent layout groups (ADR 0058): drawn behind cards; the head is the drag handle. */
+.layout-frame { border: 1.5px dashed #6366f1; border-radius: 12px; background: rgba(99, 102, 241, 0.06); box-sizing: border-box; }
+.layout-frame.sel { border-style: solid; background: rgba(99, 102, 241, 0.1); }
+.layout-frame-head { padding: 4px 10px; font-size: 12px; color: #3730a3; cursor: grab; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.layout-group-list { list-style: none; padding: 0; margin: 4px 0; display: grid; gap: 4px; }

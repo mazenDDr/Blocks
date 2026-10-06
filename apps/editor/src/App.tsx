@@ -53,6 +53,8 @@ import { GraphArrangementTools } from "./components/GraphArrangementTools";
 import { arrangeGraphNodes, type Arrangement } from "./graphArrangement";
 import { NodeComments } from "./components/NodeComments";
 import { removeAnnotation, renameAnnotation, saveAnnotation } from "./nodeAnnotations";
+import { createGroup, deleteGroup, frames, groupsOf, renameMember, updateGroup } from "./layoutGroups";
+import { GroupFrame, LayoutGroupsPanel, type FrameNode } from "./components/LayoutGroups";
 import { layeredLayout, AUTO_LAYOUT_LIMIT } from "./graphLayout";
 import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
 import type { AgentClipboard } from "./agentClipboard";
@@ -66,8 +68,9 @@ const EMPTY_TABULAR: Graph = { schemaVersion: "1.0.0", graphKind: "tabular", bac
 interface ProjectInfo { id: string; graphKind: string; description: string | null; synthetic: boolean }
 const EMPTY_UI: UiDoc = { schemaVersion: "1.0.0", positions: {} };
 const LAST_KEY = "void.lastProject";
-const nodeTypes = { card: OpNodeCard, group: GroupCard };
-type AnyNode = CardNode | GroupNode;
+const nodeTypes = { card: OpNodeCard, group: GroupCard, frame: GroupFrame };
+type AnyNode = CardNode | GroupNode | FrameNode;
+const FRAME = "frame:";
 type View = WorkspaceView;
 interface Scope { module: string; version: string; via: string }
 
@@ -289,7 +292,10 @@ function Workbench() {
       nodes: g.nodes.map((n) => (n.id === oldId ? { ...n, id: newId, stateRef: n.stateRef ? n.stateRef.replace(new RegExp(`${oldId}$`), newId) : n.stateRef } : n.sharedWith === oldId ? { ...n, sharedWith: newId } : n)),
       edges: g.edges.map((e) => ({ ...e, id: e.id.split(oldId).join(newId), from: e.from.node === oldId ? { ...e.from, node: newId } : e.from, to: e.to.node === oldId ? { ...e.to, node: newId } : e.to })),
     }));
-    setUi((u) => { const { [posKey(oldId)]: p, ...rest } = u.positions; return { ...u, ...(comments === undefined ? {} : { nodeComments: comments }), positions: p ? { ...rest, [posKey(newId)]: p } : rest }; });
+    setUi((u) => {
+      const { [posKey(oldId)]: p, ...rest } = u.positions, grouped = renameMember(u, def ? `module:${modKey(def)}` : "root", oldId, newId);
+      return { ...grouped, ...(comments === undefined ? {} : { nodeComments: comments }), positions: p ? { ...rest, [posKey(newId)]: p } : rest };
+    });
     setSelNodes([newId]);
     return null;
   };
@@ -524,10 +530,18 @@ function Workbench() {
     });
     return out.map(node => ({ ...node, measured: measurements[node.id] }));
   }, [cur.nodes, ui.positions, opsByType, v, rv, validation.pending, tabRun, expandedGroups, def, compatFor, measurements]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Persistent layout groups: frames drawn first (behind cards) from actual measured card rectangles.
+  const groupScope = def ? `module:${modKey(def)}` : "root";
+  const scopeGroups = useMemo(() => groupsOf(ui).filter(g => g.scope === groupScope), [ui, groupScope]);
+  const frameList = useMemo(() => frames(ui, groupScope, cur.nodes.flatMap((n, i) => measurements[n.id]
+    ? [{ id: n.id, ...posOf(n.id, i), width: measurements[n.id].width, height: measurements[n.id].height }] : [])),
+  [ui, groupScope, cur.nodes, measurements, expandedGroups, auto]); // eslint-disable-line react-hooks/exhaustive-deps
+  const frameNodes: AnyNode[] = useMemo(() => frameList.map(f => ({ id: FRAME + f.id, type: "frame" as const, position: { x: f.x, y: f.y }, zIndex: -1,
+    selectable: true, draggable: true, data: { label: f.label, members: f.members.length, missing: f.missing, width: f.width, height: f.height } })), [frameList]);
   const rfNodes: AnyNode[] = useMemo(() => {
     const selected = new Set(selNodes);
-    return baseRfNodes.map(node => selected.has(node.id) ? { ...node, selected: true } : node);
-  }, [baseRfNodes, selNodes]);
+    return [...frameNodes, ...baseRfNodes.map(node => selected.has(node.id) ? { ...node, selected: true } : node)];
+  }, [frameNodes, baseRfNodes, selNodes]);
   const flowMembership = JSON.stringify(rfNodes.map(node => [node.id, node.type]));
   useEffect(() => {
     const ids = JSON.parse(flowMembership).map((node: string[]) => node[0]);
@@ -615,13 +629,29 @@ function Workbench() {
     return baseRfEdges.map(edge => edge.selectable !== false && selected.has(edge.id) ? { ...edge, selected: true } : edge);
   }, [baseRfEdges, selEdges]);
 
-  const onNodesChange = useCallback((changes: NodeChange<AnyNode>[]) => {
-    rememberDimensions(changes);
-    const moved = applyNodeChanges(changes, rfNodes);
-    const sel = changes.some((c) => c.type === "select");
+  const onNodesChange = useCallback((all: NodeChange<AnyNode>[]) => {
+    rememberDimensions(all);
+    const isFrame = (c: NodeChange<AnyNode>) => "id" in c && c.id.startsWith(FRAME);
+    // A frame is layout decoration: dragging it shifts its member cards, selecting it selects them.
+    for (const c of all.filter(isFrame)) {
+      const f = frameList.find(x => FRAME + x.id === (c as { id: string }).id);
+      if (!f) continue;
+      if (c.type === "position" && c.position) {
+        const dx = c.position.x - f.x, dy = c.position.y - f.y;
+        if (dx || dy) setUi(u => ({ ...u, positions: { ...u.positions, ...Object.fromEntries(f.members.map(m => {
+          const i = cur.nodes.findIndex(n => n.id === m), p = basePos(m, i);
+          return [posKey(m), { x: p.x + dx, y: p.y + dy }];
+        })) } }), c.dragging === true);
+      } else if (c.type === "select" && c.selected) { setSelNodes(f.members); setSelEdges([]); }
+    }
+    const changes = all.filter(c => !isFrame(c));
+    if (!changes.length) return;
+    const moved = applyNodeChanges(changes, rfNodes).filter(n => !n.id.startsWith(FRAME));
+    // Selecting a frame deselects the cards in the same batch; the frame's member selection wins.
+    const sel = changes.some((c) => c.type === "select") && !all.some(c => isFrame(c) && c.type === "select" && c.selected);
     if (sel) setSelNodes(moved.filter((n) => n.selected).map((n) => n.id));
     if (changes.some((c) => c.type === "position")) setUi((u) => ({ ...u, positions: { ...u.positions, ...Object.fromEntries(moved.filter((n) => !n.parentId).map((n) => [posKey(n.id), { x: n.position.x, y: n.position.y }])) } }), changes.some(c => c.type === "position" && c.dragging === true));
-  }, [rfNodes, rememberDimensions]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rfNodes, rememberDimensions, frameList]); // eslint-disable-line react-hooks/exhaustive-deps
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
     if (changes.some((c) => c.type === "select")) setSelEdges(applyEdgeChanges(changes, rfEdges).filter((e) => e.selected).map((e) => e.id));
   }, [rfEdges]);
@@ -772,6 +802,11 @@ function Workbench() {
       <GraphClipboardTools key={`clipboard:${projectId}:${def ? modKey(def) : "root"}`} graph={def ? { ...graph, nodes: def.nodes, edges: def.edges } : graph} selected={selNodes} clipboard={clipboard} inModule={!!def}
         blocked={def && (graph.graphKind !== "model" || graph.backend !== "pytorch") ? "E_CLIPBOARD_SCOPE: Module transfer requires a PyTorch model graph." : null}
         onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onCopy={copySelection} onPaste={pasteSelection} onClear={() => { setClipboard(null); setPasteCount(0); }} />
+      <LayoutGroupsPanel key={`groups:${projectId}:${groupScope}`} groups={scopeGroups} nodes={new Set(cur.nodes.map(n => n.id))} selected={selNodes} blocked={null}
+        scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} onSelect={ids => { setSelNodes(ids); setSelEdges([]); }}
+        onCreate={label => { try { const r = createGroup(ui, groupScope, label, selNodes.filter(id => cur.nodes.some(n => n.id === id)), new Set(cur.nodes.map(n => n.id))); setUi(() => r.ui); setMessage(`Created layout group '${label.trim()}'. The graph is unchanged.`); } catch (e) { setMessage(errorText(e)); } }}
+        onUpdate={(id, change) => { try { const next = updateGroup(ui, id, change, new Set(cur.nodes.map(n => n.id))); setUi(() => next); } catch (e) { setMessage(errorText(e)); } }}
+        onDelete={id => { setUi(u => deleteGroup(u, id)); setMessage("Deleted the layout group; its cards stay where they are."); }} />
       <GraphArrangementTools key={`arrangement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={arrangementBlocked} autoBlocked={autoArrangeBlocked} onAutoArrange={autoArrange}
         onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onArrange={arrangeSelection} onCollapse={expandedGroups.length ? () => setExpanded([]) : undefined} />
       <GraphMovementTools key={`movement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={movementBlocked}

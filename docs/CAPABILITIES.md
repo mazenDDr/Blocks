@@ -927,3 +927,11 @@ Worker leases with 5 s heartbeats in meta.db; the control service fails active r
 silent for 120 s (`E_WORKER_LOST`, evidence event, artifacts kept) at start-up and
 every 30 s; paused agent runs untouched. Verified with a real SIGKILLed CNN worker
 next to a live one. Not provided: automatic retry/resume, UI badge beyond status.
+
+### Persistent layout groups (ADR0058; Mac verified, HANDOFF§55)
+
+Named, layout-only groups per root/module scope in `ui.layoutGroups`; frames from
+measured cards drawn behind them; frame drag moves exactly the members (one Undo
+edit); frame click selects members; panel create/rename/add/remove/select/delete;
+card rename keeps membership. Graph/hash unchanged. Not provided: nesting,
+collapse, colors, agent/RL canvases, clipboard transfer, group-aware auto-layout.
