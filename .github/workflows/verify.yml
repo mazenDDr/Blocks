@@ -123,7 +123,7 @@ jobs:
         run: .venv/bin/python tools/editor_cache_retention_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-cache-retention-smoke
       - name: Real browser, backup and restored native state journey
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: .venv/bin/python tools/recovery_smoke.py --trackers --cache-retention --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
+        run: .venv/bin/python tools/recovery_smoke.py --trackers --cache-retention --gc --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
       - name: Preserve actual test evidence on success or failure
         if: always()
         uses: actions/upload-artifact@v4

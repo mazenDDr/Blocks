@@ -857,3 +857,24 @@ Commands actually run (use a fresh evidence path):
 node --test apps/editor/tests/*.test.mjs
 .venv/bin/python tools/editor_agent_clipboard_smoke.py --output /private/tmp/void-agent-clipboard-smoke-3
 ```
+
+
+## Reclaiming unreferenced CAS bytes
+
+Preview what an offline collection would delete (read-only), then stop every
+control/worker/tracker/repository writer and apply it. A blob is kept if its
+64-hex name appears in any workbench file, SQLite cell, path, link target or kept
+blob; unreferenced blobs younger than the grace period (default 24h) are kept too.
+Deletion is physical; take a backup first if you may need the bytes. See ADR 0050.
+
+```bash
+.venv/bin/python -m maintenance.cas_gc --workbench .workbench
+.venv/bin/python -m maintenance.cas_gc --workbench .workbench --apply --offline
+```
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_cas_gc.py
+.venv/bin/python tools/recovery_smoke.py --trackers --cache-retention --gc --output /private/tmp/void-cas-gc-recovery-1
+```

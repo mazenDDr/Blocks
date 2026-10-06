@@ -5,14 +5,40 @@ tabular/vision/NLP/speech recovery is independently exercised by pytest.
 """
 import argparse
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 import editor_smoke as smoke
 from workbench_backup.core import create, restore, verify
+
+
+def collect_garbage(source):
+    """Inject one old SYNTHETIC orphan, then collect with no grace period before backup.
+
+    Zero grace is the most aggressive setting: every unreferenced blob of the real seeded
+    workbench is deleted, so the restored journeys prove no needed blob was collected.
+    """
+    from maintenance.cas_gc import collect
+    from artifact_store import ArtifactStore
+    store = ArtifactStore(source)
+    orphan = store.put_bytes(b"SYNTHETIC unreferenced CAS blob for offline collection")
+    os.utime(store.path_of(orphan), (time.time() - 7 * 86400,) * 2)
+    preview = collect(source, grace_seconds=0)
+    if orphan not in preview["list"]:
+        raise RuntimeError("Collection preview did not report the injected orphan.")
+    applied = collect(source, apply=True, offline=True, grace_seconds=0)
+    if applied["listSha256"] != preview["listSha256"] or store.path_of(orphan).exists():
+        raise RuntimeError("Applied collection differs from its preview or kept the orphan.")
+    after = collect(source, grace_seconds=0)
+    if after["candidates"] or after["stalePartialFiles"]:
+        raise RuntimeError("Collection left unreferenced candidates behind.")
+    return {"orphan": orphan, "preview": {k: preview[k] for k in ("blobs", "referenced", "candidates", "candidateBytes", "stalePartialFiles", "databases", "scannedFiles")},
+            "deleted": applied["list"], "listSha256": applied["listSha256"], "remainingBlobs": after["blobs"]}
 
 
 def run(args):
@@ -55,6 +81,8 @@ def run(args):
             tracker_evidence = out / "trackers.json"
             tracker_evidence.write_text(json.dumps(json.loads(seeded.stdout.splitlines()[-1]), indent=2) + "\n")
             extra_env["VOID_RECOVERY_TRACKERS"] = str(tracker_evidence)
+        if args.gc:
+            result["gc"] = collect_garbage(source)
         result["backup"] = create(source, out / "backup", offline=True,
                                   links="internal" if args.trackers else "reject", omit_wandb_external_logs=args.trackers)
         sha = result["backup"]["manifestSha256"]
@@ -94,6 +122,7 @@ def main():
     parser.add_argument("--trackers", action="store_true", help="Seed real local MLflow/offline W&B; use v2 links with explicit external diagnostic-log omission.")
     parser.add_argument("--cache-retention", action="store_true", help="Also seed actual native cached regression/policy and verify policy/receipts/cache/run artifacts after source deletion.")
     parser.add_argument("--json-agent", action="store_true", help="Also seed/recover a pinned JSON version and invoke real installed local Ollama; fails without the provider, no fixture substitution.")
+    parser.add_argument("--gc", action="store_true", help="Inject an old orphan and run offline zero-grace CAS collection on the seeded workbench before backup.")
     parser.add_argument("--timeout", type=float, default=180)
     args = parser.parse_args()
     if not 1 <= args.timeout <= 600:

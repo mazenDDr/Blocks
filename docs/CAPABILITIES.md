@@ -848,3 +848,15 @@ refuse with no edit). Pasted nodes stay unreachable until connected. Page memory
 only; no OS clipboard, runs, memory records or index contents. RL graphs (fixed
 forms) are excluded. Evidence: 5 Node tests and owned Chrome journey
 `tools/editor_agent_clipboard_smoke.py` (same-graph/Undo, cross-project, conflict).
+
+
+### Offline CAS garbage collection (ADR0050; Mac verified, HANDOFF§47)
+
+`python -m maintenance.cas_gc`: dry-run by default; `--apply --offline` deletes
+unreferenced CAS blobs older than the grace period and stale partial writes. Marking
+over-approximates (any 64-hex text in files, SQLite cells read through SQLite, paths,
+link targets and kept blobs, transitively) and refuses on active work, missing
+references or unexpected store files. Not visible: references inside compressed or
+encrypted bytes. Not provided: online/concurrent collection, scheduling, privacy
+erasure of other copies. Evidence: 7 pytest cases and the zero-grace integrated
+recovery (102 real blobs kept, injected orphan deleted, every restored journey passes).

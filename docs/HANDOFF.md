@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §46 — agent graph clipboard (ADR0049).** §45 holds selection-independent side panels; §44 the earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §47 — offline CAS garbage collection (ADR0050).** §46 agent clipboard; §45 selection-independent side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1578,6 +1578,8 @@ and `-memo-final-1`: 1000-node 54.1/48.5ms. Load 1000-node p95 1517.6–1668.2ms
 (`/private/tmp/void-editor-memo-panels-regressions`), error arrays empty, groups
 stopped. Native code unchanged; full native suite runs in hosted CI.
 
+Hosted [37408463313](https://github.com/mazenDDr/project-void/actions/runs/37408463313) on d84315f: SUCCESS, native 1239 passed/1 skipped/14 deselected 981.85s, browser all journeys.
+
 **Next:** Agent/RL clipboard (agent canvas is single-select; copying needs routes,
 joins and state-field compatibility), then the remaining areas in§32/CAPABILITIES.
 
@@ -1595,3 +1597,18 @@ on test bugs (connected-copy check dropped the original START edge; reload betwe
 projects cleared the page-memory clipboard), fixed without weakening assertions.
 RL graphs use fixed env/learner forms, so node clipboard is not applicable; RL
 settings transfer remains open. Regressions: `/private/tmp/void-agent-clipboard-regressions`.
+
+
+## 47. Offline CAS garbage collection — 2026-10-06 (ADR0050)
+
+New `python/maintenance/cas_gc.py` (mark-and-sweep, CLI `python -m maintenance.cas_gc`),
+`tests/test_cas_gc.py` (7 cases), and `tools/recovery_smoke.py --gc` (inject an old
+orphan into the real seeded workbench, preview, apply with zero grace, verify none
+left, then the normal backup → source deletion → restore → restored journeys).
+
+`/private/tmp/void-cas-gc-recovery-1` passes: 103 blobs, 102 referenced, the injected
+orphan the only candidate and deletion (list SHA matches preview); 11 databases
+read through SQLite, 22 other files scanned; 124-file backup; seed/cache-seed/check/
+cache-check journeys pass with empty error arrays and stopped groups. Only the
+orphan was unreferenced, so this proves nothing real was wrongly collected here,
+not that every future writer uses plain-hex references.
