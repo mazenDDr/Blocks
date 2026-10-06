@@ -1016,3 +1016,18 @@ Commands actually run (use a fresh evidence path):
 node --test apps/editor/tests/*.test.mjs
 .venv/bin/python tools/editor_layout_groups_smoke.py --output /private/tmp/void-layout-groups-smoke-3
 ```
+
+## JSON conversations
+
+An agent graph with thread-scoped state and one structured-output node can be
+served as a native conversation whose every turn returns a schema-validated JSON
+object. Register its source run with node `__agent_json_conversation__` (the
+Production registry lists it as a JSON conversation) and release it with session
+state **conversation**. See ADR 0059.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_production_json_conversation.py
+.venv/bin/pytest -q -m live tests/test_production_json_conversation_live.py
+```

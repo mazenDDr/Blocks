@@ -940,3 +940,11 @@ collapse, colors, agent/RL canvases, clipboard transfer, group-aware auto-layout
 before c6a54ad/51eceb8/92f45ef must be re-registered: their pinned implementation files
 changed (streaming, accounts/fitted-unsupervised API edits, worker leases). Other
 serving families are unaffected. Details in HANDOFF "Compatibility note for §45–§55".
+
+### Native JSON conversations (ADR0059; Mac verified with real Ollama, HANDOFF§56)
+
+Adapter `conversation_json`: thread state restored from per-release/user/session
+native checkpoints and a schema-validated JSON object per turn, validated before
+the checkpoint candidate exists; existing conversation actions, labels (canonical
+JSON), monitoring, streaming and editor flows apply. Not provided: tools/retrieval/
+memory/interrupts, other providers, nested schemas, quality benchmarks.

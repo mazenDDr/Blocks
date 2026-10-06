@@ -16,7 +16,7 @@ from agent.models import TOKEN_SINK
 from .accounts import current, ensure_owner
 from production.models import RegisterVersion, ReleaseCreate, PredictRequest, Strict, TrafficSpec
 from production.pipeline import ProductionError
-from production.runtime import ProductionRuntime
+from production.runtime import AGENT_ADAPTERS, CONVERSATION_ADAPTERS, JSON_ADAPTERS, ProductionRuntime
 from production.traffic import TrafficRunner
 from production.monitor import monitoring
 
@@ -93,6 +93,11 @@ def register(app: FastAPI, sv):
                 if agent_node:
                     candidates.append({"runId": row["id"], "node": agent_node, "pipelineSha256": None,
                                        "graphHash": row["graph_hash"], "adapter": "agent", "family": "agent_turn"})
+                from production import json_conversation_adapter
+                json_conversation_node = json_conversation_adapter.is_candidate(sv.store, row)
+                if json_conversation_node:
+                    candidates.append({"runId": row["id"], "node": json_conversation_node, "pipelineSha256": None,
+                                       "graphHash": row["graph_hash"], "adapter": "conversation_json", "family": "agent_json"})
                 json_node = json_agent_adapter.is_candidate(sv.store, row)
                 if json_node:
                     candidates.append({"runId": row["id"], "node": json_node, "pipelineSha256": None,
@@ -126,8 +131,8 @@ def register(app: FastAPI, sv):
         import io
         import pandas as pd
         p = rt.pipeline(vid)
-        if ps.get("version", vid).get("adapter") in ("agent", "conversation", "agent_json"):
-            json_output = ps.get("version", vid).get("adapter") == "agent_json"
+        if ps.get("version", vid).get("adapter") in AGENT_ADAPTERS:
+            json_output = ps.get("version", vid).get("adapter") in JSON_ADAPTERS
             return {"records": p.reference_records(), "observedLabels": None, "family": p.manifest["family"], "inputContract": p.manifest["inputContract"],
                     "labelNote": "Source run input only. No ground truth is inferred. Supply a schema-valid reference object for canonical JSON agreement; not semantic accuracy." if json_output else "Source run input only. No ground truth is inferred from its response. Supply reference text for exact string agreement; this is not semantic accuracy.",
                     "provenance": {"versionId": vid, "runId": p.manifest["runId"], "referenceSha256": p.manifest["referenceSha256"],
@@ -190,7 +195,7 @@ def register(app: FastAPI, sv):
     def health(target: str, namespace: str):
         r = ps.route(target, namespace)
         rt.pipeline(r["versionId"])
-        agent = ps.get("version", r["versionId"]).get("adapter") in ("agent", "conversation", "agent_json")
+        agent = ps.get("version", r["versionId"]).get("adapter") in AGENT_ADAPTERS
         return {"ready": True, "releaseId": r["id"], "versionId": r["versionId"], "replicas": 1, "placement": "local control process; Ollama model device not measured" if agent else "local CPU",
                 "limits": r["config"]}
 
@@ -283,7 +288,7 @@ def register(app: FastAPI, sv):
             ps.add_labels(req.user, id_, req.labels)
             return {"recorded": True, "requestId": id_, "rows": len(req.labels)}
         adapter = ps.get("version", trace["versionId"]).get("adapter")
-        if adapter == "agent_json":
+        if adapter in JSON_ADAPTERS:
             from production.json_agent_adapter import output_value
             try:
                 for value in req.labels:
@@ -372,8 +377,8 @@ def register(app: FastAPI, sv):
             raise ProductionError("E_REPLAY_NOT_CAPTURED", "Inputs were not captured under this release's policy; replay unavailable.", 409)
         p = rt.pipeline(trace["versionId"])
         p.validate_records(trace["records"])
-        agent = ps.get("version", trace["versionId"]).get("adapter") in ("agent", "conversation", "agent_json")
-        if ps.get("version", trace["versionId"]).get("adapter") == "conversation":
+        agent = ps.get("version", trace["versionId"]).get("adapter") in AGENT_ADAPTERS
+        if ps.get("version", trace["versionId"]).get("adapter") in CONVERSATION_ADAPTERS:
             if "conversationParent" not in trace:
                 raise ProductionError("E_REPLAY_CHECKPOINT", "This failed request has no recorded prior checkpoint; replay unavailable.", 409)
             result, timing = p.predict(trace["records"], capture=True, checkpoint=trace["conversationParent"]["checkpointSha256"])

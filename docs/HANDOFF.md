@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §55 — persistent layout groups (ADR0058).** §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §56 — native JSON conversations (ADR0059).** §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1740,3 +1740,19 @@ identity convention, not a regression in serving, but it was not stated in ADR00
 0055/0057 when committed. Tabular (ADR0012), unsupervised (ADR0020), model-graph, RL
 and domain versions pin none of the changed files and keep serving. Live tests register
 fresh versions, which is why they did not surface this.
+
+## 56. Native JSON conversations — 2026-10-06 (ADR0059)
+
+New `python/production/json_conversation_adapter.py`; `AGENT_ADAPTERS`/`CONVERSATION_ADAPTERS`/
+`JSON_ADAPTERS` in `production/runtime.py` used by runtime, API and monitor; editor treats
+`conversation_json` like conversations. Tests: `tests/test_production_json_conversation.py`
+(3 offline) and `tests/test_production_json_conversation_live.py` (2 live, real Ollama).
+These edits touch runtime/monitor/API again (pinned only by the stateless JSON-agent
+family, already covered by the compatibility note). Before this scope a scan found
+pyarrow/openpyxl absent, so Parquet/Excel sources would need new dependencies; a
+JSON Lines source was scoped but deferred (CSV source is special-cased in caching,
+run events, export bundles and remote workers).
+
+JSON conversations: full native 1275 passed, 1 skipped, 18 deselected 502.03s
+(`/private/tmp/void-jsonconv-full.log`); live 18 passed 29.16s; real-Ollama JSON agent journey
+and all 16 other editor journeys pass (`/private/tmp/void-jsonconv-regressions`).
