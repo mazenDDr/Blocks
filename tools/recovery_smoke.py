@@ -59,6 +59,13 @@ def run(args):
             raise RuntimeError("Initial browser baseline failed; no backup taken.")
         source = out / "seed/workbench"
         extra_env = {"VOID_RECOVERY_SEED": str(out / "seed/evidence.json")}
+        if args.jsonl:
+            jsonl_seed = argparse.Namespace(output=str(out / "jsonl-seed"), chrome=args.chrome, timeout=args.timeout)
+            if smoke.run(jsonl_seed, workbench=source, journey=smoke.EDITOR / "smoke/jsonlSource.mjs",
+                         fixture="SYNTHETIC flat JSONL source/cache/package/fitted regression"):
+                raise RuntimeError("Native JSONL browser seed failed; no backup taken.")
+            extra_env["VOID_JSONL_RECOVERY_SEED"] = str(out / "jsonl-seed/evidence.json")
+            result["jsonl"] = {"seed": "jsonl-seed/evidence.json"}
         if args.json_agent:
             json_seed = argparse.Namespace(output=str(out / "json-seed"), chrome=args.chrome, timeout=args.timeout)
             if smoke.run(json_seed, workbench=source, journey=smoke.EDITOR / "smoke/jsonAgent.mjs", fixture=json_smoke.FIXTURE):
@@ -134,6 +141,12 @@ def run(args):
                          extra_env=extra_env, fixture=json_smoke.FIXTURE):
                 raise RuntimeError("Restored native JSON browser/provider execution failed.")
             result["jsonAgent"]["restored"] = "json-check/evidence.json"
+        if args.jsonl:
+            jsonl_check = argparse.Namespace(output=str(out / "jsonl-check"), chrome=args.chrome, timeout=args.timeout)
+            if smoke.run(jsonl_check, workbench=out / "recovered", journey=smoke.EDITOR / "smoke/jsonlSource.mjs",
+                         extra_env=extra_env, fixture="SYNTHETIC JSONL fitted regression source-workbench deletion recovery"):
+                raise RuntimeError("Restored native JSONL browser failed.")
+            result["jsonl"]["restored"] = "jsonl-check/evidence.json"
         if args.cache_retention:
             cache_check = argparse.Namespace(output=str(out / "cache-check"), chrome=args.chrome, timeout=args.timeout)
             if smoke.run(cache_check, workbench=out / "recovered", journey=smoke.EDITOR / "smoke/cacheRetention.mjs",
@@ -176,6 +189,7 @@ def main():
     parser.add_argument("--trackers", action="store_true", help="Seed real local MLflow/offline W&B; use v2 links with explicit external diagnostic-log omission.")
     parser.add_argument("--cache-retention", action="store_true", help="Also seed actual native cached regression/policy and verify policy/receipts/cache/run artifacts after source deletion.")
     parser.add_argument("--json-agent", action="store_true", help="Also seed/recover a pinned JSON version and invoke real installed local Ollama; fails without the provider, no fixture substitution.")
+    parser.add_argument("--jsonl", action="store_true", help="Seed/recover native JSONL source runs, imported package and fitted regression; no model calls.")
     parser.add_argument("--context-agent", action="store_true", help="Seed/recover pinned retrieval and bounded native short-term conversation; zero model calls.")
     parser.add_argument("--context-json", action="store_true", help="Seed/recover combined retrieval, short-term conversation and actual installed Ollama JSON.")
     parser.add_argument("--approval-agent", action="store_true", help="Also seed a paused approval checkpoint and resume it through the restored editor.")

@@ -25,7 +25,7 @@ def seed(root):
         cfg=TabularRunConfig(cache='reuse',project_id=PROJECT)
         store.create_run(rid,semantic_hash(g),cfg.model_dump())
         if run_tabular(g,cfg,store,rid)!='completed':raise RuntimeError('Actual native cache seed failed')
-    rows=store.node_cache_entries(PROJECT)
+    rows=store.node_cache_entries(PROJECT, any_project=False)
     if len(rows)!=19:raise RuntimeError(f'Expected actual19native entries, got{len(rows)}')
     return store
 

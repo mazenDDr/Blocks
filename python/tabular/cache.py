@@ -34,12 +34,12 @@ CACHEABLE = frozenset({
     "scipy.gamma_function", "scipy.gamma_distribution", "scipy.tail_probability", "scipy.hypothesis_test", "scipy.two_group_comparison",
     "sklearn.kmeans", "sklearn.gaussian_mixture", "sklearn.dbscan", "sklearn.pca", "sklearn.projection", "sklearn.cluster_diagnostics",
 })
-SOURCE_TYPES = frozenset({"tabular.csv_source"})
+SOURCE_TYPES = frozenset({"tabular.csv_source", "tabular.jsonl_source"})
 
 _PY = Path(__file__).resolve().parents[1]
 # Every file whose code can change a cacheable node's result. Editing any of them changes every cacheable key (conservative).
 IMPLEMENTATION_FILES = ("tabular/core.py", "tabular/engine.py", "tabular/cache.py", "operations/_common.py", "operations/tabular_ops.py",
-                        "operations/sklearn_ops.py", "operations/stats_ops.py", "operations/unsup_ops.py", "unsup/methods.py")
+                        "operations/jsonl_source.py", "operations/sklearn_ops.py", "operations/stats_ops.py", "operations/unsup_ops.py", "unsup/methods.py")
 
 
 def _sha(text: str | bytes) -> str:

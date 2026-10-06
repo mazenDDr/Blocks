@@ -72,7 +72,7 @@ def wait_ready(url, process, headers=None, timeout=45):
             with urllib.request.urlopen(request, timeout=1) as response:
                 if response.status == 200:
                     return
-        except (urllib.error.URLError, TimeoutError):
+        except (urllib.error.URLError, TimeoutError, ConnectionResetError):
             pass
         time.sleep(.1)
     raise RuntimeError(f"Service readiness exceeded {timeout}s: {url}")

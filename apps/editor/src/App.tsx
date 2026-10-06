@@ -848,7 +848,7 @@ function Workbench() {
           <Background gap={20} />
           <Controls showInteractive={false} />
         </ReactFlow>
-        {cur.nodes.length === 0 && <div className="canvas-empty">{tabular ? "Empty tabular graph. Add a CSV table source from the library, or open an example." : "Empty graph. Add blocks from the library, or open the reference_cnn example."}</div>}
+        {cur.nodes.length === 0 && <div className="canvas-empty">{tabular ? "Empty tabular graph. Add a CSV or JSONL table source from the library, or open an example." : "Empty graph. Add blocks from the library, or open the reference_cnn example."}</div>}
         {unusedNote && <div className="canvas-hint">This project defines modules; add instances from Modules &amp; code.</div>}
       </main>
 

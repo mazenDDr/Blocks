@@ -129,13 +129,21 @@ jobs:
         run: .venv/bin/python tools/editor_cache_retention_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-cache-retention-smoke
       - name: Real browser, backup and restored native state journey
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: .venv/bin/python tools/recovery_smoke.py --trackers --tools-agent --approval-agent --context-agent --cache-retention --gc --sealed --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
+        run: .venv/bin/python tools/recovery_smoke.py --trackers --tools-agent --approval-agent --context-agent --jsonl --cache-retention --gc --sealed --chrome /usr/bin/google-chrome --output /tmp/void-ci-recovery-smoke
       - name: Preserve actual test evidence on success or failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browser-evidence
           path: |
+            /tmp/void-ci-recovery-smoke/jsonl-seed/runner.json
+            /tmp/void-ci-recovery-smoke/jsonl-seed/evidence.json
+            /tmp/void-ci-recovery-smoke/jsonl-seed/*.log
+            /tmp/void-ci-recovery-smoke/jsonl-seed/*.png
+            /tmp/void-ci-recovery-smoke/jsonl-check/runner.json
+            /tmp/void-ci-recovery-smoke/jsonl-check/evidence.json
+            /tmp/void-ci-recovery-smoke/jsonl-check/*.log
+            /tmp/void-ci-recovery-smoke/jsonl-check/*.png
             /tmp/void-ci-cache-retention-smoke/runner.json
             /tmp/void-ci-cache-retention-smoke/evidence.json
             /tmp/void-ci-cache-retention-smoke/*.log

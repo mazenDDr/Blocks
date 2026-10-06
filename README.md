@@ -1194,3 +1194,58 @@ pnpm -C apps/editor build
 All20 editor runners passed with evidence at `/private/tmp/void-context-regressions-final`;
 full native1338/1skip/25deselect, live25, sealed recovery207 files/11DBs. Retained
 failed first ledger/JSON browser checks and separate hosted outcomes are in HANDOFF.
+
+## Flat JSONL table sources
+
+Open SYNTHETIC `jsonl_regression`, run the native graph and inspect the JSONL
+source hash, row IDs, schema and original-byte provenance. Register the learned
+OLS candidate and serve from pinned native transforms/model without rereading
+JSONL. Local JSONL is also supported by source cache handling, bundle requirements,
+explicit inert package snapshots and authenticated loopback CPU workers.
+
+Only nonempty flat UTF-8 objects per nonblank LF line are supported. Duplicate,
+nested, malformed, nonfinite and unsafe integer values refuse; no silent row skips
+or date inference. Full bounded validation: 50MB / 200000 records / 256 columns /
+2M cells / 1MB record. See [ADR0065](docs/adr/0065-flat-jsonl-sources.md).
+Package/worker snapshots keep their smaller 8MiB bound. The existing includeCsv API
+flag explicitly embeds either CSV or JSONL; the UI labels both. Examples and
+in-sample labels are SYNTHETIC, with no real-world housing-quality claim.
+
+Commands actually run (full acceptance in HANDOFF§64):
+
+```sh
+.venv/bin/python examples/make_jsonl_fixture.py
+.venv/bin/pytest -q tests/test_jsonl_source.py
+.venv/bin/python tools/editor_jsonl_smoke.py --output /private/tmp/void-jsonl-editor-1
+```
+
+The owned editor runner now handles a transient ConnectionResetError during its
+existing bounded service-readiness poll. Hosted item3 failed before Chrome launch
+at cache-seed startup; evidence and final hosted outcomes remain in HANDOFF§64.
+JSONL source clicks wait for actual finished UI state after native completion.
+No browser assertion or error check is removed.
+
+Integrated JSONL/cache verification also corrects the cache-retention seed helper
+to select its explicit project (`any_project=False`), retaining exact19/3/16
+assertions when other projects have cached nodes. Native store/cache code is unchanged.
+
+Additional JSONL commands actually run:
+
+```sh
+.venv/bin/pytest -q -o faulthandler_timeout=240 --junitxml=/private/tmp/void-jsonl-native-final.xml
+.venv/bin/pytest -q -m live
+node --test apps/editor/tests/*.test.mjs
+pnpm -C apps/editor typecheck
+pnpm -C apps/editor build
+.venv/bin/python -m backends.coverage --write
+.venv/bin/python -m backends.coverage --check
+.venv/bin/python tools/recovery_smoke.py --trackers --json-agent --tools-agent --approval-agent --context-agent --context-json --jsonl --cache-retention --gc --sealed --output /private/tmp/void-jsonl-recovery-final3
+.venv/bin/python tools/editor_cache_retention_smoke.py --output /private/tmp/void-jsonl-cache-helper-final
+```
+
+All21 editor_* runners passed at `/private/tmp/void-jsonl-regressions-final`;
+actual live25 and integrated recovery240 files/11DBs/16 browser cases passed.
+Source-readiness/cache-helper failed attempts are retained in HANDOFF§64.
+
+Full JSONL native acceptance:1361 passed/1 skipped/25 deselected558.54s,1941
+retained warnings. Hosted outcome is recorded separately in HANDOFF§64.

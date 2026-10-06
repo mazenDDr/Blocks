@@ -45,7 +45,7 @@ def register(app,sv):
                 runs.append({"id":r["id"],"status":r["status"],"graphHash":r["graph_hash"],"shareableMetricsArtifacts":arts})
         return {"remote":remote.state.all("remote"),"exports":bridge.state.all("tracker"),"runs":runs,
                 "trackerRuntimeAvailable":bridge.python.exists(),"sdkExamples":[p.parent.name for p in (repo/"examples/plugins").glob("*/manifest.json")],
-                "capabilities":{"worker":"authenticated loopback CPU tabular CSV subset; separate process", "trackers":"native local MLflow and W&B offline only", "package":"inert graph/UI/dependencies plus optional explicit CSV snapshots", "multiHost":False,"distributedGpu":False}}
+                "capabilities":{"worker":"authenticated loopback CPU tabular CSV/JSONL subset; separate process", "trackers":"native local MLflow and W&B offline only", "package":"inert graph/UI/dependencies plus optional explicit CSV/JSONL snapshots", "multiHost":False,"distributedGpu":False}}
     @app.post("/api/integrations/remote")
     def submit(req:RemoteRequest):return remote.submit(req)
     @app.post("/api/integrations/remote/{id}/refresh")

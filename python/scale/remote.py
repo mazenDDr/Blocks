@@ -19,7 +19,8 @@ from .common import IntegrationError, digest, encoded, loopback, secret_free
 from .state import State
 
 # Native pure tabular CPU subset. Arbitrary code, third-party operations and live credentials are excluded.
-ALLOWED={"tabular.csv_source","tabular.select_columns","tabular.profile","tabular.drop_missing","tabular.duplicates",
+SOURCE_TYPES = {"tabular.csv_source": ".csv", "tabular.jsonl_source": ".jsonl"}
+ALLOWED={"tabular.csv_source","tabular.jsonl_source","tabular.select_columns","tabular.profile","tabular.drop_missing","tabular.duplicates",
          "tabular.train_validation_split","tabular.fit_standardize","tabular.fit_impute","tabular.fit_onehot","tabular.apply_transform",
          "sklearn.linear_regression","sklearn.logistic_regression","sklearn.metrics"}
 MAX_BYTES=8*1024*1024
@@ -34,13 +35,13 @@ class RemoteRequest(BaseModel):
 
 def snapshot(graph):
     if graph.graphKind!="tabular" or len(graph.nodes)>64 or not graph.nodes or any(n.type not in ALLOWED for n in graph.nodes):
-        raise IntegrationError("worker_subset","Worker supports at most 64 native tabular CSV/preprocessing/linear or logistic/metrics nodes.")
+        raise IntegrationError("worker_subset","Worker supports at most 64 native tabular CSV/JSONL/preprocessing/linear or logistic/metrics nodes.")
     secret_free(graph.to_json())
     require_executable(graph)
     files={}
     total=0
     for n in graph.nodes:
-        if n.type=="tabular.csv_source":
+        if n.type in SOURCE_TYPES:
             raw=resolve_path(n.config["path"]).read_bytes()
             total+=len(raw)
             if total>MAX_BYTES:raise IntegrationError("worker_input_limit","Snapshots are limited to 8 MiB.")
@@ -55,21 +56,21 @@ def materialize(bundle,root):
     if semantic_hash(graph)!=bundle["originalGraphHash"]:raise IntegrationError("worker_graph_hash","Original graph hash differs.")
     secret_free(graph.to_json())
     files=bundle["files"]
-    if set(files)!={n.id for n in graph.nodes if n.type=="tabular.csv_source"}:raise IntegrationError("worker_files","Snapshot source mapping differs.")
+    if set(files)!={n.id for n in graph.nodes if n.type in SOURCE_TYPES}:raise IntegrationError("worker_files","Snapshot source mapping differs.")
     size=0
     inputs=Path(root)/"inputs"
     inputs.mkdir(parents=True,exist_ok=True)
     for n in graph.nodes:
-        if n.type=="tabular.csv_source":
+        if n.type in SOURCE_TYPES:
             f=files[n.id]
             raw=base64.b64decode(f["base64"],validate=True)
             size+=len(raw)
             sha=hashlib.sha256(raw).hexdigest()
             if not re.fullmatch(r"[0-9a-f]{64}",f["sha256"]) or sha!=f["sha256"]:raise IntegrationError("worker_input_hash","Input content does not match its hash.")
             if size>MAX_BYTES:raise IntegrationError("worker_input_limit","Snapshots are limited to 8 MiB.")
-            path=inputs/(sha+".csv")
+            path=inputs/(sha+SOURCE_TYPES[n.type])
             path.write_bytes(raw)
-            # Preserve other CSV parsing settings; execution graph has its own recorded identity.
+            # Preserve the declared source parsing settings; execution graph has its own recorded identity.
             n.config["path"]=str(path.resolve())
     require_executable(graph)
     return graph

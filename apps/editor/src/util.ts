@@ -34,6 +34,7 @@ export function summarize(node: GNode, resolved?: Record<string, unknown>): stri
     case "pytorch.nn.flatten": return `dims ${c.start_dim ?? 1}..${c.end_dim ?? -1}`;
     case "pytorch.loss.cross_entropy": return `reduction ${c.reduction ?? "mean"}`;
     case "core.tensor_input": return `${(c.shape as Dim[] | undefined)?.map(fmtDim).join("×") ?? "?"} ${c.dtype ?? ""}`;
+    case "tabular.jsonl_source":
     case "tabular.csv_source": return String(c.path ?? "").split("/").pop() || "no file chosen";
     case "postgres.query": return `${c.connection || "(no connection)"} · ${c.mode === "sql" ? "raw SQL" : c.query ? `${c.query.base?.name}${c.query.joins?.length ? ` + ${c.query.joins.length} join` : ""}` : "no table"}${c.pin ? " · pinned" : ""}`;
     case "s3.csv_source": return `${c.connection || "(no connection)"} · ${c.key || "no object"}${c.pin ? " · pinned" : c.version_id ? " · version set" : ""}`;

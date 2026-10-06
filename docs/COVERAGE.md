@@ -359,7 +359,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `sklearn.metrics` | tabular | scikit-learn | yes | metrics | 2 |
 | `sklearn.pca` | tabular | scikit-learn | yes | pca | 0 |
 | `sklearn.projection` | tabular | scikit-learn | yes | projection | 0 |
-| `tabular.apply_transform` | tabular | scikit-learn | yes | step | 4 |
+| `tabular.apply_transform` | tabular | scikit-learn | yes | step | 5 |
 | `tabular.csv_source` | tabular | pandas | yes | source | 5 |
 | `tabular.drop_missing` | tabular | pandas | yes | step | 2 |
 | `tabular.duplicates` | tabular | pandas | yes | step | 3 |
@@ -367,6 +367,7 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `tabular.fit_onehot` | tabular | scikit-learn | yes | fit_state | 1 |
 | `tabular.fit_standardize` | tabular | scikit-learn | yes | fit_state | 2 |
 | `tabular.join` | tabular | pandas | yes | join | 1 |
+| `tabular.jsonl_source` | tabular | pandas | yes | source | 1 |
 | `tabular.predictions_export` | tabular | scikit-learn | yes | step | 1 |
 | `tabular.profile` | tabular | pandas | yes | profile | 3 |
 | `tabular.select_columns` | tabular | pandas | yes | step | 4 |

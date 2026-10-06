@@ -2253,3 +2253,126 @@ Approval hosted native evidence confirms1319/1skip/21deselect1140.48s, both jobs
 success. Item3 code commit/push and its hosted result are recorded immediately below;
 Claude must use this addendum instead of rerunning a supposedly still-pending suite.
 Next implementation work is item4 JSONL, with the preserved draft only.
+
+
+### Item3 publication and item4 continuation (supersedes §63 prototype-only next step)
+
+Item3 committed/pushed **886e8e6b3e62c0bf819ab80b5546a3dd9b7d3c5e**. Hosted
+**37431555909 in progress** as last checked after JSONL focused/editor acceptance:
+https://github.com/mazenDDr/project-void/actions/runs/37431555909 . Do not push next
+scope until that run finishes; record its actual final status. Item3 full local
+acceptance is complete as the prior addendum records.
+
+Weekly usage latest **96%**, five-hour68%; user explicitly asks continuation until
+weekly99%, then an up-to-date Claude Code handoff. Item4 implementation is now in
+the working tree, not merely a draft. Read §64 and ADR0065 before continuing.
+
+## 64. JSONL sources — implementation and acceptance in progress
+
+New `python/operations/jsonl_source.py`, registry integration, cache SOURCE_TYPES/
+implementation identity, worker source_recorded, connection bundle requirements,
+verified package resources and loopback remote snapshots/materialization. Explicit
+includeCsv API compatibility covers local CSV/JSONL; UI labels both. Separate source
+module preserves tabular_ops.py/core.py/production pipeline source pins. Full flat
+record contract/refusals/resource bounds in ADR0065. New example generator,
+412-record SYNTHETIC housing JSONL/regression project/UI; tests/test_jsonl_source.py;
+owned editor_jsonl_smoke.py + jsonlSource.mjs; recovery --jsonl seed/restored journey
+and hosted CI integration/evidence uploads. No dependency or schema changes.
+
+- Focused native **22 passed7.62s**, `/private/tmp/void-jsonl-focused-3.log`.
+  Independent dataframe/prediction agreement, cache16 hits/source bypass then
+  source-byte invalidation, actual deleted-source offline backup/restore serving,
+  bundle/package hashes/inert import, real separate authenticated CPU worker.
+- First new test run13failed9passed: new assertions used node_id/title instead of
+  native nodeId/displayName. Corrected assertion names; no product relaxation.
+  Second1failed21passed used the full regression graph with predictions_export in
+  remote transport; preserved existing allowlist and transport-tested a supported
+  source/profile graph. Native full regression is independently covered.
+  Logs `/private/tmp/void-jsonl-focused-1.log` and `-2.log` retained.
+- Owned actual Chrome journey passed10.02s `/private/tmp/void-jsonl-editor-1`:
+  native source/412 records/raw SHA/row IDs, cache16 hits, explicit package import,
+  fitted release actual predictions, replay, labelled-row monitoring; empty error
+  and cleanup evidence. In-sample SYNTHETIC labels are not ground-truth evaluation.
+- Parser recursion now explicitly maps to physical-line refusal, with a deep-record
+  test; focused suite must rerun. Full native/live/all21 editor runners/build/node/
+  coverage/pin audit/integrated sealed GC recovery still pending. Browser recovery
+  excludes only the dynamic monitor window.until from its stable-state comparison;
+  external corpus portability is not established.
+
+Claude continuation: finish full checks and record exact results before accepting
+ADR0065/committing/pushing. Preserve failed evidence. Then §59 item5 GPU connectivity
+and item6 SQLite migrations in order. No GPU/schema work has started.
+
+### JSONL verification progress / item3 hosted failure investigation
+
+Final focused **23 passed7.49s**, `/private/tmp/void-jsonl-focused-final.log`, now
+includes deep JSON parser recursion refusal. Build and Node50 tests pass; all17 old
+serving source hashes match 6f63e09. Full native is running with
+`/private/tmp/void-jsonl-native-final.log` and `.xml`; all21 browser runners ongoing
+at `/private/tmp/void-jsonl-regressions-final/results.json`. Integrated recovery first
+failed before backup: JSONL API run was completed while the UI still showed preparing;
+new runner now waits for the actual finished source badge before its real click,
+retaining native cache/source assertions. Failure preserved in
+`/private/tmp/void-jsonl-recovery-final`; new run `/private/tmp/void-jsonl-recovery-final2`.
+
+Item3 hosted browser112163361522 **failed**; actual context seed passed, as did all
+other source journeys. Integrated recovery failed at cache seed readiness **before
+Chrome launched**, `[Errno104] Connection reset by peer`. Both owned service groups
+stopped; backend logged successful startup/production200. Artifact evidence
+`/private/tmp/void-context-hosted-browser-evidence/void-ci-recovery-smoke`; this is
+not overall CI acceptance. Shared owned runner `wait_ready` now handles transient
+ConnectionResetError inside its existing45s bounded readiness poll; process exit/
+status/timeouts remain failures, no browser retry/assertion removed. Native hosted
+job still pending at this snapshot. No source/cache/serving defect inferred from
+this pre-browser transport failure. ADR0065/README/CAP record runner repair too.
+
+
+All21 editor_* runners passed, `/private/tmp/void-jsonl-regressions-final/results.json`.
+Integrated recovery second attempt exposed an old cache-seed helper bug now visible
+with JSONL cache entries: node_cache_entries(PROJECT) defaults any_project=True,
+so its exact19 assertion counted35 global entries. Helper now passes explicit
+any_project=False, preserving exact19 and scheduled3/16/project/run assertions.
+No artifact-store/cache implementation changed. Second failure retained at
+`/private/tmp/void-jsonl-recovery-final2`; integrated retry now final3. Full native
+still running; full actual live now running `/private/tmp/void-jsonl-live-final.log`.
+Readiness repair verified with a controlled real loopback TCP reset followed by
+HTTP200 within its existing timeout. Screenshot native-jsonl-source.png inspected.
+
+Full actual live **25 passed/1362 deselected35.31s**,
+`/private/tmp/void-jsonl-live-final.log`. All21 editor journeys audited empty
+runtime/API error arrays and cleanup of all3 owned groups; Node50/0fail341.87ms,
+build179ms (existing bundle warning), typecheck/coverage/diff and17 prior serving
+source SHA checks pass. Full native owned PID38775 remains active at this snapshot;
+no completed result is claimed. Integrated final3 remains active. All commands use
+installed native environments/Ollama/Chrome; no downloads or substituted provider.
+
+Integrated sealed/zero-grace GC/source-workbench deletion recovery **passed**,
+`/private/tmp/void-jsonl-recovery-final3/recovery.json`, all restored browser journeys
+including JSONL/approval/both context modes/real Ollama JSON/cache/baseline/tracker.
+Restored JSONL fitted-pipeline screenshot inspected. Stable original source table,
+run summary/version/release/trace/imported package and monitor fields agree before
+continuation; only moving monitor window.until excluded. Native test separately
+physically deletes its external JSONL source file. Cache helper standalone after
+correction passed11.44s `/private/tmp/void-jsonl-cache-helper-final`. Full native
+still active; no full acceptance until its actual completion result.
+
+Integrated final3 audited **240 files/11 databases/16 browser evidence cases**, all
+passed with empty runtime/API/error-console arrays and sourceDeleted=true. JSONL
+cache helper standalone pass after explicit project scope. Full native completion
+and hosted native outcome remain the only outstanding acceptance observations at
+this point; read the following final addendum for the eventual completed result.
+
+### Final JSONL local acceptance (supersedes §64 pending snapshots)
+
+Full native **1361 passed / 1 skipped / 25 deselected**,1941 retained warnings,
+**558.54s**; `/private/tmp/void-jsonl-native-final.log`, JUnit `.xml`. Owned PID38775
+finished; do not use this stale PID. Actual live25/1362 deselected35.31s, all21
+editor journeys clean, Node50/0fail341.87ms, typecheck/build179ms/coverage/diff/pin
+checks pass. Integrated sealed/zero-grace GC240 files/11DBs/all16 browser cases,
+sourceDeleted=true. ADR0065 accepted on local evidence only. No owned services or
+native suites remain running. Failed recovery1/2 retained with corrected test-helper
+causes described above. Native data/model/serving core sources remain unchanged.
+
+This scope will be committed now, but push waits for item3 hosted CI to finish;
+its browser failed before launch on a transient readiness reset, native still active.
+GPU connectivity (§59 item5) is the next check; storage migrations not started.

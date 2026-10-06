@@ -20,6 +20,7 @@ META: dict[str, tuple[str, str, str]] = {
     "jax.lax.cumsum": ("cumsum (jax.lax)", "Backend-specific", "JAX-only: inclusive cumulative sum along one axis (optionally reversed). Rejected on other backends."),
     "core.scalar_mul": ("Scalar multiply", "Tensor ops", "Multiply every element by a constant."),
     # ---- tabular graph kind
+    "tabular.jsonl_source": ("JSONL table source", "Data", "Reads bounded flat UTF-8 JSON objects into a native table; original byte hash and stable record row ids are recorded."),
     "tabular.csv_source": ("CSV table source", "Data", "Reads a local CSV file into a table; the file's SHA-256 is recorded with every run."),
     "tabular.profile": ("Table profile", "Data", "Types, missing counts, duplicates, summary statistics and suspect columns of the input table (exact, all rows)."),
     "tabular.duplicates": ("Duplicate policy", "Data", "Group rows by a fixed identity rule and keep first / last / none, or only report. Run before splitting."),

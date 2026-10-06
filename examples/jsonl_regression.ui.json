@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "housing": {
+      "x": 0,
+      "y": 0
+    },
+    "profile": {
+      "x": 290,
+      "y": 0
+    },
+    "dedupe": {
+      "x": 580,
+      "y": 0
+    },
+    "select": {
+      "x": 870,
+      "y": 0
+    },
+    "split": {
+      "x": 1160,
+      "y": 0
+    },
+    "imp_fit": {
+      "x": 1450,
+      "y": 0
+    },
+    "imp_train": {
+      "x": 1740,
+      "y": 0
+    },
+    "imp_val": {
+      "x": 1740,
+      "y": 190
+    },
+    "oh_fit": {
+      "x": 2030,
+      "y": 0
+    },
+    "oh_train": {
+      "x": 2320,
+      "y": 0
+    },
+    "oh_val": {
+      "x": 2320,
+      "y": 190
+    },
+    "sc_fit": {
+      "x": 2610,
+      "y": 0
+    },
+    "sc_train": {
+      "x": 2900,
+      "y": 0
+    },
+    "sc_val": {
+      "x": 2900,
+      "y": 190
+    },
+    "ols": {
+      "x": 3190,
+      "y": 0
+    },
+    "metrics": {
+      "x": 3480,
+      "y": 0
+    },
+    "predictions": {
+      "x": 3480,
+      "y": 190
+    }
+  },
+  "description": "SYNTHETIC housing teaching data in flat JSONL. Exact byte provenance, native pandas / scikit-learn preprocessing and regression. No real-world housing benchmark.",
+  "synthetic": true
+}

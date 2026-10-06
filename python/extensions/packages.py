@@ -42,10 +42,10 @@ def build_package(graph,ui,include_csv=False):
     g=graph.model_copy(deep=True)
     if include_csv:
         for n in g.nodes:
-            if n.type=="tabular.csv_source":
+            if n.type in ("tabular.csv_source", "tabular.jsonl_source"):
                 raw=resolve_path(n.config["path"]).read_bytes()
-                if sum(r["size"] for r in resources.values())+len(raw)>MAX:raise IntegrationError("package_limit","CSV resources exceed 8 MiB.")
-                sha=hashlib.sha256(raw).hexdigest();key="data/"+sha+".csv"
+                if sum(r["size"] for r in resources.values())+len(raw)>MAX:raise IntegrationError("package_limit","Local CSV/JSONL resources exceed 8 MiB.")
+                sha=hashlib.sha256(raw).hexdigest();key="data/"+sha+(".jsonl" if n.type=="tabular.jsonl_source" else ".csv")
                 resources[key]={"sha256":sha,"size":len(raw),"base64":base64.b64encode(raw).decode()}
                 n.config["path"]="package://"+key
     dependencies=[]
@@ -54,7 +54,7 @@ def build_package(graph,ui,include_csv=False):
         dependencies.append({"operation":typ,"version":op.version if op else None,"implementation":({k:v for k,v in LOADED[typ].items() if k in ("name","version","sha256")} if typ in LOADED else "builtin" if op else "unavailable")})
     p={"format":"void-project-package/1","graph":g.to_json(),"ui":ui,"originalGraphHash":semantic_hash(graph),"dependencies":dependencies,"resources":resources,
        "environment":{"python":"3.13","project-void":"0.0.0","numpy":version("numpy"),"scikit-learn":version("scikit-learn")},
-       "requirements":"Sources outside embedded CSVs, credentials and native environments must be configured separately. No run artifacts or credentials included."}
+       "requirements":"Sources outside embedded CSV/JSONL files, credentials and native environments must be configured separately. No run artifacts or credentials included."}
     p["identity"]=digest(p)
     return p
 

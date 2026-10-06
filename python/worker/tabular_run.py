@@ -118,7 +118,7 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
                 sn = o.summary["snapshot"]
                 em.emit("source_snapshot_recorded", o.node, connector=o.summary["connector"], mode=o.summary["mode"], snapshotId=o.summary["snapshotId"],
                         kind=sn.get("kind"), contentSha256=o.summary.get("sha256"), rows=o.summary["rows"], reproducibility=sn.get("reproducibility"))
-            if o.type == "tabular.csv_source":
+            if o.type in ("tabular.csv_source", "tabular.jsonl_source"):
                 em.emit("source_recorded", o.node, path=o.summary["path"], sha256=o.summary["sha256"], bytes=o.summary["bytes"], rows=o.summary["rows"])
             if o.type == "tabular.train_validation_split":
                 em.emit("split_recorded", o.node, **{k: o.summary[k] for k in ("seed", "validationFraction", "stratifyBy", "groupBy", "nFolds", "fold", "nTrain", "nValidation",

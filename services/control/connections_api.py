@@ -265,7 +265,7 @@ def register(app: FastAPI, sv: "app_mod.Services") -> None:
                               {"id": cid, "status": "not defined in this workbench"})
             if n.config.get("pin"):
                 pins.append({"node": n.id, "snapshotId": n.config["pin"]})
-            if n.type == "tabular.csv_source":
+            if n.type in ("tabular.csv_source", "tabular.jsonl_source"):
                 files.append({"node": n.id, "path": n.config.get("path"), "status": "local file; not packaged - supply it or its identity"})
         return {"format": "project-void-bundle/1", "projectId": pid, "graphHash": semantic_hash(p.graph), "graph": p.graph.to_json(), "ui": p.ui.to_json() if p.ui else None,
                 "requirements": {"connections": list(conns.values()), "pinnedSnapshots": pins, "localFiles": files},

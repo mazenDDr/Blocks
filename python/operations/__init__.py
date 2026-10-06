@@ -1,7 +1,7 @@
 """Built-in operations. Importing this package registers them."""
 from . import core, layers  # noqa: F401
 from . import backend_ops  # noqa: F401  (backend-specific nodes, Milestone 6)
-from . import tabular_ops, sklearn_ops, stats_ops  # noqa: F401  (graph kind "tabular")
+from . import tabular_ops, jsonl_source, sklearn_ops, stats_ops  # noqa: F401  (graph kind "tabular")
 from . import unsup_ops  # noqa: F401  (clustering / representation, Milestone 5)
 from . import connector_ops  # noqa: F401  (connector sources + cross-source join)
 from . import tensor_ops  # noqa: F401  (tensor primitives, Milestone 3)

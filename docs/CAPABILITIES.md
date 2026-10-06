@@ -1027,3 +1027,32 @@ agent_json integration pins need re-registration. No long-term memory reads/writ
 model summaries, tools, approval combinations, remote providers or quality benchmark.
 Earlier unsupported-combination statements above describe the earlier families;
 these new context adapters establish only the bounded composition in ADR0064.
+
+### Flat JSONL table sources (ADR0065; Mac native/live/editor/recovery verified)
+
+New `tabular.jsonl_source` module uses standard JSON and existing native pandas:
+strict flat UTF-8 objects, first-seen columns, missing keys/null, stable record row
+IDs, physical-line diagnostics, exact original-byte SHA. Whole-source bounds and
+value refusals in ADR0065. Runtime rereads; source cache bypass and actual descendant
+content invalidation; source_recorded, local-file bundle requirements, explicit
+inert package snapshots and authenticated separate loopback CPU worker transport.
+Legacy includeCsv flag includes explicit CSV/JSONL; smaller 8MiB transport bounds
+remain. Native learned regression capture and source-deletion serving reuse the
+unchanged fitted pipeline. New SYNTHETIC example and owned source/cache/package/
+serving/replay/monitor journey. Full native/live/all editor/recovery acceptance is
+recorded in HANDOFF§64; no nested JSON importer, date inference, row skips,
+cloud/GPU or real-world quality claim. No new dependencies or old serving pin edits.
+
+The owned editor runner now handles a transient ConnectionResetError during its
+existing bounded service-readiness poll. Hosted item3 failed before Chrome launch
+at cache-seed startup; evidence and final hosted outcomes remain in HANDOFF§64.
+JSONL source clicks wait for actual finished UI state after native completion.
+No browser assertion or error check is removed.
+
+Integrated JSONL/cache verification also corrects the cache-retention seed helper
+to select its explicit project (`any_project=False`), retaining exact19/3/16
+assertions when other projects have cached nodes. Native store/cache code is unchanged.
+
+JSONL final native1361 passed/1 skipped/25 deselected558.54s; actual live25, all21
+editor runners, sealed/GC recovery240 files/11DBs/16 browser cases pass. Hosted
+acceptance remains separately recorded in HANDOFF§64.
