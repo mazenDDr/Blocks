@@ -135,7 +135,7 @@ try {
   const before=await get(`/api/production/requests?release=${release.id}`);
   pending=response(`/api/production/releases/${release.id}/monitor`,'GET');await click('Monitoring','.production-workspace');
   const monitor=await(await pending).json();assert.equal(monitor.family,'agent_json');assert.equal(monitor.labelBasedQuality.values.exactJsonAgreement,1);
-  assert.equal(monitor.usage.successfulTurnModelCalls,restored?2:1);evidence.monitor=monitor;
+  assert.equal(monitor.usage.successfulTurnModelCalls,restored?restored.monitor.usage.successfulTurnModelCalls+1:1);evidence.monitor=monitor;
   await text('exactJsonAgreement');await capture(restored?'recovered-monitor':'monitor');
   assert.deepEqual(await get(`/api/production/requests?release=${release.id}`),before);
   assert.deepEqual(await get(`/api/agent/runs/${evidence.sourceRun}/final-state`),evidence.sourceFinal);
@@ -152,6 +152,10 @@ try {
   assert.equal(shown,streamedTrace.result.agent.contexts[0].value.response);assert(shown.length>0);
   evidence.streamed={requestId:streamedId,chars:shown.length,traceSha256:streamedTrace.traceSha256};
   await capture(restored?'recovered-streamed-request':'streamed-request');
+  // Recovery compares the complete seeded workbench, including this streamed
+  // request. Capture its actual final monitor before the offline backup.
+  evidence.monitor=await get(`/api/production/releases/${release.id}/monitor`);
+  assert.equal(evidence.monitor.usage.successfulTurnModelCalls,monitor.usage.successfulTurnModelCalls+1);
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings.filter(m=>m.type==='error'),[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS actual Ollama source → pinned JSON version → native warmup → release → real schema/context request → isolated replay → independent labels → read-only monitor'+(restored?' after physical source deletion':''));

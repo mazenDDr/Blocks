@@ -1060,3 +1060,42 @@ Commands actually run:
 ```bash
 .venv/bin/pytest -q tests/test_production_model.py tests/test_production_portable.py
 ```
+
+## Pure calculator releases
+
+Open the SYNTHETIC `serving_tools` example, enter an arithmetic expression in `question`,
+run to END, then register its **pure calculator turn** candidate in Production. Preview
+and deploy a stateless maxBatch=1 release. Capture enables actual native tool arguments,
+results and state/events; replay executes a fresh isolated turn. Independently supplied
+text labels support literal agreement; monitoring never executes the graph or model.
+Graphs can also retrieve from 0–2 pinned index snapshots and call one local Ollama chat
+node. File tools, approvals, conversation/memory state and model-selected tools remain
+unsupported. See [ADR0062](docs/adr/0062-pure-calculator-serving.md).
+
+Require maxToolCalls 1–8. Calculator templates read immutable input/default fields only;
+rendered expressions have at most512characters/128ASTnodes/depth32, no exponentiation,
+and finite literals/results of magnitude <=1e100. Native argument errors stay tool
+error data; budget/bounds/cancellation/deadline failure refuses the whole result.
+
+Compatibility: existing stateless `agent_json` versions need re-registration because
+shared runtime/API/monitor files are among their pins. Existing plain agent, conversation,
+JSON-conversation, retrieval and non-agent execution hashes are unchanged.
+
+Commands actually run on this Mac (full results are in HANDOFF§60):
+
+```sh
+.venv/bin/pytest -q tests/test_production_tools.py tests/test_production_retrieval.py
+.venv/bin/pytest -q -m live tests/test_production_tools_live.py
+.venv/bin/pytest -q -m live
+.venv/bin/python tools/editor_tools_agent_smoke.py --output /private/tmp/void-tools-editor-2
+pnpm -C apps/editor build
+.venv/bin/python -m backends.coverage --write
+.venv/bin/pytest -q -o faulthandler_timeout=240 --junitxml=/private/tmp/void-tools-native.xml
+node --test apps/editor/tests/*.test.mjs
+pnpm -C apps/editor exec tsc --noEmit
+.venv/bin/python tools/recovery_smoke.py --trackers --json-agent --tools-agent --cache-retention --gc --sealed --output /private/tmp/void-tools-recovery-2
+```
+
+All 18 `tools/editor_*_smoke.py` runners passed, with individual
+logs and output directories under `/private/tmp/void-tools-regressions`. These paths are
+local execution evidence, not committed artifacts or hosted-provider certification.

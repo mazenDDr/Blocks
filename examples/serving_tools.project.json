@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "calc",
+      "type": "agent.tool_call",
+      "version": "1.0.0",
+      "config": {
+        "tool": "calculator",
+        "args": {
+          "expression": "{question}"
+        },
+        "output_field": "calculation"
+      },
+      "stateRef": null
+    },
+    {
+      "id": "answer",
+      "type": "agent.set_state",
+      "version": "1.0.0",
+      "config": {
+        "assignments": [
+          {
+            "field": "answer",
+            "kind": "template",
+            "template": "Native calculator: {calculation.result.value}"
+          }
+        ]
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "calc",
+        "port": "in"
+      }
+    },
+    {
+      "id": "e1",
+      "kind": "control",
+      "from": {
+        "node": "calc",
+        "port": "out"
+      },
+      "to": {
+        "node": "answer",
+        "port": "in"
+      }
+    },
+    {
+      "id": "e2",
+      "kind": "control",
+      "from": {
+        "node": "answer",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "question",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "answer",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "calculation",
+        "type": "json",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      }
+    ],
+    "limits": {
+      "maxSteps": 8,
+      "maxSeconds": 10,
+      "maxModelCalls": 1,
+      "maxTokens": 1024,
+      "maxToolCalls": 2
+    }
+  }
+}

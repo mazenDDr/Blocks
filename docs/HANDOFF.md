@@ -1809,6 +1809,14 @@ live (real Ollama) 19 passed 30.45s; real-Ollama JSON-agent journey and all 16 e
 journeys pass (`/private/tmp/void-portable-regressions`). Hosted CI for that commit was not
 yet observed at handoff; check `gh run list` and record the outcome first.
 
+**Codex continuation, 2026-10-06:** `gh run list --commit
+6f63e09ab1aea7b76d6a1c0f31214f86adfbe3e9 --limit 20 --json
+databaseId,headSha,status,conclusion,name,url,createdAt,updatedAt` reports
+"Native checks and editor smoke" completed with **success**.
+[Hosted run 37419343709](https://github.com/mazenDDr/project-void/actions/runs/37419343709)
+finished at 2026-10-06 05:52:50 UTC (08:52:50 Africa/Cairo). The initial
+short-SHA query returned no runs; the full-SHA query resolved the result.
+
 ### Conventions to keep (read before changing anything)
 
 - Serving adapters pin their own source files in registered identities (`FILES` /
@@ -1847,3 +1855,52 @@ yet observed at handoff; check `gh run list` and record the outcome first.
 6. **Storage migrations**: no schema versioning (`PRAGMA user_version`) or downgrade guard.
 7. **RL serving beyond DQN discrete policies**; Keras/JAX training runs; multiple providers
    (Anthropic needs user credentials); cloud/distributed; outside-user/accessibility review.
+
+## 60. Pure calculator serving — Codex continuation, 2026-10-06
+
+First priority in §59: new `production/tools_agent_adapter.py`, `agent_tools` /
+`__agent_tools_graph__`, ADR0062, example `serving_tools`, editor candidate/release/
+request/replay integration and owned `tools/editor_tools_agent_smoke.py` journey.
+Optional retrieval reuses ADR0060 snapshots. Native compiler/blocks/tools and all old
+adapter sources remain unchanged. maxToolCalls1–8 has atomic pre-call reservation for
+parallel nodes. Immutable argument fields and explicit arithmetic bounds are recorded
+in ADR/README/CAPABILITIES; no file tool/effect/interrupt or semantic-quality claim.
+Shared monitor/text-label branching now uses AGENT_ADAPTERS, repairing an existing
+ADR0060 integration omission. Stateless `agent_json` must be re-registered because
+shared runtime/API/monitor sources are pinned there; other families' execution sources
+are identical to the stored 6f63e09 baseline. No dependency/schema/training change.
+
+Observed so far:
+- Focused native tool+retrieval checks:22pass3.96s; final tool HTTP/labels/monitor
+  checks19pass1live-deselected3.86s. Logs `/private/tmp/void-tools-focused*.log`.
+- Actual local Ollama focused tool context/usage:1pass5.73s; complete live suite
+  **20pass/1301deselected27.70s**, `/private/tmp/void-tools-live-full.log`.
+- Editor build/typecheck completed; dedicated actual Chrome journey passes10.60s
+  with empty runtime/API/console-error arrays and stopped owned service groups,
+  `/private/tmp/void-tools-editor-2` (registry/request/monitor screenshots).
+- Node tests **50 passed / 0 failed**, typecheck/build pass; coverage regenerated and
+  checked current. Build retains the existing large-bundle warning.
+- All **18** `tools/editor_*_smoke.py` runners pass; per-run evidence/API error arrays
+  are empty and owned service groups stopped, `/private/tmp/void-tools-regressions`.
+- Integrated baseline editor + tracker/JSON/cache/tools + conservative GC + sealed
+  backup recovery **passed**, source physically deleted before restore; 147 files /
+  10 SQLite databases. `/private/tmp/void-tools-recovery-2/recovery.json` and source /
+  restored evidence. Dedicated request screenshot was visually inspected.
+- Full native **1300 passed / 1 skipped / 20 deselected**, 535.77s; retained
+  1941 existing/provider/framework warnings, `/private/tmp/void-tools-native.log`
+  and JUnit `/private/tmp/void-tools-native.xml`. Hosted CI for new work is not observed.
+
+Retained development failures: first focused run omitted the max_batch validation
+argument; fixture routes/joins used invalid IDs/edges and reused an incompatible
+native research thread; tests were corrected without changing execution semantics.
+First Chrome run waited for mixed-case innerText while CSS renders the h4 uppercase;
+registry was already correct. The journey now reads h4.textContent, retaining exact
+native assertions. Evidence `/private/tmp/void-tools-editor-1` remains available.
+
+The first integrated recovery attempt failed: the JSON journey saved monitoring
+evidence before a final streamed request, then compared that one-request report
+with the restored two-request report. The runner now records monitoring after all
+requests and checks the exact restored report; the full rerun passed. Original
+evidence retained at `/private/tmp/void-tools-recovery`.
+
+Next work after accepting/publishing this scope remains §59 item2 (approval interrupts).

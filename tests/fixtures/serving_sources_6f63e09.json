@@ -1,0 +1,22 @@
+{
+  "commit": "6f63e09ab1aea7b76d6a1c0f31214f86adfbe3e9",
+  "files": {
+    "production/agent_adapter.py": "6d79c9961ee72f62feaa65ba8f758c0b00bbebc405656a953327cb757851ddb0",
+    "production/conversation_adapter.py": "cc7ae5b86941d547e66573b77ad8a2a1b59f772256bae8abd18961eadea6ab11",
+    "production/retrieval_agent_adapter.py": "ab2614ed12d315f546b9361081ce09885dc2b637dfbea849f1e26591e082525b",
+    "agent/runtime.py": "dce1d06c9f998959ed0a0666160c403c463ff9210fdf6643ec1e8b26b6706029",
+    "agent/blocks.py": "95e7473718a64e064098ce47bc72365074525989bfbbf763815070ae42136ddc",
+    "agent/spec.py": "2330b661a8efbed01d5b4be0fa582a38187e9d5df33bb1caff3e0692795cb1b8",
+    "agent/models.py": "cd15fb80f1061efebfbd522ecb3f761556c33ae388e377cc3f32138fb2dc2452",
+    "agent/validate.py": "8797d82177ee00d613289ec3c952f6ba7a7febf68a2eb18f0d43805e8bcb0fa9",
+    "agent/memory.py": "da46fc10129e7c4c2a3d14f9902a145df17c6c4169bc61d38086fb668b39e407",
+    "agent/index.py": "1a1e59f75dbc71a1eae717eafba88e1a99acf42aa57f987b83a728a3a609da7d",
+    "agent/policy.py": "84514916272f8363c85cf8e84bb57563eb7cef559b80fd14d08530f1ce9ca5b8",
+    "graph_core/schema.py": "02125d37d4bedd8f3ddbc9bc8999d6496c05f976bae3d4f38279dc3ffc2dd2dd",
+    "graph_core/hashing.py": "26b86714ac54064562ba2f256bbd4c127c74d179498565289c3e13deda2416a3",
+    "graph_core/registry.py": "80a35e74a29dcf6a9e5ba1b064ff056574efa903d74537be0107c94d16f9f80f",
+    "graph_core/validate.py": "0f053ec30db7a3319746d8471ff14d4dd58fa5c1b42b9dd6ddc20397229fd8fd",
+    "artifact_store/store.py": "19c902f1421648c96104e2d4247dccb8dd52ef60c9357bdaf6a83d2026d27925",
+    "tabular/core.py": "427349f95639299086f9c2eb98f285b0df0aeae4dba824c61ee74ca067dc03fa"
+  }
+}

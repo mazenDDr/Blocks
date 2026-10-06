@@ -65,6 +65,13 @@ def run(args):
                 raise RuntimeError("Real Ollama JSON source browser failed; no backup taken.")
             extra_env["VOID_JSON_RECOVERY_SEED"] = str(out / "json-seed/evidence.json")
             result["jsonAgent"] = {"provider": "actual installed Ollama qwen3.5:2b", "seed": "json-seed/evidence.json"}
+        if args.tools_agent:
+            tools_seed = argparse.Namespace(output=str(out / "tools-seed"), chrome=args.chrome, timeout=args.timeout)
+            if smoke.run(tools_seed, workbench=source, journey=smoke.EDITOR / "smoke/toolsAgent.mjs",
+                         fixture="SYNTHETIC native pure calculator serving"):
+                raise RuntimeError("Native tools browser seed failed; no backup taken.")
+            extra_env["VOID_TOOLS_RECOVERY_SEED"] = str(out / "tools-seed/evidence.json")
+            result["toolsAgent"] = {"seed": "tools-seed/evidence.json"}
         if args.cache_retention:
             cache_smoke.seed(source)
             cache_seed = argparse.Namespace(output=str(out / "cache-seed"), chrome=args.chrome, timeout=args.timeout)
@@ -115,6 +122,12 @@ def run(args):
                          extra_env=extra_env, fixture="SYNTHETIC native cache policy/receipt recovery"):
                 raise RuntimeError("Restored native cache policy/receipt browser failed.")
             result["cacheRetention"]["restored"] = "cache-check/evidence.json"
+        if args.tools_agent:
+            tools_check = argparse.Namespace(output=str(out / "tools-check"), chrome=args.chrome, timeout=args.timeout)
+            if smoke.run(tools_check, workbench=out / "recovered", journey=smoke.EDITOR / "smoke/toolsAgent.mjs",
+                         extra_env=extra_env, fixture="SYNTHETIC native calculator source-deletion recovery"):
+                raise RuntimeError("Restored native tools browser failed.")
+            result["toolsAgent"]["restored"] = "tools-check/evidence.json"
         result["status"] = "passed"
     except Exception as error:
         result["error"] = str(error)
@@ -131,6 +144,7 @@ def main():
     parser.add_argument("--trackers", action="store_true", help="Seed real local MLflow/offline W&B; use v2 links with explicit external diagnostic-log omission.")
     parser.add_argument("--cache-retention", action="store_true", help="Also seed actual native cached regression/policy and verify policy/receipts/cache/run artifacts after source deletion.")
     parser.add_argument("--json-agent", action="store_true", help="Also seed/recover a pinned JSON version and invoke real installed local Ollama; fails without the provider, no fixture substitution.")
+    parser.add_argument("--tools-agent", action="store_true", help="Also seed/recover pure calculator versions and execute native turns through the editor.")
     parser.add_argument("--gc", action="store_true", help="Inject an old orphan and run offline zero-grace CAS collection on the seeded workbench before backup.")
     parser.add_argument("--sealed", action="store_true", help="Seal the verified backup with a disposable key, delete the plain backup and source, then unseal and restore.")
     parser.add_argument("--timeout", type=float, default=180)

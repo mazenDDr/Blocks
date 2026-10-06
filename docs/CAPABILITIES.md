@@ -965,3 +965,23 @@ float32 forward tolerance and class agreement over the frozen reference (measure
 Keras 1.19e-7, JAX 7.45e-8 max logit difference); image adapter contract otherwise.
 Not provided: Keras/JAX training or checkpoints, non-image families, float64 JAX,
 exported SavedModel/StableHLO.
+
+### Pure calculator serving (ADR0062; Mac native/live/editor/recovery verified, HANDOFF§60)
+
+New adapter `agent_tools` accepts stateless calculator turns with optional ADR0060
+pinned retrieval and at most one local Ollama chat node. maxToolCalls 1–8 is reserved
+atomically before native execution, including parallel calls. Expressions read only
+immutable input/default fields; 512 characters / 128 AST nodes / depth32, no powers,
+finite literals/results with magnitude <=1e100. Ordinary native tool argument errors
+remain recorded data. Full arguments/results follow captureInputs; count always stays.
+Existing registration/release/predict/replay/SSE and independent text-label monitoring
+apply. Retrieval text labels/monitor dispatch now use the shared agent-family list.
+
+Not provided: file tools, approval interrupts, thread/memory state, model-chosen tools,
+mutable node-output arguments, unbounded arithmetic, semantic quality or GPU evidence.
+Old plain/conversation/JSON-conversation/retrieval/non-agent execution identities stay
+unchanged; stateless `agent_json` versions must be re-registered because their shared
+runtime/API/monitor source pins changed. No dependencies/schema/training change.
+Full native 1300 passed / 1 skipped / 20 deselected; live 20 passed; all 18 editor
+journeys and sealed source-deletion recovery passed. Hosted CI is recorded separately
+in HANDOFF§60.

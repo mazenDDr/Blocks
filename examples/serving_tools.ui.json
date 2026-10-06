@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {
+    "calc": {
+      "x": 100,
+      "y": 100
+    },
+    "answer": {
+      "x": 500,
+      "y": 100
+    }
+  },
+  "description": "SYNTHETIC native calculator teaching workflow. Pure stateless tools; no model calls or file effects. Input question is an arithmetic expression.",
+  "synthetic": true
+}
