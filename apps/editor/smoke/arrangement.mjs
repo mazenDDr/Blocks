@@ -112,7 +112,10 @@ try{
   await fill('input[aria-label="project id"]','SYNTHETIC_arrangement');let moduleSource=await save();
   const moduleIds=['conv_a','relu_a','conv_b'],prefix='residual_block@1.0.0/';const moduleUi={...moduleSource.ui,positions:{...moduleSource.ui.positions,[prefix+'conv_a']:{x:100,y:60},[prefix+'relu_a']:{x:700,y:360},[prefix+'conv_b']:{x:1400,y:760}}};
   await page.evaluate(async source=>{const r=await fetch('/api/projects/SYNTHETIC_arrangement',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(source)});if(!r.ok)throw Error('Seed module layout '+r.status);},{graph:moduleSource.graph,ui:moduleUi});
-  await page.select('select[aria-label="open project"]','project:SYNTHETIC_arrangement');await page.waitForFunction(()=>document.querySelector('button[aria-label="undo draft edit"]').disabled);moduleSource=await save();
+  // Wait for the reload itself: "undo disabled" is already true before it, and saving earlier stores the pre-seed draft (seen once on CI).
+  await page.select('select[aria-label="open project"]','project:SYNTHETIC_arrangement');await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes("Loaded project 'SYNTHETIC_arrangement'"));
+  await page.waitForFunction(()=>document.querySelector('button[aria-label="undo draft edit"]').disabled);moduleSource=await save();
+  for(const id of moduleIds)assert(moduleSource.ui.positions[prefix+id],'seeded module layout missing after reload: '+id);
   if(!(await page.$eval('.graph-outline',e=>e.open)))await page.click('.graph-outline summary');await page.waitForSelector('[aria-label="module outline res1"]');await page.click('[aria-label="module outline res1"]');
   await select(moduleIds);await click('Align right');const moduleDimensions=await boxes(moduleIds);const moduleMoved=await save();checkGeometry(moduleSource,moduleMoved,moduleIds,moduleDimensions,'Align right',prefix);
   const moduleValidation=await page.evaluate(async graph=>(await fetch('/api/modules/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph,moduleId:'residual_block',version:'1.0.0'})})).json(),moduleMoved.graph);
@@ -129,7 +132,8 @@ try{
     const sourceType={vision_segmentation_synthetic:'domain.vision_source',nlp_token_classification:'domain.nlp_source',speech_ctc_tones:'domain.audio_source'}[example];
     const familyGraph=sourceType?{...familySource.graph,nodes:familySource.graph.nodes.map(n=>n.type===sourceType?{...n,config:{...n.config,path:fixturePaths[example]}}:n)}:familySource.graph;
     await page.evaluate(async data=>{const r=await fetch('/api/projects/SYNTHETIC_arrangement',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw Error('Seed family '+r.status);},{graph:familyGraph,ui:familyUi});
-    await page.select('select[aria-label="open project"]','project:SYNTHETIC_arrangement');await page.waitForFunction(()=>document.querySelector('button[aria-label="undo draft edit"]').disabled);
+    await page.select('select[aria-label="open project"]','project:SYNTHETIC_arrangement');await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes("Loaded project 'SYNTHETIC_arrangement'"));
+    await page.waitForFunction(()=>document.querySelector('button[aria-label="undo draft edit"]').disabled);
     for(const h of await page.$$('button[role="tab"]'))if(await h.evaluate(e=>e.textContent.trim()==='Graph')){await h.click();break;}
     const familyBaseline=await save();const baselineValidation=await native(familyBaseline.graph);evidence.currentFamily={example,baseline:familyBaseline,validation:baselineValidation};assert(baselineValidation.ok);await select(familyIds);await click('Align bottom');const familyDimensions=await boxes(familyIds);const familyMoved=await save();
     checkGeometry(familyBaseline,familyMoved,familyIds,familyDimensions,'Align bottom');const familyValidation=await native(familyMoved.graph);assert(familyValidation.ok);assert.deepEqual(familyValidation,baselineValidation);assert.equal(familyValidation.graphHash,familyMoved.graphHash);

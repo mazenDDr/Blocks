@@ -3060,3 +3060,8 @@ The user declined cloud deployment and asked to finalize the project. State at c
 - Agent serving versions registered before today must be re-registered (ledger fixtures serving_sources_*.json); no workbench
   with registered versions exists in this checkout.
 - To resume: read this section, `docs/CAPABILITIES.md` and the ADR list; verification commands are in README "Commands actually run".
+Hosted CI on 3556f45: native SUCCESS; browser FAILURE only in "measured graph arrangement" at the module-scoped stage
+(`TypeError ... 'y'`): after reseeding module positions the journey reopened the project and waited for "undo disabled",
+which is already true before the reload finishes, so a save could capture the pre-seed draft. The first reload in that
+journey already waited for the "Loaded project" toast; the other two reloads now do too, and the seeded positions are
+asserted before use. Editor code unchanged. Local runs `/private/tmp/void-arr-1..5` pass.
