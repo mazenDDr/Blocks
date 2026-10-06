@@ -2376,3 +2376,29 @@ causes described above. Native data/model/serving core sources remain unchanged.
 This scope will be committed now, but push waits for item3 hosted CI to finish;
 its browser failed before launch on a transient readiness reset, native still active.
 GPU connectivity (§59 item5) is the next check; storage migrations not started.
+
+
+### JSONL commit / hosted context completion / GPU preflight
+
+JSONL scope committed **0d49a070dab26e5acaea4d95884a490dd93cc390** (28 files),
+fully locally accepted as above. Item3 hosted run37431555909 completed08:07:18Z
+with **overall FAILURE** (browser cache-seed readiness reset before Chrome). The
+new scope repairs that bounded readiness handling; actual hosted native result and
+JUnit are recorded below after inspection. Prior run is finished, so the next code
+scope may now be pushed without cancelling it.
+
+GPU preflight commands actually run: `tailscale status` → exit1 **Tailscale is
+stopped**; `ssh -o BatchMode=yes -o ConnectTimeout=8 gpu-box 'echo ok'` → exit255
+**Could not resolve hostname gpu-box**. No repeated probes/job/transfer/install or
+GPU evidence. Read `/Users/mazenkhaled/.agents/skills/gpu-box/SKILL.md`; user asked
+asynchronously to start both Tailscale peers/PC/WSL and supply current alias if
+needed. Continue item6 SQLite migration inventory independently while waiting.
+Weekly latest97%, five-hour76%. Stop new work at weekly99% and finalize Claude
+handoff. No schema code changed yet.
+
+Hosted item3 **verify SUCCESS**, completed08:07:17Z; browser FAILURE07:55:32Z,
+overall FAILURE08:07:18Z. Native JUnit `/private/tmp/void-context-hosted-native-evidence/void-pytest.xml`;
+raw logs `/private/tmp/void-context-hosted-native-job.log` and
+`/private/tmp/void-context-hosted-browser-job.log`. Successful context source seed
+is not restored recovery acceptance because cache-seed readiness stopped the flow.
+JSONL push now carries both test-runner corrections with actual Mac full acceptance.
