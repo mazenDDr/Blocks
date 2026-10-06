@@ -71,6 +71,7 @@ class OpenAICompatibleChat(BaseChatModel):
     timeout: float = 180.0
     reasoning_effort: str | None = None
     tools: list[dict] | None = None  # OpenAI function-tool schemas (ADR 0080)
+    json_schema: dict | None = None  # structured output: sent as response_format json_schema (constrained decoding where the server supports it)
 
     def bind_tools(self, tools, **kwargs):
         return self.model_copy(update={"tools": [t if t.get("type") == "function" else {"type": "function", "function": t} for t in tools]})
@@ -83,6 +84,8 @@ class OpenAICompatibleChat(BaseChatModel):
         body: dict[str, Any] = {"model": self.model, "messages": [_wire(m) for m in messages], "stream": stream}
         if self.tools:
             body["tools"] = self.tools
+        if self.json_schema is not None:
+            body["response_format"] = {"type": "json_schema", "json_schema": {"name": "result", "strict": True, "schema": self.json_schema}}
         if self.temperature is not None:
             body["temperature"] = self.temperature
         if self.max_tokens is not None:

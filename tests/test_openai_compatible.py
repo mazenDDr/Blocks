@@ -133,3 +133,29 @@ def test_live_ollama_v1_endpoint_invoke_stream_and_run(tmp_path):
     assert status == "completed", lab.store.get_run(rid)["error"]
     call = next(e for e in lab.store.events(rid) if e["type"] == "model_call")["data"]
     print("LIVE", {"invoke": r["text"][:60], "usage": r["usage"], "streamChunks": len(deltas), "run": call["response"][:60]})
+
+
+def test_structured_output_sends_response_format(stub):
+    schema = {"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]}
+    invoke_chat(ModelSpec(provider="openai_compatible", model="m", base_url=stub), MSGS, json_schema=schema)
+    assert SEEN[-1]["body"]["response_format"] == {"type": "json_schema", "json_schema": {"name": "result", "strict": True, "schema": schema}}
+    invoke_chat(ModelSpec(provider="openai_compatible", model="m", base_url=stub), MSGS)
+    assert "response_format" not in SEEN[-1]["body"]
+
+
+@pytest.mark.live
+def test_live_structured_output_over_v1(tmp_path):
+    from agent.blocks import SchemaField
+    nodes = [sm.N("prompt", "agent.prompt", output_field="messages", items=[{"kind": "template", "role": "user", "template": "{question}"}]),
+             sm.N("extract", "agent.structured_output", messages_field="messages", output_field="result", on_failure="fail",
+                  schema_fields=[{"name": "colour", "type": "text"}, {"name": "count", "type": "integer"}],
+                  model={"provider": "openai_compatible", "model": "qwen3.5:2b", "base_url": "http://127.0.0.1:11434/v1", "temperature": 0.0, "max_tokens": 64, "reasoning_effort": "none"})]
+    g = sm.make_graph(nodes, sm.chain("START", "prompt", "extract", "END"),
+                      {"state": [sm.S("question"), sm.S("messages", "messages"), sm.S("result", "object", properties={"colour": "text", "count": "integer"})], "limits": {"maxSteps": 6, "maxModelCalls": 3}})
+    lab = Lab(tmp_path / "lab")
+    status, rid = lab.run(g, inp={"question": "The SYNTHETIC record says: colour teal, count 3. Extract them."})
+    assert status == "completed", lab.store.get_run(rid)["error"]
+    import json as _json
+    final = _json.loads(lab.store.read_artifact(lab.store.artifacts(rid, "final_state")[-1]["sha256"]))
+    print("LIVE STRUCTURED", final["result"])
+    assert final["result"] == {"colour": "teal", "count": 3}

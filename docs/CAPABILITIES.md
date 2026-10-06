@@ -1193,3 +1193,7 @@ p-value; Evaluate tab view. Tables stored before ADR0079 are deliberately not re
 `agent_tool_choice` releases: stateless turns where a pinned local Ollama model may call the calculator
 (≤4 calls); calls recorded in traces regardless of capture. Not provided: file/external tools, OpenAI-compatible
 provider, conversations or streaming with tools.
+
+### OpenAI-compatible structured output (ADR0083; live verified, HANDOFF§91)
+
+JSON schemas are sent as `response_format` json_schema (constrained where supported) and still validated here.

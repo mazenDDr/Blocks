@@ -29,7 +29,7 @@ CAPABILITIES: dict[str, dict[str, Any]] = {
                   "structured": "JSON requested in the prompt, validated here (no constrained decoding is claimed)", "usage": "provider-reported (usage)",
                   "unsupported": {"seed": "the Anthropic API has no sampling seed", "think": "extended thinking is not exposed by this adapter"}, "live": False},
     "openai_compatible": {"label": "OpenAI-compatible endpoint", "settings": ["temperature", "max_tokens", "seed", "timeout_s", "base_url", "api_key", "reasoning_effort"],
-                          "structured": "JSON requested in the prompt, validated here (no constrained decoding is claimed)",
+                          "structured": "JSON schema sent as response_format (constrained where the server supports it), always validated here",
                           "usage": "provider-reported (usage) when the server sends it", "unsupported": {"think": "not part of the protocol"}, "live": True},
     "fixture": {"label": "FIXTURE (scripted test model, not a language model)", "settings": [], "structured": "scripted JSON replies", "usage": "none (unknown)",
                 "unsupported": {"temperature": "scripted", "max_tokens": "scripted", "seed": "scripted"}, "live": False},
@@ -211,6 +211,8 @@ def invoke_chat(spec: ModelSpec, messages: list[dict[str, Any]], counter: dict[s
     model = build_chat_model(spec, counter)
     if json_schema is not None and spec.provider == "ollama":
         model = model.bind(format=json_schema)
+    if json_schema is not None and spec.provider == "openai_compatible":
+        model = model.model_copy(update={"json_schema": json_schema})
     if tools:
         if spec.provider not in ("ollama", "openai_compatible"):
             raise ModelUnavailable("E_MODEL_TOOLS", f"provider {spec.provider} is not wired for model-chosen tools")

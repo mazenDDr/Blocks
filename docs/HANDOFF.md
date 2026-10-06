@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §90 — served tool choice (ADR0082).** §89 comparison; §88 CI repairs; §87 model-chosen tools; §86 compression; §85 evaluation extensions; §84 agent evaluation; §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §92 — project finalized by the user (2026-10-06).** §91 structured output; §90 served tool choice; §89 comparison; §88 CI repairs; §87 model-chosen tools; §86 compression; §85 evaluation extensions; §84 agent evaluation; §83 provider; §82 tabular scale; §81 CI repairs; §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -3040,3 +3040,23 @@ so it satisfies the serving contract). First runs failed on the example exceedin
 (releases allow ≤ 30 s); fixed in the example and test.
 Verification: full native 1456 passed, 1 skipped, 32 deselected 567.94s (`/private/tmp/void-tc-full.log`); live 30 passed; build, 50 Node
 tests, base + 27 journeys and the recovery journey pass (`/private/tmp/void-tc-regressions`).
+Hosted CI on 09e7466: SUCCESS.
+
+## 91. Constrained structured output over the OpenAI-compatible provider — 2026-10-06 (ADR0083)
+
+User asked what a "cloud account" means (answered: hosting provider account; optional). Meanwhile closing small gaps.
+Changed `agent/openai_compat.py` (`json_schema` → `response_format`), `agent/models.py` (pass schema; capability label),
+tests (+2 incl. live), ledger `serving_sources_adr0083.json`.
+Verification: full native 1455 passed, 2 failed (both the stale coverage ledger after the CAPABILITIES edit; regenerated,
+both pass), 1 skipped, 33 deselected (`/private/tmp/void-fin-full.log`); live 31 passed; provider, agent_eval, tool_agent_block,
+context_agent and tools_agent journeys pass (`/private/tmp/void-fin-regressions`).
+
+## 92. Project finalized — 2026-10-06
+
+The user declined cloud deployment and asked to finalize the project. State at close:
+- ADRs 0001–0083 accepted; every scope verified locally (native, live Ollama, owned-Chrome journeys, recovery) and on hosted CI.
+- Not done, by decision or because it needs the user: hosted model providers with real keys, cloud deployment, an outside
+  user / screen-reader review, recompression of pre-ADR0079 tables (provenance), parallel evaluation cases (no benefit with local Ollama).
+- Agent serving versions registered before today must be re-registered (ledger fixtures serving_sources_*.json); no workbench
+  with registered versions exists in this checkout.
+- To resume: read this section, `docs/CAPABILITIES.md` and the ADR list; verification commands are in README "Commands actually run".

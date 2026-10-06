@@ -1,0 +1,6 @@
+{
+  "decision": "ADR0083 deliberately changes agent pins (response_format for OpenAI-compatible structured output); agent families require re-registration",
+  "files": {
+    "agent/models.py": "bb744f980728d77641c1961a4b103b4ad430495a164b4bdf7caeef202d741cab"
+  }
+}
