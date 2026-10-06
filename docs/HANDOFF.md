@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §47 — offline CAS garbage collection (ADR0050).** §46 agent clipboard; §45 selection-independent side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §48 — whole-layout auto-arrange (ADR0051).** §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1612,3 +1612,14 @@ read through SQLite, 22 other files scanned; 124-file backup; seed/cache-seed/ch
 cache-check journeys pass with empty error arrays and stopped groups. Only the
 orphan was unreferenced, so this proves nothing real was wrongly collected here,
 not that every future writer uses plain-hex references.
+
+## 48. Whole-layout auto-arrange — 2026-10-06 (ADR0051)
+
+New `src/graphLayout.ts`, `tests/graphLayout.test.mjs` (6), App `autoArrange` +
+arrangement panel button, owned Chrome journey `smoke/autoLayout.mjs` +
+`tools/editor_auto_layout_smoke.py`, CI browser stage. Journey
+`/private/tmp/void-auto-layout-smoke-3` passes (10-node scrambled reference_cnn:
+rightward wires, no overlap, unchanged hash, Undo/Redo, idempotent repeat). An
+earlier screenshot showed the view not refitted; the action now refits the view
+(viewport is not layout state) and the journey waits before its screenshot.
+Regressions: `/private/tmp/void-auto-layout-regressions`.

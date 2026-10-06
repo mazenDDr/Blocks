@@ -115,6 +115,9 @@ jobs:
       - name: Real browser native agent clipboard
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_agent_clipboard_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-agent-clipboard-smoke
+      - name: Real browser whole-layout auto-arrange
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .venv/bin/python tools/editor_auto_layout_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-auto-layout-smoke
       - name: Real browser specialized native RL outline
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_rl_outline_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-rl-outline-smoke
@@ -200,6 +203,10 @@ jobs:
             /tmp/void-ci-agent-clipboard-smoke/evidence.json
             /tmp/void-ci-agent-clipboard-smoke/*.log
             /tmp/void-ci-agent-clipboard-smoke/*.png
+            /tmp/void-ci-auto-layout-smoke/runner.json
+            /tmp/void-ci-auto-layout-smoke/evidence.json
+            /tmp/void-ci-auto-layout-smoke/*.log
+            /tmp/void-ci-auto-layout-smoke/*.png
             /tmp/void-ci-rl-outline-smoke/runner.json
             /tmp/void-ci-rl-outline-smoke/evidence.json
             /tmp/void-ci-rl-outline-smoke/*.log

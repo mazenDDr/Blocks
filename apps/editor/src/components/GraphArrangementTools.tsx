@@ -2,8 +2,8 @@ import { NodeChecklist } from "./NodeChecklist";
 import type { GNode } from "../types";
 import { ARRANGEMENTS, type Arrangement } from "../graphArrangement";
 
-export function GraphArrangementTools({ nodes, selected, scope, blocked, onSelect, onArrange, onCollapse }: {
-  nodes: GNode[]; selected: string[]; scope: string; blocked: string | null;
+export function GraphArrangementTools({ nodes, selected, scope, blocked, autoBlocked, onSelect, onArrange, onAutoArrange, onCollapse }: {
+  nodes: GNode[]; selected: string[]; scope: string; blocked: string | null; autoBlocked: string | null; onAutoArrange: () => void;
   onSelect: (ids: string[]) => void; onArrange: (operation: Arrangement) => void; onCollapse?: () => void;
 }) {
   const ids = selected.filter(id => nodes.some(n => n.id === id));
@@ -14,6 +14,7 @@ export function GraphArrangementTools({ nodes, selected, scope, blocked, onSelec
       <button onClick={() => onSelect([])}>Clear arrangement selection</button>
       <NodeChecklist nodes={nodes} selected={ids} label="arrange node" onToggle={(id, checked) => onSelect(checked ? [...ids, id] : ids.filter(x => x !== id))} />
     </fieldset>
+    <p><button disabled={!!autoBlocked || !nodes.length} onClick={onAutoArrange}>Auto-arrange whole layout</button> Places every card in this scope left to right by its connections, stacking by actual card heights without overlap. One layout Undo edit; connections and configuration are unchanged.</p>
     <div className="arrangement-actions">{ARRANGEMENTS.map(o => <button key={o.value} disabled={!!blocked || ids.length < o.minimum || ids.length > 100} onClick={() => onArrange(o.value)}>{o.label}</button>)}</div>
     {blocked && <p role="status">{blocked} {onCollapse && <button onClick={onCollapse}>Collapse modules for arrangement</button>}</p>}
   </details>;

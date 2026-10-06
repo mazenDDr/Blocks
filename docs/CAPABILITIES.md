@@ -860,3 +860,12 @@ references or unexpected store files. Not visible: references inside compressed 
 encrypted bytes. Not provided: online/concurrent collection, scheduling, privacy
 erasure of other copies. Evidence: 7 pytest cases and the zero-grace integrated
 recovery (102 real blobs kept, injected orphan deleted, every restored journey passes).
+
+### Whole-layout auto-arrange (ADR0051; Mac verified, HANDOFF§48)
+
+Deterministic layered left-to-right layout of up to 1000 cards in the current root
+or module scope on measured DOM rectangles: back edges broken, longest-path layers,
+barycenter ordering, measured stacking without overlap, current corner kept. One
+layout history edit; graph/hash unchanged. Not provided: persistent groups, wire
+routing, other directions, agent/RL canvas layout, crossing-optimal ordering.
+Evidence: 6 Node tests and owned Chrome journey `tools/editor_auto_layout_smoke.py`.

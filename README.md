@@ -878,3 +878,17 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_cas_gc.py
 .venv/bin/python tools/recovery_smoke.py --trackers --cache-retention --gc --output /private/tmp/void-cas-gc-recovery-1
 ```
+
+## Whole-layout auto-arrange
+
+Open **Arrange graph nodes** and press **Auto-arrange whole layout** to place every
+card in the current root or module layout left to right by its connections, using
+actual card sizes without overlap. It is one layout Undo edit; wires, configuration
+and the native graph hash are unchanged. See ADR 0051.
+
+Commands actually run (use a fresh evidence path):
+
+```bash
+node --test apps/editor/tests/*.test.mjs
+.venv/bin/python tools/editor_auto_layout_smoke.py --output /private/tmp/void-auto-layout-smoke-3
+```

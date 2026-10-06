@@ -53,6 +53,7 @@ import { GraphArrangementTools } from "./components/GraphArrangementTools";
 import { arrangeGraphNodes, type Arrangement } from "./graphArrangement";
 import { NodeComments } from "./components/NodeComments";
 import { removeAnnotation, renameAnnotation, saveAnnotation } from "./nodeAnnotations";
+import { layeredLayout, AUTO_LAYOUT_LIMIT } from "./graphLayout";
 import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
 import type { AgentClipboard } from "./agentClipboard";
 import { copyModuleNodes, pasteModuleNodes } from "./moduleClipboard";
@@ -555,6 +556,26 @@ function Workbench() {
     } catch (error) { setMessage(errorText(error)); }
   };
 
+  const autoArrangeBlocked = validation.pending || (!tabular && compat.pending) ? "Waiting for current native validation and compatibility before measuring cards."
+    : validation.error ? "Native validation is unavailable; retry before arranging cards."
+    : expandedGroups.length ? "Collapse expanded modules before arranging this root layout."
+    : cur.nodes.length > AUTO_LAYOUT_LIMIT ? `Auto-arrange supports at most ${AUTO_LAYOUT_LIMIT} cards in one scope.` : null;
+  const autoArrange = () => {
+    if (autoArrangeBlocked) { setMessage(autoArrangeBlocked); return; }
+    try {
+      const positions = layeredLayout(cur.nodes.map((node, i) => {
+        const card = document.querySelector<HTMLElement>(`.react-flow__node[data-id="${CSS.escape(node.id)}"]`);
+        // Read current unscaled DOM border-box dimensions at this explicit action, as arrangement does.
+        return { id: node.id, key: posKey(node.id), ...basePos(node.id, i), width: card?.offsetWidth ?? NaN, height: card?.offsetHeight ?? NaN };
+      }), cur.edges.map(e => ({ from: e.from.node, to: e.to.node })));
+      setUi(old => Object.entries(positions).every(([key, p]) => own(old.positions, key)?.x === p.x && own(old.positions, key)?.y === p.y) ? old
+        : { ...old, positions: { ...old.positions, ...positions } });
+      // The view is not part of the saved layout; refit once React Flow has the new positions.
+      setTimeout(() => void fitView({ padding: 0.12, maxZoom: 1 }), 150);
+      setMessage("Auto-arranged this layout left to right by connections. Model configuration and connections are unchanged.");
+    } catch (error) { setMessage(errorText(error)); }
+  };
+
   const movementBlocked = !def && expanded.length ? "Collapse expanded modules before moving this root layout."
     : selNodes.some(id => cur.nodes.filter(n => n.id === id).length !== 1) ? "Select actual uniquely identified root or module layout cards; generated interiors cannot be moved independently." : null;
   const moveSelection = (dx: number, dy: number) => {
@@ -751,7 +772,7 @@ function Workbench() {
       <GraphClipboardTools key={`clipboard:${projectId}:${def ? modKey(def) : "root"}`} graph={def ? { ...graph, nodes: def.nodes, edges: def.edges } : graph} selected={selNodes} clipboard={clipboard} inModule={!!def}
         blocked={def && (graph.graphKind !== "model" || graph.backend !== "pytorch") ? "E_CLIPBOARD_SCOPE: Module transfer requires a PyTorch model graph." : null}
         onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onCopy={copySelection} onPaste={pasteSelection} onClear={() => { setClipboard(null); setPasteCount(0); }} />
-      <GraphArrangementTools key={`arrangement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={arrangementBlocked}
+      <GraphArrangementTools key={`arrangement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={arrangementBlocked} autoBlocked={autoArrangeBlocked} onAutoArrange={autoArrange}
         onSelect={ids => { setSelNodes(ids); setSelEdges([]); }} onArrange={arrangeSelection} onCollapse={expandedGroups.length ? () => setExpanded([]) : undefined} />
       <GraphMovementTools key={`movement:${projectId}:${def ? modKey(def) : "root"}`} nodes={cur.nodes} selected={selNodes} scope={def ? `Module ${modKey(def)} layout` : `Root project ${projectId}`} blocked={movementBlocked}
         onSelect={ids => { setSelNodes(ids);setSelEdges([]); }} onMove={moveSelection} onCollapse={!def && expanded.length ? () => setExpanded([]) : undefined} />
