@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §72 — cross-host TLS workers (ADR0071).** §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §73 — automated accessibility audit (ADR0072).** §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2785,3 +2785,12 @@ all 22 editor journeys incl. backend_training pass; build and 50 Node tests pass
 (stopped after the run). Evidence `/private/tmp/void-xhost-worker.json` (copied to benchmarks/results).
 Verification: full native 1403 passed, 1 skipped, 27 deselected 545.62s (`/private/tmp/void-xhost-full.log`);
 all 22 editor journeys pass (`/private/tmp/void-xhost-regressions`).
+
+## 73. Automated accessibility audit — 2026-10-06 (ADR0072)
+
+`apps/editor/smoke/accessibility.mjs`, `tools/editor_accessibility_smoke.py` (+ CI stage), `src/decorativeSvgs.ts`
+wired in `App`. Runs: `/private/tmp/void-a11y-1` (baseline reported 0 because images were checked as
+role `img`; Chrome uses `image`), `-2` (self-check added: caught the gap), `-3` (12 decorative SVGs),
+`-4` (strict pass: 27 views, 0 violations, self-check 3/3).
+Verification: build, 50 Node tests and all 23 editor journeys incl. accessibility pass (`/private/tmp/void-a11y-regressions`);
+no Python changed in this scope, so the native suite was not rerun (last: 1403 passed in §72).

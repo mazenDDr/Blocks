@@ -1383,3 +1383,16 @@ Commands actually run:
 ```bash
 .venv/bin/pytest -q tests/test_worker_tls.py
 ```
+
+## Accessibility audit
+
+`tools/editor_accessibility_smoke.py` opens four example kinds, visits every
+workspace and fails if Chrome's accessibility tree contains an unnamed interactive
+control or image (after proving it can detect injected ones). This is an automated
+check, not a human accessibility review. See ADR 0072.
+
+Commands actually run:
+
+```bash
+.venv/bin/python tools/editor_accessibility_smoke.py --output /private/tmp/void-a11y-4
+```

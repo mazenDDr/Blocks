@@ -55,6 +55,7 @@ import { NodeComments } from "./components/NodeComments";
 import { removeAnnotation, renameAnnotation, saveAnnotation } from "./nodeAnnotations";
 import { createGroup, deleteGroup, frames, groupsOf, renameMember, updateGroup } from "./layoutGroups";
 import { GroupFrame, LayoutGroupsPanel, type FrameNode } from "./components/LayoutGroups";
+import { observeDecorativeSvgs } from "./decorativeSvgs";
 import { layeredLayout, AUTO_LAYOUT_LIMIT } from "./graphLayout";
 import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
 import type { AgentClipboard } from "./agentClipboard";
@@ -78,6 +79,7 @@ const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { r
 const lsSet = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* storage unavailable: remembering the last project is optional */ } };
 
 export function App() {
+  useEffect(() => observeDecorativeSvgs(), []);
   return <ReactFlowProvider><Workbench /></ReactFlowProvider>;
 }
 

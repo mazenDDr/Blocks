@@ -1116,3 +1116,10 @@ Worker endpoints `https://HOST:PORT` with a pinned `caFile`; workers bind beyond
 only with TLS. A real tabular job ran on the GPU machine over Tailscale with metrics
 identical to the local run. Not provided: cert rotation, mTLS, multi-worker scheduling,
 GPU work on workers.
+
+### Automated accessibility audit (ADR0072; Mac verified, HANDOFF§73)
+
+27 workspace views across model/tabular/agent/RL examples: 0 unnamed interactive controls
+or images in Chrome's accessibility tree (baseline 12 decorative SVGs, now aria-hidden);
+self-check flags injected violations. Not provided: human review, screen readers,
+contrast, focus order, WCAG conformance.
