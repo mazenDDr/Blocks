@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §45 — selection-independent side panels (ADR0048).** §44 below holds the earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §46 — agent graph clipboard (ADR0049).** §45 holds selection-independent side panels; §44 the earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1580,3 +1580,18 @@ stopped. Native code unchanged; full native suite runs in hosted CI.
 
 **Next:** Agent/RL clipboard (agent canvas is single-select; copying needs routes,
 joins and state-field compatibility), then the remaining areas in§32/CAPABILITIES.
+
+
+## 46. Agent graph clipboard — 2026-10-06 (ADR0049)
+
+New `src/agentClipboard.ts` (copy/paste with native state access, route/join/
+transition rebinding, definition merge), `components/agent/AgentClipboardTools.tsx`
+(own checklist; page-memory clipboard held in App so it survives project switches),
+5 Node tests, owned Chrome journey `apps/editor/smoke/agentClipboard.mjs` +
+`tools/editor_agent_clipboard_smoke.py`, and a CI browser stage with evidence upload.
+
+Journey `/private/tmp/void-agent-clipboard-smoke-3` passes; first two attempts failed
+on test bugs (connected-copy check dropped the original START edge; reload between
+projects cleared the page-memory clipboard), fixed without weakening assertions.
+RL graphs use fixed env/learner forms, so node clipboard is not applicable; RL
+settings transfer remains open. Regressions: `/private/tmp/void-agent-clipboard-regressions`.

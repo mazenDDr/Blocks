@@ -54,6 +54,7 @@ import { arrangeGraphNodes, type Arrangement } from "./graphArrangement";
 import { NodeComments } from "./components/NodeComments";
 import { removeAnnotation, renameAnnotation, saveAnnotation } from "./nodeAnnotations";
 import { copyGraphNodes, pasteGraphNodes, type GraphClipboard } from "./graphClipboard";
+import type { AgentClipboard } from "./agentClipboard";
 import { copyModuleNodes, pasteModuleNodes } from "./moduleClipboard";
 import { diagnosticTarget } from "./diagnosticNavigation";
 
@@ -104,6 +105,7 @@ function Workbench() {
   const [selNodes, setSelNodes] = useState<string[]>([]);
   const [selEdges, setSelEdges] = useState<string[]>([]);
   const [clipboard, setClipboard] = useState<GraphClipboard | null>(null);
+  const [agentClipboard, setAgentClipboard] = useState<AgentClipboard | null>(null);
   const [pasteCount, setPasteCount] = useState(0);
   const [ctx, setCtx] = useState<Ctx>({ runId: null, step: null, sample: null });
   const [message, setMessage] = useState<string | null>(null);
@@ -724,7 +726,7 @@ function Workbench() {
       {view === "coverage" && !rl && !agent && <CoverageView />}
       {view === "data" && !rl && <DataWorkspace onAddSource={addSource} tabular={tabular} />}
       {view === "graph" && agent && (
-        <AgentWorkspace projectId={projectId} graph={graph} setGraph={setGraph} ui={ui} setUi={setUi} validation={rv ?? null} validationPending={rootValidation.pending} validationError={rootValidation.error} ops={ops} allRuns={allRuns} reloadRuns={reloadRuns} setMessage={setMessage} requestedRunId={ctx.runId} />
+        <AgentWorkspace projectId={projectId} graph={graph} setGraph={setGraph} ui={ui} setUi={setUi} validation={rv ?? null} validationPending={rootValidation.pending} validationError={rootValidation.error} ops={ops} allRuns={allRuns} reloadRuns={reloadRuns} setMessage={setMessage} requestedRunId={ctx.runId} clipboard={agentClipboard} setClipboard={setAgentClipboard} />
       )}
       {view === "experiments" && !rl && <Experiments graph={graph} validation={rv ?? null} projectId={projectId} ops={opsByType} ensureSaved={ensureSaved} onOpenRun={openRun} />}
       {view === "training" && !tabular && (

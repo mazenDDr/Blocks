@@ -836,3 +836,15 @@ p95 33.0/34.2/47.1ms at 100/500/1000 nodes (raw: benchmarks/results/
 editor_selection_panels.json). No load, add/update, pan/zoom, frame-time, heap,
 production-build or platform claim. Build/typecheck/33 Node tests and all 13 editor
 smoke journeys pass; no native code changed.
+
+
+### Agent graph clipboard (ADR0049; Mac verified, HANDOFF§46)
+
+Copy 1–100 agent nodes with internal transitions/routes (END kept), fully selected
+joins and the exact state fields/indexes/memory policies native validation reports
+they use; crossing links are counted and left out, never retargeted. Paste is one
+history edit with fresh IDs, rebinding and definition merge (differing definitions
+refuse with no edit). Pasted nodes stay unreachable until connected. Page memory
+only; no OS clipboard, runs, memory records or index contents. RL graphs (fixed
+forms) are excluded. Evidence: 5 Node tests and owned Chrome journey
+`tools/editor_agent_clipboard_smoke.py` (same-graph/Undo, cross-project, conflict).

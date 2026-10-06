@@ -839,3 +839,21 @@ node --test apps/editor/tests/*.test.mjs
 
 HANDOFF§44/ADR0047 record the final correctness and recovery evidence separately
 from descriptive timing. No existing serving identity or dependency was changed.
+
+
+## Agent graph clipboard
+
+In an agent graph's Canvas tab, open **Copy and paste agent nodes**, tick nodes and
+copy. The editor validates the graph natively and copies the nodes, transitions and
+routes inside the selection (END stays END), fully selected joins, and the exact
+state fields, indexes and memory policies the nodes use. Paste into the same or
+another agent graph: IDs are fresh, missing definitions are added and differing ones
+refuse. Pasted nodes need an entry transition before the graph validates. RL graphs
+use fixed forms, so this does not apply to them. See ADR 0049.
+
+Commands actually run (use a fresh evidence path):
+
+```bash
+node --test apps/editor/tests/*.test.mjs
+.venv/bin/python tools/editor_agent_clipboard_smoke.py --output /private/tmp/void-agent-clipboard-smoke-3
+```
