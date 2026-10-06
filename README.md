@@ -729,3 +729,45 @@ node --test apps/editor/tests/rlOutline.test.mjs
 .venv/bin/pytest -q tests/test_rl_outline.py
 .venv/bin/python tools/editor_rl_outline_smoke.py --output /private/tmp/void-rl-outline-editor-native-missing
 ```
+
+
+## Serve a native JSON agent turn
+
+Select **serving_json_agent** in the picker. Its labelled SYNTHETIC colour/count
+teaching text is extracted by the actual installed local Ollama `qwen3.5:2b` model
+using the native flat structured-output schema. Run a source turn, then register
+its **schema-validated JSON turn** candidate in Production. Review the pinned
+input fields/schema/provider/source evidence. Use stateless mode, maxBatch1 and a
+30-second release timeout; preview invokes a real warmup before explicit deployment.
+
+Requests return a schema-valid finite object with native provenance. Capture inputs
+to inspect actual contexts/state/events and replay through a new isolated model
+call. Ground truth takes one independently supplied schema-valid object per turn.
+Monitoring reports canonical JSON agreement and descriptive output byte lengths;
+it does not establish semantic correctness or invoke generation. Existing saved
+text/conversation versions retain their native identities. Tools/retrieval/indexes,
+thread/long-term memory, interrupts, remote/fixture providers and JSON conversations
+remain unsupported. ADR0045/HANDOFF§42 record bounds and verification status.
+
+Commands actually run on the Mac, using fresh owned services and generated evidence
+outside Git. Both JSON journeys require the real installed model and fail without
+it; default hosted Linux CI has no Ollama and does not claim provider verification.
+
+```bash
+.venv/bin/python tools/editor_json_agent_smoke.py --output /private/tmp/void-json-serving-editor-captured-replay
+.venv/bin/python tools/recovery_smoke.py --trackers --json-agent --output /private/tmp/void-json-serving-ready-recovery
+.venv/bin/pytest -q tests/test_production_json_agent_live.py -m live
+.venv/bin/pytest -q -o faulthandler_timeout=240
+.venv/bin/pytest -q -m live
+pnpm -C apps/editor build
+pnpm -C apps/editor exec tsc --noEmit
+node --test apps/editor/tests/*.test.mjs
+.venv/bin/python -m backends.coverage --write
+.venv/bin/python -m backends.coverage --check
+```
+
+Reuse the commands with new evidence directory names: runners refuse overwrite.
+The recovery journey retains the original native conversations/research/comments/
+local MLflow/offline W&B checks, additionally verifies JSON manifests/requests,
+physically deletes its disposable source workbench and makes a fresh real model
+call from the restored version. It does not bundle external services or environments.

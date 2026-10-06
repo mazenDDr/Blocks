@@ -79,7 +79,7 @@ def register(app: FastAPI, sv):
                 q_node = rl_adapter.is_candidate(sv.store, row)
                 if q_node:
                     candidates.append({"runId": row["id"], "node": q_node, "pipelineSha256": None, "graphHash": row["graph_hash"], "adapter": "rl", "family": "rl_policy"})
-                from production import agent_adapter, conversation_adapter
+                from production import agent_adapter, conversation_adapter, json_agent_adapter
                 conversation_node = conversation_adapter.is_candidate(sv.store, row)
                 if conversation_node:
                     candidates.append({"runId": row["id"], "node": conversation_node, "pipelineSha256": None,
@@ -88,6 +88,10 @@ def register(app: FastAPI, sv):
                 if agent_node:
                     candidates.append({"runId": row["id"], "node": agent_node, "pipelineSha256": None,
                                        "graphHash": row["graph_hash"], "adapter": "agent", "family": "agent_turn"})
+                json_node = json_agent_adapter.is_candidate(sv.store, row)
+                if json_node:
+                    candidates.append({"runId": row["id"], "node": json_node, "pipelineSha256": None,
+                                       "graphHash": row["graph_hash"], "adapter": "agent_json", "family": "agent_json"})
                 for a in sv.store.artifacts(row["id"], "domain_model"):
                     if a["meta"].get("internalDomainModel"):
                         candidates.append({"runId": row["id"], "node": a["meta"]["node"], "pipelineSha256": a["sha256"], "graphHash": row["graph_hash"],
@@ -99,7 +103,7 @@ def register(app: FastAPI, sv):
                 "capabilities": {"adapter": "native scikit-learn tabular pipeline; native PyTorch vision/NLP/speech domain models (1-4 records per request); PyTorch model-graph image classifiers (1-32 images); greedy DQN policies (1-256 observations); k-means / Gaussian mixture / PCA (1-128 rows)", "targets": ["local", "staging"], "replicas": 1,
                                  "mode": "real native serving in this local FastAPI process; Ollama model device managed by its runtime; staging is a separate local route",
                                  "remoteDeployment": "not implemented: no infrastructure configured", "batch": "bounded synchronous batch",
-                                 "streaming": "not implemented", "agent": "isolated native LangGraph turns; local Ollama pinned by installed digest/runtime; prompt/set_state/one chat node only; bounded native persistent conversations; no tool/memory effects",
+                                 "streaming": "not implemented", "agent": "isolated native LangGraph text or schema-validated JSON turns; local Ollama pinned by installed digest/runtime; bounded native persistent text conversations; no tool/retrieval/memory effects",
                                  "session": "optional durable per-release/user/session counter for other families; conversation graphs require explicit sessions; stateless graphs keep stateless mode",
                                  "authentication": "single-user local workbench; user/session fields are caller-declared identities, not authentication",
                                  "limits": "latest 100 records per family / 100 lifecycle events; full source lineage stays in CAS"}}
@@ -117,9 +121,10 @@ def register(app: FastAPI, sv):
         import io
         import pandas as pd
         p = rt.pipeline(vid)
-        if ps.get("version", vid).get("adapter") in ("agent", "conversation"):
-            return {"records": p.reference_records(), "observedLabels": None, "family": "agent_turn", "inputContract": p.manifest["inputContract"],
-                    "labelNote": "Source run input only. No ground truth is inferred from its response. Supply reference text for exact string agreement; this is not semantic accuracy.",
+        if ps.get("version", vid).get("adapter") in ("agent", "conversation", "agent_json"):
+            json_output = ps.get("version", vid).get("adapter") == "agent_json"
+            return {"records": p.reference_records(), "observedLabels": None, "family": p.manifest["family"], "inputContract": p.manifest["inputContract"],
+                    "labelNote": "Source run input only. No ground truth is inferred. Supply a schema-valid reference object for canonical JSON agreement; not semantic accuracy." if json_output else "Source run input only. No ground truth is inferred from its response. Supply reference text for exact string agreement; this is not semantic accuracy.",
                     "provenance": {"versionId": vid, "runId": p.manifest["runId"], "referenceSha256": p.manifest["referenceSha256"],
                                    "partition": p.manifest["referencePartition"], "provider": p.manifest["provider"]}}
         if ps.get("version", vid).get("adapter") == "unsup":
@@ -178,7 +183,7 @@ def register(app: FastAPI, sv):
     def health(target: str, namespace: str):
         r = ps.route(target, namespace)
         rt.pipeline(r["versionId"])
-        agent = ps.get("version", r["versionId"]).get("adapter") in ("agent", "conversation")
+        agent = ps.get("version", r["versionId"]).get("adapter") in ("agent", "conversation", "agent_json")
         return {"ready": True, "releaseId": r["id"], "versionId": r["versionId"], "replicas": 1, "placement": "local control process; Ollama model device not measured" if agent else "local CPU",
                 "limits": r["config"]}
 
@@ -226,6 +231,15 @@ def register(app: FastAPI, sv):
             ps.add_labels(req.user, id_, req.labels)
             return {"recorded": True, "requestId": id_, "rows": len(req.labels)}
         adapter = ps.get("version", trace["versionId"]).get("adapter")
+        if adapter == "agent_json":
+            from production.json_agent_adapter import output_value
+            try:
+                for value in req.labels:
+                    output_value(value, p.cfg)
+            except ProductionError as exc:
+                raise ProductionError("E_LABEL_SCHEMA", "Supply one finite bounded schema-valid reference JSON object per turn.") from exc
+            ps.add_labels(req.user, id_, req.labels)
+            return {"recorded": True, "requestId": id_, "rows": len(req.labels)}
         if adapter in ("agent", "conversation"):
             if not all(isinstance(v, str) and len(v) <= 32_768 for v in req.labels):
                 raise ProductionError("E_LABEL_SCHEMA", "Supply one bounded reference string per agent turn (exact string agreement only).")
@@ -299,7 +313,7 @@ def register(app: FastAPI, sv):
             raise ProductionError("E_REPLAY_NOT_CAPTURED", "Inputs were not captured under this release's policy; replay unavailable.", 409)
         p = rt.pipeline(trace["versionId"])
         p.validate_records(trace["records"])
-        agent = ps.get("version", trace["versionId"]).get("adapter") in ("agent", "conversation")
+        agent = ps.get("version", trace["versionId"]).get("adapter") in ("agent", "conversation", "agent_json")
         if ps.get("version", trace["versionId"]).get("adapter") == "conversation":
             if "conversationParent" not in trace:
                 raise ProductionError("E_REPLAY_CHECKPOINT", "This failed request has no recorded prior checkpoint; replay unavailable.", 409)

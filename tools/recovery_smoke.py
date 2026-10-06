@@ -23,11 +23,20 @@ def run(args):
         out.mkdir(parents=True, exist_ok=False)
     result = {"status": "failed", "fixture": "SYNTHETIC native state recovery", "evidenceDirectory": str(out)}
     try:
+        if args.json_agent:
+            import editor_json_agent_smoke as json_smoke
+            json_smoke.available()
         seed = argparse.Namespace(output=str(out / "seed"), chrome=args.chrome, timeout=args.timeout)
         if smoke.run(seed):
             raise RuntimeError("Initial browser baseline failed; no backup taken.")
         source = out / "seed/workbench"
         extra_env = {"VOID_RECOVERY_SEED": str(out / "seed/evidence.json")}
+        if args.json_agent:
+            json_seed = argparse.Namespace(output=str(out / "json-seed"), chrome=args.chrome, timeout=args.timeout)
+            if smoke.run(json_seed, workbench=source, journey=smoke.EDITOR / "smoke/jsonAgent.mjs", fixture=json_smoke.FIXTURE):
+                raise RuntimeError("Real Ollama JSON source browser failed; no backup taken.")
+            extra_env["VOID_JSON_RECOVERY_SEED"] = str(out / "json-seed/evidence.json")
+            result["jsonAgent"] = {"provider": "actual installed Ollama qwen3.5:2b", "seed": "json-seed/evidence.json"}
         if args.trackers:
             seeded = subprocess.run([sys.executable, str(smoke.ROOT / "tools/tracker_recovery_seed.py"), "--workbench", str(source)],
                                     env=smoke.isolated_env(), capture_output=True, text=True, timeout=240)
@@ -47,6 +56,12 @@ def run(args):
         if smoke.run(check, workbench=out / "recovered", journey=smoke.EDITOR / "smoke/recovery.mjs",
                      extra_env=extra_env):
             raise RuntimeError("Restored browser recovery failed.")
+        if args.json_agent:
+            json_check = argparse.Namespace(output=str(out / "json-check"), chrome=args.chrome, timeout=args.timeout)
+            if smoke.run(json_check, workbench=out / "recovered", journey=smoke.EDITOR / "smoke/jsonAgent.mjs",
+                         extra_env=extra_env, fixture=json_smoke.FIXTURE):
+                raise RuntimeError("Restored native JSON browser/provider execution failed.")
+            result["jsonAgent"]["restored"] = "json-check/evidence.json"
         result["status"] = "passed"
     except Exception as error:
         result["error"] = str(error)
@@ -61,6 +76,7 @@ def main():
     parser.add_argument("--output", help="new evidence directory outside the repository")
     parser.add_argument("--chrome")
     parser.add_argument("--trackers", action="store_true", help="Seed real local MLflow/offline W&B; use v2 links with explicit external diagnostic-log omission.")
+    parser.add_argument("--json-agent", action="store_true", help="Also seed/recover a pinned JSON version and invoke real installed local Ollama; fails without the provider, no fixture substitution.")
     parser.add_argument("--timeout", type=float, default=180)
     args = parser.parse_args()
     if not 1 <= args.timeout <= 600:

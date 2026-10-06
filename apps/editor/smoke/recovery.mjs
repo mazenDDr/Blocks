@@ -251,6 +251,7 @@ try {
   await page.waitForFunction(()=>document.querySelector('input[aria-label="project id"]').value==='SYNTHETIC_recovery_comments');
   if(!(await page.$eval('.node-comments',e=>e.open)))await page.click('.node-comments summary');
   await page.waitForSelector('[aria-label="inspect comment conv_1"]');await page.click('[aria-label="inspect comment conv_1"]');
+  await page.waitForSelector('.node-comment');
   if(!(await page.$eval('.node-comment',e=>e.open)))await page.click('.node-comment summary');
   await page.waitForFunction(hash=>document.querySelector('.node-comment .provenance')?.textContent.includes(hash)&&document.querySelector('.node-comment .provenance')?.textContent.includes('current native identity'),{},restoredComments.graphHash);
   assert.equal(await page.$eval('textarea[aria-label="node comment text"]',e=>e.value),seed.nodeComments.ui.nodeComments.conv_1.text);evidence.nodeComments=restoredComments;await capture('restored-node-comment');

@@ -43,10 +43,10 @@ class ProductionRuntime:
 
     def pipeline(self, version_id):
         version = self.ps.get("version", version_id)
-        if version.get("adapter") in ("agent", "conversation"):
-            from . import agent_adapter, conversation_adapter
-            adapter = conversation_adapter if version["adapter"] == "conversation" else agent_adapter
-            AgentPipeline, verify = adapter.AgentPipeline, adapter.verify
+        if version.get("adapter") in ("agent", "conversation", "agent_json"):
+            from . import agent_adapter, conversation_adapter, json_agent_adapter
+            adapter = {"agent": agent_adapter, "conversation": conversation_adapter, "agent_json": json_agent_adapter}[version["adapter"]]
+            AgentPipeline, verify = (adapter.JsonAgentPipeline if adapter is json_agent_adapter else adapter.AgentPipeline), adapter.verify
             if json.loads(read_verified(self.store, version["pipelineSha256"])) != version["manifest"]:
                 raise ProductionError("E_AGENT_SOURCE", "Agent version differs from its pinned manifest.", 409)
             verify(self.store, version["manifest"])
@@ -86,11 +86,11 @@ class ProductionRuntime:
         if row is None or row["status"] != "completed":
             raise ProductionError("E_REGISTER_RUN", "Registration requires a completed recorded run.")
         if row["config"].get("kind") == "agent":
-            from . import agent_adapter, conversation_adapter
-            adapter = conversation_adapter if req.node == conversation_adapter.NODE else agent_adapter
+            from . import agent_adapter, conversation_adapter, json_agent_adapter
+            adapter = conversation_adapter if req.node == conversation_adapter.NODE else json_agent_adapter if req.node == json_agent_adapter.NODE else agent_adapter
             manifest = adapter.build_manifest(self.store, req.runId, req.node)
             sha = self.store.put_bytes(dumps(manifest).encode())
-            return self.ps.save("version", {**req.model_dump(), "adapter": "conversation" if adapter is conversation_adapter else "agent", "family": "agent_turn",
+            return self.ps.save("version", {**req.model_dump(), "adapter": "conversation" if adapter is conversation_adapter else "agent_json" if adapter is json_agent_adapter else "agent", "family": manifest["family"],
                                             "pipelineSha256": sha, "manifest": manifest})
         arts = [a for a in self.store.artifacts(req.runId, "inference_pipeline") if a["meta"]["node"] == req.node]
         domain = [a for a in self.store.artifacts(req.runId, "domain_model") if a["meta"].get("node") == req.node and a["meta"].get("internalDomainModel")]
@@ -133,7 +133,7 @@ class ProductionRuntime:
         v = self.ps.resolve_version(req.versionId)
         p = self.pipeline(v["id"])
         domain = v.get("adapter") == "domain"
-        agent = v.get("adapter") in ("agent", "conversation")
+        agent = v.get("adapter") in ("agent", "conversation", "agent_json")
         conversation = v.get("adapter") == "conversation"
         if agent:
             if req.config.maxBatch != 1 or req.config.sessionMode != ("conversation" if conversation else "stateless"):
@@ -212,7 +212,7 @@ class ProductionRuntime:
             trace["lineage"] = {"runId": p.manifest["runId"], "node": p.manifest["node"], "graphHash": p.manifest["graphHash"],
                                 "graphSha256": p.manifest["graphSha256"], "pipelineSha256": release["pipelineSha256"], "modelSha256": p.manifest["modelSha256"],
                                 "source": p.manifest["source"], "fitArtifacts": p.manifest["fitArtifacts"], "evaluationArtifacts": p.manifest["evaluationArtifacts"]}
-            if self.ps.get("version", release["versionId"]).get("adapter") in ("agent", "conversation"):
+            if self.ps.get("version", release["versionId"]).get("adapter") in ("agent", "conversation", "agent_json"):
                 kwargs = {}
                 if cfg["sessionMode"] == "conversation":
                     previous = self.ps.conversation(scope)

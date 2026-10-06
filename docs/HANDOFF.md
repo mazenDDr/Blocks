@@ -2,14 +2,14 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §42 — accepted RL Structure is pushed; JSON serving is an unaccepted draft under verification.** §41 records RL Mac acceptance; §42 records actual hosted evidence, current files/tests and remaining verification. Read §42 before continuing.
+> **Latest continuation: §42 — accepted RL Structure is pushed; JSON serving is Mac accepted; hosted checks/publication and the independent cache draft are current.** §41 records RL Mac acceptance; §42 records actual hosted evidence, current files/tests and remaining verification. Read §42 before continuing.
 
 ## 1. What this project is
 
 - **Product spec (authoritative):** `docs/VISION.md`, the same as the original `README.md` the user wrote. It covers 9 milestones (0–8) and acceptance tests A01–A64 (§24).
 - **Plan and rules:** `docs/PLAN.md`.
 - **What actually works:** `docs/CAPABILITIES.md`, the honest ledger. Update it with every change.
-- **Design decisions:** `docs/adr/0001…0044`. Read them before changing an area.
+- **Design decisions:** `docs/adr/0001…0045`. Read them before changing an area.
 - **How to run it:** the root `README.md`. It lists only commands that were actually run.
 
 **Repo:** `/Users/mazenkhaled/project-void`; private GitHub repository https://github.com/mazenDDr/project-void. `master` tracks `origin/master`.
@@ -31,7 +31,7 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | `examples/` | example projects and fixture generators |
 | `tests/` | pytest suite |
 
-## 2. Status (as of 2026-10-05)
+## 2. Status (as of 2026-10-06)
 
 | Milestone | State | Commit |
 |---|---|---|
@@ -72,6 +72,7 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Native diagnostic scope navigation | Mac native/live/browser/curl/recovery verified §39–§40; hosted pending | b3029c8 |
 | Specialized native agent outline | Mac and hosted native/browser verified §40–§42 | 442b3e4 |
 | Specialized native RL Structure/inspector | Mac native/live/browser/curl/recovery verified §41; hosted running §42 | 8204871 |
+| Isolated native JSON agent production | Mac native/live/browser/curl/legacy-version/source-deletion recovery verified §42; hosted provider unavailable | current accepted release |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -1345,7 +1346,7 @@ RL accepted commit **8204871 local, not pushed yet**; missing hosted native retr
 Real focused local Ollama JSON source→version→release→request/context/typedoutput→idempotency/newexecutionreplay→labels/monitor/privacy/cancel/mode/digest/native legacy-version checks **2passed7.37s**, then stronger successful model-event/context-source membership repeat **2passed4.48s**, `/private/tmp/void-json-serving-{native,provenance}-live-focused.log`. Native successful structured_attempt must link to actual non-fixture Ollama context; declared default objects cannot masquerade as model evidence. Runtime enforces the same actual successful execution before accepting output. Native contract/schema13pass1.79s; prior complete legacy/new contract set44pass6.71s and strengthened44pass7.06s (logs `/private/tmp/void-json-serving-{legacy-focused,provenance-legacy-focused}.log`); additional no-model declared-default source test pending. Typecheck passes. No JSON full/native/live/allbrowser/curl/recovery/ADR0045/docs acceptance yet. RL8204871 remains separate accepted commit, will push after completed priorCI evidence inspection; this JSON draft is outside that commit.
 
 
-## 42. JSON agent production continuation — 2026-10-06 (draft under verification)
+## 42. JSON agent production continuation — 2026-10-06 (Mac accepted; final checkpoint below)
 
 **Accepted RL8204871 is pushed to origin/master.** Its hosted default37397317637 is genuinely running native and browser jobs; do not replace/cancel with a new code push until its evidence finishes. Previous442b3e4 default37368880361 is now overall SUCCESS after retry of its missing native job112049889993:1219pass1skip12deselected1941warnings1046.74s,277module build/types31Node1155.927904ms/ledgerpass. Downloaded native JUnit `/private/tmp/void-agent-outline-ci-native/void-pytest.xml` independently parsed1220cases0failures0errors1skip1046.716s. Original hosted browser/artifact all11 journeys plus source-deleted58file10DB3link1omission recovered native tracker journey pass; all error arrays empty and owned groups stopped. Browser evidence `/private/tmp/void-agent-outline-ci-browser`, native/browser-only logs beside it. Those hosted checks verify442b3e4, not later RL/JSON code. No whole-project completion claim.
 
@@ -1356,3 +1357,35 @@ Only one native structured_output node, prompt/set_state graph16nodes32KiB,32tur
 Focused native14pass2.10s; new+legacy44pass7.06s. Real focused Ollama2pass7.37s/stronger actual source-event/context proof2pass4.48s/final manifest-consistency2pass4.78s. Mandatory whole live14pass1236deselected23.43s; editor279module build/types33Node222.601125ms/coveragewrite+check pass. Full native still running `/private/tmp/void-json-serving-full.log` (exec59183); live/build/types/node logs under `/private/tmp/void-json-serving-*`. Minor final adapter source-END/output proof added after those started: rerun focused/full/live as needed before final acceptance.
 
 **Still required before JSON acceptance/push:** actual Chrome source→register→warmup→deploy→real model/context/schema request→isolated replay→independent labels→monitor; native curl/refusals; existing persisted legacy version identity check; original native/browser/editor regressions; physical source-deletion backup/localtracker recovery of both old native conversations and new JSON manifests/requests with fresh actual model invocation after restore; ADR0045/CAPABILITIES/README exact commands; source-pin audit/diff/ledger/final native/live counts. Do not claim JSON complete until all pass. Provider browser/recovery must fail honestly without real installed Ollama; hosted Linux has none and must not substitute fixture output. Owned ports/profiles/workbenches only; user8258/8000 untouched. Quota last21%five-hour/77%weekly; continue alone to reserve or real VISION finalization. No paid reset credit used. NextADR0046 after this scope. Broader §32 gaps remain.
+
+
+### JSON browser/regression/replay checkpoint
+
+Actual pre-extension legacy saved conversation version dd33d995… loaded from a copied own RL acceptance workbench still matches all16saved native identity sources and serves actualfresh `SYNTHETIC retained version: 1/1` with0modelcalls (`/private/tmp/void-json-serving-existing-legacy/evidence.json`). All12original editor journeys pass after initial JSON integration: history6.4147s/clipboard6.4536/outline7.8290/arrangement13.5315/comments10.0977/insertion8.5806/commands7.2135/movement9.8679/moduleclipboard7.8634/diagnostic9.3932/agentoutline6.9579/RLoutline7.3759. Strict runtime/API/console arrays empty and every service group stopped; `/private/tmp/void-json-serving-regressions.json`.
+
+JSON browser failures retained: initial56.5089s requested nonexistent registry heading; second actual heading was CSS uppercase, so use exact DOM textContent rather than case-sensitive rendered innerText. Third browser exposed smoke assuming replay has prediction-trace status field; corrected to actual HTTP200 plus sourceTrace/release/version receipt and native result. Fourth `/private/tmp/void-json-serving-editor-native-replay`11.0991s then caught **real integration gap**: JSON replay was omitted from API agent dispatch, so capture=True/state/events/context/replayNote were withheld. Added agent_json membership and strengthened actual live replay assertions for non-fixture structured context, final object/events/source receipt/replayNote. All prior failures stopped owned groups with empty runtime/API errors; no acceptance claimed. Initial JSON source-deletion runner stops before taking backup because exact source JSON browser failed; no source deletion occurred on that failed attempt.
+
+Pre-fix required full native1235pass1skip14deselected1941warnings536.11s; final END/outputproof focused45pass8.24s/live2pass5.10s. Because replay dispatch changed a pinned new JSON source, final full/live/browser/recovery were restarted on final source: `/private/tmp/void-json-serving-final-{full,live}.log` exec33401/39680, captured-replay browser45294, real native tracker+JSON recovery20250 `/private/tmp/void-json-serving-replay-recovery`. Source/capture evidence must refer to these final manifests, not previous drafts. RL8204871 hosted37397317637 browser finished FAILURE (reason under inspection), independent native still running; do not cancel it or claim hosted RL green. Continue until acceptance/reserve; currentquota25%five-hour78%weekly.
+
+
+### Final JSON browser/curl/recovery evidence (full native finishing)
+
+Final actual local Ollama14livepass1236deselected28.37s; strengthened captured-replay focused2pass5.66s. Final owned Chrome `/private/tmp/void-json-serving-editor-captured-replay` **passes15.9553s**, actual source/JSONschema/providerdigest/22sourcepin registration/nativewarmup/release/actualblue9 request/providerusage/successfulstructured-eventcontext/newexecution capturedreplay/independentobjectlabel/read-onlymonitor/unchangedresearchsource. All native/API/runtime/console arrays empty,68354/68402/68427 stopped(-15/143/0). Screenshot inspected actualJSONprediction/execution/source/providerhash/sentcontext/nativeusage.
+
+Independent actual curl `/private/tmp/void-json-serving-curl/evidence.json` **16cases pass**: exact saved version/source reference, realblue7prediction, idempotency/newexecutionreplay, independentobjectlabels, native E_LABEL_SCHEMA/E_REQUEST_SCHEMA and batch/counter/conversation E_RELEASE_CONFIG refusal, no-new-trace monitor and exact original source state/model-calls. Own backend68705/64523 stopped-15. Actual earlier persisted legacy version remains valid as above.
+
+Integrated `/private/tmp/void-json-serving-replay-recovery` **71files/10DB/3internal-links/1explicitexternalW&Bdebuglogomission/sourceDeletedtrue** passes original native baseline (exact runner retained), JSONseed, recoveredoriginal and recoveredJSON. Manifest329821f8c3091afccac0f74aba1b3cd01f464a86060d7ea0823d7a229050d859. Stronger final `/private/tmp/void-json-serving-ready-recovery` **same71/10/3/1/sourceDeletedtrue passes**: originalseed11.5207819s68784/68807/68826 stopped; JSONseed11.2590926s68901/68906/68926 stopped; originalrecovered9.4077477s68998/69047/69068 stopped; JSONrecovered7.3757735s69112/69113/69133 stopped. Manifest1389ca94b76f295b4e4198e599598e70da31c416f418034f47001338b4fc1811. New JSON old savedmanifest/release/sourcefinal/modelcalls/trace/monitor exactly equal after physicalsource deletion, plus fresh actualmodel request and capturedreplay/independentlabels. Actual recoveredmonitor screenshot inspected. Every stricterrorarray empty; final current22sourcepins equal all acceptedbrowser/recovery savedmanifests, all own PIDs gone.
+
+HostedRL37397317637 browser **RLstage passes11.7456s** and all11othereditorstages pass; overallbrowser FAILS only originalrecoveryseed18.6463s at immediate `.node-comment` access after asyncselection, beforebackup/source deletion. Downloaded artifact `/private/tmp/void-rl-outline-ci-browser` confirms no runtime/API errors and every group stopped. Repaired only test readiness: exact Loaded-example receipt, actual aria-pressed selectedconv_1, actual node-comment existence; recoveredcomment likewise waits actualpane. All original data/nativeidentity/state assertions retained. Final ready-recovery above passes original+JSON actual flows. New default CI must verify this readiness repair; no wholeRLworkflowgreen claim yet. Nativejob still finishing, preserve it.
+
+Final editor279module build/types33Node221.8535ms/coveragewrite+check/diffpass. Accidental `pnpm -C apps/editor test` failed (no testscript); corrected to existing `node --test apps/editor/tests/*.test.mjs`, all33pass. Ad-hoc pin audit initially invoked systemPython without httpx; corrected to `.venv/bin/python`,16legacy native +earlierserving/schema/dependency audit pass `/private/tmp/void-json-serving-pins.json`. No product/source weakening, dependency install/model invalidation. Requiredfinalnative `/private/tmp/void-json-serving-final-full.log` exec33401 remains genuinelylive, not finalacceptedcount yet; acceptance/commit must wait. NextADR0046.
+
+
+Independent **unaccepted/unintegrated next-scope draft** `python/maintenance/__init__.py` and cache_retention.py now exist. They are outside JSON acceptance/commit. Proposed opt-in per-project periodic retention reuses unchanged native tabular.cache.prune/run-artifact CAS protection; no earlier pinned source is edited. Draft declares disabled default/keepLatest>=1/age/5–604800second cadence,100policies,revision guards,actual native prune receipts,owner-thread start/stop and restart scheduling in lazily created cache-retention.sqlite. Syntax only verified; no app lifespan/API/editor/tests/browser/curl/recovery/ADR0046 integration yet. Never claim automatic cleanup implemented until integrated and verified; existing cache controls remain explicit only. Preserve this draft for continuation, then complete lifecycle/finite config/disable/restart/concurrency/receipt bounds/artifact integrity/full gates, or remove it if evidence shows unsuitable semantics. User8258/8000 untouched.
+
+
+### Final Mac JSON acceptance
+
+Final requiredoffline **1235passed1skipped14deselected1941warnings522.62s**, `/private/tmp/void-json-serving-final-full.log` exec33401exit0. Actualfull live **14pass1236deselected28.37s**, `/private/tmp/void-json-serving-final-live.log`. Editor279module build/types33Node221.8535ms/coveragewrite+check/diff/source-pin audit pass. ActualChrome15.9553s/16curlcases/old pre-extension savedversion identity and realexecution/all12originaleditorjourneys/final source-deleted71file10DB3link1omission actualtracker+oldnative+newJSONrecovery allpass as recordedabove; screenshots inspected/22currentpinmanifest equality/allstrictarrays empty/allownedgroups stopped. User8258/8000 confirmed present and untouched. No nativelegacy/schema/dependency/weight change, reinstall or oldmodel retraining required. New JSONcode identity is separate and intentionally verifies its own additional integrationfiles.
+
+JSON now accepted onMac; selectively commit without inactive maintenance draft. PreviousRL8204871 hosted37397317637 native still live; preserve final result before nextcodepush. Its actual newRLstage/all11othereditorstages pass, only pre-backup comment readiness fails; readiness waits repaired and actual finalnative+JSONrecovery passes. NewdefaultCI must verify repair; no hostedJSONprovider/wholeRLworkflowgreen claim. NextADR0046 cache-retention draft is outside this acceptance; no automaticcleanup capability claimed yet. Continue alone until85%quota reserve or actual VISIONfinalization. Last33%five-hour79%weekly; noresetcredit consumed. Broader §32 requirements remain unfinished.

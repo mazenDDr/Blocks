@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {},
+  "synthetic": true,
+  "description": "SYNTHETIC declared colour/count extraction teaching text; real local Ollama, no model-quality benchmark claim.",
+  "defaultInput": {
+    "question": "SYNTHETIC teaching text: three red balls. Extract colour red and count 3."
+  }
+}

@@ -410,7 +410,7 @@ Compatibility: this continuation changes pinned native domain source code, so **
 
 Bounds: only prompt/set_state/at most one chat-model node; declared ≤25 supersteps, ≤2 calls, ≤4096 tokens, ≤30 seconds, ≤16 nodes, ≤32 state fields and ≤32 KiB graph. Defaults ≤8 KiB; templates ≤2000 characters/16 references. Exactly one record with the pinned 1–4 text fields (1–2000 characters each, total ≤8 KiB); native state ≤64 KiB after each superstep, context ≤16 KiB before a call. Local Ollama port 11434 only, think=false, max_tokens ≤128, timeout_s ≤30; no downloads. Provider identity is pinned at registration; old source runs did not capture its digest. Agent releases are stateless/maxBatch=1. Model device and cost are not measured; no CPU-only Ollama claim. Generated text remains recorded even with input capture off and can echo inputs.
 
-Persistent native conversations were added separately in ADR 0024 (below). Not implemented: memory/retrieval/index dependencies in releases; effects/interrupt approval serving; structured/multiple model nodes, streaming, Anthropic/remote provider production adapters; semantic quality benchmarks; broader retention/GC or separate Ollama hardware telemetry. Active model calls may finish before cancellation is observed, but their output is refused after deadline/cancellation/budget failure. Earlier domain/CNN/tabular/RL/unsupervised identities are unchanged by this release.
+Persistent native conversations were added separately in ADR 0024 (below). Not implemented: memory/retrieval/index dependencies in releases; effects/interrupt approval serving; multiple model nodes (bounded stateless structured-output serving is now in ADR0045), streaming, Anthropic/remote provider production adapters; semantic quality benchmarks; broader retention/GC or separate Ollama hardware telemetry. Active model calls may finish before cancellation is observed, but their output is refused after deadline/cancellation/budget failure. Earlier domain/CNN/tabular/RL/unsupervised identities are unchanged by this release.
 
 Verification hardening: CNN-worker cancellation accepts a control process that wins the cancelling transition between the worker check/write, preserves the native partial checkpoint, and retains strict terminal transition errors. `test_worker_cancel_race.py` forces this interleaving with a separate real SQLite writer; existing worker/process cancellation tests remain unchanged.
 
@@ -757,3 +757,29 @@ pass; hosted scope remains separate. RL clipboard/groups, broader algorithms,
 expanded Q-network editing and performance/platform/accessibility certification remain
 separate work.75-row browser fixture intentionally triggers native duplicate-family
 refusal; it is pagination evidence, not learner validity/quality/performance evidence.
+
+
+### Native JSON agent serving (ADR0045; Mac verified, HANDOFF§42)
+
+| Capability | Where | Verification |
+|---|---|---|
+| Additive agent_json registration; native source END/schema/successful structured-event/context membership, provider digest/runtime/environment and22source files pinned | production/json_agent_adapter.py, production runtime/controlAPI |14native contract/refusal tests;2actualOllama live integration tests; declared defaults without a real call refused |
+| Fresh isolated native turn, fail-closed finite object; stateless/maxBatch1; capture-on native context/state/events and new-call replay; capture-off hashes/usage | same, ProductionWorkspace.tsx |ActualChrome/nativecurl/live cancellation/bounds/privacy/idempotency/restart/replay; original source unchanged |
+| Independent schema-valid object labels; sorted-key canonical JSON agreement with number representation retained; descriptive UTF8output size against recorded warmup; no model generation during monitor | production monitor/controlAPI |Actualblue9browser/blue7curl with independently supplied truth, native refusal and read-only evidence |
+| Saved legacy identities preserved; new JSON version/request/source/provider evidence survives physical source deletion | Separate adapter identity; optional --json-agent native recovery |Pre-extension persisted conversation version still executes;71files/10DB/native tracker+old conversation+JSON browser recovery passes |
+
+Bounds:16nodes/32KiBgraph,32turn-statefields/8KiBdefaults,1–4textinputs,12flat
+schemafields/4KiBschema,8KiBfinite output,25steps/30s,1–2calls/4096total token
+budget/128outputtokens per call. Prompt/set_state/one structured-output node only;
+real installed local Ollama, think=false/on_failure=fail, retries within call budget.
+Default objects cannot count as successful model evidence. Single source/warmup
+reference is weak descriptive evidence; agreement is not semantic correctness.
+No new dependency/database schema/weight change or legacy retraining is required.
+JSON versions additionally pin shared production integration sources and therefore
+require new registration if those pinned sources change.
+
+Not implemented: JSON conversations, tools/retrieval/indexes/thread or long-term
+memory/interrupts, remote/fixture/multiple providers, streaming or semantic quality
+benchmarks. Default hosted Linux CI verifies native contracts/originalbrowser/
+recovery but has no Ollama and does not claim JSON provider acceptance. The optional
+JSON browser/recovery runners fail honestly without the actual installed model.

@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "1.0.0",
+  "graphKind": "agent",
+  "backend": "langgraph",
+  "nodes": [
+    {
+      "id": "prompt",
+      "type": "agent.prompt",
+      "version": "1.0.0",
+      "config": {
+        "output_field": "messages",
+        "items": [
+          {
+            "kind": "template",
+            "role": "system",
+            "template": "Extract colour and count from the supplied teaching text. Use only the declared JSON schema."
+          },
+          {
+            "kind": "template",
+            "role": "user",
+            "template": "{question}"
+          }
+        ]
+      },
+      "stateRef": null
+    },
+    {
+      "id": "extract",
+      "type": "agent.structured_output",
+      "version": "1.0.0",
+      "config": {
+        "messages_field": "messages",
+        "output_field": "result",
+        "model": {
+          "provider": "ollama",
+          "model": "qwen3.5:2b",
+          "think": false,
+          "max_tokens": 96,
+          "timeout_s": 20,
+          "temperature": 0,
+          "seed": 0
+        },
+        "schema_fields": [
+          {
+            "name": "colour",
+            "type": "enum",
+            "choices": [
+              "red",
+              "blue"
+            ]
+          },
+          {
+            "name": "count",
+            "type": "integer"
+          }
+        ],
+        "retry": {
+          "maxRetries": 0,
+          "feedback": true
+        },
+        "on_failure": "fail"
+      },
+      "stateRef": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "START__prompt",
+      "kind": "control",
+      "from": {
+        "node": "START",
+        "port": "out"
+      },
+      "to": {
+        "node": "prompt",
+        "port": "in"
+      }
+    },
+    {
+      "id": "prompt__extract",
+      "kind": "control",
+      "from": {
+        "node": "prompt",
+        "port": "out"
+      },
+      "to": {
+        "node": "extract",
+        "port": "in"
+      }
+    },
+    {
+      "id": "extract__END",
+      "kind": "control",
+      "from": {
+        "node": "extract",
+        "port": "out"
+      },
+      "to": {
+        "node": "END",
+        "port": "in"
+      }
+    }
+  ],
+  "agent": {
+    "state": [
+      {
+        "name": "question",
+        "type": "text",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "messages",
+        "type": "messages",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": ""
+      },
+      {
+        "name": "result",
+        "type": "object",
+        "reducer": {
+          "kind": "replace"
+        },
+        "scope": "turn",
+        "description": "",
+        "properties": {
+          "colour": "text",
+          "count": "integer"
+        }
+      }
+    ],
+    "limits": {
+      "maxSteps": 8,
+      "maxSeconds": 30,
+      "maxModelCalls": 1,
+      "maxTokens": 2048
+    }
+  }
+}

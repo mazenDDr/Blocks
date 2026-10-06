@@ -78,7 +78,7 @@ def wait_ready(url, process, headers=None, timeout=45):
     raise RuntimeError(f"Service readiness exceeded {timeout}s: {url}")
 
 
-def run(args, *, workbench=None, journey=None, extra_env=None):
+def run(args, *, workbench=None, journey=None, extra_env=None, fixture="SYNTHETIC native model-free state workflow"):
     chrome = chrome_path(args.chrome)
     node, pnpm = shutil.which("node"), shutil.which("pnpm")
     if not node or not pnpm:
@@ -100,7 +100,7 @@ def run(args, *, workbench=None, journey=None, extra_env=None):
     env.update(VOID_WORKBENCH=str(workbench or out / "workbench"), VOID_API_TOKEN=token, VOID_API=base)
     env.update(extra_env or {})
     processes, logs = [], []
-    result = {"status": "failed", "fixture": "SYNTHETIC native model-free state workflow",
+    result = {"status": "failed", "fixture": fixture,
               "backend": base, "editor": f"http://127.0.0.1:{editor_port}", "chrome": chrome,
               "services": [], "cleanup": [], "error": None}
     started = time.monotonic()

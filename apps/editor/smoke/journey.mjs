@@ -205,9 +205,12 @@ try {
   // Actual editor comments are UI metadata and must survive the offline workbench copy.
   await page.select('select[aria-label="open project"]','example:reference_cnn');
   await page.waitForFunction(()=>document.querySelector('input[aria-label="project id"]').value==='reference_cnn');
+  await text("Loaded example 'reference_cnn'.");
   await fill('input[aria-label="project id"]','SYNTHETIC_recovery_comments');
   if(!(await page.$eval('.graph-outline',e=>e.open)))await page.click('.graph-outline summary');
   await page.waitForSelector('[aria-label="inspect outline conv_1"]');await page.click('[aria-label="inspect outline conv_1"]');
+  await page.waitForFunction(()=>document.querySelector('[aria-label="inspect outline conv_1"]')?.getAttribute('aria-pressed')==='true');
+  await page.waitForSelector('.node-comment');
   if(!(await page.$eval('.node-comments',e=>e.open)))await page.click('.node-comments summary');
   if(!(await page.$eval('.node-comment',e=>e.open)))await page.click('.node-comment summary');
   await fill('textarea[aria-label="node comment text"]','SYNTHETIC editor comment; native identity retained through physical source deletion.');
