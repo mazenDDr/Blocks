@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §44 — measured large-graph selection is Mac verified; read its final acceptance/publication checkpoint.** Cache25ec83f is pushed (§43); its hosted outcome is recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §44 — measured large-graph selection is Mac verified; read its final acceptance/publication checkpoint.** Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1501,15 +1501,25 @@ Ollama JSON inference is unavailable and was not substituted. These results cove
 25ec83f, not the later selection optimization. Earlier JSON96cb454 default
 37399325114 is also fully green, as recorded above.
 
-**Current new CI:**
+**Selection hosted verification is now fully green.**
 [37403148824](https://github.com/mazenDDr/project-void/actions/runs/37403148824)
-on6a214be is in progress: native112074637119/browser112074637250.
-No final hosted selection outcome is claimed. Preserve
-this run before another master code push because concurrency cancels older runs.
-Mac final selection acceptance remains1239native/1skip/14deselected559.86s,
-14actualOllama live33.84s,33Node/build/typecheck/ledger/pin audits, all12original
-editor journeys, actual native curl, and137-file/11database source-deleted native/
-real JSON/cache/local-tracker recovery. Exact raw measurements are committed.
+on 6a214be completed SUCCESS: native job 112074637119 and browser job
+112074637250 both succeeded. Native log: 1239 passed, 1 skipped, 14 deselected,
+1941 warnings in 981.46s. The downloaded JUnit
+`/private/tmp/void-editor-selection-ci/native-test-evidence/void-pytest.xml`
+independently has 1240 cases, 0 failures, 0 errors, 1 skip (the live Anthropic
+call; no API key). The browser artifact `/private/tmp/void-editor-selection-ci/browser-evidence`
+independently shows all 13 editor smokes (12 original journeys + cache retention)
+passed with empty runtime/API error arrays and stopped browser/editor/backend
+groups, and recovery passed all four stages (seed/check/cache-seed/cache-check)
+with a 124-file/11-database backup and confirmed local MLflow + offline W&B
+exports. The outline smoke's `nativeError` field is its intentional invalid-graph
+fixture, not a failure. Full run log: `/private/tmp/void-editor-selection-ci/run.log`.
+Mac final selection acceptance remains 1239 native/1 skip/14 deselected 559.86s,
+14 actual Ollama live 33.84s, 33 Node/build/typecheck/ledger/pin audits, all 12
+original editor journeys, actual native curl, and the 137-file/11-database
+source-deleted native/real JSON/cache/local-tracker recovery. Exact raw
+measurements are committed.
 
 **Usage:** actual account68%five-hour/85%weekly. The user's instruction was to
 continue until nearing usage limits, write a handoff and stop. That condition is
