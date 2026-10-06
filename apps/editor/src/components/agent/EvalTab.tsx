@@ -33,6 +33,25 @@ export function CasesEditor({ text, setText }: { text: string; setText: (t: stri
   </>;
 }
 
+interface Comparison { nameA: string; nameB: string; shared: number; onlyA: number; onlyB: number; passedA: number; passedB: number; fixed: number; regressed: number;
+  mcnemarExactP: number; interpretation: string; rows: { case: string; seed: number | null; a: boolean; b: boolean; change: string }[] }
+
+/** Two finished evaluations side by side (ADR 0081): fixed / regressed cases and an exact McNemar p-value. */
+export function EvalCompare({ a, b }: { a: string; b: string }) {
+  const cmp = usePolling<Comparison>(`/api/agent/evals/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`, 0, [a, b]);
+  if (cmp.error) return <div className="error small">{cmp.error}</div>;
+  const c = cmp.data;
+  if (!c) return null;
+  const changed = c.rows.filter((r) => r.change !== "same");
+  return <section aria-label="evaluation comparison">
+    <p className="eval-compare"><b>{c.passedA}</b> → <b>{c.passedB}</b> of {c.shared} shared runs · {c.fixed} fixed · {c.regressed} regressed · exact McNemar p = {c.mcnemarExactP}
+      {(c.onlyA || c.onlyB) ? <span className="muted"> · not compared: {c.onlyA} only in A, {c.onlyB} only in B</span> : null}</p>
+    <p className="small muted">{c.interpretation}</p>
+    {changed.length > 0 && <table className="dtable" aria-label="changed cases"><thead><tr><th>case</th><th>seed</th><th>{c.nameA}</th><th>{c.nameB}</th><th>change</th></tr></thead>
+      <tbody>{changed.map((r) => <tr key={`${r.case}:${r.seed ?? ""}`}><td>{r.case}</td><td>{r.seed ?? ""}</td><td>{r.a ? "pass" : "fail"}</td><td>{r.b ? "pass" : "fail"}</td><td>{r.change}</td></tr>)}</tbody></table>}
+  </section>;
+}
+
 /** One evaluation's score and per-case results; polls while it runs. */
 export function EvalResult({ evalId, live, openRun, onStatus }: { evalId: string; live: boolean; openRun?: (id: string) => void; onStatus?: (s: string) => void }) {
   const view = usePolling<EvalView>(`/api/agent/evals/${evalId}`, live ? 1000 : 0, [live]);
@@ -71,6 +90,8 @@ export function EvalTab({ projectId, graph, ui, allRuns, reloadRuns, ensureSaved
   const [evalId, setEvalId] = useState<string | null>(null);
   useEffect(() => { if (!evalId && evals.length) setEvalId(evals[evals.length - 1].id); }, [evals, evalId]);
   const current = evals.find((r) => r.id === evalId);
+  const [compareId, setCompareId] = useState("");
+  const finished = evals.filter((r) => r.status === "completed" && r.id !== evalId);
   const live = !!current && ["queued", "preparing", "running", "cancelling"].includes(current.status);
   let parsed: unknown = null, parseError: string | null = null;
   try { parsed = parseCases(text); if (!Array.isArray(parsed) || parsed.length === 0) parseError = "Cases must be a non-empty JSON array."; }
@@ -96,6 +117,9 @@ export function EvalTab({ projectId, graph, ui, allRuns, reloadRuns, ensureSaved
         <label className="small">evaluation <select aria-label="evaluation run" value={evalId ?? ""} onChange={(e) => setEvalId(e.target.value || null)}>
           <option value="">(none)</option>{[...evals].reverse().map((r) => <option key={r.id} value={r.id}>{r.id} · {r.status}</option>)}</select></label></div>
       {err && <div className="error small pre">{err}</div>}
+      {evalId && current?.status === "completed" && finished.length > 0 && <div><label className="small">compare with <select aria-label="compare evaluation" value={compareId} onChange={(e) => setCompareId(e.target.value)}>
+        <option value="">(none)</option>{[...finished].reverse().map((r) => <option key={r.id} value={r.id}>{r.id}</option>)}</select></label></div>}
+      {evalId && compareId && current?.status === "completed" && <EvalCompare a={compareId} b={evalId} />}
       {evalId && <EvalResult key={evalId} evalId={evalId} live={live} openRun={openRun} onStatus={(st) => { if (st !== current?.status) reloadRuns(); }} />}
     </div>
   );

@@ -182,3 +182,21 @@ def run_agent_eval(graph: Graph, cfg: AgentEvalConfig, store: ArtifactStore, run
         return finish("completed", passed=k, cases=n)
     except Exception as e:  # noqa: BLE001  (record any failure on the run)
         return finish("failed", f"{type(e).__name__}: {e}")
+
+
+def compare_reports(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
+    """Per-case comparison of two evaluation reports on shared (case, seed) keys (ADR 0081).
+
+    Discordant pairs get an exact two-sided McNemar (binomial) p-value; only shared keys are compared."""
+    ka = {(r["case"], r.get("seed")): r["passed"] for r in a["results"]}
+    kb = {(r["case"], r.get("seed")): r["passed"] for r in b["results"]}
+    shared = sorted(set(ka) & set(kb), key=lambda k: (k[0], -1 if k[1] is None else k[1]))
+    rows = [{"case": c, "seed": s, "a": ka[(c, s)], "b": kb[(c, s)],
+             "change": "fixed" if not ka[(c, s)] and kb[(c, s)] else "regressed" if ka[(c, s)] and not kb[(c, s)] else "same"} for c, s in shared]
+    fixed, regressed = sum(r["change"] == "fixed" for r in rows), sum(r["change"] == "regressed" for r in rows)
+    n = fixed + regressed
+    p = min(1.0, 2 * sum(math.comb(n, i) for i in range(min(fixed, regressed) + 1)) / 2 ** n) if n else 1.0
+    return {"shared": len(rows), "onlyA": len(set(ka) - set(kb)), "onlyB": len(set(kb) - set(ka)),
+            "passedA": sum(r["a"] for r in rows), "passedB": sum(r["b"] for r in rows), "fixed": fixed, "regressed": regressed,
+            "mcnemarExactP": round(p, 4), "rows": rows,
+            "interpretation": "Only cases present in both evaluations are compared. The exact McNemar p-value uses the discordant cases; with few of them no difference can be shown."}

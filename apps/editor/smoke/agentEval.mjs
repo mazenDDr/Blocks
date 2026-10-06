@@ -77,6 +77,19 @@ try {
   const report=await get(`/api/agent/evals/${sub.runId}`);evidence.report={passed:report.report.passed,passRate:report.report.passRate,wilson95:report.report.wilson95};
   assert.deepEqual([report.report.passed,report.report.cases,report.report.seeds],[4,6,[1,2]]);
   await capture('evaluation');
+  // Second evaluation with c3's check corrected, then compare (ADR 0081): c3 is fixed under both seeds, nothing regresses.
+  const fixedCases=CASES.map(c=>c.id==='c3'?{...c,checks:[{field:'answer',kind:'contains',value:'SYNTHETIC gamma'}]}:c);
+  await fill('textarea[aria-label="evaluation cases"]',JSON.stringify(fixedCases));
+  const posted2=response('/api/runs');await click('Run evaluation');const second=(await(await posted2).json()).runId;
+  await page.waitForFunction(()=>document.querySelector('.eval-score')?.textContent.includes('6 / 6'));
+  await page.waitForSelector('select[aria-label="compare evaluation"]');
+  await page.select('select[aria-label="compare evaluation"]',sub.runId);
+  await page.waitForFunction(()=>document.querySelector('.eval-compare')?.textContent.includes('2 fixed'));
+  const cmpText=await page.$eval('.eval-compare',e=>e.textContent);evidence.comparison=cmpText;
+  assert(cmpText.includes('4 → 6')&&cmpText.includes('0 regressed'),cmpText);
+  assert.equal(await page.$$eval('[aria-label="changed cases"] tbody tr',r=>r.length),2);
+  await capture('comparison');
+  await page.select('select[aria-label="evaluation run"]',sub.runId);
   const child=report.cases[0].childRunId;
   await (await page.waitForSelector('button[aria-label="open run of case c1 seed 1"]')).click();
   await page.waitForFunction(id=>document.body.innerText.includes(id),{},child);

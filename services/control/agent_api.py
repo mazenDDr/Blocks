@@ -277,6 +277,18 @@ def register(app: FastAPI, sv) -> None:
         return {"available": True, "values": json.loads(store.read_artifact(a[-1]["sha256"])), "provenance": {"runId": rid, "artifactSha256": a[-1]["sha256"]}}
 
     # ------------------------------------------------------------------ evaluations (ADR 0077)
+    @app.get("/api/agent/evals/compare")
+    def compare_evaluations(a: str, b: str):
+        from worker.agent_eval import compare_reports
+        reps = []
+        for rid in (a, b):
+            row = store.get_run(rid)
+            arts = store.artifacts(rid, "agent_eval_report") if row and row["config"].get("kind") in ("agent_eval", "release_eval") else []
+            if not arts:
+                raise HTTPException(404, {"code": "not_found", "message": f"no finished evaluation '{rid}'"})
+            reps.append(json.loads(store.read_artifact(arts[-1]["sha256"])))
+        return {"a": a, "b": b, "nameA": reps[0]["name"], "nameB": reps[1]["name"], **compare_reports(*reps)}
+
     @app.get("/api/agent/evals/{rid}")
     def evaluation(rid: str):
         row = store.get_run(rid)

@@ -132,3 +132,26 @@ def test_deployed_release_evaluation_isolates_cases_and_real_users(tmp_path):
         assert c.get(f"/api/runs/{rid}").json()["kind"] == "release_eval"
         rt2.ps.query("DELETE FROM routes")
         assert c.post(f"/api/production/releases/{rel['id']}/evaluate", json={"cases": cases}).status_code == 409
+
+
+def test_compare_reports_counts_fixed_regressed_and_exact_mcnemar():
+    from worker.agent_eval import compare_reports
+    mk = lambda flags: {"results": [{"case": f"c{i}", "seed": None, "passed": f} for i, f in enumerate(flags)]}
+    r = compare_reports(mk([True, True, False, False, True]), mk([True, False, True, True, True] + [True]))
+    assert (r["shared"], r["fixed"], r["regressed"], r["passedA"], r["passedB"]) == (5, 2, 1, 3, 4)
+    assert r["mcnemarExactP"] == 1.0 and r["onlyB"] == 1  # B has one extra case, not compared
+    r = compare_reports(mk([False] * 8), mk([True] * 8))
+    assert r["fixed"] == 8 and r["mcnemarExactP"] == 0.0078
+
+
+def test_compare_api_over_two_evaluations(tmp_path):
+    with TestClient(create_app(tmp_path / "wb")) as c:
+        ids = []
+        for i, val in enumerate(("alpha", "zzz")):
+            cases = [{"id": "c1", "input": {"question": "SYNTHETIC alpha"}, "checks": [{"field": "answer", "kind": "contains", "value": val}]}]
+            r = c.post("/api/runs", json={"graph": echo_graph().to_json(), "config": {"kind": "agent_eval", "cases": cases}}, headers={"Idempotency-Key": f"cmp-{i}"})
+            ids.append(r.json()["runId"])
+            wait(c, ids[-1])
+        cmp_ = c.get("/api/agent/evals/compare", params={"a": ids[0], "b": ids[1]}).json()
+        assert (cmp_["shared"], cmp_["regressed"], cmp_["fixed"]) == (1, 1, 0) and cmp_["rows"][0]["change"] == "regressed"
+        assert c.get("/api/agent/evals/compare", params={"a": ids[0], "b": "nope"}).status_code == 404

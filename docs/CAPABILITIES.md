@@ -1182,3 +1182,8 @@ stored size about halves (10M rows: 1.15 GB → 565 MB) for ≈+17% run time. Ol
 `agent.tool_agent`: the model may call calculator / bounded read_text_file up to max_tool_calls; refusals for
 unoffered tools, extra calls and wrong arguments; every call recorded. External-effect tools are not offered to
 models. Not provided: serving, parallel tool calls, Anthropic/fixture providers, user-defined tools.
+
+### Evaluation comparison (ADR0081; Mac verified, HANDOFF§89)
+
+Per-case fixed/regressed between two evaluations on shared (case, seed) keys with an exact McNemar
+p-value; Evaluate tab view. Tables stored before ADR0079 are deliberately not recompressed (provenance).

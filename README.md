@@ -1503,3 +1503,6 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_tool_agent.py -m 'live or not live'
 .venv/bin/python tools/editor_tool_agent_block_smoke.py --output /private/tmp/void-toolagent-1
 ```
+
+Two evaluations can be compared case by case (fixed / regressed, exact McNemar p-value) in the
+Evaluate tab or via `GET /api/agent/evals/compare`. See ADR 0081.
