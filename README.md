@@ -969,3 +969,35 @@ Commands actually run:
 ```bash
 .venv/bin/pytest -q tests/test_accounts.py
 ```
+
+## Erasing one serving user's data
+
+Preview, then (with every writer stopped) erase a user's production requests,
+traces, labels and conversations from the workbench: rows are deleted, the database
+is VACUUMed, and content-store bytes only they referenced are physically removed.
+Backups, sealed files and exports keep their own copies. See ADR 0056.
+
+```bash
+.venv/bin/python -m maintenance.erase --workbench .workbench --user alice
+.venv/bin/python -m maintenance.erase --workbench .workbench --user alice --apply --offline
+```
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_erase_user.py
+```
+
+## Recovering runs after a crash
+
+Workers refresh a heartbeat while they run. If a worker is killed or the control
+service crashes, the restarted service marks runs with no heartbeat, event or status
+change for 120 seconds as failed with `E_WORKER_LOST`, keeping everything they
+recorded. Paused agent runs are left alone. Lost runs are not resumed automatically;
+start a new run (or continue a model run from its last checkpoint). See ADR 0057.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_worker_recovery.py
+```

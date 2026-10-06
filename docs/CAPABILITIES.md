@@ -911,3 +911,19 @@ route; owner-filtered request list; append-only audit of mutations; `/api/whoami
 editor defaults to the account namespace; uvicorn TLS verified end to end. Not
 provided: passwords/sessions/expiry, rotation API, SSO, per-project permissions,
 rate limiting, tamper-evident audit, worker/tracker authorization.
+
+### Offline physical erasure of one serving user (ADR0056; Mac verified, HANDOFF§53)
+
+`python -m maintenance.erase`: deletes the user's requests/traces, labels,
+conversation actions and session/conversation heads, VACUUMs production.sqlite and
+removes CAS blobs only those rows referenced (others are kept and reported). A raw
+byte scan of the whole workbench finds no trace of the erased user's marker while
+another user's conversation continues. Not erased: backups/sealed files/exports/
+trackers, audit entries, separately recorded research runs.
+
+### Worker crash recovery (ADR0057; Mac verified, HANDOFF§54)
+
+Worker leases with 5 s heartbeats in meta.db; the control service fails active runs
+silent for 120 s (`E_WORKER_LOST`, evidence event, artifacts kept) at start-up and
+every 30 s; paused agent runs untouched. Verified with a real SIGKILLed CNN worker
+next to a live one. Not provided: automatic retry/resume, UI badge beyond status.

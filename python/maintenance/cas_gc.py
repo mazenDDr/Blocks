@@ -88,17 +88,12 @@ def _check_databases(root: Path, artifacts: Path, databases: list[str]) -> None:
                 raise GcError(error.code.replace("E_BACKUP", "E_GC"), str(error)) from error
 
 
-def collect(workbench, *, apply=False, offline=False, grace_seconds=86400.0, now=None) -> dict:
-    """Mark from every workbench file, then report (or, with apply+offline, delete) unreferenced old blobs."""
-    if apply and not offline:
-        raise GcError("E_GC_OFFLINE", "Pass offline=True only after stopping all writers to this workbench.")
-    if not 0 <= grace_seconds <= 365 * 86400:
-        raise GcError("E_GC_GRACE", "Grace period must be 0–365 days.")
+def mark(workbench) -> dict:
+    """Census of the store: every blob, every blob a reference keeps (transitively), partial writes and scanned inputs."""
     root = Path(workbench).resolve()
     artifacts = root / "artifacts"
     if not artifacts.is_dir() or artifacts.is_symlink():
         raise GcError("E_GC_STORE", "No owned artifacts directory in this workbench.")
-    now = time.time() if now is None else now
     blobs, partial = {}, {}
     for entry in os.scandir(artifacts):
         st = entry.stat(follow_symlinks=False)
@@ -143,6 +138,36 @@ def collect(workbench, *, apply=False, offline=False, grace_seconds=86400.0, now
         for item in more - kept:
             kept.add(item)
             pending.append(item)
+    return {"root": root, "artifacts": artifacts, "blobs": blobs, "partial": partial, "kept": kept,
+            "databases": sorted(databases), "scanned": scanned}
+
+
+def blob_references(workbench, text: bytes) -> set[str]:
+    """Existing blobs named in `text`, plus everything they name transitively."""
+    artifacts = Path(workbench).resolve() / "artifacts"
+    names = {e.name for e in os.scandir(artifacts) if NAME.fullmatch(e.name)}
+    found: set[str] = set()
+    _windows(text, names, found)
+    pending = list(found)
+    while pending:
+        more: set[str] = set()
+        _scan_file(artifacts / pending.pop(), names, more)
+        for item in more - found:
+            found.add(item)
+            pending.append(item)
+    return found
+
+
+def collect(workbench, *, apply=False, offline=False, grace_seconds=86400.0, now=None) -> dict:
+    """Mark from every workbench file, then report (or, with apply+offline, delete) unreferenced old blobs."""
+    if apply and not offline:
+        raise GcError("E_GC_OFFLINE", "Pass offline=True only after stopping all writers to this workbench.")
+    if not 0 <= grace_seconds <= 365 * 86400:
+        raise GcError("E_GC_GRACE", "Grace period must be 0–365 days.")
+    m = mark(workbench)
+    artifacts, blobs, partial, kept, databases, scanned = m["artifacts"], m["blobs"], m["partial"], m["kept"], m["databases"], m["scanned"]
+    now = time.time() if now is None else now
+    names = set(blobs)
     unreferenced = sorted(names - kept)
     candidates = [s for s in unreferenced if now - blobs[s].st_mtime >= grace_seconds]
     stale_partial = sorted(n for n, st in partial.items() if now - st.st_mtime >= grace_seconds)

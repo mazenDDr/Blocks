@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §52 — named accounts, roles, ownership and TLS (ADR0055).** §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §54 — worker crash recovery (ADR0057).** §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1688,3 +1688,23 @@ Accounts + fitted-unsup full native (fresh run on final code): 1264 passed, 1 sk
 16 deselected 495.66s (`/private/tmp/void-accounts-full.log`); live 16 passed 29.26s.
 Hosted [37412081636](https://github.com/mazenDDr/project-void/actions/runs/37412081636)
 on c6a54ad (auto-arrange, sealed backups, streaming): SUCCESS, native and browser.
+
+## 53. Offline physical erasure of one serving user — 2026-10-06 (ADR0056)
+
+New `python/maintenance/erase.py` (dry run / `--apply --offline`), `cas_gc.py` split into
+`mark()` + `blob_references()` (collector behaviour unchanged; its 7 tests pass), and
+`tests/test_erase_user.py` (4) on real offline native conversations with a raw byte scan
+of every workbench file for the erased user's marker.
+
+## 54. Worker crash recovery — 2026-10-06 (ADR0057)
+
+`run_leases` table + `lease/heartbeat/reconcile_lost_workers` in `artifact_store/store.py`;
+`worker/process.py::_keep_alive` (lease + 5 s heartbeat thread); control lifespan
+reconciler thread (start-up + every 30 s). `tests/test_worker_recovery.py` (4, one kills a
+real CNN worker with SIGKILL). The first startup test polled the run-summary API with
+a synthetic config lacking model fields (KeyError in the summary, not in recovery);
+it now reads the store directly.
+
+Final full native on erasure + recovery: 1272 passed, 1 skipped, 16 deselected 496.70s
+(`/private/tmp/void-recovery-full.log`); live 16 passed 27.76s. (Two earlier full runs
+overlapped in-progress edits; both passed, but this run on the final code is the record.)

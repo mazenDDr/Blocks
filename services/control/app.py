@@ -334,18 +334,37 @@ class Services:
 
 
 # ---------------------------------------------------------------------------------------- app
+RECONCILE_SECONDS = 30.0
+
+
 def create_app(workbench: str | Path | None = None, api_token: str | None = None, users_file: str | Path | None = None) -> FastAPI:
     wb = Path(workbench or os.environ.get("VOID_WORKBENCH", ".workbench")).resolve()
     sv = Services(wb)
     from maintenance.cache_retention import CacheRetention
     sv.cache_retention = CacheRetention(sv.store, idle_lock=sv.lock)
 
+    stop_reconcile = threading.Event()
+
+    def reconcile_workers():
+        # A crash of this service (or of a worker) can leave runs active forever; fail those with no sign of life.
+        while True:
+            try:
+                sv.recovered_runs = sv.store.reconcile_lost_workers()
+            except Exception:  # noqa: BLE001 - retried on the next tick
+                pass
+            if stop_reconcile.wait(RECONCILE_SECONDS):
+                return
+
     @asynccontextmanager
     async def lifespan(app):
         sv.cache_retention.start()
+        reconciler = threading.Thread(target=reconcile_workers, daemon=True, name="worker-reconcile")
+        reconciler.start()
         try:
             yield
         finally:
+            stop_reconcile.set()
+            reconciler.join(timeout=5)
             sv.cache_retention.stop()
 
     app = FastAPI(title="Project Void control service", version="1.0.0", lifespan=lifespan)

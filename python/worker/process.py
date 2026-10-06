@@ -6,6 +6,9 @@ from __future__ import annotations
 
 import json
 import multiprocessing as mp
+import os
+import threading
+import time
 import uuid
 from pathlib import Path
 
@@ -21,8 +24,29 @@ from .tabular_run import TabularRunConfig, run_tabular
 from .train import RunConfig, run_training
 
 
+HEARTBEAT_SECONDS = 5.0
+
+
+def _keep_alive(store: ArtifactStore, run_id: str) -> None:
+    """Claim the run and refresh a heartbeat until this process ends, so a restarted control service can tell a live worker
+    from a lost one (ArtifactStore.reconcile_lost_workers)."""
+    nonce = uuid.uuid4().hex
+    store.lease(run_id, os.getpid(), nonce)
+
+    def beat():
+        while True:
+            time.sleep(HEARTBEAT_SECONDS)
+            try:
+                store.heartbeat(run_id, nonce)
+            except Exception:  # noqa: BLE001 - a missed beat only makes the run look silent sooner
+                pass
+
+    threading.Thread(target=beat, daemon=True, name=f"heartbeat-{run_id}").start()
+
+
 def _child(graph_json: dict, cfg_json: dict, root: str, run_id: str, cancel_event, resume: dict | None = None) -> None:
     store = ArtifactStore(root)
+    _keep_alive(store, run_id)
 
     def should_cancel() -> bool:  # in-process event, or a cancel recorded in the DB by any process (e.g. after a control restart)
         return cancel_event.is_set() or store.get_run(run_id)["status"] == "cancelling"

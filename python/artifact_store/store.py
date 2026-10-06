@@ -44,7 +44,11 @@ CREATE TABLE IF NOT EXISTS node_cache (
   key TEXT PRIMARY KEY, sha256 TEXT NOT NULL, size INTEGER NOT NULL, run_id TEXT NOT NULL, node_id TEXT NOT NULL, op_type TEXT NOT NULL,
   project_id TEXT, node_part TEXT NOT NULL, implementation TEXT NOT NULL, environment TEXT NOT NULL, inputs TEXT NOT NULL, created_at REAL NOT NULL);
 CREATE INDEX IF NOT EXISTS node_cache_node ON node_cache (node_id, op_type, created_at);
+CREATE TABLE IF NOT EXISTS run_leases (
+  run_id TEXT PRIMARY KEY, pid INTEGER NOT NULL, nonce TEXT NOT NULL, started REAL NOT NULL, heartbeat REAL NOT NULL);
 """
+ACTIVE = ("queued", "preparing", "running", "cancelling")  # "paused" agent runs wait for a person with no worker process
+LOST_AFTER_SECONDS = 120.0
 
 
 class IllegalTransition(Exception):
@@ -227,6 +231,41 @@ class ArtifactStore:
         d = dict(rows[0])
         d["data"] = json.loads(d["data"])
         return d
+
+    # ------------------------------------------------------------ worker liveness
+    def lease(self, run_id: str, pid: int, nonce: str) -> None:
+        """A worker process claims its run; a later worker (e.g. an agent resume) replaces the claim."""
+        now = time.time()
+        self._exec("INSERT OR REPLACE INTO run_leases VALUES (?,?,?,?,?)", (run_id, pid, nonce, now, now))
+
+    def heartbeat(self, run_id: str, nonce: str) -> None:
+        self._exec("UPDATE run_leases SET heartbeat=? WHERE run_id=? AND nonce=?", (time.time(), run_id, nonce))
+
+    def reconcile_lost_workers(self, lost_after: float = LOST_AFTER_SECONDS, now: float | None = None) -> list[dict[str, Any]]:
+        """Fail active runs whose worker left no sign of life (heartbeat, event or status change) for `lost_after` seconds.
+
+        A crashed control process or killed/OOM worker otherwise leaves a run queued/running forever, blocking backup and
+        collection. Recorded events and artifacts are kept; nothing is resumed or invented."""
+        now = time.time() if now is None else now
+        rows = self._exec(f"""SELECT r.id, r.status, r.graph_hash, r.updated_at, l.heartbeat, l.pid,
+                                     (SELECT MAX(ts) FROM events e WHERE e.run_id=r.id) AS last_event
+                              FROM runs r LEFT JOIN run_leases l ON l.run_id=r.id
+                              WHERE r.status IN ({','.join('?' * len(ACTIVE))})""", ACTIVE)
+        lost = []
+        for r in rows:
+            evidence = max(x for x in (r["updated_at"], r["heartbeat"], r["last_event"]) if x is not None)
+            if now - evidence < lost_after:
+                continue
+            message = (f"E_WORKER_LOST: no worker heartbeat, event or status change for {now - evidence:.0f}s while {r['status']} "
+                       f"(control or worker process ended); recorded events/artifacts are kept and the run was not resumed")
+            try:
+                self.set_status(r["id"], "failed", message)
+            except IllegalTransition:
+                continue  # the worker finished meanwhile
+            self.append_event(r["id"], self.max_seq(r["id"]) + 1, now, "run_finished", r["graph_hash"], None,
+                              {"status": "failed", "error": message, "recovered": True, "previousStatus": r["status"], "workerPid": r["pid"]})
+            lost.append({"runId": r["id"], "previousStatus": r["status"], "silentSeconds": round(now - evidence, 1), "workerPid": r["pid"]})
+        return lost
 
     def max_seq(self, run_id: str) -> int:
         rows = self._exec("SELECT MAX(seq) AS m FROM events WHERE run_id=?", (run_id,))
