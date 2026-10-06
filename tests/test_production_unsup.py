@@ -102,7 +102,7 @@ def test_tabular_adapter_identity_is_unchanged():
 
 
 def test_fitted_preprocessing_upstream_is_refused(tmp_path):
-    """k-means fed by a fitted scaler: requests could not carry its raw inputs faithfully, so capture records a refusal."""
+    """The original adapter (ADR 0020) still refuses this path; ADR 0054 serves it from a separate module (tested below)."""
     from graph_core.schema import Edge, Node
 
     from tabular_helpers import run_inproc
@@ -117,3 +117,63 @@ def test_fitted_preprocessing_upstream_is_refused(tmp_path):
     assert refusals == [{"node": "km", "code": "E_PIPELINE_UNSUPPORTED",
                          "message": "tabular.apply_transform upstream of the estimator is not served; requests must carry the raw feature columns."}]
     assert not store.artifacts("r1", "unsup_pipeline")
+
+
+@pytest.fixture(scope="module")
+def fitted(tmp_path_factory):
+    """k-means after the regression example's fitted impute → one-hot → standardize path, run by the real tabular worker."""
+    from graph_core.schema import Edge, Node
+
+    g = example("tabular_regression")
+    g.nodes.append(Node.model_validate({"id": "km", "type": "sklearn.kmeans", "version": "1.0.0",
+                                        "config": {"features": ["area_m2", "rooms", "age_years", "neighborhood_north"], "n_clusters": 3}}))
+    g.edges.append(Edge.model_validate({"id": "sc_train_km", "kind": "table", "from": {"node": "sc_train", "port": "table"}, "to": {"node": "km", "port": "table"}}))
+    with TestClient(create_app(tmp_path_factory.mktemp("wb"))) as c:
+        r = submit(c, g)
+        assert r.status_code == 201, r.text
+        rid = r.json()["runId"]
+        assert wait_for(c, rid)["status"] == "completed"
+        yield c, rid
+
+
+def test_fitted_preprocessing_path_is_served_with_native_equal_outputs(fitted):
+    """Raw rows replay the pinned impute/one-hot/standardize steps and give exactly the run's own predictions; nothing refits."""
+    import json
+    c, rid = fitted
+    store = c.app.state.services.store
+    manifest = json.loads(store.read_artifact([a for a in store.artifacts(rid, "unsup_fitted_pipeline") if a["meta"]["node"] == "km"][-1]["sha256"]))
+    assert [s["type"] for s in manifest["steps"]] == ["tabular.select_columns"] + ["tabular.apply_transform"] * 3
+    assert {x["name"]: x["nullable"] for x in manifest["inputSchema"]} == {"area_m2": True, "rooms": False, "age_years": True, "neighborhood": False}
+    assert "price_k" not in manifest["features"] and [t["type"] for t in manifest["trainingOnly"]] == ["tabular.profile", "tabular.duplicates", "tabular.train_validation_split"]
+    v, rel = deploy(c, rid, "km", "fitted-km")
+    assert v["adapter"] == "unsup" and v["family"] == "kmeans"
+    ref = c.get(f"/api/production/versions/{v['id']}/reference-input").json()
+    assert "raw source columns" in ref["inputContract"]
+    model = pickle.loads(store.read_artifact([a for a in store.artifacts(rid, "unsup_fitted_model") if a["meta"]["node"] == "km"][-1]["sha256"]))
+    recorded = [a for a in store.artifacts(rid, "node_output") if a["meta"]["node"] == "sc_train" and a["meta"]["port"] == "table"][-1]
+    transformed = pd.read_csv(store.path_of(recorded["sha256"]), index_col="row_id")
+    raw = pd.read_csv(store.path_of(store.artifacts(rid, "unsup_fitted_reference")[-1]["sha256"]))
+    records = json.loads(raw.head(40).to_json(orient="records"))
+    assert any(r["age_years"] is None for r in records + json.loads(raw.to_json(orient="records"))[:200])  # nulls exercise the pinned imputer
+    served, distances = [], []
+    for i in range(0, 40, 8):  # the release's default batch limit
+        out = c.post("/api/serve/local/fitted-km/predict", json={"requestId": f"fit-1-{i}", "records": records[i:i + 8]})
+        assert out.status_code == 200, out.text
+        served += out.json()["result"]["predictions"]
+        distances += out.json()["result"]["distances"]
+    X = transformed[model.features].to_numpy(dtype="float64")[:40]
+    Xs = model.scaler.transform(X) if model.scaler is not None else X
+    assert served == model.estimator.predict(Xs).tolist()
+    assert np.allclose(distances, model.estimator.transform(Xs))
+    bad = dict(records[0], price_k=1.0)
+    assert c.post("/api/serve/local/fitted-km/predict", json={"requestId": "fit-2", "records": [bad]}).json()["error"]["code"] == "E_REQUEST_SCHEMA"
+    wrong = dict(records[0], neighborhood=3)
+    assert c.post("/api/serve/local/fitted-km/predict", json={"requestId": "fit-3", "records": [wrong]}).json()["error"]["code"] == "E_REQUEST_SCHEMA"
+    mon = c.get(f"/api/production/releases/{rel['id']}/monitor").json()
+    assert mon["inputDrift"]["neighborhood"]["available"] is not False and set(mon["inputDrift"]) == {"area_m2", "rooms", "age_years", "neighborhood"}
+
+
+def test_existing_unsupervised_adapter_identity_is_unchanged():
+    """Fitted paths live in their own module, so previously registered unsupervised versions keep their implementation hash."""
+    from production import unsup_adapter
+    assert unsup_adapter.IMPLEMENTATION_FILES == ("production/unsup_adapter.py", "operations/unsup_ops.py", "unsup/methods.py", "tabular/core.py")

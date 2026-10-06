@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import Field
 
 from agent.models import TOKEN_SINK
+from .accounts import current, ensure_owner
 from production.models import RegisterVersion, ReleaseCreate, PredictRequest, Strict, TrafficSpec
 from production.pipeline import ProductionError
 from production.runtime import ProductionRuntime
@@ -76,7 +77,7 @@ def register(app: FastAPI, sv):
                 out_node = is_candidate(sv.store, row)
                 if out_node:
                     candidates.append({"runId": row["id"], "node": out_node, "pipelineSha256": None, "graphHash": row["graph_hash"], "adapter": "model", "family": "image_classifier"})
-                for a in sv.store.artifacts(row["id"], "unsup_pipeline"):
+                for a in sv.store.artifacts(row["id"], "unsup_pipeline") + sv.store.artifacts(row["id"], "unsup_fitted_pipeline"):
                     candidates.append({"runId": row["id"], "node": a["meta"]["node"], "pipelineSha256": a["sha256"], "graphHash": row["graph_hash"], "adapter": "unsup",
                                        "family": json.loads(sv.store.read_artifact(a["sha256"]))["method"]})
                 from production import rl_adapter
@@ -133,7 +134,9 @@ def register(app: FastAPI, sv):
                                    "partition": p.manifest["referencePartition"], "provider": p.manifest["provider"]}}
         if ps.get("version", vid).get("adapter") == "unsup":
             return {"records": p.reference_records(3), "observedLabels": None, "family": p.manifest["method"],
-                    "inputContract": f"records: [{{{', '.join(p.manifest['features'])}: finite numbers}}]",
+                    "inputContract": (f"records: [{{{', '.join(c['name'] + ': ' + c['dtype'] + (' or null' if c['nullable'] else '') for c in p.manifest['inputSchema'])}}}] "
+                                      "(raw source columns; the run's fitted preprocessing is replayed)") if "inputSchema" in p.manifest
+                                     else f"records: [{{{', '.join(p.manifest['features'])}: finite numbers}}]",
                     "labelNote": "Rows the estimator was fitted on (in-sample). Clusters have no ground truth; supply external labels only if you have them.",
                     "provenance": {"versionId": vid, "runId": p.manifest["runId"], "referenceSha256": p.manifest["referenceSha256"], "partition": "fitted rows (in-sample)"}}
         if ps.get("version", vid).get("adapter") == "rl":
@@ -207,6 +210,7 @@ def register(app: FastAPI, sv):
         bad = first_non_finite(req.records, "records")
         if bad:
             raise ProductionError("E_REQUEST_SCHEMA", f"Non-finite number at {bad}; NaN and Infinity are not valid inputs.", 422)
+        ensure_owner(req.user)
         result = rt.predict(target, namespace, req)
         return JSONResponse(result, status_code=result["status"])
 
@@ -222,6 +226,7 @@ def register(app: FastAPI, sv):
         bad = first_non_finite(req.records, "records")
         if bad:
             raise ProductionError("E_REQUEST_SCHEMA", f"Non-finite number at {bad}; NaN and Infinity are not valid inputs.", 422)
+        ensure_owner(req.user)
         events: queue.SimpleQueue = queue.SimpleQueue()
 
         def work():
@@ -250,18 +255,23 @@ def register(app: FastAPI, sv):
 
     @app.get("/api/production/requests")
     def requests(release: str | None = None):
-        return {"requests": ps.traces(release), "max": 1000}
+        acc = current()
+        traces = ps.traces(release)
+        return {"requests": traces if acc is None or acc.role == "admin" else [t for t in traces if t.get("user") == acc.name], "max": 1000}
 
     @app.get("/api/production/requests/{id_}")
     def request_trace(id_: str, user: str = "local-user"):
+        ensure_owner(user)
         return ps.trace(user, id_)
 
     @app.post("/api/production/requests/{id_}/cancel")
     def cancel_request(id_: str, req: User):
+        ensure_owner(req.user)
         return ps.cancel(req.user, id_)
 
     @app.post("/api/production/requests/{id_}/labels")
     def label_request(id_: str, req: Labels):
+        ensure_owner(req.user)
         trace = ps.trace(req.user, id_)
         if trace.get("status") != 200:
             raise ProductionError("E_LABEL_ALIGNMENT", "Only completed predictions can receive labels.")
@@ -310,12 +320,14 @@ def register(app: FastAPI, sv):
                       limit: int = Query(25, ge=1, le=100),
                       after: str | None = Query(None, pattern=r"^[A-Za-z0-9_-]{1,64}$"),
                       prefix: str = Query("", pattern=r"^[A-Za-z0-9_-]{0,64}$")):
+        ensure_owner(user)
         from production.discovery import discover
         return discover(ps, rid, user, limit=limit, after=after, prefix=prefix)
 
     @app.get("/api/production/releases/{rid}/conversation")
     def conversation(rid: str, user: str = Query("local-user", pattern=r"^[A-Za-z0-9_-]{1,64}$"),
                      session: str = Query(..., pattern=r"^[A-Za-z0-9_-]{1,64}$")):
+        ensure_owner(user)
         from tabular.core import dumps
         release = ps.get("release", rid)
         if release["config"]["sessionMode"] != "conversation":
@@ -328,11 +340,13 @@ def register(app: FastAPI, sv):
 
     @app.post("/api/production/releases/{rid}/conversation/reset")
     def reset_conversation(rid: str, req: ConversationReset):
+        ensure_owner(req.user)
         from production.conversations import action
         return action(rt, rid, "reset", req)
 
     @app.post("/api/production/releases/{rid}/conversation/fork", status_code=201)
     def fork_conversation(rid: str, req: ConversationFork):
+        ensure_owner(req.user)
         from production.conversations import action
         return action(rt, rid, "fork", req)
 
@@ -340,16 +354,19 @@ def register(app: FastAPI, sv):
     def historical_checkpoint(rid: str, request_id: str,
                               user: str = Query("local-user", pattern=r"^[A-Za-z0-9_-]{1,64}$"),
                               session: str = Query(..., pattern=r"^[A-Za-z0-9_-]{1,64}$")):
+        ensure_owner(user)
         from production.history import inspect_history
         return inspect_history(rt, rid, user, session, request_id)
 
     @app.post("/api/production/releases/{rid}/conversation/restore")
     def restore_conversation(rid: str, req: ConversationRestore):
+        ensure_owner(req.user)
         from production.conversations import action
         return action(rt, rid, "restore", req)
 
     @app.post("/api/production/requests/{id_}/replay")
     def investigate(id_: str, req: User):
+        ensure_owner(req.user)
         trace = ps.trace(req.user, id_)
         if not trace.get("records") or "versionId" not in trace:
             raise ProductionError("E_REPLAY_NOT_CAPTURED", "Inputs were not captured under this release's policy; replay unavailable.", 409)
@@ -376,7 +393,7 @@ def register(app: FastAPI, sv):
         port = request.scope.get("server", (None,None))[1]
         if not isinstance(port, int) or not 1 <= port <= 65535:
             raise ProductionError("E_TRAFFIC_SERVER", "Traffic requires this app to run on a real loopback HTTP server.")
-        return traffic.start(req, port)
+        return traffic.start(req, port, request.headers.get("authorization") if current() else None)
 
     @app.get("/api/production/traffic/{id_}")
     def traffic_status(id_: str):

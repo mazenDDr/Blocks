@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, ApiError, errorText } from "../api";
 import { postEventStream } from "../sse";
 import { usePolling } from "../hooks";
@@ -37,6 +37,10 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
   const [payload, setPayload] = useState("[]");
   const [reference, setReference] = useState<unknown>(null);
   const [user, setUser] = useState("local-user");
+  // With named accounts (ADR 0055) operators may only use their own namespace, so start from the signed-in account.
+  useEffect(() => {
+    api.get<{ account: { name: string } | null }>("/api/whoami").then(w => { if (w.account) setUser(u => u === "local-user" ? w.account!.name : u); }).catch(() => {});
+  }, []);
   const [session, setSession] = useState("investigation");
   const [streamed, setStreamed] = useState<string | null>(null);
   const [requestId, setRequestId] = useState("");
@@ -93,8 +97,10 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
         {["agent", "conversation", "agent_json"].includes(version.adapter ?? "") ? <><h4>Pinned native agent: text input → LangGraph turn → {version.adapter === "agent_json" ? "schema-validated JSON" : "text output"}</h4>
           <Metrics rows={[["Input fields", version.manifest.inputFields.join(", ")], ["Output field", version.manifest.outputField], ["Mode", version.adapter === "conversation" ? "persistent native conversation; no tool/memory effects" : "isolated single turn; no tool/memory effects"]]} />
           <Recorded value={{ provider: version.manifest.provider, limits: version.manifest.limits, environment: version.manifest.environment, ...(version.adapter === "agent_json" ? { outputSchema: version.manifest.outputSchema.jsonSchema } : {}) }} /></>
-        : version.adapter === "unsup" ? <><h4>Pinned {version.family}: raw features → fitted scaler → native estimator</h4>
-          <Metrics rows={[["Features", version.manifest.features.join(", ")], ["Scaled", version.manifest.scaled ? "fitted StandardScaler" : "no"], ["Estimator parameters", JSON.stringify(version.manifest.params)],
+        : version.adapter === "unsup" ? <><h4>Pinned {version.family}: {version.manifest.steps ? "raw source columns → recorded fitted preprocessing → fitted scaler → native estimator" : "raw features → fitted scaler → native estimator"}</h4>
+          <Metrics rows={[[version.manifest.steps ? "Raw input columns" : "Features", version.manifest.features.join(", ")],
+            ...(version.manifest.steps ? [["Replayed steps", version.manifest.steps.map((step: { node: string; type: string }) => `${step.node} (${step.type})`).join(" → ")], ["Estimator features", version.manifest.modelFeatures.join(", ")]] as [string, unknown][] : []),
+            ["Scaled", version.manifest.scaled ? "fitted StandardScaler" : "no"], ["Estimator parameters", JSON.stringify(version.manifest.params)],
             ["Fitted on", `${version.manifest.fittedOn?.rows ?? "?"} rows`], ["Frozen reference", `${version.manifest.referenceRows} fitted rows (in-sample)`]]} />
           <p>Clusters are not classes. Label-based evidence is external agreement (ARI/NMI) with labels you supply; PCA reports reconstruction error.</p></>
         : version.adapter === "rl" ? <><h4>Pinned policy: observation → final Q-network → greedy action</h4>

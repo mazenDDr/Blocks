@@ -359,18 +359,18 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 | `sklearn.metrics` | tabular | scikit-learn | yes | metrics | 2 |
 | `sklearn.pca` | tabular | scikit-learn | yes | pca | 0 |
 | `sklearn.projection` | tabular | scikit-learn | yes | projection | 0 |
-| `tabular.apply_transform` | tabular | scikit-learn | yes | step | 3 |
+| `tabular.apply_transform` | tabular | scikit-learn | yes | step | 4 |
 | `tabular.csv_source` | tabular | pandas | yes | source | 5 |
 | `tabular.drop_missing` | tabular | pandas | yes | step | 2 |
-| `tabular.duplicates` | tabular | pandas | yes | step | 2 |
+| `tabular.duplicates` | tabular | pandas | yes | step | 3 |
 | `tabular.fit_impute` | tabular | scikit-learn | yes | fit_state | 1 |
 | `tabular.fit_onehot` | tabular | scikit-learn | yes | fit_state | 1 |
 | `tabular.fit_standardize` | tabular | scikit-learn | yes | fit_state | 2 |
 | `tabular.join` | tabular | pandas | yes | join | 1 |
 | `tabular.predictions_export` | tabular | scikit-learn | yes | step | 1 |
-| `tabular.profile` | tabular | pandas | yes | profile | 2 |
-| `tabular.select_columns` | tabular | pandas | yes | step | 3 |
-| `tabular.train_validation_split` | tabular | pandas | yes | split | 3 |
+| `tabular.profile` | tabular | pandas | yes | profile | 3 |
+| `tabular.select_columns` | tabular | pandas | yes | step | 4 |
+| `tabular.train_validation_split` | tabular | pandas | yes | split | 4 |
 
 ## Templates and pretrained weights
 

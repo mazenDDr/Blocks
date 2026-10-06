@@ -334,7 +334,7 @@ class Services:
 
 
 # ---------------------------------------------------------------------------------------- app
-def create_app(workbench: str | Path | None = None, api_token: str | None = None) -> FastAPI:
+def create_app(workbench: str | Path | None = None, api_token: str | None = None, users_file: str | Path | None = None) -> FastAPI:
     wb = Path(workbench or os.environ.get("VOID_WORKBENCH", ".workbench")).resolve()
     sv = Services(wb)
     from maintenance.cache_retention import CacheRetention
@@ -350,11 +350,29 @@ def create_app(workbench: str | Path | None = None, api_token: str | None = None
 
     app = FastAPI(title="Project Void control service", version="1.0.0", lifespan=lifespan)
     token = api_token if api_token is not None else (os.environ.get("VOID_API_TOKEN") or None)
-    sv.api_token = token
-    if token:
+    users = users_file if users_file is not None else (os.environ.get("VOID_USERS_FILE") or None)
+    sv.api_token = None if users else token
+    if users:
+        from .accounts import AccountAuth, load as load_accounts
+        if token:
+            raise ValueError("Set either VOID_USERS_FILE (named accounts) or VOID_API_TOKEN (one shared token), not both.")
+        app.add_middleware(AccountAuth, accounts=load_accounts(users), audit_dir=wb / "audit")  # parsed now: start fails on a bad file
+    elif token:
         from .auth import TokenAuth, check_token
         app.add_middleware(TokenAuth, token=check_token(token))  # checked now: middleware is only built on the first request
     app.state.services = sv
+
+    from .accounts import AccountError, current as current_account
+
+    @app.exception_handler(AccountError)
+    async def _account_error(_: Request, e: AccountError):
+        return JSONResponse({"detail": {"code": e.code, "message": e.message}}, status_code=e.status)
+
+    @app.get("/api/whoami")
+    def whoami():
+        acc = current_account()
+        return {"account": {"name": acc.name, "role": acc.role} if acc else None,
+                "mode": "accounts" if acc else ("shared-token" if sv.api_token else "open")}
 
     @app.exception_handler(SourceError)
     async def _source_error(_: Request, e: SourceError):

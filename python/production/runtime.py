@@ -58,6 +58,10 @@ class ProductionRuntime:
             from . import model_adapter, rl_adapter, unsup_adapter
             mod, cls = {"model": (model_adapter, model_adapter.ModelGraphPipeline), "rl": (rl_adapter, rl_adapter.PolicyPipeline),
                         "unsup": (unsup_adapter, unsup_adapter.UnsupPipeline)}[version["adapter"]]
+            if version["adapter"] == "unsup":
+                from . import unsup_fitted
+                if unsup_fitted.is_fitted(version["manifest"]):
+                    mod, cls = unsup_fitted, unsup_fitted.FittedUnsupPipeline
             mod.verify(self.store, version["manifest"])  # environment, implementation and pinned hashes on every use
             with self.lock:
                 if version_id not in self.pipelines:
@@ -100,7 +104,14 @@ class ProductionRuntime:
             sha, manifest = unsup
             unsup_adapter.UnsupPipeline(self.store, manifest)
             return self.ps.save("version", {**req.model_dump(), "adapter": "unsup", "family": manifest["method"], "pipelineSha256": sha, "manifest": manifest})
-        refused = [json.loads(self.store.read_artifact(a["sha256"])) for a in self.store.artifacts(req.runId, "unsup_refusal") if a["meta"]["node"] == req.node]
+        from . import unsup_fitted
+        fitted = unsup_fitted.manifest_for(self.store, req.runId, req.node)
+        if not arts and fitted:
+            sha, manifest = fitted
+            unsup_fitted.FittedUnsupPipeline(self.store, manifest)
+            return self.ps.save("version", {**req.model_dump(), "adapter": "unsup", "family": manifest["method"], "pipelineSha256": sha, "manifest": manifest})
+        refused = [json.loads(self.store.read_artifact(a["sha256"])) for a in self.store.artifacts(req.runId, "unsup_fitted_refusal") if a["meta"]["node"] == req.node]
+        refused = refused or [json.loads(self.store.read_artifact(a["sha256"])) for a in self.store.artifacts(req.runId, "unsup_refusal") if a["meta"]["node"] == req.node]
         if not arts and refused:
             raise ProductionError(refused[-1]["code"], refused[-1]["message"])
         if not arts and not domain:

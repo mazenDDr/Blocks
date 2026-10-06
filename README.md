@@ -331,7 +331,7 @@ Unsupervised k-means, Gaussian mixture and PCA nodes (for example in `unsupervis
 
 Mac verification of the merged cache, repository imports, production adapters and token proxy is recorded in `docs/HANDOFF.md` §18. Acceptance evidence describes the supported bounds; it does not establish broad production readiness.
 
-Set the same `VOID_API_TOKEN` (16+ characters) for the backend and the editor dev server. The editor's proxy adds the header, so the token is not shipped to the browser. Every request without it gets 401. Scripts in `examples/` read the variable too. This is one shared secret, not user accounts, and not encryption: use a TLS proxy before exposing the service. See ADR 0021.
+Set the same `VOID_API_TOKEN` (16+ characters) for the backend and the editor dev server. The editor's proxy adds the header, so the token is not shipped to the browser. Every request without it gets 401. Scripts in `examples/` read the variable too. This is one shared secret, not user accounts, and not encryption: for accounts and TLS see "Named accounts, roles and TLS" below (ADR 0055). See ADR 0021.
 
 ```bash
 VOID_API_TOKEN=<secret> VOID_WORKBENCH=<dir> .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services --host 127.0.0.1 --port 8778
@@ -934,4 +934,38 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_agent_stream.py
 .venv/bin/pytest -q -m live tests/test_production_stream_live.py
 .venv/bin/python tools/editor_json_agent_smoke.py --output /private/tmp/void-stream-json-agent-2
+```
+
+## Serving clustering after fitted preprocessing
+
+k-means, Gaussian mixture and PCA estimators placed after fitted imputation, one-hot
+encoding or standardization can now be registered and served. Requests send the raw
+source columns; serving replays the run's own fitted steps and estimator without
+refitting. See ADR 0054.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_production_unsup.py
+```
+
+## Named accounts, roles and TLS
+
+Instead of one shared token, give each person an account. Roles: `viewer` (read
+only), `operator` (changes, but serving requests/traces/conversations only in their
+own user namespace), `admin` (everything, including deploy/rollback, aliases,
+cache policies, connections and load tests). Mutating requests are audited in
+`<workbench>/audit/requests.jsonl`. Do not also set `VOID_API_TOKEN` on the backend.
+Give the editor dev server one account's token as its `VOID_API_TOKEN`. See ADR 0055.
+
+```bash
+PYTHONPATH=services .venv/bin/python -m control.accounts add --file ~/void-users.json --name alice --role operator   # prints the token once
+VOID_USERS_FILE=~/void-users.json .venv/bin/python -m uvicorn control.app:create_app --factory --app-dir services \
+  --host 127.0.0.1 --port 8443 --ssl-certfile cert.pem --ssl-keyfile key.pem
+```
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_accounts.py
 ```

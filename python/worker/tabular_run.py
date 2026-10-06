@@ -132,6 +132,8 @@ def run_tabular(graph: Graph, cfg: TabularRunConfig, store: ArtifactStore, run_i
                 capture_pipelines(store, exec_graph, report, outcomes, run_id)
                 from production.unsup_adapter import capture as capture_unsupervised
                 capture_unsupervised(store, exec_graph, outcomes, run_id)
+                from production.unsup_fitted import capture as capture_unsupervised_fitted
+                capture_unsupervised_fitted(store, exec_graph, outcomes, run_id)
         except Cancelled:
             if store.get_run(run_id)["status"] != "cancelling":
                 store.set_status(run_id, "cancelling")

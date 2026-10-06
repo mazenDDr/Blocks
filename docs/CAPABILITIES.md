@@ -891,3 +891,23 @@ records, non-agent token streams, Anthropic streaming evidence, cancel-on-discon
 Evidence: 3 offline tests, 2 real-Ollama live tests (deltas equal the recorded
 response exactly; final event equals the stored trace), 2 SSE parser Node tests and
 the real-Ollama JSON agent browser journey streaming from the editor.
+
+### Unsupervised serving behind fitted preprocessing (ADR0054; Mac verified, HANDOFF§51)
+
+`production/unsup_fitted.py` captures k-means/GMM/PCA whose recorded path applies
+fitted impute/one-hot/standardize steps (plus column selection and training-only row
+operations) and serves raw source columns by replaying the pinned native steps and
+the run's scaler/estimator. ADR0020's adapter and its registered version identities
+are unchanged. Not provided: DBSCAN/t-SNE, other upstream operations, custom code,
+target-dependent transforms. Evidence: real worker run + HTTP serving test with
+exact native-equal assignments/distances on 40 raw rows including an imputed null.
+
+### Named accounts, roles, ownership and TLS (ADR0055; Mac verified, HANDOFF§52)
+
+`VOID_USERS_FILE` accounts (hashed tokens, 0600, `python -m control.accounts`) with
+viewer/operator/admin roles; admin-only deploy/rollback/aliases/cache policies/
+connections/load tests; serving ownership (E_OWNER) on every user-scoped production
+route; owner-filtered request list; append-only audit of mutations; `/api/whoami`;
+editor defaults to the account namespace; uvicorn TLS verified end to end. Not
+provided: passwords/sessions/expiry, rotation API, SSO, per-project permissions,
+rate limiting, tamper-evident audit, worker/tracker authorization.

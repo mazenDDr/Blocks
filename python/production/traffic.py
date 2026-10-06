@@ -27,7 +27,8 @@ class TrafficRunner:
         self.lock = threading.Lock()
         self.jobs = {}
 
-    def start(self, spec, port):
+    def start(self, spec, port, authorization: str | None = None):
+        """`authorization` replaces the shared-token header with the caller's own (named accounts, ADR 0055)."""
         release = self.runtime.ps.get("release", spec.releaseId)
         cfg = release["config"]
         if self.runtime.ps.route(cfg["target"], cfg["namespace"])["id"] != spec.releaseId:
@@ -40,7 +41,7 @@ class TrafficRunner:
             id_ = uuid.uuid4().hex[:12]
             cancel = threading.Event()
             self.jobs[id_] = {"id": id_, "state": "running", "spec": spec.model_dump(), "cancel": cancel}
-        thread = threading.Thread(target=self._run, args=(id_, spec, release, port, cancel), daemon=True)
+        thread = threading.Thread(target=self._run, args=(id_, spec, release, port, cancel, authorization), daemon=True)
         thread.start()
         return self.view(id_)
 
@@ -60,7 +61,7 @@ class TrafficRunner:
                 raise ProductionError("E_TRAFFIC_TERMINAL", "No running traffic job to cancel.", 409)
             self.jobs[id_]["cancel"].set()
 
-    def _run(self, id_, spec, release, port, cancel):
+    def _run(self, id_, spec, release, port, cancel, authorization=None):
         cfg = release["config"]
         url = f"http://127.0.0.1:{port}/api/serve/{cfg['target']}/{cfg['namespace']}/predict"
         process = psutil.Process(os.getpid())
@@ -83,7 +84,7 @@ class TrafficRunner:
                         "payloadBytes": len(dumps(payload).encode()), "batchSize": len(payload)}
         result = None
         try:
-            with httpx.Client(timeout=cfg["timeoutSeconds"]+2, trust_env=False, follow_redirects=False, headers=self.headers,
+            with httpx.Client(timeout=cfg["timeoutSeconds"]+2, trust_env=False, follow_redirects=False, headers={"Authorization": authorization} if authorization else self.headers,
                               limits=httpx.Limits(max_connections=spec.concurrency)) as client:
                 for i in range(spec.warmupRequests):
                     if cancel.is_set():

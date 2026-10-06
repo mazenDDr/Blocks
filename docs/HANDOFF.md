@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §50 — streamed agent serving (ADR0053).** §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §52 — named accounts, roles, ownership and TLS (ADR0055).** §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1662,3 +1662,29 @@ live: 16 passed 28.47s (`/private/tmp/void-stream-live.log`). Hosted
 [37410113992](https://github.com/mazenDDr/project-void/actions/runs/37410113992) on f3773d5
 (agent clipboard + CAS GC): SUCCESS, native and browser (agent clipboard journey and
 `--gc` recovery).
+
+## 51. Unsupervised serving behind fitted preprocessing — 2026-10-06 (ADR0054)
+
+New `python/production/unsup_fitted.py`; worker calls its capture after the ADR0020
+capture; runtime/API/monitor/editor choose it by manifest (`format: 2`, `steps`).
+`unsup_adapter.py` deliberately untouched (its hash is in registered identities).
+Tests added to `tests/test_production_unsup.py` (fitted path served with native-equal
+outputs; ADR0020 file list unchanged). Scratch browser check of the version panel
+passed (not a repo journey). First test attempt sent 40 rows in one request and hit
+the release's default batch limit (correct refusal); the test now batches by 8.
+
+## 52. Named accounts, roles, ownership and TLS — 2026-10-06 (ADR0055)
+
+New `services/control/accounts.py` (users file, middleware, ownership, audit, CLI);
+`create_app(users_file=...)` + `/api/whoami`; `ensure_owner` on 12 production routes;
+traffic runner forwards the admin's token; editor Production namespace from whoami.
+`tests/test_accounts.py` (7, includes a real uvicorn TLS server). Scratch owned-Chrome
+run (backend with users file, editor proxy with an operator token) passed. The CLI
+needs `PYTHONPATH=services` (tests and README set it). The first full run overlapped
+these edits and flagged only the stale coverage ledger (new tests); regenerated with
+`python -m backends.coverage --write`.
+
+Accounts + fitted-unsup full native (fresh run on final code): 1264 passed, 1 skipped,
+16 deselected 495.66s (`/private/tmp/void-accounts-full.log`); live 16 passed 29.26s.
+Hosted [37412081636](https://github.com/mazenDDr/project-void/actions/runs/37412081636)
+on c6a54ad (auto-arrange, sealed backups, streaming): SUCCESS, native and browser.

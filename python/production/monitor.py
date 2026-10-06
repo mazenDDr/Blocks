@@ -179,7 +179,8 @@ def unsup_monitoring(runtime, release, version, pipeline, traces):
     ref = pipeline.reference_frame()
     ref_out = pipeline.predict(json.loads(ref.to_json(orient="records")))[0]
     captured = pd.DataFrame([r for t in ok if t["records"] is not None for r in t["records"]])
-    input_drift = {f: (distribution_compare(ref[f], captured[f]) if f in captured else
+    numeric = {c["name"]: c["dtype"] in ("int", "float") for c in m.get("inputSchema", [])}  # fitted pipelines take raw, possibly categorical columns
+    input_drift = {f: ((distribution_compare if numeric.get(f, True) else categorical_compare)(ref[f], captured[f]) if f in captured else
                        {"available": False, "reason": "No captured successful inputs; enable capture on a new release to measure input drift."}) for f in m["features"]}
     if method == "pca":
         cur = [p[0] for t in ok for p in t["result"]["predictions"]]
