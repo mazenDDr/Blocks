@@ -892,3 +892,24 @@ Commands actually run (use a fresh evidence path):
 node --test apps/editor/tests/*.test.mjs
 .venv/bin/python tools/editor_auto_layout_smoke.py --output /private/tmp/void-auto-layout-smoke-3
 ```
+
+## Sealed (encrypted) backups
+
+Seal a verified offline backup into one AES-256-GCM encrypted, authenticated file
+before moving it off the machine; unseal it into a new directory, then restore as
+usual. Keep the key file (or passphrase file) separate from the sealed file: a lost
+key cannot be recovered. Key and passphrase files must be mode 0600. See ADR 0052.
+
+```bash
+.venv/bin/python -m workbench_backup keygen ~/void-backup.key
+.venv/bin/python -m workbench_backup seal /path/to/backup /path/to/backup.sealed --key-file ~/void-backup.key
+.venv/bin/python -m workbench_backup unseal /path/to/backup.sealed /path/to/unsealed --key-file ~/void-backup.key
+.venv/bin/python -m workbench_backup restore /path/to/unsealed /path/to/new-workbench --trusted-local
+```
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_sealed_backup.py
+.venv/bin/python tools/recovery_smoke.py --trackers --cache-retention --gc --sealed --output /private/tmp/void-sealed-recovery-1
+```

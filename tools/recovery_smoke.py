@@ -87,9 +87,18 @@ def run(args):
                                   links="internal" if args.trackers else "reject", omit_wandb_external_logs=args.trackers)
         sha = result["backup"]["manifestSha256"]
         verify(out / "backup", manifest_sha256=sha)
+        restorable = out / "backup"
+        if args.sealed:
+            from workbench_backup.sealed import generate_key, seal, unseal
+            key = generate_key(out / "SYNTHETIC-test-backup.key")["keyFile"]  # disposable test key in the evidence dir
+            result["sealed"] = seal(out / "backup", out / "backup.sealed", key_file=key, manifest_sha256=sha)
+            shutil.rmtree(out / "backup")  # only the authenticated sealed file remains
         shutil.rmtree(source)  # own disposable generated workbench only, after verified backup
         result["sourceDeleted"] = not source.exists()
-        result["restore"] = restore(out / "backup", out / "recovered", trusted=True, manifest_sha256=sha)
+        if args.sealed:
+            result["unsealed"] = unseal(out / "backup.sealed", out / "unsealed", key_file=key, manifest_sha256=sha)
+            restorable = out / "unsealed"
+        result["restore"] = restore(restorable, out / "recovered", trusted=True, manifest_sha256=sha)
         check = argparse.Namespace(output=str(out / "check"), chrome=args.chrome, timeout=args.timeout)
         if smoke.run(check, workbench=out / "recovered", journey=smoke.EDITOR / "smoke/recovery.mjs",
                      extra_env=extra_env):
@@ -123,6 +132,7 @@ def main():
     parser.add_argument("--cache-retention", action="store_true", help="Also seed actual native cached regression/policy and verify policy/receipts/cache/run artifacts after source deletion.")
     parser.add_argument("--json-agent", action="store_true", help="Also seed/recover a pinned JSON version and invoke real installed local Ollama; fails without the provider, no fixture substitution.")
     parser.add_argument("--gc", action="store_true", help="Inject an old orphan and run offline zero-grace CAS collection on the seeded workbench before backup.")
+    parser.add_argument("--sealed", action="store_true", help="Seal the verified backup with a disposable key, delete the plain backup and source, then unseal and restore.")
     parser.add_argument("--timeout", type=float, default=180)
     args = parser.parse_args()
     if not 1 <= args.timeout <= 600:

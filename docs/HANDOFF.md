@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §48 — whole-layout auto-arrange (ADR0051).** §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §49 — sealed encrypted backups (ADR0052).** §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1623,3 +1623,18 @@ rightward wires, no overlap, unchanged hash, Undo/Redo, idempotent repeat). An
 earlier screenshot showed the view not refitted; the action now refits the view
 (viewport is not layout state) and the journey waits before its screenshot.
 Regressions: `/private/tmp/void-auto-layout-regressions`.
+
+## 49. Sealed encrypted backups — 2026-10-06 (ADR0052)
+
+New `python/workbench_backup/sealed.py` (keygen/seal/unseal), CLI subcommands,
+`tests/test_sealed_backup.py` (6), `tools/recovery_smoke.py --sealed`, and
+`cryptography==50.0.2` declared in python/requirements.txt (already installed via
+asyncssh/moto/joserfc; no new install). CI recovery stage now runs `--gc --sealed`.
+
+`/private/tmp/void-sealed-recovery-1` passes with `--trackers --cache-retention --gc --sealed`:
+GC deleted only the injected orphan; 124-file backup sealed (2 chunks, raw key), plain
+backup and source deleted, unsealed (authenticated, manifest 8ed056eb…) and restored;
+seed/cache-seed/check/cache-check journeys pass with empty error arrays and stopped
+groups. The disposable SYNTHETIC test key stays in that evidence directory only.
+
+Full native suite on this scope: 1252 passed, 1 skipped, 14 deselected in 487.19s (`/private/tmp/void-sealed-full.log`).

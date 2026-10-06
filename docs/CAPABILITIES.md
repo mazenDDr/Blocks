@@ -869,3 +869,13 @@ barycenter ordering, measured stacking without overlap, current corner kept. One
 layout history edit; graph/hash unchanged. Not provided: persistent groups, wire
 routing, other directions, agent/RL canvas layout, crossing-optimal ordering.
 Evidence: 6 Node tests and owned Chrome journey `tools/editor_auto_layout_smoke.py`.
+
+### Sealed encrypted backups (ADR0052; Mac verified, HANDOFF§49)
+
+`python -m workbench_backup keygen|seal|unseal`: AES-256-GCM chunked encryption of a
+verified backup with header/index/final-chunk authentication; 256-bit key file or
+scrypt passphrase file (0600 only, never on the command line); unseal authenticates
+everything before extraction, admits only regular files/directories and re-runs
+backup verification into a new directory. Not provided: live-workbench encryption,
+key management/escrow/rotation, lost-key recovery, multiple recipients. Evidence:
+6 pytest cases and the sealed integrated recovery (plain backup and source deleted).
