@@ -313,15 +313,15 @@ Tabular, agent, reinforcement-learning and domain operations run on their own na
 
 | Operation | Graph kind | Native backend | Explain | Dedicated view | Test files mentioning the id |
 |---|---|---|---|---|---|
-| `agent.chat_model` | agent | langgraph | yes | agent | 2 |
+| `agent.chat_model` | agent | langgraph | yes | agent | 3 |
 | `agent.citations` | agent | langgraph | yes | agent | 2 |
 | `agent.embed_text` | agent | langgraph | yes | agent | 2 |
 | `agent.human_interrupt` | agent | langgraph | yes | agent | 2 |
 | `agent.memory_select` | agent | langgraph | yes | agent | 1 |
 | `agent.memory_write` | agent | langgraph | yes | agent | 2 |
-| `agent.prompt` | agent | langgraph | yes | agent | 3 |
-| `agent.retrieve` | agent | langgraph | yes | agent | 2 |
-| `agent.set_state` | agent | langgraph | yes | agent | 6 |
+| `agent.prompt` | agent | langgraph | yes | agent | 4 |
+| `agent.retrieve` | agent | langgraph | yes | agent | 4 |
+| `agent.set_state` | agent | langgraph | yes | agent | 7 |
 | `agent.structured_output` | agent | langgraph | yes | agent | 3 |
 | `agent.tool_call` | agent | langgraph | yes | agent | 3 |
 | `domain.audio_features` | domain | python | yes | audio_features | 1 |

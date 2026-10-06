@@ -277,7 +277,7 @@ def monitoring(runtime, release_id, since=0):
         return unsup_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])
     if version.get("adapter") == "rl":
         return rl_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])
-    if version.get("adapter") == "model":
+    if version.get("adapter") in ("model", "model_keras", "model_jax"):
         return model_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])
     if version.get("adapter") == "domain":
         return domain_monitoring(runtime, release, version, pipeline, [t for t in ps.traces(release_id) if t["receivedAt"] >= since])

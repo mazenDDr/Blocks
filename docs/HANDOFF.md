@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §56 — native JSON conversations (ADR0059).** §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §59 — CODEX HANDOFF (start here).** §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1756,3 +1756,94 @@ run events, export bundles and remote workers).
 JSON conversations: full native 1275 passed, 1 skipped, 18 deselected 502.03s
 (`/private/tmp/void-jsonconv-full.log`); live 18 passed 29.16s; real-Ollama JSON agent journey
 and all 16 other editor journeys pass (`/private/tmp/void-jsonconv-regressions`).
+
+Hosted [37416013289](https://github.com/mazenDDr/project-void/actions/runs/37416013289) on 92f45ef
+(erasure + worker recovery): SUCCESS; 42d5a33, c2427a2 and 72e3790 pushed after it.
+
+## 57. Retrieval serving from pinned index snapshots — 2026-10-06 (ADR0060)
+
+New `python/production/retrieval_agent_adapter.py` (contract, snapshot, PinnedIndexRuntime,
+RetrievalPipeline); `agent_retrieval` added to `AGENT_ADAPTERS`, registration, candidates
+and the editor. Tests: `tests/test_production_retrieval.py` (3 offline, local_hash) and
+`tests/test_production_retrieval_live.py` (1 live: nomic-embed-text + qwen3.5:2b). The
+first offline run failed on a fixture with maxModelCalls=0 (the spec requires >= 1).
+
+## 58. Keras/JAX serving of PyTorch-trained image classifiers — 2026-10-06 (ADR0061)
+
+New `python/production/portable_model_adapter.py`; `PORTABLE_ADAPTERS` in runtime, registration
+by `keras:`/`jax:` node prefix, candidates, reference input, monitoring and editor.
+`tests/test_production_portable.py` (3) reuses the real trained CNN fixture of
+`tests/test_production_model.py`, whose `register()` helper now filters candidates to the
+PyTorch adapter (runs list three candidates by design). Measured agreement printed by the
+test (`-s`): Keras 1.19e-7, JAX 7.45e-8 over 12 images. Version pins use installed
+keras/tensorflow/jax/jaxlib versions, not the whole requirements file (which changed this
+session for cryptography).
+
+## 59. Codex handoff — usage limit reached, 2026-10-06 (start here)
+
+The user asked for a handoff to Codex because the Claude usage limit was close.
+The whole VISION is **not** complete. Everything below is on `origin/master` unless stated.
+
+### Done this session (§45–§58, ADR0048–0061)
+
+| Area | What | ADR | Key files |
+|---|---|---|---|
+| Editor perf | Selection-independent side panels; 1000-node selection p95 149.8→~47 ms | 0048 | `components/NodeChecklist.tsx`, `benchmarks/results/editor_selection_panels.json` |
+| Editor | Agent graph copy/paste (state fields, routes, joins, indexes, policies) | 0049 | `src/agentClipboard.ts`, `components/agent/AgentClipboardTools.tsx` |
+| Storage | Offline conservative CAS garbage collection | 0050 | `python/maintenance/cas_gc.py` |
+| Editor | Whole-layout auto-arrange (layered, measured cards) | 0051 | `src/graphLayout.ts` |
+| Storage | Sealed (AES-256-GCM, authenticated) backups: keygen/seal/unseal | 0052 | `python/workbench_backup/sealed.py` |
+| Agent prod | Streamed serving (SSE) + editor live text | 0053 | `agent/models.py::TOKEN_SINK`, `production_api.py` stream route, `src/sse.ts` |
+| ML serving | Clustering/PCA served behind fitted preprocessing | 0054 | `python/production/unsup_fitted.py` |
+| Security | Named accounts, roles, serving ownership, audit, verified TLS | 0055 | `services/control/accounts.py` |
+| Storage | Offline per-user physical erasure | 0056 | `python/maintenance/erase.py` |
+| Storage | Worker leases/heartbeats + crash reconciliation (E_WORKER_LOST) | 0057 | `artifact_store/store.py`, `worker/process.py` |
+| Editor | Persistent layout groups (frames, drag, select) | 0058 | `src/layoutGroups.ts`, `components/LayoutGroups.tsx` |
+| Agent prod | Native JSON conversations | 0059 | `production/json_conversation_adapter.py` |
+| Agent prod | Retrieval serving from pinned index snapshots | 0060 | `production/retrieval_agent_adapter.py` |
+| ML serving | PyTorch-trained image classifiers served on Keras/JAX (measured agreement gate) | 0061 | `production/portable_model_adapter.py` |
+
+Final verification for the last commit (ADR0060+0061, made at handoff time): full native
+1281 passed / 1 skipped / 19 deselected 505.51s (`/private/tmp/void-portable-full.log`);
+live (real Ollama) 19 passed 30.45s; real-Ollama JSON-agent journey and all 16 editor
+journeys pass (`/private/tmp/void-portable-regressions`). Hosted CI for that commit was not
+yet observed at handoff; check `gh run list` and record the outcome first.
+
+### Conventions to keep (read before changing anything)
+
+- Serving adapters pin their own source files in registered identities (`FILES` /
+  `IMPLEMENTATION_FILES`). Editing a pinned file forces re-registration of that family.
+  New serving behaviour therefore goes in **new modules** that reuse old functions.
+  See "Compatibility note for §45–§55": agent/conversation/JSON-agent versions registered
+  before c6a54ad/51eceb8/92f45ef must be re-registered.
+- `AGENT_ADAPTERS`, `CONVERSATION_ADAPTERS`, `JSON_ADAPTERS`, `PORTABLE_ADAPTERS` in
+  `python/production/runtime.py` drive runtime/API/monitor branching; extend them, and the
+  editor lists in `ProductionWorkspace.tsx`.
+- Every scope: ADR + README "Commands actually run" + CAPABILITIES + HANDOFF section;
+  `python -m backends.coverage --write` when tests are added; full native, `-m live`, all
+  editor journeys (`tools/editor_*_smoke.py`), push only after the previous hosted CI run
+  finishes (concurrency cancels older runs); never make a `[skip ci]` commit the head of a
+  push that contains code.
+- Never claim results not run. Evidence lives under `/private/tmp/void-*`.
+
+### Not done / next work (priority order)
+
+1. **Pure tools in served graphs**: extend `retrieval_agent_adapter.contract` (or a new
+   module) to allow `agent.tool_call` with effect-free tools only (`calculator`); count
+   `maxToolCalls`; tests offline + live. `read_text_file` would need a pinned file snapshot
+   like the index snapshot; `write_note` needs approval interrupts (item 2).
+2. **Approval interrupts in releases**: a served turn that reaches an interrupt returns a
+   pending state; a follow-up approve/reject/edit request resumes from a committed paused
+   checkpoint (conversation machinery commits only END today).
+3. **Retrieval combined with conversations/JSON output**, and memory policies in releases.
+4. **JSON Lines tabular source** (no new deps). CSV is special-cased in
+   `tabular/cache.py::SOURCE_TYPES`, `worker/tabular_run.py` (`source_recorded`),
+   `connections_api.py` export bundle, `scale/remote.py`; put the op in a new operations
+   module (`operations/tabular_ops.py` is pinned by the tabular adapter). Parquet/Excel need
+   pyarrow/openpyxl — ask the user before adding dependencies.
+5. **GPU verification**: blocked — Tailscale is stopped on the Mac (`tailscale status`).
+   Ask the user to start it, then follow `~/.claude/skills/gpu-box`; training has no device
+   selection yet (`python/training/trainer.py`, `python/worker/train.py`).
+6. **Storage migrations**: no schema versioning (`PRAGMA user_version`) or downgrade guard.
+7. **RL serving beyond DQN discrete policies**; Keras/JAX training runs; multiple providers
+   (Anthropic needs user credentials); cloud/distributed; outside-user/accessibility review.

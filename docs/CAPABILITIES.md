@@ -948,3 +948,20 @@ native checkpoints and a schema-validated JSON object per turn, validated before
 the checkpoint candidate exists; existing conversation actions, labels (canonical
 JSON), monitoring, streaming and editor flows apply. Not provided: tools/retrieval/
 memory/interrupts, other providers, nested schemas, quality benchmarks.
+
+### Retrieval serving from pinned index snapshots (ADR0060; Mac verified with real Ollama, HANDOFF§57)
+
+Adapter `agent_retrieval`: stateless prompt/set_state/retrieve/≤1 chat_model turns
+over 1–2 indexes whose FAISS/chunks/manifest snapshot is pinned at registration and
+tied to the source run's recorded identity; embedding model digest pinned; serving
+never reads documents or rebuilds. Not provided: retrieval with conversations or
+JSON output, memory policies, tools, re-indexing a release, quality benchmarks.
+
+### PyTorch-trained image classifiers served on Keras/JAX (ADR0061; Mac verified, HANDOFF§58)
+
+Adapters `model_keras`/`model_jax` (nodes `keras:<out>`/`jax:<out>`): checkpoint
+parameters copied into the portable executable; registration gate on declared
+float32 forward tolerance and class agreement over the frozen reference (measured
+Keras 1.19e-7, JAX 7.45e-8 max logit difference); image adapter contract otherwise.
+Not provided: Keras/JAX training or checkpoints, non-image families, float64 JAX,
+exported SavedModel/StableHLO.

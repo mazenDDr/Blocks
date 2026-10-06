@@ -26,8 +26,10 @@ def cnn(tmp_path_factory, shapes_dir):
 
 
 def register(c, rid):
-    cand = [x for x in c.get("/api/production").json()["candidates"] if x["runId"] == rid]
-    assert len(cand) == 1 and cand[0]["adapter"] == "model" and cand[0]["family"] == "image_classifier"
+    listed = [x for x in c.get("/api/production").json()["candidates"] if x["runId"] == rid]
+    assert {x["adapter"] for x in listed} == {"model", "model_keras", "model_jax"}  # ADR 0061 adds the same checkpoint on Keras/JAX
+    cand = [x for x in listed if x["adapter"] == "model"]
+    assert len(cand) == 1 and cand[0]["family"] == "image_classifier"
     v = c.post("/api/production/versions", json={"runId": rid, "node": cand[0]["node"], **META})
     assert v.status_code == 201, v.text
     return v.json()

@@ -1031,3 +1031,32 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_production_json_conversation.py
 .venv/bin/pytest -q -m live tests/test_production_json_conversation_live.py
 ```
+
+## Serving agents with retrieval
+
+Agent graphs that retrieve from a declared index can be served as stateless turns.
+Registering with node `__agent_retrieval_graph__` copies the exact index the source
+run used into the version, so later edits to the document folder (or deleting the
+research index) do not change what the release retrieves. Rebuild by running the
+source again and registering a new version. See ADR 0060.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_production_retrieval.py
+.venv/bin/pytest -q -m live tests/test_production_retrieval_live.py
+```
+
+## Serving a trained image classifier on Keras or JAX
+
+A completed PyTorch image-classifier run is also listed as a Keras and a JAX
+candidate. Registering one copies the checkpoint's parameters into that backend,
+measures every frozen reference image against PyTorch, and refuses unless all
+logits agree within the declared tolerance. Serving then runs on Keras or JAX with
+the same requests and outputs. See ADR 0061.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_production_model.py tests/test_production_portable.py
+```

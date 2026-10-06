@@ -16,7 +16,7 @@ from agent.models import TOKEN_SINK
 from .accounts import current, ensure_owner
 from production.models import RegisterVersion, ReleaseCreate, PredictRequest, Strict, TrafficSpec
 from production.pipeline import ProductionError
-from production.runtime import AGENT_ADAPTERS, CONVERSATION_ADAPTERS, JSON_ADAPTERS, ProductionRuntime
+from production.runtime import AGENT_ADAPTERS, CONVERSATION_ADAPTERS, JSON_ADAPTERS, PORTABLE_ADAPTERS, ProductionRuntime
 from production.traffic import TrafficRunner
 from production.monitor import monitoring
 
@@ -77,6 +77,9 @@ def register(app: FastAPI, sv):
                 out_node = is_candidate(sv.store, row)
                 if out_node:
                     candidates.append({"runId": row["id"], "node": out_node, "pipelineSha256": None, "graphHash": row["graph_hash"], "adapter": "model", "family": "image_classifier"})
+                    for backend in ("keras", "jax"):  # the same checkpoint served on another backend after measured agreement
+                        candidates.append({"runId": row["id"], "node": f"{backend}:{out_node}", "pipelineSha256": None, "graphHash": row["graph_hash"],
+                                           "adapter": f"model_{backend}", "family": "image_classifier"})
                 for a in sv.store.artifacts(row["id"], "unsup_pipeline") + sv.store.artifacts(row["id"], "unsup_fitted_pipeline"):
                     candidates.append({"runId": row["id"], "node": a["meta"]["node"], "pipelineSha256": a["sha256"], "graphHash": row["graph_hash"], "adapter": "unsup",
                                        "family": json.loads(sv.store.read_artifact(a["sha256"]))["method"]})
@@ -93,7 +96,11 @@ def register(app: FastAPI, sv):
                 if agent_node:
                     candidates.append({"runId": row["id"], "node": agent_node, "pipelineSha256": None,
                                        "graphHash": row["graph_hash"], "adapter": "agent", "family": "agent_turn"})
-                from production import json_conversation_adapter
+                from production import json_conversation_adapter, retrieval_agent_adapter
+                retrieval_node = retrieval_agent_adapter.is_candidate(sv.store, row)
+                if retrieval_node:
+                    candidates.append({"runId": row["id"], "node": retrieval_node, "pipelineSha256": None,
+                                       "graphHash": row["graph_hash"], "adapter": "agent_retrieval", "family": "agent_turn"})
                 json_conversation_node = json_conversation_adapter.is_candidate(sv.store, row)
                 if json_conversation_node:
                     candidates.append({"runId": row["id"], "node": json_conversation_node, "pipelineSha256": None,
@@ -149,7 +156,7 @@ def register(app: FastAPI, sv):
                     "labelNote": "Replay-buffer observations of the source run. Their recorded actions came from the epsilon-greedy behaviour policy, so they are not offered as ground truth.",
                     "provenance": {"versionId": vid, "runId": p.manifest["runId"], "referenceSha256": p.manifest["referenceSha256"], "partition": "replay buffer (training experience)",
                                    "source": p.manifest["source"]}}
-        if ps.get("version", vid).get("adapter") == "model":
+        if ps.get("version", vid).get("adapter") in ("model", *PORTABLE_ADAPTERS):
             refs = p.reference()[:3]
             return {"records": p.reference_records(3), "observedLabels": [r["label"] for r in refs], "family": "image_classifier", "inputContract": p.manifest["inputContract"],
                     "labelNote": "Held-out validation images of the source run with their recorded labels (frozen at registration).",

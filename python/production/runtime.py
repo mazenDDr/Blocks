@@ -12,9 +12,10 @@ from .store import ProductionStore
 
 
 
-AGENT_ADAPTERS = ("agent", "conversation", "agent_json", "conversation_json")
+AGENT_ADAPTERS = ("agent", "conversation", "agent_json", "conversation_json", "agent_retrieval")
 CONVERSATION_ADAPTERS = ("conversation", "conversation_json")  # native checkpoints per release/user/session
 JSON_ADAPTERS = ("agent_json", "conversation_json")  # validated JSON object per turn
+PORTABLE_ADAPTERS = ("model_keras", "model_jax")  # PyTorch-trained image classifiers served on Keras/JAX
 
 class Admission:
     def __init__(self, config):
@@ -49,11 +50,12 @@ class ProductionRuntime:
     def pipeline(self, version_id):
         version = self.ps.get("version", version_id)
         if version.get("adapter") in AGENT_ADAPTERS:
-            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter
+            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter
             adapter = {"agent": agent_adapter, "conversation": conversation_adapter, "agent_json": json_agent_adapter,
-                       "conversation_json": json_conversation_adapter}[version["adapter"]]
+                       "conversation_json": json_conversation_adapter, "agent_retrieval": retrieval_agent_adapter}[version["adapter"]]
             AgentPipeline = (json_agent_adapter.JsonAgentPipeline if adapter is json_agent_adapter
-                             else json_conversation_adapter.JsonConversationPipeline if adapter is json_conversation_adapter else adapter.AgentPipeline)
+                             else json_conversation_adapter.JsonConversationPipeline if adapter is json_conversation_adapter
+                             else retrieval_agent_adapter.RetrievalPipeline if adapter is retrieval_agent_adapter else adapter.AgentPipeline)
             verify = adapter.verify
             if json.loads(read_verified(self.store, version["pipelineSha256"])) != version["manifest"]:
                 raise ProductionError("E_AGENT_SOURCE", "Agent version differs from its pinned manifest.", 409)
@@ -62,10 +64,13 @@ class ProductionRuntime:
                 if version_id not in self.pipelines:
                     self.pipelines[version_id] = AgentPipeline(self.store, version["manifest"])
                 return self.pipelines[version_id]
-        if version.get("adapter") in ("model", "rl", "unsup"):
+        if version.get("adapter") in ("model", "rl", "unsup", *PORTABLE_ADAPTERS):
             from . import model_adapter, rl_adapter, unsup_adapter
             mod, cls = {"model": (model_adapter, model_adapter.ModelGraphPipeline), "rl": (rl_adapter, rl_adapter.PolicyPipeline),
-                        "unsup": (unsup_adapter, unsup_adapter.UnsupPipeline)}[version["adapter"]]
+                        "unsup": (unsup_adapter, unsup_adapter.UnsupPipeline)}.get(version["adapter"], (None, None))
+            if version["adapter"] in PORTABLE_ADAPTERS:
+                from . import portable_model_adapter
+                mod, cls = portable_model_adapter, portable_model_adapter.PortablePipeline
             if version["adapter"] == "unsup":
                 from . import unsup_fitted
                 if unsup_fitted.is_fitted(version["manifest"]):
@@ -98,9 +103,10 @@ class ProductionRuntime:
         if row is None or row["status"] != "completed":
             raise ProductionError("E_REGISTER_RUN", "Registration requires a completed recorded run.")
         if row["config"].get("kind") == "agent":
-            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter
+            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter
             adapter, name = {conversation_adapter.NODE: (conversation_adapter, "conversation"), json_agent_adapter.NODE: (json_agent_adapter, "agent_json"),
-                             json_conversation_adapter.NODE: (json_conversation_adapter, "conversation_json")}.get(req.node, (agent_adapter, "agent"))
+                             json_conversation_adapter.NODE: (json_conversation_adapter, "conversation_json"),
+                             retrieval_agent_adapter.NODE: (retrieval_agent_adapter, "agent_retrieval")}.get(req.node, (agent_adapter, "agent"))
             manifest = adapter.build_manifest(self.store, req.runId, req.node)
             sha = self.store.put_bytes(dumps(manifest).encode())
             return self.ps.save("version", {**req.model_dump(), "adapter": name, "family": manifest["family"],
@@ -123,6 +129,12 @@ class ProductionRuntime:
         refused = refused or [json.loads(self.store.read_artifact(a["sha256"])) for a in self.store.artifacts(req.runId, "unsup_refusal") if a["meta"]["node"] == req.node]
         if not arts and refused:
             raise ProductionError(refused[-1]["code"], refused[-1]["message"])
+        if not arts and not domain and req.node.split(":", 1)[0] in ("keras", "jax"):
+            from . import portable_model_adapter
+            manifest = portable_model_adapter.build_manifest(self.store, req.runId, req.node)
+            portable_model_adapter.PortablePipeline(self.store, manifest)
+            return self.ps.save("version", {**req.model_dump(), "adapter": f"model_{manifest['portable']['backend']}", "family": "image_classifier",
+                                            "pipelineSha256": self.store.put_bytes(dumps(manifest).encode()), "manifest": manifest})
         if not arts and not domain:
             from .model_adapter import build_manifest, is_candidate, ModelGraphPipeline
             if is_candidate(self.store, row) == req.node:
@@ -161,7 +173,7 @@ class ProductionRuntime:
             records = p.reference_records()
         elif req.config.sessionMode == "conversation":
             raise ProductionError("E_RELEASE_CONFIG", "Native conversations require a registered conversation graph.")
-        elif v.get("adapter") in ("model", "rl", "unsup"):
+        elif v.get("adapter") in ("model", "rl", "unsup", *PORTABLE_ADAPTERS):
             records = p.reference_records(1)
         elif domain:
             if req.config.maxBatch > 4:
@@ -176,7 +188,7 @@ class ProductionRuntime:
         result, timing = p.predict(records, deadline=time.perf_counter()+req.config.timeoutSeconds) if agent else p.predict(records)
         timing.pop("_checkpoint", None)  # isolated warmup never commits conversation state
         r = self.ps.save("release", {"versionId": v["id"], "pipelineSha256": v["pipelineSha256"], "config": req.config.model_dump(),
-                                     "adapter": "local FastAPI / native LangGraph / local Ollama" if agent else f"local FastAPI / native PyTorch {v['family']} CPU" if v.get("adapter") in ("domain", "model", "rl") else "local FastAPI / native scikit-learn CPU",
+                                     "adapter": "local FastAPI / native LangGraph / local Ollama" if agent else f"local FastAPI / PyTorch-trained {v['family']} on {v['adapter'][6:]} CPU" if v.get("adapter") in PORTABLE_ADAPTERS else f"local FastAPI / native PyTorch {v['family']} CPU" if v.get("adapter") in ("domain", "model", "rl") else "local FastAPI / native scikit-learn CPU",
                                      "replicas": 1, "mode": "real local endpoint",
                                      "conversationPolicy": "Native state/history persists per release/user/session even when trace capture is off; only successful END turns commit; research history never copied." if conversation else None,
                                      "compatibility": {"ok": True, "warmupResultSha256": self.store.put_bytes(dumps(result).encode()), "timings": timing},
