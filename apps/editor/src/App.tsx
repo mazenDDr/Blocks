@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Background, Controls, MarkerType, ReactFlow, ReactFlowProvider, applyEdgeChanges, applyNodeChanges, useReactFlow, useUpdateNodeInternals,
   type Connection, type Edge, type EdgeChange, type NodeChange,
@@ -91,6 +91,8 @@ function usedModules(g: Graph): Set<string> {
   if (g.training?.loss?.module) s.add(`${g.training.loss.module}@${g.training.loss.version ?? "1.0.0"}`);
   return s;
 }
+
+const NO_VIEWS: Record<string, NodeView> = {};
 
 function Workbench() {
   const [projectId, setProjectId] = useState("untitled");
@@ -289,7 +291,7 @@ function Workbench() {
     return null;
   };
 
-  const viewsNow = v?.nodes ?? {};
+  const viewsNow = v?.nodes ?? NO_VIEWS;
   const portsOf = (nid: string, type: string, dir: "inputs" | "outputs") => {
     const vw = own(viewsNow, nid);
     return (dir === "inputs" ? vw?.inputPorts : vw?.outputPorts) ?? opsByType[type]?.[dir] ?? [];
@@ -647,6 +649,11 @@ function Workbench() {
       setMessage(`Pasted ${result.selected.length} draft nodes with fresh IDs. ${clipboard.omittedBoundaryEdges} boundary wires remain disconnected; inspect validation before running.`);
     } catch (error) { setMessage(errorText(error)); }
   };
+  // The library does not depend on selection; stable ops and handler let it skip re-rendering.
+  const libraryOps = useMemo(() => ops.filter((o) => o.graphKind === graph.graphKind), [ops, graph.graphKind]);
+  const latestAddBlock = useRef(addBlock);
+  useLayoutEffect(() => { latestAddBlock.current = addBlock; });
+  const addLibraryBlock = useCallback((op: OpInfo) => latestAddBlock.current(op), []);
 
   return (
     <GraphContext.Provider value={graph}>
@@ -762,7 +769,7 @@ function Workbench() {
             {(["Blocks", "Modules"] as const).map((t) => <button key={t} role="tab" aria-selected={leftTab === t} className={leftTab === t ? "on" : ""} onClick={() => setLeftTab(t)}>{t === "Modules" ? "Modules & code" : t}</button>)}
           </div>
         )}
-        {(tabular || leftTab === "Blocks") ? <Library ops={ops.filter((o) => o.graphKind === graph.graphKind)} onAdd={addBlock} />
+        {(tabular || leftTab === "Blocks") ? <Library ops={libraryOps} onAdd={addLibraryBlock} />
           : <ModuleLibrary graph={graph} inModule={!!def} onAddInstance={addInstance} onOpen={(m) => openModule(m, "")} onNew={createModule} onImport={importModule} onRemove={removeModule}
             onAddCodeNode={addCodeNode} onEditCode={(d) => setCodeEdit({ id: d.id, version: d.version })} onNewCode={createCode} onImportCode={importCode} onRepoImport={() => setRepoImport(true)} usedModules={usedModules(graph)} setMessage={setMessage} />}
       </aside>

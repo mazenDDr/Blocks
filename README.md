@@ -819,7 +819,9 @@ layout, card-size or native report changes still update them. Actual warm Chrome
 measurements on declared100/500/1000node metadata-only teaching chains are in
 `benchmarks/results/editor_selection_summary.md`, with raw samples/environment/
 source hashes beside it. The500-node outline-selection p95 changed181→54ms on
-this Mac/dev build;1000nodes still measured149.8ms. This does not certify all
+this Mac/dev build;1000nodes still measured149.8ms. Side panels that list every
+node now reuse unchanged rows and options (ADR0048), bringing 1000-node selection
+p95 to 47.1ms and 500-node to 34.2ms in the same benchmark. This does not certify all
 routine editing, pan/zoom, representative models or other platforms.
 
 Commands actually run (use a fresh evidence path):

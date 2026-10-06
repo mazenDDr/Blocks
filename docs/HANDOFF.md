@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §44 — measured large-graph selection is Mac verified; read its final acceptance/publication checkpoint.** Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §45 — selection-independent side panels (ADR0048).** §44 below holds the earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1553,3 +1553,30 @@ MLflow/W&B need user-supplied credentials/accounts. Outside-user onboarding and
 formal accessibility acceptance remain unverified. See§32/§40 and CAPABILITIES
 for bounds; whole VISION is not finalized. Avoid repeating already accepted domain
 importers, serving, outlines, cache retention or native offline recovery work.
+
+
+## 45. Selection-independent side panels — 2026-10-06 (ADR0048)
+
+Resumed by user goal "work till project completion or reaching 90% of limit". The
+agent cannot read the account usage meter; it stops on a usage warning or user
+instruction. Selection CI 37403148824 was independently verified green (§44).
+
+A CPU profile (scratch harness in owned headless Chrome, 10 selections on the
+1000-node chain) showed the remaining cost was side panels listing every node,
+not the canvas. Changes: new `components/NodeChecklist.tsx` (memo rows, stable
+toggle, element reuse) used by arrangement/movement/clipboard; memoized option
+lists in KeyboardGraphTools/GraphInsertionTools; module-level per-kind source
+option cache in Inspector (it remounts per node); memo outline rows with stable
+actions; memo Library with stable ops/handler in App; `NO_VIEWS` constant. The
+benchmark now hashes every changed component.
+
+Results (`/private/tmp/void-editor-performance-memo-final-2`, published as
+benchmarks/results/editor_selection_panels.json): selection p95 33.0/34.2/47.1ms
+at 100/500/1000 (was 48.1/54.0/149.8). Repeats `/private/tmp/void-editor-performance-memo-panels`
+and `-memo-final-1`: 1000-node 54.1/48.5ms. Load 1000-node p95 1517.6–1668.2ms vs
+1452.6ms before: no load claim. Build/typecheck/33 Node pass; all 13 smokes pass
+(`/private/tmp/void-editor-memo-panels-regressions`), error arrays empty, groups
+stopped. Native code unchanged; full native suite runs in hosted CI.
+
+**Next:** Agent/RL clipboard (agent canvas is single-select; copying needs routes,
+joins and state-field compatibility), then the remaining areas in§32/CAPABILITIES.

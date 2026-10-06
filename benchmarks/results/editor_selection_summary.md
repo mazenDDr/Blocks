@@ -56,3 +56,25 @@ weakened to pass a budget. Reproduce with a fresh output directory:
 ```bash
 .venv/bin/python tools/editor_performance_benchmark.py --output /private/tmp/void-editor-performance-stable-cards-wires
 ```
+
+## Selection-independent side panels (ADR0048)
+
+A CPU profile showed the remaining 1000-node cost was side panels that list every
+node (arrangement/movement/copy checklists, keyboard/insertion dropdowns, inspector
+source options, outline rows, block library) re-rendering on each selection. They
+now reuse unchanged rows and option lists. Same benchmark and machine; raw samples
+and source hashes of every changed component are in editor_selection_panels.json.
+
+| Nodes | Native HTTP validation p95 | Project load p95 | Outline selection p95 |
+|---|---|---|---|
+| 100 | 6.2 | 465.0 | 33.0 |
+| 500 | 25.5 | 721.1 | 34.2 |
+| 1000 | 168.5 | 1562.2 | 47.1 |
+
+Two other runs on the same code measured 1000-node selection p95 at 54.1 and
+48.5ms. Load p95 at 1000 nodes ranged 1517.6–1668.2ms over the three runs, against
+1452.6ms before, so no load change is claimed. Limits above still apply.
+
+```bash
+.venv/bin/python tools/editor_performance_benchmark.py --output /private/tmp/void-editor-performance-memo-final-2
+```

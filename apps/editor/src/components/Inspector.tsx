@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactElement, type ReactNode } from "react";
 import { usePolling, useInspect } from "../hooks";
 import type { ActivationsResult, Checkpoint, Diagnostic, GEdge, GNode, Graph, NodeView, OpInfo, AnyRun, Sample, Unavailable, Validation } from "../types";
 import { dtypeOf, fmtNum, fmtShape, runLabel, shortHash } from "../util";
@@ -92,6 +92,21 @@ export function WireInspector({ edge, graph, validation, ctx, ops }: { edge: GEd
   );
 }
 
+// Source options by wire kind depend only on the graph. The inspector remounts per node, so one module-level
+// entry lets inspecting another node reuse them instead of rebuilding an option for every port in the graph.
+type SourceOptions = Map<string, { node: string; element: ReactElement }[]>;
+let sourceCache: { nodes: GNode[]; ops: Record<string, OpInfo>; views?: Record<string, NodeView>; value: SourceOptions } | null = null;
+function sourceOptions(nodes: GNode[], ops: Record<string, OpInfo>, views?: Record<string, NodeView>): SourceOptions {
+  if (sourceCache && sourceCache.nodes === nodes && sourceCache.ops === ops && sourceCache.views === views) return sourceCache.value;
+  const value: SourceOptions = new Map();
+  for (const n of nodes) for (const po of views?.[n.id]?.outputPorts ?? ops[n.type]?.outputs ?? []) {
+    const kind = ops[n.type]?.outputKinds?.[po] ?? "tensor", o = `${n.id}.${po}`;
+    const list = value.get(kind) ?? []; list.push({ node: n.id, element: <option key={o} value={o}>{o}</option> }); value.set(kind, list);
+  }
+  sourceCache = { nodes, ops, views, value };
+  return value;
+}
+
 // ---------------------------------------------------------------------------------------- shell
 const TABS = ["Config", "Architecture", "Weights", "Activations", "Explain"] as const;
 
@@ -120,7 +135,7 @@ export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onCon
   const inner = extra?.inner ?? null;
   const structural = ["core.composite", "core.repeat", "core.select"].includes(node.type);
   const inPorts = view?.inputPorts ?? op?.inputs ?? [];
-  const portsOf = (id: string, type: string) => extra?.allViews?.[id]?.outputPorts ?? ops[type]?.outputs ?? [];
+  const sourcesByKind = sourceOptions(graph.nodes, ops, extra?.allViews);
   return (
     <div className="node-inspector">
       <div className="ni-head">
@@ -179,7 +194,7 @@ export function NodeInspector({ node, op, ops, view, graph, ctx, onConfig, onCon
                         const [n, ...rest] = e.target.value.split("."); onConnect(node.id, p, { node: n, port: rest.join(".") });
                       }}>
                         <option value="">(not connected)</option>
-                        {graph.nodes.filter((n) => n.id !== node.id).flatMap((n) => portsOf(n.id, n.type).filter((po) => (ops[n.type]?.outputKinds?.[po] ?? "tensor") === (op.inputKinds?.[p] ?? "tensor")).map((po) => `${n.id}.${po}`)).map((o) => <option key={o} value={o}>{o}</option>)}
+                        {(sourcesByKind.get(op.inputKinds?.[p] ?? "tensor") ?? []).filter((source) => source.node !== node.id).map((source) => source.element)}
                       </select>
                     </div>
                   );

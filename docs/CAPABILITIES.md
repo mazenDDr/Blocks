@@ -825,3 +825,14 @@ build/typecheck/ledger/source-pin audit, literalcurl matching native hashes/type
 ports, all12originaleditorjourneys and137file/11DB source-deletion recovery pass.
 Existing native models/source pins/dependencies remain unchanged. Hosted outcomes
 are recorded separately in§44; no whole-VISION completion is claimed.
+
+
+### Selection-independent side panels (ADR0048; Mac verified, HANDOFF§45)
+
+Checklists, keyboard/insertion dropdowns, inspector source options, outline rows
+and the block library no longer rebuild per-node content on selection; graph,
+operation or native-view changes still rebuild it. Same benchmark: outline-selection
+p95 33.0/34.2/47.1ms at 100/500/1000 nodes (raw: benchmarks/results/
+editor_selection_panels.json). No load, add/update, pan/zoom, frame-time, heap,
+production-build or platform claim. Build/typecheck/33 Node tests and all 13 editor
+smoke journeys pass; no native code changed.

@@ -27,7 +27,11 @@ def main():
                    "editorSourceSha256": {str(p.relative_to(smoke.ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
                                           for p in (smoke.EDITOR / "src/App.tsx", smoke.EDITOR / "src/graphOutline.ts",
                                                     smoke.EDITOR / "src/components/OpNode.tsx",
-                                                    smoke.EDITOR / "src/components/GraphOutline.tsx")},
+                                                    smoke.EDITOR / "src/components/GraphOutline.tsx",
+                                                    *(smoke.EDITOR / "src/components" / name for name in (
+                                                        "NodeChecklist.tsx", "KeyboardGraphTools.tsx", "GraphInsertionTools.tsx",
+                                                        "GraphArrangementTools.tsx", "GraphMovementTools.tsx", "GraphClipboardTools.tsx",
+                                                        "Inspector.tsx", "Library.tsx")))},
                    "benchmarkSourceSha256": {str(p.relative_to(smoke.ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
                                              for p in (smoke.ROOT / "tools/editor_performance_benchmark.py",
                                                        smoke.EDITOR / "smoke/performance.mjs")}}

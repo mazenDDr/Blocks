@@ -1,3 +1,4 @@
+import { NodeChecklist } from "./NodeChecklist";
 import type { GNode } from "../types";
 import { ARRANGEMENTS, type Arrangement } from "../graphArrangement";
 
@@ -11,7 +12,7 @@ export function GraphArrangementTools({ nodes, selected, scope, blocked, onSelec
     <fieldset><legend>Select nodes to arrange ({ids.length})</legend>
       <button disabled={!nodes.length || nodes.length > 100} onClick={() => onSelect(nodes.map(n => n.id))}>Select all for arrangement</button>{" "}
       <button onClick={() => onSelect([])}>Clear arrangement selection</button>
-      <div className="clipboard-selection">{nodes.map(n => <label key={n.id}><input type="checkbox" aria-label={`arrange node ${n.id}`} checked={ids.includes(n.id)} onChange={e => onSelect(e.target.checked ? [...ids, n.id] : ids.filter(id => id !== n.id))} />{n.id} · {n.type}</label>)}</div>
+      <NodeChecklist nodes={nodes} selected={ids} label="arrange node" onToggle={(id, checked) => onSelect(checked ? [...ids, id] : ids.filter(x => x !== id))} />
     </fieldset>
     <div className="arrangement-actions">{ARRANGEMENTS.map(o => <button key={o.value} disabled={!!blocked || ids.length < o.minimum || ids.length > 100} onClick={() => onArrange(o.value)}>{o.label}</button>)}</div>
     {blocked && <p role="status">{blocked} {onCollapse && <button onClick={onCollapse}>Collapse modules for arrangement</button>}</p>}

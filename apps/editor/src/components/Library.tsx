@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import type { OpInfo } from "../types";
 
 /** Block library: search by name, type id or purpose. Enter on the search box or on a block adds it. */
-export function Library({ ops, onAdd }: { ops: OpInfo[]; onAdd: (op: OpInfo) => void }) {
+export const Library = memo(function Library({ ops, onAdd }: { ops: OpInfo[]; onAdd: (op: OpInfo) => void }) {
   const [q, setQ] = useState("");
   const hits = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -30,4 +30,4 @@ export function Library({ ops, onAdd }: { ops: OpInfo[]; onAdd: (op: OpInfo) => 
       <p className="hint">Click or press Enter to add. If a node is selected with a free output, the new block is connected to it.</p>
     </div>
   );
-}
+});

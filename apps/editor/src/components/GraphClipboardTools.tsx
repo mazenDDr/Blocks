@@ -1,3 +1,4 @@
+import { NodeChecklist } from "./NodeChecklist";
 import { useState } from "react";
 import type { Graph } from "../types";
 import type { GraphClipboard } from "../graphClipboard";
@@ -15,7 +16,7 @@ export function GraphClipboardTools({ graph, selected, clipboard, inModule, bloc
       <fieldset disabled={busy || !!blocked}><legend>Select {inModule ? "module internal" : "root"} nodes to copy ({selected.filter(id => graph.nodes.some(n => n.id === id)).length})</legend>
         <button disabled={!graph.nodes.length || graph.nodes.length > 100} onClick={() => onSelect(graph.nodes.map(n => n.id))}>Select all for copy</button>{" "}
         <button onClick={() => onSelect([])}>Clear copy selection</button>
-        <div className="clipboard-selection">{graph.nodes.map(n => <label key={n.id}><input type="checkbox" aria-label={`copy node ${n.id}`} checked={selected.includes(n.id)} onChange={e => onSelect(e.target.checked ? [...selected, n.id] : selected.filter(id => id !== n.id))} />{n.id} · {n.type}</label>)}</div>
+        <NodeChecklist nodes={graph.nodes} selected={selected} label="copy node" onToggle={(id, checked) => onSelect(checked ? [...selected, id] : selected.filter(x => x !== id))} />
         <button disabled={!selected.length || selected.length > 100 || selected.some(id => graph.nodes.filter(n => n.id === id).length !== 1)} onClick={async () => { setBusy(true); try { await onCopy(); } finally { setBusy(false); } }}>Copy selected nodes</button>
       </fieldset>
     {clipboard && <div className="clipboard-provenance">
