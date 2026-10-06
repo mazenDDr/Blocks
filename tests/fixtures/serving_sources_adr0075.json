@@ -1,0 +1,6 @@
+{
+  "decision": "ADR0075 deliberately changes storage/runtime pins (production schema version 2, release memory); agent families require re-registration",
+  "files": {
+    "storage/schema.py": "7ab90c986e54697b89230e6b94beecf9bd6fd886a823540339f6bb471ca99cc8"
+  }
+}

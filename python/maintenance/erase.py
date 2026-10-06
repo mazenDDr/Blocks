@@ -1,6 +1,6 @@
 """Offline physical erasure of one serving user's production data (ADR 0056).
 
-Deletes the user's rows from production.sqlite: requests (and so their recorded traces), labels, conversation actions, counter
+Deletes the user's rows from production.sqlite: requests (and so their recorded traces), labels, conversation actions, release long-term memory, counter
 sessions and native conversation heads (scopes are [release, user, session]). The database is then checkpointed and VACUUMed
 so deleted rows do not survive in free pages or the WAL. Finally, CAS blobs that those rows referenced (directly or through
 other blobs) are physically deleted if, after the row deletion, nothing else in the workbench still references them; the
@@ -17,13 +17,13 @@ import re
 import sqlite3
 from pathlib import Path
 
-from storage.schema import guard, statements
-from production.store import SCHEMA as PRODUCTION_SCHEMA
+from storage.schema import guard, steps_of
+from production.store import STEPS as PRODUCTION_STEPS
 
 from .cas_gc import GcError, blob_references, mark
 
 USER = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
-TABLES = (("requests", "user"), ("labels", "user"), ("conversation_actions", "user"))
+TABLES = (("requests", "user"), ("labels", "user"), ("conversation_actions", "user"), ("release_memory", "user"))  # release_memory: ADR0075
 SCOPED = ("sessions", "agent_sessions")
 
 
@@ -46,7 +46,7 @@ def erase_user(workbench, user: str, *, apply=False, offline=False) -> dict:
         raise GcError("E_ERASE_STORE", "This workbench has no production database.")
     mark(root)  # integrity, active-work and reference checks of every database before any change
     with closing(sqlite3.connect(db_path, timeout=1)) as db:
-        guard(db, "production", (statements(PRODUCTION_SCHEMA),))
+        guard(db, "production", steps_of(PRODUCTION_STEPS))
         tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         rows, referenced = {}, set()
         for table, column in TABLES:

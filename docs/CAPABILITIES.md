@@ -1137,3 +1137,11 @@ NCCL, throughput claims, fault tolerance.
 accounts or a token, optional TLS, workbench on a volume. Verified on the GPU machine
 from the Mac (auth, roles, a real run, persistence across restart). Not provided: cloud
 provider manifests, registry, GPU image, editor bundle.
+
+### Release long-term memory (ADR0075; Mac verified, HANDOFF§79)
+
+`agent_memory` serving family: records per release and request user in `production.sqlite`
+(schema v2); turns see only their user's records (temporary store, research memory never
+read); writes commit atomically with successful traces; 200-record cap; list/delete API and
+editor panel. Not provided: cross-release memory, conversation/tool families with memory,
+approved writes, retention, semantic embeddings, quality evaluation.

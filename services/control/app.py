@@ -777,6 +777,8 @@ def create_app(workbench: str | Path | None = None, api_token: str | None = None
     rl_api.register(app, sv)
     unsup_api.register(app, sv)
     production_api.register(app, sv)
+    from . import memory_api
+    memory_api.register(app, sv)
     scale_api.register(app, sv)
     domain_api.register(app, sv)
     domain_datasets_api.register(app, sv)

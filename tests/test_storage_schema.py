@@ -9,7 +9,7 @@ import sys
 
 import pytest
 from artifact_store import ArtifactStore
-from storage.schema import (SchemaError, OWNERS, definitions, guard, inspect, migrate,
+from storage.schema import (steps_of, SchemaError, OWNERS, definitions, guard, inspect, migrate,
                             open_database, statements)
 
 
@@ -65,25 +65,29 @@ LEGACY_RECORDS={
 @pytest.mark.parametrize('relative,definition',list(definitions().items()))
 def test_actual_store_adopts_legacy_without_rewriting_rows_or_native_objects(tmp_path,relative,definition):
     kind,schema=definition;path=tmp_path/relative;path.parent.mkdir(parents=True,exist_ok=True)
+    legacy=schema if isinstance(schema,str) else schema[0]  # version0 legacy files have the original (step 1) shape
     with closing(sqlite3.connect(path)) as db:
-        db.executescript(schema);db.execute(*LEGACY_RECORDS[kind]);db.commit();before=rows(db)
+        db.executescript(legacy);db.execute(*LEGACY_RECORDS[kind]);db.commit();before=rows(db)
         objects=db.execute("SELECT type,name,sql FROM sqlite_master ORDER BY name").fetchall()
         assert db.execute('PRAGMA user_version').fetchone()[0]==0
     actual_open(tmp_path,kind)
     with closing(sqlite3.connect(path)) as db:
-        assert rows(db)==before
-        assert db.execute("SELECT type,name,sql FROM sqlite_master ORDER BY name").fetchall()==objects
-        assert db.execute('PRAGMA user_version').fetchone()[0]==1
+        added={r[1] for r in db.execute("SELECT type,name,sql FROM sqlite_master")}-{o[1] for o in objects}
+        assert {k:v for k,v in rows(db).items() if k not in added}==before and all(not rows(db).get(k) for k in added)
+        assert [o for o in db.execute("SELECT type,name,sql FROM sqlite_master ORDER BY name").fetchall() if o[1] not in added]==objects
+        assert db.execute('PRAGMA user_version').fetchone()[0]==len(steps_of(schema))
         assert db.execute('PRAGMA application_id').fetchone()[0]==OWNERS[kind]
     actual_open(tmp_path,kind)
-    with closing(sqlite3.connect(path)) as db:assert rows(db)==before
+    with closing(sqlite3.connect(path)) as db:assert {k:v for k,v in rows(db).items() if k not in added}==before
 
 
 @pytest.mark.parametrize('relative,definition',list(definitions().items()))
 def test_every_actual_store_refuses_future_versions_before_sql_or_file_mutation(tmp_path,relative,definition):
     kind,schema=definition;path=tmp_path/relative;path.parent.mkdir(parents=True,exist_ok=True)
     with closing(sqlite3.connect(path)) as db:
-        db.executescript(schema);db.execute('PRAGMA user_version=2');db.commit()
+        for step in steps_of(schema):
+            for sql in step:db.execute(sql)
+        db.execute(f'PRAGMA user_version={len(steps_of(schema))+1}');db.commit()
     before=hashlib.sha256(path.read_bytes()).hexdigest()
     with pytest.raises(SchemaError) as caught:actual_open(tmp_path,kind)
     assert caught.value.code=='E_SCHEMA_VERSION'

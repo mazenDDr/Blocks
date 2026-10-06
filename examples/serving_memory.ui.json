@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "positions": {},
+  "synthetic": true,
+  "description": "SYNTHETIC long-term memory for a served agent: a release keeps each user's notes separately and recalls only that user's notes. Zero model calls; local hash is lexical hashing, not semantic search.",
+  "defaultInput": {
+    "note": "SYNTHETIC note: my favourite colour is teal."
+  }
+}

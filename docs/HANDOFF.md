@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §78 — WAL switch race (hosted CI failure on f9a7c1d).** §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §79 — release long-term memory (ADR0075).** §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2857,3 +2857,25 @@ undeclared — the ledger caught it as designed. Verification for §77+§78 toge
 1 failed (that ledger test; source unchanged since, the test now passes with the declaration), 1 skipped,
 27 deselected 546.12s (`/private/tmp/void-wal-full.log`); live Ollama 25 passed; build, 50 Node tests and
 all 23 editor journeys pass (`/private/tmp/void-wal-regressions`).
+
+## 79. Release long-term memory — 2026-10-06 (ADR0075)
+
+New: `production/memory_agent_adapter.py`, `services/control/memory_api.py`, `examples/make_memory_serving_fixture.py`
+(+ `serving_memory.project/.ui.json`), `apps/editor/src/components/ReleaseMemory.tsx`, `smoke/releaseMemory.mjs`,
+`tools/editor_release_memory_smoke.py` (+ CI stage), `tests/test_production_memory.py`, ledger fixture
+`serving_sources_adr0075.json`. Changed: `storage/schema.py` (`steps_of`; ordered step tuples), `production/store.py`
+(`STEPS`, `release_memory`, transactional commit in `finish_request`), `production/runtime.py` (family, per-user lock,
+warmup discard), `production_api.py` (candidate), `app.py`, `tools/schema_recovery.py`, schema tests (multi-step).
+Found while building the journey: (1) the Production workspace crashed rendering the new evidence without
+`contexts` (AgentTurnInspection expects it) — the adapter now records model contexts like the context adapter;
+(2) the memory table overflowed its card so the Delete buttons sat under the neighbouring card and clicks
+missed — the table is now in a scrolling wrapper with compact columns. Runs: `/private/tmp/void-release-memory-1..4`
+(4 passes). Also found: Puppeteer reports `console.warn` as type `warn`, but the journeys filter
+`['warning','error']`, so console warnings have never been collected (errors were). Next scope (§80).
+The first full run failed 4 `test_erase_user.py` cases: the ADR0056 erasure tool guarded `production.sqlite`
+with the version-1 schema only (refusing version 2) and did not know `release_memory`. Fixed: it guards with
+the full step list and erases the user's release memory; new test proves the remembered text leaves every
+workbench byte. Counts are recorded below.
+Verification: full native 1423 passed, 1 skipped, 27 deselected 546.76s (`/private/tmp/void-mem-full2.log`, after
+the erasure fix; the earlier run `/private/tmp/void-mem-full.log` had those 4 failures and 1418 passed); live Ollama
+25 passed; build, 50 Node tests and all 24 editor journeys incl. release_memory pass (`/private/tmp/void-mem-regressions`).

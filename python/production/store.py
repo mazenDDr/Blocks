@@ -26,6 +26,13 @@ CREATE TABLE IF NOT EXISTS agent_sessions(scope TEXT PRIMARY KEY, revision INTEG
 CREATE TABLE IF NOT EXISTS conversation_actions(user TEXT, id TEXT, fingerprint TEXT, result TEXT, PRIMARY KEY(user,id));
 CREATE TABLE IF NOT EXISTS labels(user TEXT, request TEXT, labels TEXT, ts REAL, PRIMARY KEY(user,request));
 """
+# Version 2 (ADR0075): long-term memory owned by a release and a request user, committed only with a successful request trace.
+RELEASE_MEMORY = """
+CREATE TABLE release_memory(release TEXT NOT NULL, user TEXT NOT NULL, id TEXT NOT NULL, namespace TEXT NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL,
+  metadata TEXT NOT NULL, importance REAL NOT NULL, generated INTEGER NOT NULL, evidence TEXT, request TEXT NOT NULL, created REAL NOT NULL,
+  PRIMARY KEY(release,user,id));
+"""
+STEPS = (SCHEMA, RELEASE_MEMORY)
 
 
 class ProductionStore:
@@ -38,7 +45,7 @@ class ProductionStore:
             # Explicit migration and downgrade checks run in the connection factory.
 
     def db(self):
-        db = open_database(self.path, "production", SCHEMA, timeout=30)
+        db = open_database(self.path, "production", STEPS, timeout=30)
         db.row_factory = sqlite3.Row
         return db
 
@@ -188,7 +195,20 @@ class ProductionStore:
             self.event(db, "conversation_"+data["operation"], event_data)
         return {**result, "actionSha256": sha, "idempotentReplay": False}
 
-    def finish_request(self, user, id_, trace, scope=None, *, conversation=None, deadline=None):
+    def release_memory(self, release, user):
+        rows = self.query("SELECT * FROM release_memory WHERE release=? AND user=? ORDER BY created, id", (release, user))
+        return [{**r, "metadata": json.loads(r["metadata"]), "generated": bool(r["generated"]), "evidence": json.loads(r["evidence"]) if r["evidence"] else None} for r in rows]
+
+    def delete_release_memory(self, release, user, id_):
+        """Physical delete of one record (its text is gone); the lifecycle keeps only ids."""
+        with self.lock, closing(self.db()) as db, db:
+            cur = db.execute("DELETE FROM release_memory WHERE release=? AND user=? AND id=?", (release, user, id_))
+            if not cur.rowcount:
+                raise ProductionError("E_MEMORY_NOT_FOUND", "No such memory record for this release and user.", 404)
+            self.event(db, "release_memory_deleted", {"releaseId": release, "user": user, "recordId": id_})
+        return {"deleted": id_}
+
+    def finish_request(self, user, id_, trace, scope=None, *, conversation=None, deadline=None, memory=None):
         # CAS writes may leave orphan bytes after cancellation/crash; heads never reference them.
         candidate_sha = None
         if conversation and conversation[2] is not None and trace["status"] == 200:
@@ -214,17 +234,30 @@ class ProductionStore:
             if scope and trace["status"] == 200:
                 head = db.execute("SELECT count FROM sessions WHERE scope=?", (scope,)).fetchone()
                 trace["sessionState"] = {"count": (head[0] if head else 0)+1, "last": id_}
+            memory_rows = []
+            if memory and memory[2] and trace["status"] == 200:
+                release, owner, writes, cap = memory
+                live = db.execute("SELECT COUNT(*) FROM release_memory WHERE release=? AND user=?", (release, owner)).fetchone()[0]
+                if live + len(writes) > cap:
+                    trace.update(status=409, error={"code": "E_AGENT_MEMORY_FULL", "message": f"This user's memory in this release holds {live} of {cap} records; delete records before new ones are stored."}, result=None)
+                else:
+                    now = time.time()
+                    memory_rows = [(release, owner, w["id"], w["namespace"], w["kind"], w["text"], dumps(w["metadata"]), w["importance"], int(w["generated"]),
+                                    dumps(w["evidence"]) if w["evidence"] is not None else None, id_, now) for w in writes]
+                    trace["memoryWrites"] = [w["id"] for w in writes]
             sha = self.artifacts.put_bytes(dumps(trace).encode())
             # Check after serialization/CAS too, before any checkpoint head mutation.
             if deadline is not None and time.perf_counter() >= deadline and trace["status"] == 200:
                 trace.update(status=504, error={"code": "E_REQUEST_TIMEOUT", "message": "Deadline passed before state commit."},
                              result=None, conversationState=None, sessionState=None)
+                trace.pop("memoryWrites", None)
                 sha = self.artifacts.put_bytes(dumps(trace).encode())
             if trace["status"] == 200:
                 if update:
                     db.execute("INSERT INTO agent_sessions VALUES(?,?,?,?) ON CONFLICT(scope) DO UPDATE SET revision=excluded.revision,checkpoint=excluded.checkpoint,last=excluded.last", update)
                 if scope:
                     db.execute("INSERT INTO sessions VALUES(?,1,?) ON CONFLICT(scope) DO UPDATE SET count=count+1,last=excluded.last", (scope, id_))
+                db.executemany("INSERT INTO release_memory VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", memory_rows)
             state = "completed" if trace["status"] == 200 else "cancelled" if trace.get("error", {}).get("code") == "E_REQUEST_CANCELLED" else "failed"
             db.execute("UPDATE requests SET state=?,trace=? WHERE user=? AND id=?", (state, sha, user, id_))
         return {**trace, "traceSha256": sha}

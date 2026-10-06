@@ -3,7 +3,7 @@ from contextlib import closing
 import hashlib
 import json
 import sqlite3
-from storage.schema import definitions, guard, inspect, statements
+from storage.schema import definitions, guard, inspect, steps_of
 
 
 def census(root):
@@ -13,7 +13,7 @@ def census(root):
         if not path.is_file():
             continue
         with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as db:
-            version = guard(db, kind, (statements(schema),))
+            version = guard(db, kind, steps_of(schema))
             tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
             values = {name:db.execute(f'SELECT * FROM "{name}" ORDER BY rowid').fetchall() for name in tables}
             digest = hashlib.sha256(json.dumps(values,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
@@ -32,7 +32,7 @@ def legacy_fixture(root):
         path = root / relative
         if path.is_file():
             with closing(sqlite3.connect(path)) as db:
-                guard(db, kind, (statements(schema),))
+                guard(db, kind, steps_of(schema))
                 db.execute('PRAGMA user_version=0');db.execute('PRAGMA application_id=0');db.commit()
     after = census(root)
     assert all(row['version']==0 and row['rowsSha256']==before[name]['rowsSha256'] for name,row in after.items())

@@ -37,6 +37,11 @@ def statements(script):
     return tuple(result)
 
 
+def steps_of(schema):
+    """A schema is one script (version 1) or an ordered tuple of scripts, one per migration version."""
+    return tuple(statements(s) for s in ((schema,) if isinstance(schema, str) else schema))
+
+
 def _canonical(sql):
     # Preserve quoted literals/identifiers; normalize only unquoted SQL whitespace/case.
     parts = re.split(r"('(?:''|[^'])*'|\"(?:\"\"|[^\"])*\")", sql)
@@ -125,7 +130,7 @@ def enable_wal(db, timeout=30.0):
 def open_database(path, kind, schema, *, timeout=30, **kwargs):
     db = sqlite3.connect(path, timeout=timeout, **kwargs)
     try:
-        migrate(db, kind, (statements(schema),))
+        migrate(db, kind, steps_of(schema))
         return db
     except BaseException:
         db.close()
@@ -143,7 +148,7 @@ CREATE TABLE IF NOT EXISTS receipts (seq INTEGER PRIMARY KEY AUTOINCREMENT, proj
 def definitions():
     # Import only for offline inventory. Runtime callers pass their existing schema.
     from artifact_store.store import _SCHEMA as meta
-    from production.store import SCHEMA as production
+    from production.store import STEPS as production
     from connectors.registry import _SCHEMA as connections
     from studies.store import _SCHEMA as studies
     from research.records import SCHEMA as research
@@ -160,10 +165,10 @@ def inspect(workbench):
     result = []
     for relative, (kind, schema) in definitions().items():
         path = root / relative
-        row = {'database': relative, 'owner': kind, 'supportedVersion': 1, 'present': path.is_file()}
+        row = {'database': relative, 'owner': kind, 'supportedVersion': len(steps_of(schema)), 'present': path.is_file()}
         if path.is_file():
             with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True)) as db:
-                row['version'] = guard(db, kind, (statements(schema),))
+                row['version'] = guard(db, kind, steps_of(schema))
                 row['applicationId'] = db.execute('PRAGMA application_id').fetchone()[0]
             row['migrationNeeded'] = row['version'] == 0
         result.append(row)

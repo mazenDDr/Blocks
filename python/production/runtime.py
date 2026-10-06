@@ -13,7 +13,9 @@ from .store import ProductionStore
 
 
 CONTEXT_ADAPTERS = ("agent_context", "conversation_context", "agent_context_json", "conversation_context_json")
-AGENT_ADAPTERS = (*CONTEXT_ADAPTERS, "agent", "conversation", "agent_json", "conversation_json", "agent_retrieval", "agent_tools", "conversation_approval")
+MEMORY_ADAPTERS = ("agent_memory",)
+MEMORY_MAX_RECORDS = 200  # live records per release and user (memory_agent_adapter.MAX_RECORDS)  # long-term memory per release and request user (ADR0075)
+AGENT_ADAPTERS = (*CONTEXT_ADAPTERS, "agent", "conversation", "agent_json", "conversation_json", "agent_retrieval", "agent_tools", "conversation_approval", *MEMORY_ADAPTERS)
 CONVERSATION_ADAPTERS = ("conversation_context", "conversation_context_json", "conversation", "conversation_json", "conversation_approval")  # native checkpoints per release/user/session
 JSON_ADAPTERS = ("agent_context_json", "conversation_context_json", "agent_json", "conversation_json")  # validated JSON object per turn
 PORTABLE_ADAPTERS = ("model_keras", "model_jax")  # PyTorch-trained image classifiers served on Keras/JAX
@@ -51,8 +53,8 @@ class ProductionRuntime:
     def pipeline(self, version_id):
         version = self.ps.get("version", version_id)
         if version.get("adapter") in AGENT_ADAPTERS:
-            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter, approval_adapter, context_agent_adapter
-            adapter = {**{name: context_agent_adapter for name in CONTEXT_ADAPTERS}, "agent": agent_adapter, "conversation": conversation_adapter, "agent_json": json_agent_adapter,
+            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter, approval_adapter, context_agent_adapter, memory_agent_adapter
+            adapter = {**{name: context_agent_adapter for name in CONTEXT_ADAPTERS}, "agent_memory": memory_agent_adapter, "agent": agent_adapter, "conversation": conversation_adapter, "agent_json": json_agent_adapter,
                        "conversation_json": json_conversation_adapter, "agent_retrieval": retrieval_agent_adapter, "agent_tools": tools_agent_adapter, "conversation_approval": approval_adapter}[version["adapter"]]
             AgentPipeline = (json_agent_adapter.JsonAgentPipeline if adapter is json_agent_adapter
                              else json_conversation_adapter.JsonConversationPipeline if adapter is json_conversation_adapter
@@ -112,8 +114,8 @@ class ProductionRuntime:
         if row is None or row["status"] != "completed":
             raise ProductionError("E_REGISTER_RUN", "Registration requires a completed recorded run.")
         if row["config"].get("kind") == "agent":
-            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter, approval_adapter, context_agent_adapter
-            adapter, name = {**{node: (context_agent_adapter, name) for name, node in context_agent_adapter.NODES.items()}, conversation_adapter.NODE: (conversation_adapter, "conversation"), json_agent_adapter.NODE: (json_agent_adapter, "agent_json"),
+            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter, approval_adapter, context_agent_adapter, memory_agent_adapter
+            adapter, name = {**{node: (context_agent_adapter, name) for name, node in context_agent_adapter.NODES.items()}, memory_agent_adapter.NODE: (memory_agent_adapter, "agent_memory"), conversation_adapter.NODE: (conversation_adapter, "conversation"), json_agent_adapter.NODE: (json_agent_adapter, "agent_json"),
                              json_conversation_adapter.NODE: (json_conversation_adapter, "conversation_json"),
                              retrieval_agent_adapter.NODE: (retrieval_agent_adapter, "agent_retrieval"),
                              tools_agent_adapter.NODE: (tools_agent_adapter, "agent_tools"),
@@ -205,10 +207,12 @@ class ProductionRuntime:
         p.validate_records(records, req.config.maxBatch)
         result, timing = p.predict(records, deadline=time.perf_counter()+req.config.timeoutSeconds) if agent else p.predict(records)
         timing.pop("_checkpoint", None)  # isolated warmup never commits conversation state
+        timing.pop("_memory", None)  # nor long-term memory
         timing.pop("_status", None)
         r = self.ps.save("release", {"versionId": v["id"], "pipelineSha256": v["pipelineSha256"], "config": req.config.model_dump(),
                                      "adapter": "local FastAPI / native LangGraph / local Ollama" if agent else f"local FastAPI / PyTorch-trained {v['family']} on {v['adapter'][6:]} CPU" if v.get("adapter") in PORTABLE_ADAPTERS else f"local FastAPI / native PyTorch {v['family']} CPU" if v.get("adapter") in ("domain", "model", "rl") else "local FastAPI / native scikit-learn CPU",
                                      "replicas": 1, "mode": "real local endpoint",
+                                     "memoryPolicy": "Long-term records per release and request user; each turn sees only its user's records; writes commit with the successful request trace; research memory never copied." if v.get("adapter") in MEMORY_ADAPTERS else None,
                                      "conversationPolicy": "Native paused/END checkpoints persist per release/user/session; reviewed approve/reject/edit resumes; file effects unsupported." if v.get("adapter") == "conversation_approval" else "Native state/history persists per release/user/session even when trace capture is off; only successful END turns commit; research history never copied." if conversation else None,
                                      "compatibility": {"ok": True, "warmupResultSha256": self.store.put_bytes(dumps(result).encode()), "timings": timing},
                                      "resources": {"placement": "local control process; model device managed by Ollama, not measured" if agent else "same local control process, CPU", "autoscaling": "not implemented", "cost": "not measured"}})
@@ -226,6 +230,7 @@ class ProductionRuntime:
             raise ProductionError("E_RELEASE_CHANGED", "Target no longer routes the selected release; request not sent.", 409)
         rid, cfg = release["id"], release["config"]
         approval_family = self.ps.get("version", release["versionId"]).get("adapter") == "conversation_approval"
+        memory_family = self.ps.get("version", release["versionId"]).get("adapter") in MEMORY_ADAPTERS
         if getattr(req, "approval", None) is not None and not approval_family:
             raise ProductionError("E_RELEASE_CONFIG", "This release does not support approval resumes.")
         fingerprint = hashlib.sha256(json.dumps({"release": rid, **req.model_dump()}, sort_keys=True).encode()).hexdigest()
@@ -235,7 +240,8 @@ class ProductionRuntime:
         start, admitted, locked = time.perf_counter(), False, False
         deadline = start + cfg["timeoutSeconds"]
         scope = dumps([rid, req.user, req.session]) if cfg["sessionMode"] in ("counter", "conversation") and req.session else None
-        candidate, previous = None, None
+        candidate, previous, memory_writes = None, None, None
+        lock_scope = dumps([rid, req.user, "memory"]) if memory_family else scope  # one memory turn at a time per release and user
         trace = {"requestId": req.requestId, "user": req.user, "session": req.session, "releaseId": rid, "versionId": release["versionId"],
                  "target": target, "namespace": namespace, "receivedAt": time.time(), "inputSha256": hashlib.sha256(json.dumps(req.records,sort_keys=True).encode()).hexdigest(),
                  "records": req.records if cfg["captureInputs"] else None, "capturePolicy": "inputs captured explicitly" if cfg["captureInputs"] else "input hash only; replay unavailable",
@@ -247,7 +253,7 @@ class ProductionRuntime:
             trace["capturePolicy"] += "; pending review payload and submitted approval decision also persist independently of trace capture"
         with self.lock:
             admission = self.admissions.setdefault(rid, Admission(cfg))
-            slock = self.session_locks.setdefault(scope, threading.Lock()) if scope else None
+            slock = self.session_locks.setdefault(lock_scope, threading.Lock()) if lock_scope else None
         try:
             admission.enter(deadline)
             admitted = True
@@ -270,6 +276,8 @@ class ProductionRuntime:
                                 "source": p.manifest["source"], "fitArtifacts": p.manifest["fitArtifacts"], "evaluationArtifacts": p.manifest["evaluationArtifacts"]}
             if self.ps.get("version", release["versionId"]).get("adapter") in AGENT_ADAPTERS:
                 kwargs = {}
+                if memory_family:
+                    kwargs["memory"] = self.ps.release_memory(rid, req.user)
                 if cfg["sessionMode"] == "conversation":
                     previous = self.ps.conversation(scope)
                     parent = previous["checkpointSha256"] if previous else None
@@ -283,6 +291,7 @@ class ProductionRuntime:
                 result, timing = p.predict(req.records, capture=cfg["captureInputs"], deadline=deadline,
                                           cancelled=lambda: self.ps.cancelled(req.user, req.requestId), **kwargs)
                 candidate = timing.pop("_checkpoint", None)
+                memory_writes = timing.pop("_memory", None)
                 if approval_family:
                     trace["status"] = timing.pop("_status")
             else:
@@ -303,7 +312,7 @@ class ProductionRuntime:
                 finished = finish(req.user, req.requestId, trace,
                                                   scope if cfg["sessionMode"] == "counter" else None,
                                                   conversation=(scope, previous, candidate) if cfg["sessionMode"] == "conversation" and scope else None,
-                                                  deadline=deadline)
+                                                  deadline=deadline, **({"memory": (rid, req.user, memory_writes, MEMORY_MAX_RECORDS)} if memory_family else {}))
             finally:
                 if locked:
                     slock.release()

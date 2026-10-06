@@ -8,14 +8,15 @@ import { ConversationHistory, type HistoricalSnapshot } from "./ConversationHist
 import { ApprovalReview } from "./ApprovalReview";
 import { ContextTurnEvidence } from "./ContextTurnEvidence";
 import { AgentTurnInspection } from "./AgentTurnInspection";
+import { ReleaseMemory } from "./ReleaseMemory";
 
-interface Candidate { runId: string; node: string; pipelineSha256: string; graphHash: string; adapter?: "tabular" | "domain" | "model" | "rl" | "unsup" | "agent" | "conversation" | "agent_json" | "conversation_json" | "agent_retrieval" | "agent_tools" | "conversation_approval" | "agent_context" | "conversation_context" | "agent_context_json" | "conversation_context_json" | "model_keras" | "model_jax" | "rl_td3"; family?: string }
-interface Version { id: string; name: string; runId: string; node: string; owner: string; intendedUse: string; limitations: string; pipelineSha256: string; manifest: any; adapter?: "domain" | "model" | "rl" | "unsup" | "agent" | "conversation" | "agent_json" | "conversation_json" | "agent_retrieval" | "agent_tools" | "conversation_approval" | "agent_context" | "conversation_context" | "agent_context_json" | "conversation_context_json" | "model_keras" | "model_jax" | "rl_td3"; family?: string; modelId?: string }
+interface Candidate { runId: string; node: string; pipelineSha256: string; graphHash: string; adapter?: "tabular" | "domain" | "model" | "rl" | "unsup" | "agent" | "conversation" | "agent_json" | "conversation_json" | "agent_retrieval" | "agent_tools" | "conversation_approval" | "agent_context" | "conversation_context" | "agent_context_json" | "conversation_context_json" | "model_keras" | "model_jax" | "rl_td3" | "agent_memory"; family?: string }
+interface Version { id: string; name: string; runId: string; node: string; owner: string; intendedUse: string; limitations: string; pipelineSha256: string; manifest: any; adapter?: "domain" | "model" | "rl" | "unsup" | "agent" | "conversation" | "agent_json" | "conversation_json" | "agent_retrieval" | "agent_tools" | "conversation_approval" | "agent_context" | "conversation_context" | "agent_context_json" | "conversation_context_json" | "model_keras" | "model_jax" | "rl_td3" | "agent_memory"; family?: string; modelId?: string }
 interface Config { target: "local" | "staging"; namespace: string; concurrency: number; queueLimit: number; timeoutSeconds: number; maxBatch: number; sessionMode: "stateless" | "counter" | "conversation"; captureInputs: boolean }
 interface Release { id: string; versionId: string; config: Config; compatibility: any; resources: any }
 interface Overview { candidates: Candidate[]; versions: Version[]; releases: Release[]; routes: { target: string; namespace: string; release: string }[]; aliases: { name: string; version: string }[]; lifecycle: any[]; traffic: any[]; capabilities: any }
 const CONTEXT_AGENTS = ["agent_context", "conversation_context", "agent_context_json", "conversation_context_json"];
-const AGENTS = [...CONTEXT_AGENTS, "agent", "conversation", "agent_json", "conversation_json", "agent_retrieval", "agent_tools", "conversation_approval"];
+const AGENTS = [...CONTEXT_AGENTS, "agent", "conversation", "agent_json", "conversation_json", "agent_retrieval", "agent_tools", "conversation_approval", "agent_memory"];
 const CONVERSATIONS = ["conversation_context", "conversation_context_json", "conversation", "conversation_json", "conversation_approval"];
 const JSON_AGENTS = ["agent_context_json", "conversation_context_json", "agent_json", "conversation_json"];
 type Tab = "Registry" | "Release" | "Requests" | "Traffic" | "Monitoring";
@@ -174,6 +175,7 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
       {streamed != null && <div aria-label="streamed provider text" className="prod-streamed"><p className="provenance">Provider text as it arrived (provisional; the recorded trace below is authoritative)</p><pre>{streamed || "…"}</pre></div>}
       <p className="provenance">Current request {requestId || "not sent"}</p>
       <button disabled={!requestId || trace?.requestId === requestId} onClick={() => api.post(`/api/production/requests/${requestId}/cancel`, { user }).then(() => setNotice("Cancellation requested; state commit will be refused.")).catch((e) => setError(errorText(e)))}>Cancel in-flight request</button>
+      {release && version?.adapter === "agent_memory" && <ReleaseMemory key={`${release.id}:${user}`} releaseId={release.id} user={user} refresh={trace} disabled={!!busy} />}
       {release && version?.adapter === "conversation_approval" && <ApprovalReview key={`${release.id}:${user}:${session}`} releaseId={release.id} target={release.config.target} namespace={release.config.namespace} user={user} session={session} disabled={!!busy || route?.release !== release.id} onAction={act} onResult={t => { setTrace(t); setRequestId(t.requestId); setReplay(null); requests.reload(); }} />}
       {release?.config.sessionMode === "conversation" && version?.adapter !== "conversation_approval" && <>
         <ConversationDiscovery key={`${release.id}:${user}`} releaseId={release.id} user={user} disabled={!!busy}

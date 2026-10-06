@@ -40,7 +40,7 @@ def test_dry_run_reports_and_changes_nothing(served):
     before = bytes_containing(root, ALICE)
     assert any(p.startswith("artifacts/") for p in before)
     report = erase_user(root, "alice")
-    assert report["applied"] is False and report["rows"] == {"requests": 3, "labels": 1, "conversation_actions": 0, "sessions": 0, "agent_sessions": 1}
+    assert report["applied"] is False and report["rows"] == {"requests": 3, "labels": 1, "conversation_actions": 0, "release_memory": 0, "sessions": 0, "agent_sessions": 1}
     assert report["referencedBlobs"] > 0 and bytes_containing(root, ALICE) == before
     with pytest.raises(GcError) as e:
         erase_user(root, "alice", apply=True)

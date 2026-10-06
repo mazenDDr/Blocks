@@ -1426,3 +1426,17 @@ Commands actually run: the build and run above on the GPU machine, and
 ```bash
 .venv/bin/pytest -q tests/test_deploy_entrypoint.py
 ```
+
+## Long-term memory in agent releases
+
+Register a run of a graph like `examples/serving_memory.project.json` to get an
+`agent_memory` release. The release keeps each user's records separately, each turn
+sees only its own user's records, and a turn's write is committed only if the turn
+succeeds. Production → Requests shows and deletes a user's records. See ADR 0075.
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_production_memory.py
+.venv/bin/python tools/editor_release_memory_smoke.py --output /private/tmp/void-release-memory-4
+```

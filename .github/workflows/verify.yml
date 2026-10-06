@@ -127,6 +127,9 @@ jobs:
       - name: Real browser JAX training run
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_backend_training_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-backend-training-smoke
+      - name: Real browser release long-term memory
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .venv/bin/python tools/editor_release_memory_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-release-memory-smoke
       - name: Real browser accessibility-tree audit
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: .venv/bin/python tools/editor_accessibility_smoke.py --chrome /usr/bin/google-chrome --output /tmp/void-ci-accessibility-smoke
@@ -263,6 +266,10 @@ jobs:
             /tmp/void-ci-backend-training-smoke/evidence.json
             /tmp/void-ci-backend-training-smoke/*.log
             /tmp/void-ci-backend-training-smoke/*.png
+            /tmp/void-ci-release-memory-smoke/runner.json
+            /tmp/void-ci-release-memory-smoke/evidence.json
+            /tmp/void-ci-release-memory-smoke/*.log
+            /tmp/void-ci-release-memory-smoke/*.png
             /tmp/void-ci-accessibility-smoke/runner.json
             /tmp/void-ci-accessibility-smoke/evidence.json
             /tmp/void-ci-accessibility-smoke/*.log
