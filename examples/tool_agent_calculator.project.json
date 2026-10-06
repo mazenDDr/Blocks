@@ -36,7 +36,7 @@
           "seed": 7,
           "think": false,
           "max_tokens": 128,
-          "timeout_s": 120
+          "timeout_s": 60
         },
         "messages_field": "messages",
         "output_field": "answer",
@@ -131,7 +131,8 @@
       "maxSteps": 6,
       "maxModelCalls": 4,
       "maxToolCalls": 3,
-      "maxSeconds": 240
+      "maxSeconds": 120,
+      "maxTokens": 8192
     }
   }
 }

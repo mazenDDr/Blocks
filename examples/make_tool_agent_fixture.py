@@ -9,11 +9,11 @@ def graph(model: str = "qwen3.5:4b"):
     nodes = [sm.N("prompt", "agent.prompt", output_field="messages", items=[
                  {"kind": "template", "role": "system", "template": "Use the calculator tool for arithmetic. Reply with the result only."},
                  {"kind": "template", "role": "user", "template": "{question}"}]),
-             sm.N("solve", "agent.tool_agent", model={"provider": "ollama", "model": model, "temperature": 0.0, "seed": 7, "think": False, "max_tokens": 128, "timeout_s": 120},
+             sm.N("solve", "agent.tool_agent", model={"provider": "ollama", "model": model, "temperature": 0.0, "seed": 7, "think": False, "max_tokens": 128, "timeout_s": 60},
                   messages_field="messages", output_field="answer", tools=["calculator"], max_tool_calls=3, calls_field="calls")]
     return sm.make_graph(nodes, sm.chain("START", "prompt", "solve", "END"),
                          {"state": [sm.S("question"), sm.S("messages", "messages"), sm.S("answer"), sm.S("calls", "list", "replace", default=[])],
-                          "limits": {"maxSteps": 6, "maxModelCalls": 4, "maxToolCalls": 3, "maxSeconds": 240}})
+                          "limits": {"maxSteps": 6, "maxModelCalls": 4, "maxToolCalls": 3, "maxSeconds": 120, "maxTokens": 8192}})
 
 
 if __name__ == "__main__":

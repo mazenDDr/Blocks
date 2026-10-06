@@ -1187,3 +1187,9 @@ models. Not provided: serving, parallel tool calls, Anthropic/fixture providers,
 
 Per-case fixed/regressed between two evaluations on shared (case, seed) keys with an exact McNemar
 p-value; Evaluate tab view. Tables stored before ADR0079 are deliberately not recompressed (provenance).
+
+### Served tool choice (ADR0082; Mac verified live, HANDOFF§90)
+
+`agent_tool_choice` releases: stateless turns where a pinned local Ollama model may call the calculator
+(≤4 calls); calls recorded in traces regardless of capture. Not provided: file/external tools, OpenAI-compatible
+provider, conversations or streaming with tools.

@@ -1506,3 +1506,6 @@ Commands actually run:
 
 Two evaluations can be compared case by case (fixed / regressed, exact McNemar p-value) in the
 Evaluate tab or via `GET /api/agent/evals/compare`. See ADR 0081.
+
+Releases can serve model-chosen calculator turns (`agent_tool_choice`, ADR 0082): every tool call the
+model makes is recorded in the request trace.

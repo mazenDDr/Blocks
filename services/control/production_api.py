@@ -107,6 +107,11 @@ def register(app: FastAPI, sv):
                     context_name = next(name for name, node in context_agent_adapter.NODES.items() if node == context_node)
                     candidates.append({"runId": row["id"], "node": context_node, "pipelineSha256": None,
                                        "graphHash": row["graph_hash"], "adapter": context_name, "family": "agent_json" if context_name.endswith("_json") else "agent_turn"})
+                from production import tool_choice_adapter
+                choice_node = tool_choice_adapter.is_candidate(sv.store, row)
+                if choice_node:
+                    candidates.append({"runId": row["id"], "node": choice_node, "pipelineSha256": None,
+                                       "graphHash": row["graph_hash"], "adapter": "agent_tool_choice", "family": "agent_turn"})
                 from production import memory_agent_adapter
                 memory_node = memory_agent_adapter.is_candidate(sv.store, row)
                 if memory_node:

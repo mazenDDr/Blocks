@@ -15,7 +15,7 @@ from .store import ProductionStore
 CONTEXT_ADAPTERS = ("agent_context", "conversation_context", "agent_context_json", "conversation_context_json")
 MEMORY_ADAPTERS = ("agent_memory",)
 MEMORY_MAX_RECORDS = 200  # live records per release and user (memory_agent_adapter.MAX_RECORDS)  # long-term memory per release and request user (ADR0075)
-AGENT_ADAPTERS = (*CONTEXT_ADAPTERS, "agent", "conversation", "agent_json", "conversation_json", "agent_retrieval", "agent_tools", "conversation_approval", *MEMORY_ADAPTERS)
+AGENT_ADAPTERS = (*CONTEXT_ADAPTERS, "agent", "conversation", "agent_json", "conversation_json", "agent_retrieval", "agent_tools", "conversation_approval", *MEMORY_ADAPTERS, "agent_tool_choice")
 CONVERSATION_ADAPTERS = ("conversation_context", "conversation_context_json", "conversation", "conversation_json", "conversation_approval")  # native checkpoints per release/user/session
 JSON_ADAPTERS = ("agent_context_json", "conversation_context_json", "agent_json", "conversation_json")  # validated JSON object per turn
 PORTABLE_ADAPTERS = ("model_keras", "model_jax")  # PyTorch-trained image classifiers served on Keras/JAX
@@ -53,8 +53,8 @@ class ProductionRuntime:
     def pipeline(self, version_id):
         version = self.ps.get("version", version_id)
         if version.get("adapter") in AGENT_ADAPTERS:
-            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter, approval_adapter, context_agent_adapter, memory_agent_adapter
-            adapter = {**{name: context_agent_adapter for name in CONTEXT_ADAPTERS}, "agent_memory": memory_agent_adapter, "agent": agent_adapter, "conversation": conversation_adapter, "agent_json": json_agent_adapter,
+            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter, approval_adapter, context_agent_adapter, memory_agent_adapter, tool_choice_adapter
+            adapter = {**{name: context_agent_adapter for name in CONTEXT_ADAPTERS}, "agent_memory": memory_agent_adapter, "agent_tool_choice": tool_choice_adapter, "agent": agent_adapter, "conversation": conversation_adapter, "agent_json": json_agent_adapter,
                        "conversation_json": json_conversation_adapter, "agent_retrieval": retrieval_agent_adapter, "agent_tools": tools_agent_adapter, "conversation_approval": approval_adapter}[version["adapter"]]
             AgentPipeline = (json_agent_adapter.JsonAgentPipeline if adapter is json_agent_adapter
                              else json_conversation_adapter.JsonConversationPipeline if adapter is json_conversation_adapter
@@ -114,8 +114,9 @@ class ProductionRuntime:
         if row is None or row["status"] != "completed":
             raise ProductionError("E_REGISTER_RUN", "Registration requires a completed recorded run.")
         if row["config"].get("kind") == "agent":
-            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter, approval_adapter, context_agent_adapter, memory_agent_adapter
-            adapter, name = {**{node: (context_agent_adapter, name) for name, node in context_agent_adapter.NODES.items()}, memory_agent_adapter.NODE: (memory_agent_adapter, "agent_memory"), conversation_adapter.NODE: (conversation_adapter, "conversation"), json_agent_adapter.NODE: (json_agent_adapter, "agent_json"),
+            from . import agent_adapter, conversation_adapter, json_agent_adapter, json_conversation_adapter, retrieval_agent_adapter, tools_agent_adapter, approval_adapter, context_agent_adapter, memory_agent_adapter, tool_choice_adapter
+            adapter, name = {**{node: (context_agent_adapter, name) for name, node in context_agent_adapter.NODES.items()}, memory_agent_adapter.NODE: (memory_agent_adapter, "agent_memory"),
+                             tool_choice_adapter.NODE: (tool_choice_adapter, "agent_tool_choice"), conversation_adapter.NODE: (conversation_adapter, "conversation"), json_agent_adapter.NODE: (json_agent_adapter, "agent_json"),
                              json_conversation_adapter.NODE: (json_conversation_adapter, "conversation_json"),
                              retrieval_agent_adapter.NODE: (retrieval_agent_adapter, "agent_retrieval"),
                              tools_agent_adapter.NODE: (tools_agent_adapter, "agent_tools"),
