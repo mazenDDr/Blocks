@@ -73,8 +73,8 @@ You are taking over an in-progress build. Read this whole file before doing anyt
 | Specialized native agent outline | Mac and hosted native/browser verified §40–§42 | 442b3e4 |
 | Specialized native RL Structure/inspector | Mac and hosted native/browser verified through96cb454, §43 | 8204871 |
 | Isolated native JSON agent production | Mac native/live/browser/curl/recovery verified; hosted native/provider-free browser green, §42–§43 | 96cb454 |
-| Optional automatic tabular cache retention | Mac native/live/browser/curl/recovery verified; hosted native outcome below, browser passed §43–§44 | 25ec83f |
-| Measured large-graph selection with stable card/wire metadata | Mac native/live/browser/curl/137-file recovery verified; descriptive timings §44/ADR0047 | current accepted scope |
+| Optional automatic tabular cache retention | Mac and hosted native/browser/source-deletion recovery verified, §43–§44 | 25ec83f |
+| Measured large-graph selection with stable card/wire metadata | Mac native/live/browser/curl/137-file recovery verified; hosted pending; descriptive timings §44/ADR0047 | 6a214be |
 
 After 6a: `pytest -q` → 707 passed, 1 skipped (live Anthropic test; no API key); `pytest -q -m live` → 6 passed (local Ollama).
 
@@ -1473,3 +1473,73 @@ This supersedes §44 draft/pending notes. Final required native **1239passed,1sk
 Both source benchmark scripts and exact before/after raw20validation/10load/20selection samples/environment/source/nativegraph hashes are versioned. Scope is actual metadata-only100/500/1000node tensor/ReLUchains in warm headlessChrome/Vite dev on AppleM4Pro/24GiB.500nodeoutlineInspectp95181→54ms,1000nodes285.4→149.8ms;500loadp95746.2→847.4ms, no loadimprovement claimed. Frameobserver/debounce/method/noCPUisolation/lowN limitations are explicit. Broader performance targets remain unfulfilled; no GPU/modelquality/fullroutineediting/otherplatform/outside-user certification. Original testsetup failures/retained evidence are above.
 
 Mac selection scope accepted. Commit locally now; **push only after cache37401378340 native112069099385 actually finishes and its JUnit/logs are preserved**. Hostedcachebrowser17journeys/provider-free124file11DB source-deletionrecovery passed; selection optimization requires its own next hostedCI. Final publication checkpoint will give exact SHAs/status. Latest account65%five-hour84%weekly; finish verifiedpublication/handoff then stop near agreed85%reserve. Userrequested continuousworkuntilusage stop; noresetcredit or subagents used. Wholeprojectgoal is not complete; nextADR0048/prioritizedremainingwork immediately above and§32/§40/CAPABILITIES remain authoritative.
+
+
+### Published final checkpoint — usage reserve, resume here
+
+**All accepted work is pushed to `origin/master`:** automatic cache retention
+`25ec83fee4615993d5d36c799c7039d3ad9dc37a` and measured canvas selection
+`6a214be7a85950436529dd90e500177a80de4d42`. At this checkpoint the working
+tree was clean and HEAD=origin/master=6a214be. This final HANDOFF-only follow-up
+uses `[skip ci]`; it preserves the new code verification. No implementation draft
+or uncommitted generated data remains. Both scopes have their complete Mac
+verification above; all owned verification servers/browser groups are stopped,
+and the user's old PID8258/port8000 remains running and untouched.
+
+**Cache hosted verification is now fully green.**
+[37401378340](https://github.com/mazenDDr/project-void/actions/runs/37401378340)
+on25ec83f completed SUCCESS, native112069099385 and browser112069099663.
+Native1239passed/1skipped/14deselected/1941warnings1045.54s,280module editor
+build/typecheck/33Node1285.466444ms/coverage current. Downloaded JUnit
+`/private/tmp/void-cache-retention-ci-native/void-pytest.xml` independently has
+1240cases/0failures/0errors/1skip. Native/browser logs under
+`/private/tmp/void-cache-retention-ci-{native,browser}.log`; browser artifact
+`/private/tmp/void-cache-retention-ci-browser` independently17journeys/empty
+strict error arrays/stopped groups, including native automatic pruning and124-file/
+11database source-deletion/local-tracker/cache-policy recovery. Actual Linux
+Ollama JSON inference is unavailable and was not substituted. These results cover
+25ec83f, not the later selection optimization. Earlier JSON96cb454 default
+37399325114 is also fully green, as recorded above.
+
+**Current new CI:**
+[37403148824](https://github.com/mazenDDr/project-void/actions/runs/37403148824)
+on6a214be is in progress: native112074637119/browser112074637250.
+No final hosted selection outcome is claimed. Preserve
+this run before another master code push because concurrency cancels older runs.
+Mac final selection acceptance remains1239native/1skip/14deselected559.86s,
+14actualOllama live33.84s,33Node/build/typecheck/ledger/pin audits, all12original
+editor journeys, actual native curl, and137-file/11database source-deleted native/
+real JSON/cache/local-tracker recovery. Exact raw measurements are committed.
+
+**Usage:** actual account68%five-hour/85%weekly. The user's instruction was to
+continue until nearing usage limits, write a handoff and stop. That condition is
+now reached; finish this documentation publication and stop continuous goal work.
+Do not mark the project complete. No reset credit or paid resources were used.
+A later explicit user continuation resumes work alone; do not spawn subagents.
+
+**First next-agent steps:** read this final checkpoint, CAPABILITIES and relevant
+ADRs; inspect `git status` and preserve new user work before fetching/fast-forwarding.
+Inspect `gh run view 37403148824 --json status,conclusion,jobs`. Once terminal,
+download both `native-test-evidence` and `browser-evidence`, independently parse
+JUnit counts/failures/errors/skips and every actual browser/recovery result, strict
+error array and cleanup record. Save final logs; report the actual outcome without
+inventing a green result or treating a never-started cancellation as a code failure.
+Record it with a separate docs-only `[skip ci]` follow-up. Don't restart/kill PID8258
+or port8000 without explicit authorization. Existing source-model identities and
+native environments remain unchanged; no retraining/reinstall is required.
+
+**Next work:** ADR0048. Investigate the measured1000-node selection149.8ms and
+broader500-node add/config/drag/zoom/production-build/heap/platform workloads;
+this500-node outline selection54ms does not establish all editing targets.
+Persistent group containers/automatic layout and Agent/RL clipboard remain.
+Production retrieval/index/memory/tools/effects/interrupts/multiple providers/
+streaming/JSON conversations and wider ML adapters remain. Extend caching/imports/
+data quality; workbench privacy erasure/GC/migrations/crash recovery/encrypted or
+online backup, authenticated ownership/roles/TLS/encryption/hostile-code isolation,
+and actual GPU/cloud/distributed/multi-agent RL require concrete implementation
+and real evidence. Relevant GPU skill applies when undertaking hardware work;
+hardware availability does not certify project GPU support. Anthropic/online
+MLflow/W&B need user-supplied credentials/accounts. Outside-user onboarding and
+formal accessibility acceptance remain unverified. See§32/§40 and CAPABILITIES
+for bounds; whole VISION is not finalized. Avoid repeating already accepted domain
+importers, serving, outlines, cache retention or native offline recovery work.
