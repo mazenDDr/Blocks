@@ -913,3 +913,25 @@ Commands actually run:
 .venv/bin/pytest -q tests/test_sealed_backup.py
 .venv/bin/python tools/recovery_smoke.py --trackers --cache-retention --gc --sealed --output /private/tmp/void-sealed-recovery-1
 ```
+
+## Streamed agent serving
+
+Agent, conversation and JSON-agent releases can stream provider text as server-sent
+events while the normal native turn runs. Events are `token` (`{"delta"}`), then
+`result` (the exact recorded trace the plain predict route returns) and `end`. The
+recorded trace stays authoritative; a client disconnect does not cancel the request.
+In the editor, use **Stream prediction request** in Production → Requests. See ADR 0053.
+
+```bash
+curl -N -H "Authorization: Bearer $VOID_API_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"requestId":"r1","records":[{"question":"Name three colours."}]}' \
+  http://127.0.0.1:8000/api/serve/local/<namespace>/predict/stream
+```
+
+Commands actually run:
+
+```bash
+.venv/bin/pytest -q tests/test_agent_stream.py
+.venv/bin/pytest -q -m live tests/test_production_stream_live.py
+.venv/bin/python tools/editor_json_agent_smoke.py --output /private/tmp/void-stream-json-agent-2
+```

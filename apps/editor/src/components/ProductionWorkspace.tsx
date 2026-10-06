@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api, ApiError, errorText } from "../api";
+import { postEventStream } from "../sse";
 import { usePolling } from "../hooks";
 import { ConversationActions, type ConversationSnapshot } from "./ConversationActions";
 import { ConversationDiscovery } from "./ConversationDiscovery";
@@ -37,6 +38,7 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
   const [reference, setReference] = useState<unknown>(null);
   const [user, setUser] = useState("local-user");
   const [session, setSession] = useState("investigation");
+  const [streamed, setStreamed] = useState<string | null>(null);
   const [requestId, setRequestId] = useState("");
   const [trace, setTrace] = useState<any>(null);
   const [conversation, setConversation] = useState<ConversationSnapshot | null>(null);
@@ -74,7 +76,7 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
   return <div className="fullws"><section className="production-workspace">
     <header className="prod-header"><div><h2>Production investigation</h2><p>Real local serving · staging uses a separate local route · one control process / one replica</p></div>
       <button onClick={overview.reload}>Refresh records</button></header>
-    <p className="notice-inline synthetic">The production_sensors example uses labelled SYNTHETIC sensors. Measured local traffic is evidence for this bounded test. Remote deployment, streaming and autoscaling are not implemented.</p>
+    <p className="notice-inline synthetic">The production_sensors example uses labelled SYNTHETIC sensors. Measured local traffic is evidence for this bounded test. Agent releases can stream provider text; remote deployment and autoscaling are not implemented.</p>
     <nav className="tabs" aria-label="production tabs">{(["Registry", "Release", "Requests", "Traffic", "Monitoring"] as Tab[]).map((t) => <button key={t} className={tab === t ? "on" : ""} aria-pressed={tab === t} onClick={() => setTab(t)}>{t}</button>)}</nav>
     {(error || overview.error) && <p role="alert" className="error">{error ?? overview.error}</p>}{notice && <p role="status">{notice}</p>}{busy && <p role="status">{busy}…</p>}
     {tab === "Registry" && <div className="prod-grid"><section className="prod-card"><h3>Register a recorded native pipeline</h3>
@@ -138,6 +140,20 @@ export function ProductionWorkspace({ onOpenRun }: { onOpenRun: (id: string) => 
       {reference != null && <details><summary>Payload provenance</summary><Recorded value={reference} /></details>}
       <label>User namespace <input disabled={!!busy} value={user} onChange={(e) => { setUser(e.target.value); setConversation(null); }} /></label><label>Session <input disabled={!!busy} value={session} onChange={(e) => { setSession(e.target.value); setConversation(null); }} /></label>
       <button disabled={!!busy || !release || route?.release !== release.id} onClick={() => act("Running pinned inference", async () => { const id = crypto.randomUUID(); setRequestId(id); setReplay(null); const req = { requestId: id, records: JSON.parse(payload), user, session: ["counter", "conversation"].includes(release?.config.sessionMode ?? "") ? session : null, expectedRelease: release?.id }; try { const t = await api.post<any>(`/api/serve/${release!.config.target}/${release!.config.namespace}/predict`, req); setTrace(t); setConversation(null); } catch (e) { const t = await api.get<any>(`/api/production/requests/${id}?user=${encodeURIComponent(user)}`); setTrace(t); throw e; } requests.reload(); })}>Send prediction request</button>
+      {["agent", "conversation", "agent_json"].includes(version?.adapter ?? "") && <button disabled={!!busy || !release || route?.release !== release.id} onClick={() => act("Streaming pinned inference", async () => {
+        const id = crypto.randomUUID(); setRequestId(id); setReplay(null); setStreamed("");
+        const req = { requestId: id, records: JSON.parse(payload), user, session: ["counter", "conversation"].includes(release?.config.sessionMode ?? "") ? session : null, expectedRelease: release?.id };
+        let failure: string | null = null;
+        // Deltas are provisional display only; the trace that ends the stream is the recorded result.
+        await postEventStream(`/api/serve/${release!.config.target}/${release!.config.namespace}/predict/stream`, req, (e) => {
+          if (e.event === "token") setStreamed(t => (t ?? "") + JSON.parse(e.data).delta);
+          else if (e.event === "result") { setTrace(JSON.parse(e.data)); setConversation(null); }
+          else if (e.event === "error") failure = JSON.parse(e.data).message;
+        });
+        requests.reload();
+        if (failure) throw Error(failure);
+      })}>Stream prediction request</button>}
+      {streamed != null && <div aria-label="streamed provider text" className="prod-streamed"><p className="provenance">Provider text as it arrived (provisional; the recorded trace below is authoritative)</p><pre>{streamed || "…"}</pre></div>}
       <p className="provenance">Current request {requestId || "not sent"}</p>
       <button disabled={!requestId || trace?.requestId === requestId} onClick={() => api.post(`/api/production/requests/${requestId}/cancel`, { user }).then(() => setNotice("Cancellation requested; state commit will be refused.")).catch((e) => setError(errorText(e)))}>Cancel in-flight request</button>
       {release?.config.sessionMode === "conversation" && <>

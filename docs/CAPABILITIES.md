@@ -879,3 +879,15 @@ everything before extraction, admits only regular files/directories and re-runs
 backup verification into a new directory. Not provided: live-workbench encryption,
 key management/escrow/rotation, lost-key recovery, multiple recipients. Evidence:
 6 pytest cases and the sealed integrated recovery (plain backup and source deleted).
+
+### Streamed agent serving (ADR0053; Mac verified with real Ollama, HANDOFF§50)
+
+`POST /api/serve/{target}/{namespace}/predict/stream` (SSE) runs the unchanged native
+predict path with a context-scoped token sink; `invoke_chat` streams only when a sink
+is set and accumulates chunks into the same message object. Deltas are provisional;
+the recorded trace is authoritative. Production Requests tab streams agent releases live.
+Not provided: token timing
+records, non-agent token streams, Anthropic streaming evidence, cancel-on-disconnect.
+Evidence: 3 offline tests, 2 real-Ollama live tests (deltas equal the recorded
+response exactly; final event equals the stored trace), 2 SSE parser Node tests and
+the real-Ollama JSON agent browser journey streaming from the editor.

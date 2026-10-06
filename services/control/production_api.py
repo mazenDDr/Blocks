@@ -1,14 +1,18 @@
 """Registry, release preview/actions, real local serving and measured investigation."""
 from __future__ import annotations
 
+import contextvars
 import json
 import math
+import queue
+import threading
 from typing import Any
 
 from fastapi import FastAPI, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import Field
 
+from agent.models import TOKEN_SINK
 from production.models import RegisterVersion, ReleaseCreate, PredictRequest, Strict, TrafficSpec
 from production.pipeline import ProductionError
 from production.runtime import ProductionRuntime
@@ -205,6 +209,44 @@ def register(app: FastAPI, sv):
             raise ProductionError("E_REQUEST_SCHEMA", f"Non-finite number at {bad}; NaN and Infinity are not valid inputs.", 422)
         result = rt.predict(target, namespace, req)
         return JSONResponse(result, status_code=result["status"])
+
+    @app.post("/api/serve/{target}/{namespace}/predict/stream")
+    def predict_stream(target: str, namespace: str, req: PredictRequest):
+        """Same admission, execution and recorded trace as predict, with provider text deltas relayed as server-sent events.
+
+        Events: `token` ({"delta"}) for each provider delta in arrival order, then `result` (the exact recorded trace the
+        non-streaming route returns) and `end` ({"deltas", "chars", "status"}). The recorded trace stays authoritative: a
+        request whose output is later refused (deadline, cancellation, budget) still streamed the text it received. A client
+        disconnect does not cancel the request; use the cancel route.
+        """
+        bad = first_non_finite(req.records, "records")
+        if bad:
+            raise ProductionError("E_REQUEST_SCHEMA", f"Non-finite number at {bad}; NaN and Infinity are not valid inputs.", 422)
+        events: queue.SimpleQueue = queue.SimpleQueue()
+
+        def work():
+            TOKEN_SINK.set(lambda delta: events.put(("token", delta)))
+            try:
+                events.put(("result", rt.predict(target, namespace, req)))
+            except Exception as e:  # noqa: BLE001 - surfaced as a final event instead of a broken stream
+                events.put(("error", {"code": getattr(e, "code", "E_INFERENCE"), "message": str(e)}))
+
+        threading.Thread(target=contextvars.copy_context().run, args=(work,), daemon=True, name=f"stream-{req.requestId}").start()
+
+        def frames():
+            count = chars = 0
+            while True:
+                kind, value = events.get()
+                if kind == "token":
+                    count, chars = count + 1, chars + len(value)
+                    yield f"event: token\ndata: {json.dumps({'delta': value})}\n\n"
+                    continue
+                status = value["status"] if kind == "result" else 500
+                yield f"event: {kind}\ndata: {json.dumps(value)}\n\n"
+                yield f"event: end\ndata: {json.dumps({'deltas': count, 'chars': chars, 'status': status})}\n\n"
+                return
+
+        return StreamingResponse(frames(), media_type="text/event-stream", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
     @app.get("/api/production/requests")
     def requests(release: str | None = None):

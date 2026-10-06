@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §49 — sealed encrypted backups (ADR0052).** §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §50 — streamed agent serving (ADR0053).** §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -1638,3 +1638,27 @@ seed/cache-seed/check/cache-check journeys pass with empty error arrays and stop
 groups. The disposable SYNTHETIC test key stays in that evidence directory only.
 
 Full native suite on this scope: 1252 passed, 1 skipped, 14 deselected in 487.19s (`/private/tmp/void-sealed-full.log`).
+
+## 50. Streamed agent serving — 2026-10-06 (ADR0053)
+
+`TOKEN_SINK` ContextVar + streaming branch in `agent/models.py::invoke_chat`; SSE route
+in `services/control/production_api.py`; `tests/test_agent_stream.py` (3 offline) and
+`tests/test_production_stream_live.py` (2 live, reuses the live agent release
+fixture). Before building, local Ollama qwen3.5:2b invoke vs stream with the same seed
+gave identical text, usage and metadata. GPU work was scoped next but Tailscale is
+stopped on the Mac, so gpu-box is unreachable; starting it is the user's call.
+
+Editor: `src/sse.ts` (+2 Node tests) and a "Stream prediction request" button in
+Production → Requests for agent releases; the stale banner "streaming ... not
+implemented" now says agent releases can stream. The real-Ollama JSON agent journey
+(`smoke/jsonAgent.mjs`, also used by recovery `--json-agent`) gained a final streamed
+step after its monitor assertions so existing call counts are unchanged:
+`/private/tmp/void-stream-json-agent-2` passes (36 streamed chars equal the recorded
+response). The first attempt used a different input than the journey's fixed
+result check expects; it now reuses the journey's own input.
+
+Full native on streaming: 1255 passed, 1 skipped, 16 deselected 479.40s (`/private/tmp/void-stream-full.log`);
+live: 16 passed 28.47s (`/private/tmp/void-stream-live.log`). Hosted
+[37410113992](https://github.com/mazenDDr/project-void/actions/runs/37410113992) on f3773d5
+(agent clipboard + CAS GC): SUCCESS, native and browser (agent clipboard journey and
+`--gc` recovery).

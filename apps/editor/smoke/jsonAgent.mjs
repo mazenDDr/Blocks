@@ -140,6 +140,18 @@ try {
   assert.deepEqual(await get(`/api/production/requests?release=${release.id}`),before);
   assert.deepEqual(await get(`/api/agent/runs/${evidence.sourceRun}/final-state`),evidence.sourceFinal);
   assert.deepEqual(await get(`/api/agent/runs/${evidence.sourceRun}/model-calls`),evidence.sourceCalls);
+  // Streamed request through the editor: provisional live text must equal the recorded provider response of that request.
+  await click('Requests','.production-workspace');
+  await fill('textarea[aria-label="prediction records"]',JSON.stringify([{question:'SYNTHETIC teaching input: colour blue, count 9.'}]));
+  pending=response('/predict/stream');await click('Stream prediction request');assert.equal((await pending).status(),200);
+  const streamedId=await page.waitForFunction(old=>{const m=document.querySelector('.production-workspace').innerText.match(/Current request ([0-9a-f-]{36})/);return m&&m[1]!==old&&m[1];},{},trace.requestId).then(h=>h.jsonValue());
+  const streamedTrace=await page.waitForFunction(async id=>{const r=await fetch('/api/production/requests/'+id);if(!r.ok)return null;const t=await r.json();return t.status===200&&t.result?t:null;},{polling:250},streamedId).then(h=>h.jsonValue());
+  validResult(streamedTrace.result);
+  await page.waitForFunction(sha=>document.querySelector('.production-workspace').innerText.includes(sha),{},streamedTrace.traceSha256);
+  const shown=await page.$eval('[aria-label="streamed provider text"] pre',e=>e.textContent);
+  assert.equal(shown,streamedTrace.result.agent.contexts[0].value.response);assert(shown.length>0);
+  evidence.streamed={requestId:streamedId,chars:shown.length,traceSha256:streamedTrace.traceSha256};
+  await capture(restored?'recovered-streamed-request':'streamed-request');
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings.filter(m=>m.type==='error'),[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS actual Ollama source → pinned JSON version → native warmup → release → real schema/context request → isolated replay → independent labels → read-only monitor'+(restored?' after physical source deletion':''));

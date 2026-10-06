@@ -9,12 +9,13 @@ Provider capabilities differ; only supported generation settings are applied, an
 why) are returned so they can be recorded with the call (VISION 12.1)."""
 from __future__ import annotations
 
+from contextvars import ContextVar
 import hashlib
 import json
 import math
 import re
 import time
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -172,14 +173,31 @@ def usage_of(msg: Any) -> dict[str, Any]:
     return {"inputTokens": None, "outputTokens": None, "source": "unavailable"}
 
 
+# Set per request by a streaming caller: receives each text delta of every provider call made in this context.
+TOKEN_SINK: ContextVar[Callable[[str], None] | None] = ContextVar("agent_token_sink", default=None)
+
+
 def invoke_chat(spec: ModelSpec, messages: list[dict[str, Any]], counter: dict[str, int] | None = None, json_schema: dict | None = None) -> dict[str, Any]:
     """One provider call. Returns text, provider-reported usage (or unavailable), latency. Never fabricates a response."""
     model = build_chat_model(spec, counter)
     if json_schema is not None and spec.provider == "ollama":
         model = model.bind(format=json_schema)
     t0 = time.perf_counter()
+    sink = TOKEN_SINK.get()
     try:
-        out = model.invoke(to_lc_messages(messages))
+        if sink is None:
+            out = model.invoke(to_lc_messages(messages))
+        else:
+            # Streamed chunks add up to the same message object invoke returns; deltas are relayed as they arrive.
+            out = None
+            for chunk in model.stream(to_lc_messages(messages)):
+                out = chunk if out is None else out + chunk
+                delta = chunk.content if isinstance(chunk.content, str) else "".join(
+                    p.get("text", "") if isinstance(p, dict) else str(p) for p in chunk.content)
+                if delta:
+                    sink(delta)
+            if out is None:
+                raise RuntimeError("provider stream ended without a message")
     except ModelUnavailable:
         raise
     except Exception as e:  # noqa: BLE001  (connection refused, model missing, HTTP error ...)
