@@ -11,7 +11,7 @@ process.once('SIGTERM',()=>void browser.close());process.once('SIGINT',()=>void 
 const page=await browser.newPage();page.setDefaultTimeout(120000);
 page.on('pageerror',e=>evidence.runtimeErrors.push(e.message));
 page.on('dialog',d=>d.accept());
-page.on('console',m=>{if(['warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
+page.on('console',m=>{if(['warn','warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
 page.on('response',r=>{if(new URL(r.url()).pathname.startsWith('/api/')&&r.status()>=400)evidence.apiErrors.push({status:r.status(),url:r.url()});});
 const setInput=async(selector,value)=>{const el=await page.waitForSelector(selector);await el.evaluate((el,v)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,v);el.dispatchEvent(new Event('input',{bubbles:true}));},String(value));};
 try{
@@ -28,7 +28,7 @@ try{
   const final=await page.waitForFunction(async id=>{const j=await (await fetch('/api/runs/'+id)).json();return ['completed','failed','cancelled'].includes(j.status)?j:null;},{polling:500},runId).then(h=>h.jsonValue());
   assert.equal(final.status,'completed',JSON.stringify(final.error));assert.equal(final.config.backend,'jax');assert.equal(final.config.epochs,1);
   await new Promise(r=>setTimeout(r,800));
-  await page.screenshot({path:path.join(output,'jax-training.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'jax-training.png'),fullPage:true,captureBeyondViewport:false});
   evidence.run={runId,status:final.status,backend:final.config.backend,progress:final.progress,final:final.final};
   // Data-parallel run (ADR 0073): PyTorch backend, 2 worker processes.
   await page.select('select[aria-label="training backend"]','pytorch');
@@ -42,5 +42,5 @@ try{
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS Train tab backend=jax → native worker JAX SGD run completes with its recorded backend');
-}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true,captureBeyondViewport:false}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}

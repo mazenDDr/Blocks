@@ -21,7 +21,7 @@ const page=await browser.newPage();page.setDefaultTimeout(60000);
 // Only this runner's disposable teaching draft is ever open.
 page.on('dialog',d=>d.accept());
 page.on('pageerror',e=>evidence.runtimeErrors.push(e.message));
-page.on('console',m=>{if(['warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
+page.on('console',m=>{if(['warn','warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
 page.on('response',r=>{if(new URL(r.url()).pathname.startsWith('/api/')&&r.status()>=400)evidence.apiErrors.push({status:r.status(),url:r.url()});});
 const stats=values=>{const a=[...values].sort((a,b)=>a-b);return{samples:values,unit:'ms',n:a.length,min:a[0],median:a[Math.ceil(.5*a.length)-1],p95:a[Math.ceil(.95*a.length)-1],max:a.at(-1)};};
 try{
@@ -76,10 +76,10 @@ try{
     const measurement={nodes:size,edges:size-1,graphHash:native.graphHash,nativeOk:native.ok,canvasNodes:await page.$$eval('.react-flow__node',a=>a.length),outlineRows:await page.$$eval('.outline-table tbody tr',a=>a.length),validation:stats(validations),projectLoad:stats(loads),outlineSelection:stats(selection)};
     evidence.measurements.push(measurement);
     fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));
-    await page.screenshot({path:path.join(output,`actual-${size}-nodes.png`),fullPage:true});
+    await page.screenshot({path:path.join(output,`actual-${size}-nodes.png`),fullPage:true,captureBeyondViewport:false});
     console.log(JSON.stringify({nodes:size,validationP95Ms:measurement.validation.p95,loadP95Ms:measurement.projectLoad.p95,selectionP95Ms:measurement.outlineSelection.p95}));
   }
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);
   evidence.status='passed';
-}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true,captureBeyondViewport:false}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}

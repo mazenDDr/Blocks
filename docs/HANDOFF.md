@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §79 — release long-term memory (ADR0075).** §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §80 — console warnings are now evidence; canvas fixes.** §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2879,3 +2879,34 @@ workbench byte. Counts are recorded below.
 Verification: full native 1423 passed, 1 skipped, 27 deselected 546.76s (`/private/tmp/void-mem-full2.log`, after
 the erasure fix; the earlier run `/private/tmp/void-mem-full.log` had those 4 failures and 1418 passed); live Ollama
 25 passed; build, 50 Node tests and all 24 editor journeys incl. release_memory pass (`/private/tmp/void-mem-regressions`).
+
+## 80. Console warnings are now collected; the defects they exposed — 2026-10-06
+
+Evidence gap: Puppeteer reports `console.warn` as type `warn`, but 27 journeys filtered `['warning','error']`,
+so warnings were never collected, and journeys asserting "no console warnings" checked errors only. All 27 now
+collect `warn`. The first full run with it (`/private/tmp/void-warn-1`) failed 8 journeys. Findings and fixes:
+
+1. Edges to composite/repeat/select cards: React Flow logged "Couldn't create edge for handle" ~22× per edge
+   because those cards get ports only from asynchronous native validation and node internals were refreshed
+   only on membership change. Every edge rendered eventually (probe: residual_cnn/control_flow 7/7), but
+   later than the other edges. Fix: until validation arrives, a structural card's ports are the ones its wires name,
+   and node internals refresh when any card's port list changes. Probe after: no warnings.
+2. Node types "card"/"acard" not found: the agent canvas and the workbench canvas shared one React Flow store,
+   so a project switch briefly rendered each canvas with the other's nodes. Fix: the agent canvas has its own
+   `ReactFlowProvider`.
+3. "The specified value NaN": inside module definitions a setting bound to a module argument
+   (`{"$param": name}`, as the module panel instructs) was shown as an integer field with NaN — the binding
+   was invisible and typing a number silently replaced it. Fix: the config form shows "bound to module argument
+   <name>" (with the resolved value when known) and an explicit "Use a fixed value" button.
+4. "Drag a node that is not initialized" (14× per frame drag): layout-group frames had no measured size. Fix:
+   frames declare the size they render at. Drag offset unchanged (185.70, 123.25 before and after).
+5. "Parent container needs a width and a height": measured at warning time the WINDOW was 1×1 with the document
+   loaded, 2–3 ms after a Puppeteer `fullPage` screenshot began — a harness artifact (device-metrics override),
+   not an app defect. Fix in journeys: `captureBeyondViewport:false` (the app is a fixed full-viewport layout;
+   screenshots stay 1600×1100).
+6. Attribution: the workbench and agent canvases hid React Flow's attribution (`hideAttribution`), which React
+   Flow asks only Pro subscribers to do; it is now shown.
+Also found: the regression loop `tools/editor_*_smoke.py` never included the base `tools/editor_smoke.py`
+journey; it is now run as well.
+Verification: build, 50 Node tests, base journey and all 24 editor journeys pass with zero collected console
+warnings in every evidence file (`/private/tmp/void-warn-3`). No Python changed, so the native suite was not rerun.

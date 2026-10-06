@@ -12,7 +12,7 @@ process.once('SIGTERM',()=>void browser.close());process.once('SIGINT',()=>void 
 const page=await browser.newPage();page.setDefaultTimeout(45000);
 page.on('pageerror',e=>evidence.runtimeErrors.push(e.message));
 page.on('dialog',d=>d.accept());
-page.on('console',m=>{if(['warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
+page.on('console',m=>{if(['warn','warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
 page.on('response',r=>{if(new URL(r.url()).pathname.startsWith('/api/')&&r.status()>=400)evidence.apiErrors.push({status:r.status(),url:r.url()});});
 const fill=async(selector,value)=>{
   const el=await page.waitForSelector(selector);
@@ -77,7 +77,7 @@ try{
   const pastedReport=await native(pasted.graph);assert.deepEqual(errors(pastedReport),[['E_UNREACHABLE_NODE','answer_copy'],['E_UNREACHABLE_NODE','tick_copy']]);
   const entered={...pasted.graph,edges:[...pasted.graph.edges,{id:'START__tick_copy',kind:'control',from:{node:'START',port:'out'},to:{node:'tick_copy',port:'in'}}]};
   const enteredReport=await native(entered);assert(enteredReport.ok,JSON.stringify(enteredReport.diagnostics));
-  await page.screenshot({path:path.join(output,'agent-paste-same-graph.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'agent-paste-same-graph.png'),fullPage:true,captureBeyondViewport:false});
   await undo();const restored=await save(SRC);assert.deepEqual(restored.graph,baseline.graph);
   evidence.sameGraph={pastedIds,errors:errors(pastedReport),connectedCopyNativeOk:enteredReport.ok,undoRestoresBaseline:true};
 
@@ -88,7 +88,7 @@ try{
   for(const f of target.graph.agent.state)assert.deepEqual(f,baseline.graph.agent.state.find(s=>s.name===f.name));
   const targetEntered={...target.graph,edges:[...target.graph.edges,{id:'START__tick_copy',kind:'control',from:{node:'START',port:'out'},to:{node:'tick_copy',port:'in'}}]};
   const targetReport=await native(targetEntered);assert(targetReport.ok,JSON.stringify(targetReport.diagnostics));
-  await page.screenshot({path:path.join(output,'agent-paste-other-project.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'agent-paste-other-project.png'),fullPage:true,captureBeyondViewport:false});
   evidence.crossProject={nodes:target.graph.nodes.map(n=>n.id),state:target.graph.agent.state.map(f=>f.name),connectedNativeOk:targetReport.ok};
 
   evidence.stage='differing state definition refuses without editing the draft';
@@ -99,5 +99,5 @@ try{
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS native agent copy → same-graph paste/route rebinding/Undo → cross-project state transfer → conflict refusal');
-}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true,captureBeyondViewport:false}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}

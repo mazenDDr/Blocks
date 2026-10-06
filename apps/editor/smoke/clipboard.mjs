@@ -12,7 +12,7 @@ process.once('SIGTERM',()=>void browser.close());process.once('SIGINT',()=>void 
 const page=await browser.newPage();page.setDefaultTimeout(45000);
 page.on('pageerror',e=>evidence.runtimeErrors.push(e.message));
 page.on('dialog',d=>d.accept());
-page.on('console',m=>{if(['warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
+page.on('console',m=>{if(['warn','warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
 page.on('response',r=>{if(new URL(r.url()).pathname.startsWith('/api/')&&r.status()>=400)evidence.apiErrors.push({status:r.status(),url:r.url()});});
 const fill=async(selector,value)=>{
   const el=await page.waitForSelector(selector);
@@ -64,7 +64,7 @@ try{
   }
   const validated=await page.evaluate(async graph=>(await fetch('/api/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph})})).json(),pasted.graph);
   assert(validated.ok);assert.equal(validated.totalParams,20042);evidence.validation=validated;
-  await page.screenshot({path:path.join(output,'copied-native-model.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'copied-native-model.png'),fullPage:true,captureBeyondViewport:false});
   await click('Undo');const undone=await save();assert.deepEqual(undone.graph,empty.graph);assert.deepEqual(undone.ui,empty.ui);
   await click('Redo');const redone=await save();assert.deepEqual(redone.graph,pasted.graph);assert.deepEqual(redone.ui,pasted.ui);
   await click('Paste copied nodes');await page.waitForFunction(n=>document.querySelectorAll('.react-flow__node').length===2*n,{},source.graph.nodes.length);
@@ -83,9 +83,9 @@ try{
   if(!(await page.$eval('.clipboard-tools',e=>e.open)))await page.click('.clipboard-tools summary');
   assert(await page.$$eval('button',buttons=>buttons.find(b=>b.textContent.trim()==='Paste copied nodes').disabled));
   await click('Clear graph clipboard');assert.equal(await page.$('.clipboard-provenance'),null);
-  await page.screenshot({path:path.join(output,'graph-clipboard.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'graph-clipboard.png'),fullPage:true,captureBeyondViewport:false});
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings.filter(m=>m.type==='error'),[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS native whole graph copy → independent fresh typed nodes/config/layout → one undo/redo → unique repeat → partial boundary diagnostics → incompatible-kind refusal');
-}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true,captureBeyondViewport:false}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}

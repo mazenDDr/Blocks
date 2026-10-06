@@ -7,6 +7,8 @@ export interface CardData extends Record<string, unknown> {
   gnode: GNode; op?: OpInfo; view?: NodeView; pending: boolean; runStatus?: TabularNodeStatus; compat?: CompatNode;
   /** composite / repeat / select: open the module for editing, expand or collapse the inner nodes in place */
   onOpen?: () => void; onToggle?: () => void; expanded?: boolean; inner?: boolean; localName?: string;
+  /** structural nodes before native validation: ports named by the graph's wires */
+  edgePorts?: { inputs: string[]; outputs: string[] };
 }
 export type CardNode = Node<CardData, "card">;
 
@@ -15,10 +17,10 @@ const portTop = (i: number, n: number) => `${((i + 1) * 100) / (n + 1)}%`;
 /** VISION 8.3 card. Model graphs show tensor shapes and parameter counts; tabular graphs show the schema (columns/types), row count,
  *  partition and the kind of each wire instead. */
 export function OpNodeCard({ data, selected }: NodeProps<CardNode>) {
-  const { gnode, op, view, pending, runStatus, onOpen, onToggle, expanded, inner, localName, compat } = data;
+  const { gnode, op, view, pending, runStatus, onOpen, onToggle, expanded, inner, localName, compat, edgePorts } = data;
   const errors = view?.diagnostics.filter((d) => d.severity === "error") ?? [];
   const warnings = view?.diagnostics.filter((d) => d.severity === "warning") ?? [];
-  const inputs = view?.inputPorts ?? op?.inputs ?? [], outputs = view?.outputPorts ?? op?.outputs ?? [];
+  const inputs = view?.inputPorts ?? edgePorts?.inputs ?? op?.inputs ?? [], outputs = view?.outputPorts ?? edgePorts?.outputs ?? op?.outputs ?? [];
   const structural = !!view?.structural || ["core.composite", "core.repeat", "core.select"].includes(gnode.type);
   const shared = view?.sharedWith ?? gnode.sharedWith ?? null;
   const diagKind = gnode.type.startsWith("diag.") ? (gnode.type === "diag.assert" ? "execution-changing" : "observation-only") : null;

@@ -11,7 +11,7 @@ process.once('SIGTERM',()=>void browser.close());process.once('SIGINT',()=>void 
 const page=await browser.newPage();page.setDefaultTimeout(90000);
 page.on('pageerror',e=>evidence.runtimeErrors.push(e.message));
 page.on('dialog',d=>d.accept());
-page.on('console',m=>{if(['warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
+page.on('console',m=>{if(['warn','warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
 page.on('response',r=>{if(new URL(r.url()).pathname.startsWith('/api/')&&r.status()>=400)evidence.apiErrors.push({status:r.status(),url:r.url()});});
 const click=async(label)=>{
   await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===t&&!b.disabled),{},label);
@@ -35,7 +35,7 @@ try{
   const shown=await page.$$eval('.rllearner input',els=>Object.fromEntries(els.map(e=>[e.getAttribute('aria-label'),e.value])));
   assert.equal(shown['Discount gamma'],'0.99');assert.equal(shown['Critic updates per actor update'],'2');  // defaults shown for omitted fields
   evidence.shownFields=shown;
-  await page.screenshot({path:path.join(output,'td3-learner.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'td3-learner.png'),fullPage:true,captureBeyondViewport:false});
   const posted=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/runs'&&r.request().method()==='POST');
   await click('Run');
   const runId=(await (await posted).json()).runId;assert(runId);
@@ -57,7 +57,7 @@ try{
   evidence.wording={rlTabs};
   await click('Evaluation');await new Promise(r=>setTimeout(r,800));
   await page.waitForFunction(()=>/deterministic actor \(no exploration noise\) episodes/.test(document.querySelector('.rleval')?.textContent??''));
-  await page.screenshot({path:path.join(output,'td3-evaluation.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'td3-evaluation.png'),fullPage:true,captureBeyondViewport:false});
   evidence.run={runId,status:final.status,evalTicks:curves.evals.map(e=>e.tick),finalTaskReturn:curves.evals.at(-1).taskReturn};
   // Serve the trained actor (ADR 0069): register, then inspect the pinned version in the Production workspace.
   const version=await page.evaluate(async rid=>{const cand=(await (await fetch('/api/production')).json()).candidates.find(c=>c.runId===rid&&c.adapter==='rl_td3');
@@ -69,10 +69,10 @@ try{
   await page.waitForFunction(v=>[...(document.querySelector('select[aria-label="registered version"]')?.options??[])].some(o=>o.value===v),{},version.id);
   await page.select('select[aria-label="registered version"]',version.id);
   await page.waitForFunction(()=>document.body.innerText.toLowerCase().includes('final td3 actor'));
-  await page.screenshot({path:path.join(output,'td3-version.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'td3-version.png'),fullPage:true,captureBeyondViewport:false});
   evidence.version={id:version.id,adapter:version.adapter,referenceRows:version.manifest.referenceRows};
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS TD3 example → learner edits saved → native worker run on Pendulum-v1 → curves/evaluation in the editor');
-}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true,captureBeyondViewport:false}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}

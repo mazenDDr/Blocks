@@ -12,7 +12,7 @@ process.once('SIGTERM',()=>void browser.close());process.once('SIGINT',()=>void 
 const page=await browser.newPage();page.setDefaultTimeout(45000);
 page.on('pageerror',e=>evidence.runtimeErrors.push(e.message));
 page.on('dialog',d=>d.accept());
-page.on('console',m=>{if(['warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
+page.on('console',m=>{if(['warn','warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
 page.on('response',r=>{if(new URL(r.url()).pathname.startsWith('/api/')&&r.status()>=400)evidence.apiErrors.push({status:r.status(),url:r.url()});});
 const ID='SYNTHETIC_layout_groups',LABEL='SYNTHETIC stem',MEMBERS=['conv_1','relu_1','pool_1'];
 const fill=async(selector,value)=>{
@@ -58,7 +58,7 @@ try{
   assert.deepEqual(grouped.ui.layoutGroups,[{id:'group_1',label:LABEL,scope:'root',members:MEMBERS}]);
   await page.waitForSelector(frameSel);const frame=await rect(frameSel);
   for(const m of MEMBERS){const c=await rect(`.react-flow__node[data-id="${m}"]`);assert(c.x>=frame.x&&c.y>=frame.y&&c.x+c.w<=frame.x+frame.w&&c.y+c.h<=frame.y+frame.h,`${m} outside frame`);}
-  await page.screenshot({path:path.join(output,'layout-group.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'layout-group.png'),fullPage:true,captureBeyondViewport:false});
   evidence.stage='drag the frame head: exactly the members move by one shared offset';
   const head=await rect(frameSel+' .layout-frame-head');
   await page.mouse.move(head.x+10,head.y+8);await page.mouse.down();await page.mouse.move(head.x+70,head.y+48,{steps:8});await page.mouse.move(head.x+130,head.y+88,{steps:8});await page.mouse.up();
@@ -83,5 +83,5 @@ try{
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS layout group → enclosing frame → frame drag moves members only → Undo → reload → frame selection → delete');
-}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true,captureBeyondViewport:false}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}

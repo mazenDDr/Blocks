@@ -67,6 +67,16 @@ const isInferInt = (s: JSchema) => !!s.anyOf && s.anyOf.some((a) => a.const === 
 const literals = (a: JSchema): string[] => (a.const !== undefined ? [String(a.const)] : a.enum ? a.enum.map(String) : []);
 
 function Field({ name, schema, value, resolved, onChange, defs }: { name: string; schema: JSchema; value: unknown; resolved: unknown; onChange: (v: unknown) => void; defs?: Record<string, JSchema> }) {
+  // Inside a module definition a setting may be bound to a module argument ({"$param": name}); show the binding, never a NaN field.
+  const binding = value !== null && typeof value === "object" && !Array.isArray(value) && typeof (value as Record<string, unknown>).$param === "string" ? (value as { $param: string }).$param : null;
+  if (binding !== null) {
+    return (
+      <div className="param-binding">
+        <span>bound to module argument <code>{binding}</code>{resolved !== undefined && resolved !== null && typeof resolved !== "object" ? <span className="muted"> (= {String(resolved)} here)</span> : null}</span>{" "}
+        <button aria-label={`replace ${name} binding with a fixed value`} onClick={() => onChange(schema.default ?? (typeof resolved === "number" || typeof resolved === "string" ? resolved : null))}>Use a fixed value</button>
+      </div>
+    );
+  }
   if (schema.$ref) {
     const ref = defs?.[schema.$ref.split("/").pop()!];
     if (ref) return <Field name={name} schema={ref} value={value} resolved={resolved} onChange={onChange} defs={defs} />;

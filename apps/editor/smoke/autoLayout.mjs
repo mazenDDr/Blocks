@@ -12,7 +12,7 @@ process.once('SIGTERM',()=>void browser.close());process.once('SIGINT',()=>void 
 const page=await browser.newPage();page.setDefaultTimeout(45000);
 page.on('pageerror',e=>evidence.runtimeErrors.push(e.message));
 page.on('dialog',d=>d.accept());
-page.on('console',m=>{if(['warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
+page.on('console',m=>{if(['warn','warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
 page.on('response',r=>{if(new URL(r.url()).pathname.startsWith('/api/')&&r.status()>=400)evidence.apiErrors.push({status:r.status(),url:r.url()});});
 const ID='SYNTHETIC_auto_layout';
 const fill=async(selector,value)=>{
@@ -65,7 +65,7 @@ try{
   assert.equal(Math.min(...ids.map(id=>p[id].x)),Math.min(...ids.map(id=>baseline.ui.positions[id].x)));
   assert.equal(Math.min(...ids.map(id=>p[id].y)),Math.min(...ids.map(id=>baseline.ui.positions[id].y)));
   await new Promise(r=>setTimeout(r,600));// the view refits 150ms after arranging; screenshot only
-  await page.screenshot({path:path.join(output,'auto-arranged.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'auto-arranged.png'),fullPage:true,captureBeyondViewport:false});
 
   evidence.stage='one Undo restores the scrambled layout, Redo reapplies, repeat is a no-op';
   await shortcut();const undone=await save();assert.deepEqual(undone.ui,baseline.ui);assert.deepEqual(undone.graph,baseline.graph);
@@ -77,5 +77,5 @@ try{
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS scrambled native layout → auto-arrange (rightward wires, no overlap, unchanged graph/hash) → Undo/Redo → idempotent repeat');
-}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true,captureBeyondViewport:false}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}

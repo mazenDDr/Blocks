@@ -32,7 +32,7 @@ import type { Ctx } from "./components/InspectorTabs";
 import { Library } from "./components/Library";
 import { ModuleLibrary } from "./components/ModuleLibrary";
 import { ModulePanel } from "./components/ModulePanel";
-import { OpNodeCard, type CardNode } from "./components/OpNode";
+import { OpNodeCard, type CardData, type CardNode } from "./components/OpNode";
 import { RunPanel } from "./components/RunPanel";
 import { TabularRunBar, TabularRunPanel, TabularWireInspector, tabularTabs } from "./components/TabularPanels";
 import { TrainingWorkspace } from "./components/Training";
@@ -524,27 +524,34 @@ function Workbench() {
         }
         return;
       }
+      // Structural ports come from native validation; until it arrives the graph's own wires name them, so edges can attach at once.
+      const edgePorts = structural && !nv?.inputPorts ? { inputs: [...new Set(cur.edges.filter((e) => e.to.node === n.id).map((e) => e.to.port))],
+        outputs: [...new Set(cur.edges.filter((e) => e.from.node === n.id).map((e) => e.from.port))] } : undefined;
       out.push({
         id: n.id, type: "card" as const, position: posOf(n.id, i), selected: false,
-        data: { gnode: n, op: opsByType[n.type], view: nv, pending: validation.pending, compat: def ? undefined : compatFor(n.id), runStatus: tabRun?.nodes.find((x) => x.node === n.id),
+        data: { gnode: n, op: opsByType[n.type], view: nv, edgePorts, pending: validation.pending, compat: def ? undefined : compatFor(n.id), runStatus: tabRun?.nodes.find((x) => x.node === n.id),
           onOpen: structural ? () => openInstance(n.id) : undefined, onToggle: structural && !def && n.type !== "core.select" ? () => toggleExpand(n.id) : undefined, expanded: expandedPaths.has(n.id) },
       });
     });
     return out.map(node => ({ ...node, measured: measurements[node.id] }));
-  }, [cur.nodes, ui.positions, opsByType, v, rv, validation.pending, tabRun, expandedGroups, def, compatFor, measurements]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cur.nodes, cur.edges, ui.positions, opsByType, v, rv, validation.pending, tabRun, expandedGroups, def, compatFor, measurements]); // eslint-disable-line react-hooks/exhaustive-deps
   // Persistent layout groups: frames drawn first (behind cards) from actual measured card rectangles.
   const groupScope = def ? `module:${modKey(def)}` : "root";
   const scopeGroups = useMemo(() => groupsOf(ui).filter(g => g.scope === groupScope), [ui, groupScope]);
   const frameList = useMemo(() => frames(ui, groupScope, cur.nodes.flatMap((n, i) => measurements[n.id]
     ? [{ id: n.id, ...posOf(n.id, i), width: measurements[n.id].width, height: measurements[n.id].height }] : [])),
   [ui, groupScope, cur.nodes, measurements, expandedGroups, auto]); // eslint-disable-line react-hooks/exhaustive-deps
-  const frameNodes: AnyNode[] = useMemo(() => frameList.map(f => ({ id: FRAME + f.id, type: "frame" as const, position: { x: f.x, y: f.y }, zIndex: -1,
+  // Frames render at exactly their computed size; declaring it lets React Flow drag them without a measurement pass.
+  const frameNodes: AnyNode[] = useMemo(() => frameList.map(f => ({ id: FRAME + f.id, type: "frame" as const, position: { x: f.x, y: f.y }, zIndex: -1, measured: { width: f.width, height: f.height },
     selectable: true, draggable: true, data: { label: f.label, members: f.members.length, missing: f.missing, width: f.width, height: f.height } })), [frameList]);
   const rfNodes: AnyNode[] = useMemo(() => {
     const selected = new Set(selNodes);
     return [...frameNodes, ...baseRfNodes.map(node => selected.has(node.id) ? { ...node, selected: true } : node)];
   }, [frameNodes, baseRfNodes, selNodes]);
-  const flowMembership = JSON.stringify(rfNodes.map(node => [node.id, node.type]));
+  // Handles change when native ports replace wire-derived ones; React Flow must re-read them (otherwise edges warn and wait).
+  const flowMembership = JSON.stringify(rfNodes.map(node => [node.id, node.type, ...(node.type === "card" ? [
+    (node.data as CardData).view?.inputPorts ?? (node.data as CardData).edgePorts?.inputs ?? null,
+    (node.data as CardData).view?.outputPorts ?? (node.data as CardData).edgePorts?.outputs ?? null] : [])]));
   useEffect(() => {
     const ids = JSON.parse(flowMembership).map((node: string[]) => node[0]);
     pruneMeasurements(ids);
@@ -846,7 +853,7 @@ function Workbench() {
         )}
         <ReactFlow<AnyNode, Edge> nodes={rfNodes} edges={rfEdges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
           onConnect={onConnect} onNodesDelete={(ns) => removeNodes(ns.map((n) => n.id))} onEdgesDelete={(es) => removeEdges(es.map((e) => e.id))}
-          deleteKeyCode={["Backspace", "Delete"]} fitView minZoom={0.2} onPaneClick={() => { setSelNodes([]); setSelEdges([]); }} proOptions={{ hideAttribution: true }}>
+          deleteKeyCode={["Backspace", "Delete"]} fitView minZoom={0.2} onPaneClick={() => { setSelNodes([]); setSelEdges([]); }}>
           <Background gap={20} />
           <Controls showInteractive={false} />
         </ReactFlow>

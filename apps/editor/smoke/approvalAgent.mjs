@@ -17,7 +17,7 @@ page.setDefaultTimeout(45000);
 page.on('pageerror', e => evidence.runtimeErrors.push(e.message));
 page.on('dialog', d => d.accept());
 page.on('console', m => {
-  if (['warning', 'error'].includes(m.type())) evidence.consoleWarnings.push({type: m.type(), text: m.text()});
+  if (['warn', 'warning', 'error'].includes(m.type())) evidence.consoleWarnings.push({type: m.type(), text: m.text()});
 });
 page.on('response', r => {
   if (new URL(r.url()).pathname.startsWith('/api/') && r.status() >= 400) evidence.apiErrors.push({status: r.status(), url: r.url()});
@@ -46,7 +46,7 @@ const labelFill = async (name,value,tag='input') => {
   return fillElement(await label.asElement()?.$(tag),value);
 };
 const response = (suffix, method='POST') => page.waitForResponse(r => r.request().method() === method && new URL(r.url()).pathname.endsWith(suffix));
-const capture = file => page.screenshot({path: path.join(output,file+'.png'), fullPage: true});
+const capture = file => page.screenshot({path: path.join(output,file+'.png'), fullPage: true, captureBeyondViewport: false});
 
 const get = async url => page.evaluate(async url => {
   const r=await fetch(url);if(!r.ok)throw Error(`Native GET ${url}: ${r.status}`);return r.json();

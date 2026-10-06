@@ -12,7 +12,7 @@ process.once('SIGTERM',()=>void browser.close());process.once('SIGINT',()=>void 
 const page=await browser.newPage();page.setDefaultTimeout(45000);
 page.on('pageerror',e=>evidence.runtimeErrors.push(e.message));
 page.on('dialog',d=>d.accept());
-page.on('console',m=>{if(['warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
+page.on('console',m=>{if(['warn','warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
 page.on('response',r=>{if(new URL(r.url()).pathname.startsWith('/api/')&&r.status()>=400)evidence.apiErrors.push({status:r.status(),url:r.url()});});
 const fill=async(selector,value)=>{
   const el=await page.waitForSelector(selector);
@@ -88,10 +88,10 @@ try{
   await page.focus('input[aria-label="project id"]');await page.keyboard.down(process.platform==='darwin'?'Meta':'Control');await page.keyboard.press('z');await page.keyboard.up(process.platform==='darwin'?'Meta':'Control');
   assert(!(await disabled('[aria-label="redo draft edit"]'))); // Text-field shortcut cannot consume draft redo.
   evidence.model={before:model.graph.backend,after:changed.graph.backend};
-  await page.screenshot({path:path.join(output,'draft-history.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'draft-history.png'),fullPage:true,captureBeyondViewport:false});
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);
   assert.deepEqual(evidence.consoleWarnings.filter(m=>m.type==='error'),[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';
   console.log('PASS add/settings/layout → whole-document undo/redo → grouped drag → new-edit invalidation → project reset/text focus');
-}catch(error){evidence.error=String(error);evidence.viewport=await page.evaluate(()=>({transform:document.querySelector('.react-flow__viewport')?.style.transform,canvas:document.querySelector('.react-flow')?.getBoundingClientRect().toJSON(),nodes:[...document.querySelectorAll('.react-flow__node')].map(n=>({id:n.dataset.id,style:n.getAttribute('style'),rect:n.getBoundingClientRect().toJSON()}))})).catch(()=>null);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);evidence.viewport=await page.evaluate(()=>({transform:document.querySelector('.react-flow__viewport')?.style.transform,canvas:document.querySelector('.react-flow')?.getBoundingClientRect().toJSON(),nodes:[...document.querySelectorAll('.react-flow__node')].map(n=>({id:n.dataset.id,style:n.getAttribute('style'),rect:n.getBoundingClientRect().toJSON()}))})).catch(()=>null);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true,captureBeyondViewport:false}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}

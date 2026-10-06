@@ -12,7 +12,7 @@ process.once('SIGTERM',()=>void browser.close());process.once('SIGINT',()=>void 
 const page=await browser.newPage();page.setDefaultTimeout(45000);
 page.on('pageerror',e=>evidence.runtimeErrors.push(e.message));
 page.on('dialog',d=>d.accept());
-page.on('console',m=>{if(['warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
+page.on('console',m=>{if(['warn','warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
 page.on('response',r=>{if(new URL(r.url()).pathname.startsWith('/api/')&&r.status()>=400)evidence.apiErrors.push({status:r.status(),url:r.url()});});
 const fill=async(selector,value)=>{
   const el=await page.waitForSelector(selector);
@@ -66,7 +66,7 @@ try{
   const restored=await save();assert.deepEqual(restored.graph,original.graph);assert.deepEqual(restored.ui,original.ui);
   await page.click('input[aria-label="outline native errors only"]');await fill('input[aria-label="outline search"]','');
   await page.waitForSelector('[aria-label="center outline conv_1"]');
-  await page.screenshot({path:path.join(output,'native-outline.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'native-outline.png'),fullPage:true,captureBeyondViewport:false});
   evidence.stage='native module scope';await page.select('select[aria-label="open project"]','example:residual_cnn');
   await page.waitForFunction(()=>document.querySelector('input[aria-label="project id"]').value==='residual_cnn');
   await fill('input[aria-label="project id"]','SYNTHETIC_outline');const moduleSource=await save();
@@ -76,7 +76,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('.graph-outline .provenance')?.textContent.includes('Module residual_block@1.0.0')&&!document.querySelector('.graph-outline .provenance')?.textContent.includes('pending'));
   assert(moduleValidation.ok);await page.waitForFunction(h=>document.querySelector('.graph-outline .provenance')?.textContent.includes(h),{},moduleValidation.moduleHash);evidence.moduleValidation=moduleValidation;await page.click('[aria-label="inspect outline conv_a"]');await page.waitForFunction(()=>document.querySelector('input[aria-label="node id"]')?.value==='conv_a');
   const moduleNavigated=await save();assert.deepEqual(moduleNavigated.graph,moduleSource.graph);assert.deepEqual(moduleNavigated.ui,moduleSource.ui);evidence.module={source:moduleSource,visible:await page.$eval('.outline-table',e=>e.textContent)};
-  await page.screenshot({path:path.join(output,'module-outline.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'module-outline.png'),fullPage:true,captureBeyondViewport:false});
   evidence.stage='bounded real native graph pages';
   const pages={schemaVersion:'1.0.0',graphKind:'model',backend:'pytorch',nodes:Array.from({length:75},(_,i)=>({id:`node_${String(i).padStart(3,'0')}`,type:'core.tensor_input',version:'1.0.0',config:{shape:['N',4],dtype:'float32'}})),edges:[]};
   const pageUi={schemaVersion:'1.0.0',positions:{},synthetic:true,description:'SYNTHETIC 75 independent tensor inputs for outline pagination; no trained model or quality claim.'};
@@ -94,8 +94,8 @@ try{
   assert(await page.$$eval('button',buttons=>buttons.find(b=>b.textContent.trim()==='Previous outline nodes').disabled));
   await page.click('[aria-label="inspect outline node_074"]');await page.waitForFunction(()=>document.querySelector('input[aria-label="node id"]')?.value==='node_074');
   const pageRead=await page.evaluate(async()=>(await fetch('/api/projects/SYNTHETIC_outline_pages')).json());assert.deepEqual(pageRead.graph,pageSeed.graph);assert.deepEqual(pageRead.ui,pageSeed.ui);evidence.pages={graphHash:pageSource.graphHash,first,second,search:await ids()};
-  await page.screenshot({path:path.join(output,'outline-pages.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'outline-pages.png'),fullPage:true,captureBeyondViewport:false});
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings.filter(m=>m.type==='error'),[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';console.log('PASS native outline contracts/wires → explicit selection/center → real native error navigation → exact undo → module scope without graph/layout mutations');
-}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true,captureBeyondViewport:false}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}

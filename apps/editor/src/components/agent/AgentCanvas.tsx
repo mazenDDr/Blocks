@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import {
-  Background, Controls, Handle, MarkerType, Position, ReactFlow, applyNodeChanges, useUpdateNodeInternals, type Connection, type Edge, type Node, type NodeChange, type NodeProps,
+  Background, Controls, Handle, MarkerType, Position, ReactFlow, ReactFlowProvider, applyNodeChanges, useUpdateNodeInternals, type Connection, type Edge, type Node, type NodeChange, type NodeProps,
 } from "@xyflow/react";
 import type { Diagnostic, GNode, Graph, OpInfo, UiDoc, Validation } from "../../types";
 import { nextId } from "../../util";
@@ -83,7 +83,12 @@ function withFields(spec: AgentSpec, type: string, cfg: Record<string, any>): Ag
   return { ...spec, state: add };
 }
 
-export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNode, setSelNode, trace, setMessage, runValues }: {
+/** Its own React Flow store: sharing the workbench canvas store briefly handed each canvas the other's node types on a project switch. */
+export function AgentCanvas(props: Parameters<typeof AgentCanvasInner>[0]) {
+  return <ReactFlowProvider><AgentCanvasInner {...props} /></ReactFlowProvider>;
+}
+
+function AgentCanvasInner({ graph, setGraph, ui, setUi, validation, ops, selNode, setSelNode, trace, setMessage, runValues }: {
   graph: Graph; setGraph: (f: (g: Graph) => Graph) => void; ui: UiDoc; setUi: (f: (u: UiDoc) => UiDoc, dragging?: boolean) => void; validation: Validation | null; ops: OpInfo[];
   selNode: string | null; setSelNode: (id: string | null) => void; trace: Trace | null; setMessage: (m: string) => void; runValues?: (nodeId: string) => Record<string, any> | undefined;
 }) {
@@ -216,7 +221,7 @@ export function AgentCanvas({ graph, setGraph, ui, setUi, validation, ops, selNo
     <div className="acanvas">
       <aside className="left"><Library ops={ops} onAdd={addBlock} /></aside>
       <main className="center">
-        <ReactFlow<AgentFlowNode, Edge> nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onConnect={connect} fitView minZoom={0.2} proOptions={{ hideAttribution: true }}
+        <ReactFlow<AgentFlowNode, Edge> nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onConnect={connect} fitView minZoom={0.2}
           onPaneClick={() => setSelNode(null)} deleteKeyCode={["Backspace", "Delete"]}
           onNodesDelete={(ns) => ns.forEach((n) => removeNode(n.id))}
           onEdgesDelete={(es) => setGraph((g) => ({ ...g, edges: g.edges.filter((e) => !es.some((x) => x.id === e.id)) }))}>

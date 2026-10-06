@@ -13,7 +13,7 @@ process.once('SIGTERM',()=>void browser.close());process.once('SIGINT',()=>void 
 const page=await browser.newPage();page.setDefaultTimeout(45000);
 page.on('pageerror',e=>evidence.runtimeErrors.push(e.message));
 page.on('dialog',d=>d.accept());
-page.on('console',m=>{if(['warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
+page.on('console',m=>{if(['warn','warning','error'].includes(m.type()))evidence.consoleWarnings.push({type:m.type(),text:m.text()});});
 page.on('response',r=>{if(new URL(r.url()).pathname.startsWith('/api/')&&r.status()>=400)evidence.apiErrors.push({status:r.status(),url:r.url()});});
 const fill=async(selector,value)=>{
   const el=await page.waitForSelector(selector);
@@ -98,7 +98,7 @@ try{
     await click('Undo');assert.deepEqual((await save()).ui,baseline.ui);
     evidence.actions.push({operation:op,dimensions,positions:moved.ui.positions,graphHash:moved.graphHash});
   }
-  await page.screenshot({path:path.join(output,'native-arrangement.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,'native-arrangement.png'),fullPage:true,captureBeyondViewport:false});
   evidence.stage='invalid overlap refuses without an edit';
   // Actual end-to-end refusal on measured cards whose end span cannot fit their widths.
   const crowded={graph:baseline.graph,ui:{...baseline.ui,positions:{...baseline.ui.positions,conv_1:{x:100,y:50},pool_1:{x:110,y:340},fc:{x:120,y:720}}}};
@@ -117,7 +117,7 @@ try{
   await select(moduleIds);await click('Align right');const moduleDimensions=await boxes(moduleIds);const moduleMoved=await save();checkGeometry(moduleSource,moduleMoved,moduleIds,moduleDimensions,'Align right',prefix);
   const moduleValidation=await page.evaluate(async graph=>(await fetch('/api/modules/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph,moduleId:'residual_block',version:'1.0.0'})})).json(),moduleMoved.graph);
   assert(moduleValidation.ok);evidence.module={source:moduleSource,moved:moduleMoved,dimensions:moduleDimensions,validation:moduleValidation};
-  await page.screenshot({path:path.join(output,'module-arrangement.png'),fullPage:true});await click('Undo');assert.deepEqual((await save()).ui,moduleSource.ui);
+  await page.screenshot({path:path.join(output,'module-arrangement.png'),fullPage:true,captureBeyondViewport:false});await click('Undo');assert.deepEqual((await save()).ui,moduleSource.ui);
   evidence.families=[];
   for(const example of ['tabular_regression','vision_segmentation_synthetic','nlp_token_classification','speech_ctc_tones']){
     evidence.stage='native family '+example;await page.select('select[aria-label="open project"]','example:'+example);await page.waitForFunction(id=>document.querySelector('input[aria-label="project id"]').value===id,{},example);
@@ -137,5 +137,5 @@ try{
   }
   assert.deepEqual(evidence.runtimeErrors,[]);assert.deepEqual(evidence.apiErrors,[]);assert.deepEqual(evidence.consoleWarnings,[]);
   evidence.browserVersion=await browser.version();evidence.status='passed';console.log('PASS actual measured align/distribute → exact semantic identity → single Undo/Redo → scoped module layout → measured overlap refusal');
-}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
+}catch(error){evidence.error=String(error);await page.screenshot({path:path.join(output,'failure.png'),fullPage:true,captureBeyondViewport:false}).catch(()=>{});process.exitCode=1;}
 finally{fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));await browser.close();}
