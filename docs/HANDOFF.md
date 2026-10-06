@@ -2,7 +2,7 @@
 
 You are taking over an in-progress build. Read this whole file before doing anything.
 
-> **Latest continuation: §80 — console warnings are now evidence; canvas fixes.** §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
+> **Latest continuation: §81 — hosted CI failures on 2bc8afb (recovery fixture, worker finishing race).** §80 console warnings; §79 release memory; §78 WAL race; §77 TD3 wording; §76 container deployment; §75 data-parallel training; §73 accessibility audit; §72 cross-host workers; §71 Keras/JAX training; §70 TD3 serving; §69 TD3; §68 CUDA training; §67 schema migrations accepted; §66 Codex handoff; §59 retains the requested build order. §58 Keras/JAX serving; §57 retrieval serving; §56 JSON conversations; §55 layout groups; §54 worker recovery; §53 user erasure; §52 accounts/TLS; §51 fitted unsupervised serving; §50 streaming; §49 sealed backups; §48 auto-arrange; §47 CAS garbage collection; §46 agent clipboard; §45 side panels; §44 earlier selection work. Cache 25ec83f and selection 6a214be are pushed and their hosted CI runs (37401378340, 37403148824) are both fully green, recorded below. JSON96cb454 has green hosted native/browser verification37399325114. Whole VISION remains unfinished, nextADR0048. Preserve active code CI before another master push.
 
 ## 1. What this project is
 
@@ -2910,3 +2910,23 @@ Also found: the regression loop `tools/editor_*_smoke.py` never included the bas
 journey; it is now run as well.
 Verification: build, 50 Node tests, base journey and all 24 editor journeys pass with zero collected console
 warnings in every evidence file (`/private/tmp/void-warn-3`). No Python changed, so the native suite was not rerun.
+
+## 81. Hosted CI failures on 2bc8afb and repairs — 2026-10-06
+
+Hosted run 37479251589 (release memory): two failures, neither in the memory code paths.
+1. "Real browser, backup and restored native state journey" (`tools/recovery_smoke.py --legacy-schema …`):
+   `E_SCHEMA_SHAPE`. `tools/schema_recovery.legacy_fixture` stamps every database back to version 0 to prove
+   adoption, but `production.sqlite` now has the version-2 `release_memory` table — a version-0 file with an
+   object version 0 never had, which adoption correctly refuses. I had not run this journey locally (it is
+   not an `editor_*_smoke.py`). Fix: the fixture drops objects added by later steps (only when empty) before
+   stamping version 0; the census hashes rows of non-empty tables; readiness expects each database's current
+   version. Local CI-flag run `/private/tmp/void-recovery-2` passes (production adopted 0 → 2, rows unchanged).
+2. Native `test_scale.py::test_worker_retrieval_replays_an_import_after_lost_acknowledgement`: imported event
+   count changed 19 → 20 across a replayed import. Cause: runners record the terminal status before emitting
+   `run_finished`; the worker's job endpoint returned events as soon as the status was terminal, so a poll in
+   that window imported a run without its final event (and a later replay added it). A real defect of cross-host
+   workers, not test noise. Fix: the worker reports `finishing` (no events/artifacts) while the job process is
+   alive; only an exited process has written everything. Deterministic test with a held-open fake process; it
+   fails on the previous code ('completed' instead of 'finishing') and passes now. Not reproduced by timing locally.
+Verification: full native 1424 passed, 1 skipped, 27 deselected 551.23s (`/private/tmp/void-ci81-full.log`);
+recovery journey with the CI flags passes (`/private/tmp/void-recovery-2`). Journeys unchanged since §80's run.

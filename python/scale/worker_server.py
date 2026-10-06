@@ -82,6 +82,9 @@ def create_worker(root,token):
     def get(id):
         row=find(id)
         terminal=row["status"] in ("completed","failed","cancelled")
+        # Runners record the terminal status before their final events; only an exited process has written everything.
+        if terminal and (h:=handles.get(row["id"])) is not None and h.is_alive():
+            return {"run":{**row,"status":"finishing"},"events":[],"artifacts":[]}
         return {"run":row,"events":store.events(row["id"]) if terminal else [],"artifacts":store.artifacts(row["id"]) if terminal else []}
     @app.post("/v1/jobs/{id}/cancel")
     def cancel(id):

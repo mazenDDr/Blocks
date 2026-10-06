@@ -370,3 +370,25 @@ def test_real_worker_two_job_admission_and_between_node_cancel(recorded,tmp_path
             assert c.post('/v1/jobs',json={'id':jobs[1],'bundle':original}).json()['replayed']
             original['seed']=904
             assert c.post('/v1/jobs',json={'id':jobs[1],'bundle':original}).status_code==409
+
+
+def test_worker_reports_finishing_until_the_job_process_has_written_its_final_events(tmp_path):
+    """Runners record the terminal status before run_finished; a poll in between must not hand out an incomplete run."""
+    from artifact_store import ArtifactStore
+    from scale.state import State
+    app=create_worker(tmp_path/'worker','test-token-123456789');headers={'Authorization':'Bearer test-token-123456789'}
+    store=ArtifactStore(tmp_path/'worker');rid='worker-SYNTHETIC-finishing'
+    State(tmp_path/'worker').put('job','SYNTHETIC-finishing',{'runId':rid,'hash':'x'})
+    store.create_run(rid,'g',{});[store.set_status(rid,s) for s in ('preparing','running','completed')]
+    class Process:
+        alive=True
+        def is_alive(self):return self.alive
+        process=type('P',(),{'join':lambda self,t=None:None})()
+    proc=Process();app.state.worker_handles[rid]=proc
+    with TestClient(app) as c:
+        early=c.get('/v1/jobs/SYNTHETIC-finishing',headers=headers).json()
+        assert early['run']['status']=='finishing' and early['events']==[] and early['artifacts']==[]
+        from worker.events import Emitter
+        Emitter(store,rid,'g').emit('run_finished',status='completed');proc.alive=False
+        done=c.get('/v1/jobs/SYNTHETIC-finishing',headers=headers).json()
+        assert done['run']['status']=='completed' and [e['type'] for e in done['events']][-1]=='run_finished'
