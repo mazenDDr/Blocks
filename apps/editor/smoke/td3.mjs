@@ -46,7 +46,17 @@ try{
   const saved=await page.evaluate(async()=>(await fetch('/api/projects/rl_pendulum_td3')).json());
   const learner=saved.graph.nodes.find(n=>n.type==='rl.td3_learner');
   assert.deepEqual([learner.config.total_steps,learner.config.learning_starts,learner.config.eval_every,learner.config.batch_size,learner.config.hidden],[600,200,300,64,[32,32]]);
+  // TD3 wording (not DQN's): critic loss, exploration noise, deterministic actor; DQN-only tabs hidden.
+  await click('Run & curves');
+  await page.waitForFunction(()=>document.querySelector('.rlrun')?.textContent.includes('Critic loss'));
+  const runText=await page.$eval('.rlrun',e=>e.textContent);
+  assert(runText.includes('Exploration noise σ')&&runText.includes('deterministic actor evaluation'));
+  assert(!/TD loss|ε-greedy|target syncs/.test(runText),'DQN wording on a TD3 run');
+  const rlTabs=await page.$$eval('[aria-label="rl workspace"] button',bs=>bs.map(b=>b.textContent.trim()));
+  assert(!rlTabs.includes('Replay buffer')&&!rlTabs.includes('Transition trace')&&!rlTabs.includes('Rollouts'),JSON.stringify(rlTabs));
+  evidence.wording={rlTabs};
   await click('Evaluation');await new Promise(r=>setTimeout(r,800));
+  await page.waitForFunction(()=>/deterministic actor \(no exploration noise\) episodes/.test(document.querySelector('.rleval')?.textContent??''));
   await page.screenshot({path:path.join(output,'td3-evaluation.png'),fullPage:true});
   evidence.run={runId,status:final.status,evalTicks:curves.evals.map(e=>e.tick),finalTaskReturn:curves.evals.at(-1).taskReturn};
   // Serve the trained actor (ADR 0069): register, then inspect the pinned version in the Production workspace.

@@ -69,6 +69,12 @@ def register(app: FastAPI, sv) -> None:
             raise _err(422, "not_rl_run", f"run '{rid}' is not an rl run")
         return row
 
+    def not_recorded(rid: str, what: str) -> HTTPException:
+        started = store.last_event(rid, "run_started")
+        if started and started["data"].get("algorithm") == "TD3":
+            return _err(404, "not_available", f"TD3 runs do not record {what}; only DQN runs do (ADR 0068)")
+        return _err(404, "not_available", f"this run recorded no {what} (it did not finish)")
+
     def last_art(rid: str, kind: str) -> dict[str, Any] | None:
         a = store.artifacts(rid, kind)
         return a[-1] if a else None
@@ -177,7 +183,7 @@ def register(app: FastAPI, sv) -> None:
     def buffer_arrays(rid: str) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
         a = last_art(rid, "rl_buffer")
         if a is None:
-            raise _err(404, "not_available", "this run recorded no replay buffer (it did not finish)")
+            raise not_recorded(rid, "a replay buffer")
         if a["sha256"] not in npz_cache:
             with np.load(io.BytesIO(store.read_artifact(a["sha256"]))) as z:
                 npz_cache[a["sha256"]] = {k: z[k] for k in z.files}
@@ -237,7 +243,7 @@ def register(app: FastAPI, sv) -> None:
         rl_row(rid)
         t = art_json(rid, "rl_trace")
         if t is None:
-            raise _err(404, "not_available", "this run recorded no trace (it did not finish)")
+            raise not_recorded(rid, "a transition trace")
         rows = [{"tid": v["tid"], "episodeId": v["episodeId"], "episodeStep": v["episodeStep"], "uses": len(v["uses"]), "evicted": v["evicted"] is not None, "policyVersion": v["policyVersion"],
                  "terminated": v["terminated"], "truncated": v["truncated"], "reward": v["reward"]} for v in t["transitions"].values()]
         return {"runId": rid, "capturePolicy": t["capturePolicy"], "dropped": t["dropped"], "tracked": rows, "updateRecords": len(t["updates"]), "finalPolicyVersion": t["finalPolicyVersion"],
@@ -249,7 +255,7 @@ def register(app: FastAPI, sv) -> None:
         rl_row(rid)
         t = art_json(rid, "rl_trace")
         if t is None:
-            raise _err(404, "not_available", "this run recorded no trace (it did not finish)")
+            raise not_recorded(rid, "a transition trace")
         v = t["transitions"].get(str(tid))
         if v is None:
             insp: dict[str, Any] = {"captured": False, "tid": tid, "capturePolicy": t["capturePolicy"]["statement"]}

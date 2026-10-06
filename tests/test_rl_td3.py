@@ -78,3 +78,8 @@ def test_td3_run_is_readable_through_the_rl_api(tmp_path):
         assert cur.status_code == 200, cur.text
         body = cur.json()
         assert len(body["episodes"]) == 3 and [e["tick"] for e in body["evals"]] == [300, 600] and body["updates"] and body["totalSteps"] == 600
+        ev = c.get("/api/rl/runs/r1/eval").json()
+        assert ev["final"]["policy"].startswith("deterministic actor")
+        for path, what in (("buffer", "a replay buffer"), ("trace", "a transition trace")):
+            r = c.get(f"/api/rl/runs/r1/{path}")
+            assert r.status_code == 404 and f"TD3 runs do not record {what}" in r.json()["detail"]["message"], r.text

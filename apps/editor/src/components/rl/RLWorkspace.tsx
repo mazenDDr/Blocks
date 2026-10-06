@@ -46,6 +46,9 @@ export function RLWorkspace({ projectId, graph, setGraph, ui, validation, valida
   const blocked = !validation?.ok;
 
   const td3 = graph.nodes.some((n) => n.type === "rl.td3_learner");
+  const algorithm = run?.algorithm ?? (td3 ? "TD3" : "DQN");
+  const tabs = algorithm === "TD3" ? TABS.filter(([k]) => !["rollouts", "buffer", "trace"].includes(k)) : TABS;  // TD3 records none of these (ADR 0068)
+  useEffect(() => { if (!tabs.some(([k]) => k === tab)) setTab("run"); }, [tabs, tab]);
   async function start() {
     setBusy(true); setErr(null);
     try {
@@ -66,7 +69,7 @@ export function RLWorkspace({ projectId, graph, setGraph, ui, validation, valida
   return (
     <div className="aworkspace fullws rlworkspace">
       <div className="tabs atabs" role="tablist" aria-label="rl workspace">
-        {TABS.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}{k === "env" && errCount ? ` (${errCount} errors)` : ""}</button>)}
+        {tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}{k === "env" && errCount ? ` (${errCount} errors)` : ""}</button>)}
       </div>
       <div className="rlbar">
         <span className="badge kind" title="RL agents are not language-model agents">RL · {td3 ? "TD3" : "DQN"}</span>
@@ -86,7 +89,7 @@ export function RLWorkspace({ projectId, graph, setGraph, ui, validation, valida
         {tab === "structure" && <RLOutline key={`rl-outline:${projectId}`} graph={graph} ops={opsByType} validation={validation} pending={validationPending} error={validationError} onOpenPanel={setTab} />}
         {tab === "env" && <EnvPanel graph={graph} setGraph={setGraph} validation={validation} ui={ui} />}
         {tab === "learner" && <LearnerPanel graph={graph} setGraph={setGraph} validation={validation} />}
-        {tab === "run" && <RunTab curves={curves.data} status={run?.status} summary={run ? { envSteps: run.envSteps, updates: run.updates, totalSteps: run.totalSteps } : undefined} />}
+        {tab === "run" && <RunTab algorithm={algorithm} curves={curves.data} status={run?.status} summary={run ? { envSteps: run.envSteps, updates: run.updates, totalSteps: run.totalSteps } : undefined} />}
         {tab === "rollouts" && <RolloutsTab runId={runId} captured={curves.data?.captured ?? []} setup={curves.data?.setup ?? null} evalReport={evalReport.data} onTrace={openTrace} />}
         {tab === "buffer" && <BufferTab runId={runId} onTrace={openTrace} />}
         {tab === "trace" && <TraceTab runId={runId} tid={tid} setTid={setTid} />}

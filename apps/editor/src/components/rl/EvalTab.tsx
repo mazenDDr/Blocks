@@ -17,7 +17,7 @@ export function EvalTab({ runId, status }: { runId: string | null; status: strin
   return (
     <div className="scroll pad rleval">
       <h3>Evaluation report <span className="badge">run {r.runId.slice(0, 8)} · training seed {r.seed}</span></h3>
-      <div className="small muted">Protocol: {f.episodes.length} greedy episodes (ε={f.epsilon}) on separate environment instances, one per declared seed {JSON.stringify(r.evaluationSeeds)}; evaluation interactions never enter the replay buffer or the step count. {f.rewardBasis}.</div>
+      <div className="small muted">Protocol: {f.episodes.length} {f.policy ?? `greedy episodes (ε=${f.epsilon})`}{f.policy ? " episodes" : ""} on separate environment instances, one per declared seed {JSON.stringify(r.evaluationSeeds)}; evaluation interactions never enter the replay buffer or the step count. {f.rewardBasis}.</div>
       <table className="kv" aria-label="evaluation summary"><tbody>
         <tr><td>task return (default reward)</td><td><b>{ci(f.taskReturn)}</b> <span className="muted">mean [95% t-interval over {f.taskReturn.n} episodes]</span></td></tr>
         <tr><td>return (training reward)</td><td>{ci(f.return)}</td></tr>

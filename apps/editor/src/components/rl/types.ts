@@ -48,7 +48,7 @@ export interface CapturedEpisode {
 export interface EvalEpisodeRow { seed: number; length: number; return: number; taskReturn: number; terminated: boolean; truncated: boolean; success: boolean | null; components: Record<string, number>; rawComponents: Record<string, number> }
 export interface EvalCaptured { seed: number; frames: string[]; qValues: number[][]; actions: number[]; length: number; taskReturn: number; terminated: boolean; truncated: boolean; framesCapped: boolean }
 export interface EvalEntry {
-  tick: number; update: number; policyVersion: number; final: boolean; seeds: number[]; episodes: EvalEpisodeRow[]; epsilon: number; return: MeanCI; taskReturn: MeanCI; length: MeanCI;
+  tick: number; update: number; policyVersion: number; final: boolean; seeds: number[]; episodes: EvalEpisodeRow[]; epsilon: number; policy?: string; return: MeanCI; taskReturn: MeanCI; length: MeanCI;
   terminatedCount: number; truncatedCount: number; successRate: number | null; successRule: string; componentReturns: Record<string, MeanCI>; rawComponentReturns: Record<string, MeanCI>;
   rewardBasis: string; capturedEpisodes?: EvalCaptured[]; elapsedSec: number;
 }
