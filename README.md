@@ -40,12 +40,12 @@ students, researchers, analysts and teachers. Everything runs locally; nothing i
 ## Watch it
 
 <p align="center">
-  <a href="https://mazenddr.github.io/project-void/"><img src="docs/assets/film-poster.jpg" width="100%" alt="A frame of the Blocks film: 'Train it.' above a neural network whose connections light up as it learns, with the error falling and the accuracy rising underneath. A play button and the label 'Watch the film · 50 s'."></a>
+  <a href="https://mazenddr.github.io/Blocks/"><img src="docs/assets/film-poster.jpg" width="100%" alt="A frame of the Blocks film: 'Train it.' above a neural network whose connections light up as it learns, with the error falling and the accuracy rising underneath. A play button and the label 'Watch the film · 50 s'."></a>
 </p>
 
 A 50-second film of what Blocks does, from building a graph to agents and reinforcement learning:
-**[watch it on the project page](https://mazenddr.github.io/project-void/)** (or download
-[`site/blocks-film.mp4`](site/blocks-film.mp4)).
+**[watch it on the project page](https://mazenddr.github.io/Blocks/)**, or
+[play the video file directly](https://mazenddr.github.io/Blocks/blocks-film.mp4).
 
 <table>
   <tr>
