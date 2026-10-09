@@ -250,3 +250,10 @@ tr.sel td { background: var(--accent-soft); }
 .graph-tools:has(> .notice-inline) { flex-wrap: wrap; mask-image: none; }
 .graph-tools > .notice-inline { order: -1; flex: 1 1 100%; background: var(--frost); }
 .graph-tools > .notice-inline.synthetic { background: color-mix(in oklch, var(--warn-tint) 88%, transparent); color: var(--ink); }
+
+/* the canvas is the work: open tool panels never take more than about a third of a desktop window, and the dock
+   steps down while they are open, so the graph keeps a usable height even where wider fonts make panels taller */
+@media (min-width: 1181px) {
+  .graph-tools:has(> details[open]) { max-height: 30vh; }
+  .app.keyboard-layout:has(.graph-tools > details[open]) { grid-template-rows: auto auto minmax(0, 1fr) 200px 30px; }
+}
