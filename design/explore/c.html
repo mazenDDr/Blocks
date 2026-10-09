@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blocks — reference_cnn (exploration C: felt board)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --felt: oklch(87% 0.045 78);      /* #E5D2B1 sand felt board */
+  --felt-deep: oklch(82% 0.05 75);  /* #D8C29C where pieces press */
+  --cut: oklch(98.5% 0.008 85);     /* #FCF9F4 cream felt cut-out */
+  --ink: oklch(27% 0.03 60);        /* #3A2E22 */
+  --ink-2: oklch(42% 0.035 60);     /* #5E4E3C — 5.6:1 on felt, 8.9:1 on cut */
+  --stitch: oklch(70% 0.04 70);
+  --accent: #007ACC;
+  --f: "Bricolage Grotesque", system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  --spring: linear(0, 0.42 9%, 0.84 21%, 1.02 33%, 1.05 41%, 1.01 55%, 0.99 70%, 1);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--f);font-optical-sizing:auto;background:var(--felt);color:var(--ink);font-size:15px;line-height:1.45}
+button,input{font:inherit;color:inherit}
+header{display:flex;align-items:center;gap:16px;padding:16px 24px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.01em}
+.cmd{flex:1 1 360px;max-width:640px;display:flex;align-items:center;gap:10px;height:52px;padding:0 8px 0 18px;border-radius:16px;background:var(--cut);border:1px solid var(--stitch)}
+.cmd input{flex:1;min-width:0;border:0;background:none;outline:none;font-size:16px}
+.cmd kbd{font:600 13px var(--f);color:var(--ink-2);border:1px solid var(--stitch);border-radius:8px;padding:3px 8px}
+.primary{height:48px;border-radius:14px;border:1px solid transparent;background:var(--accent);color:#fff;font-weight:700;padding:0 22px;cursor:pointer}
+.where{display:flex;gap:6px;flex-wrap:wrap;padding:0 24px}
+.where a{min-height:40px;display:flex;align-items:center;padding:0 14px;border-radius:12px;color:var(--ink-2);text-decoration:none;font-weight:600}
+.where a[aria-current]{background:var(--cut);color:var(--ink)}
+.board{position:relative;margin:16px 24px 0;min-height:560px;perspective:1100px}
+.cut{position:absolute;width:190px;padding:14px 16px;border-radius:20px;background:var(--cut);outline:2px dashed var(--stitch);outline-offset:-7px;box-shadow:0 2px 0 var(--felt-deep);transform-style:preserve-3d;transition:transform .35s var(--spring);display:flex;flex-direction:column;gap:6px}
+.cut b{font-size:18px;font-weight:800;letter-spacing:-.01em}
+.cut small{color:var(--ink-2);font-size:14px;font-variant-numeric:tabular-nums}
+.cut.sel{outline-color:var(--accent);outline-style:solid}
+.thread{position:absolute;inset:0;pointer-events:none}
+.thread path{fill:none;stroke:var(--ink-2);stroke-width:2.5;stroke-dasharray:6 7;stroke-linecap:round}
+.card{position:absolute;right:24px;top:0;width:300px;padding:18px;border-radius:22px;background:var(--cut);display:flex;flex-direction:column;gap:12px}
+.card h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em}
+.row{display:flex;justify-content:space-between;font-variant-numeric:tabular-nums}
+.row span:first-child{color:var(--ink-2)}
+.field{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--ink-2);font-weight:600}
+.field input{height:42px;border-radius:12px;border:1px solid var(--stitch);background:#fff;padding:0 12px;font-size:16px;color:var(--ink)}
+.foot{margin:16px 24px 24px;display:flex;align-items:center;gap:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.foot strong{color:var(--ink)}
+@media (max-width:860px){
+  .board{min-height:auto;display:flex;flex-direction:column;gap:12px}
+  .cut,.card{position:relative;left:auto!important;top:auto!important;right:auto;width:auto}
+  .thread{display:none}
+}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="15" width="16" height="16" rx="5" fill="#007ACC"></rect><rect x="21" y="9" width="16" height="16" rx="5" fill="#007ACC" opacity=".55"></rect><rect x="12" y="4" width="16" height="9" rx="4.5" fill="#3A2E22"></rect></svg>Blocks</div>
+  <label class="cmd"><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Command</span><input placeholder="What do you want to build? Try “add a Conv2d after pool_1”"><kbd>⌘K</kbd></label>
+  <button class="primary">Train</button>
+</header>
+<nav class="where" aria-label="reference_cnn">
+  <a href="#" aria-current="page">Board</a><a href="#">Data</a><a href="#">Training · 1 running</a><a href="#">Experiments</a><a href="#">Production</a>
+</nav>
+<section class="board" aria-label="reference_cnn board">
+  <svg class="thread" aria-hidden="true"><path d="M210 70 C 250 70 250 70 260 70"></path><path d="M450 70 C 490 70 490 70 500 70"></path><path d="M600 120 C 600 190 120 170 120 250"></path><path d="M220 290 C 250 290 250 290 270 290"></path><path d="M460 290 C 490 290 490 290 510 290"></path></svg>
+  <div class="cut" style="left:20px;top:20px"><b>images</b><small>N × 3 × 64 × 64</small></div>
+  <div class="cut" style="left:260px;top:20px"><b>conv_1</b><small>32 filters · 896 params</small></div>
+  <div class="cut" style="left:500px;top:20px"><b>pool_1</b><small>N × 32 × 32 × 32</small></div>
+  <div class="cut sel" style="left:30px;top:240px"><b>conv_2</b><small>64 filters · 18,496 params</small></div>
+  <div class="cut" style="left:270px;top:240px"><b>pool_2</b><small>N × 64 × 16 × 16</small></div>
+  <div class="cut" style="left:510px;top:240px"><b>fc</b><small>10 classes</small></div>
+  <aside class="card" aria-label="conv_2">
+    <h2>conv_2</h2>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+      <label class="field">Filters<input value="64"></label><label class="field">Kernel<input value="3 × 3"></label>
+    </div>
+    <div class="row"><span>In</span><span>N × 32 × 32 × 32</span></div>
+    <div class="row"><span>Out</span><span>N × 64 × 32 × 32</span></div>
+    <div class="row"><span>Parameters</span><span>18,496</span></div>
+  </aside>
+</section>
+<p class="foot" role="status"><strong>Training</strong> epoch 2 of 2 · loss 1.84 · started 3 minutes ago</p>
+<script>
+// Felt cut-outs lift toward the pointer: eased, clamped to ±6°, back to rest on leave. Off for reduced motion.
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  for (const el of document.querySelectorAll('.cut')) {
+    el.addEventListener('pointermove', e => { const r = el.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      el.style.transform = `rotateY(${x * 12}deg) rotateX(${-y * 12}deg) translateZ(14px)`; });
+    el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+  }
+}
+</script>
+</body>
+</html>

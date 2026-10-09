@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blocks</title>
+<meta name="description" content="Blocks: build models, data pipelines, AI agents and reinforcement-learning experiments by connecting blocks. Run them on your own machine and see what every piece did.">
+<meta name="color-scheme" content="dark">
+<meta property="og:title" content="Blocks">
+<meta property="og:description" content="Build AI by connecting blocks. Run it on your own machine and see what every piece did.">
+<meta property="og:image" content="img/poster.jpg">
+<link rel="icon" type="image/svg+xml" href="img/mark.svg">
+<style>
+:root { --bg: #000; --ink: #f5f5f7; --ink2: #a1a1a6; --rule: #2c2c2e; --card: #111113; --acc: #2e9bff; --lime: #9ff03c; --mag: #d14cf2; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 17px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: var(--acc); text-decoration: none; } a:hover { text-decoration: underline; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 22px; }
+header { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 19px; color: var(--ink); }
+.brand img { width: 28px; height: 28px; }
+.gh { font-size: 15px; color: var(--ink); border: 1px solid #3a3a3c; border-radius: 999px; padding: 7px 16px; }
+.gh:hover { border-color: var(--ink2); text-decoration: none; }
+.hero { text-align: center; padding: 56px 0 28px; }
+h1 { font-size: clamp(44px, 8vw, 92px); line-height: 1.02; letter-spacing: -0.035em; margin: 0; font-weight: 700; }
+.lede { font-size: clamp(19px, 2.4vw, 25px); color: var(--ink2); max-width: 760px; margin: 18px auto 0; letter-spacing: -0.01em; }
+.lede b { color: var(--ink); font-weight: 600; }
+.film { margin: 40px auto 0; border-radius: 22px; overflow: hidden; border: 1px solid var(--rule); box-shadow: 0 40px 120px -40px rgba(46,155,255,.35); background: #000; }
+.film video { display: block; width: 100%; height: auto; }
+.cta { display: flex; gap: 12px; justify-content: center; margin-top: 26px; flex-wrap: wrap; }
+.btn { display: inline-block; padding: 12px 24px; border-radius: 999px; font-weight: 600; font-size: 16px; }
+.btn.primary { background: var(--acc); color: #fff; } .btn.primary:hover { background: #1f86e6; text-decoration: none; }
+.btn.ghost { border: 1px solid #3a3a3c; color: var(--ink); } .btn.ghost:hover { border-color: var(--ink2); text-decoration: none; }
+section { padding: 72px 0 0; }
+h2 { font-size: clamp(30px, 4.6vw, 48px); letter-spacing: -0.03em; margin: 0 0 10px; line-height: 1.08; }
+.sub { color: var(--ink2); font-size: 19px; margin: 0 0 30px; max-width: 760px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.shot { margin: 0; background: var(--card); border: 1px solid var(--rule); border-radius: 18px; overflow: hidden; }
+.shot img { display: block; width: 100%; height: auto; }
+.shot figcaption { padding: 14px 18px 16px; color: var(--ink2); font-size: 15px; }
+.shot figcaption b { color: var(--ink); }
+.kinds { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.kind { background: var(--card); border: 1px solid var(--rule); border-radius: 16px; padding: 18px; }
+.kind h3 { margin: 0 0 6px; font-size: 19px; letter-spacing: -0.01em; }
+.kind p { margin: 0; color: var(--ink2); font-size: 14.5px; }
+.kind .on { margin-top: 10px; font-size: 13px; color: var(--acc); font-weight: 600; }
+.list { columns: 2; column-gap: 40px; padding: 0; margin: 0; list-style: none; }
+.list li { break-inside: avoid; margin: 0 0 16px; color: var(--ink2); }
+.list li b { color: var(--ink); display: block; font-size: 18px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; background: var(--card); border: 1px solid var(--rule); border-radius: 16px; overflow: hidden; }
+th, td { padding: 13px 18px; text-align: right; border-bottom: 1px solid var(--rule); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--ink2); font-weight: 500; font-size: 14px; }
+tr:last-child td { border-bottom: 0; }
+.note { color: var(--ink2); font-size: 14px; margin-top: 12px; }
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.fact { background: var(--card); border: 1px solid var(--rule); border-radius: 16px; padding: 18px; }
+.fact b { display: block; font-size: 28px; letter-spacing: -0.02em; }
+.fact span { color: var(--ink2); font-size: 14px; }
+pre { background: var(--card); border: 1px solid var(--rule); border-radius: 16px; padding: 18px 20px; overflow-x: auto; font: 14px/1.6 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #d1d1d6; }
+footer { padding: 72px 0 48px; color: var(--ink2); font-size: 14px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+@media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .kinds { grid-template-columns: 1fr 1fr; } .list { columns: 1; } .facts { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .kinds, .facts { grid-template-columns: 1fr; } th, td { padding: 11px 12px; } }
+@media (prefers-reduced-motion: reduce) { video { display: none; } .film::before { content: ""; display: block; aspect-ratio: 16 / 9; background: url(img/poster.jpg) center / cover; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="./"><img src="img/mark.svg" alt="">Blocks</a>
+    <a class="gh" href="https://github.com/mazenDDr/project-void">GitHub</a>
+  </header>
+
+  <div class="hero">
+    <h1>Build AI.<br>No code.</h1>
+    <p class="lede"><b>Blocks</b> is a visual workbench: build models, data pipelines, AI agents and reinforcement-learning experiments by connecting blocks, run them on your own machine, and see what every piece did.</p>
+    <div class="film"><video src="blocks-film.mp4" poster="img/poster.jpg" controls autoplay muted loop playsinline preload="metadata" aria-label="The Blocks film: a 50-second tour of the features"></video></div>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/mazenDDr/project-void#quick-start">Get started</a>
+      <a class="btn ghost" href="https://github.com/mazenDDr/project-void/blob/master/docs/GUIDE.md">Read the guide</a>
+    </div>
+  </div>
+
+  <section>
+    <h2>The diagram is the program.</h2>
+    <p class="sub">Pick blocks from a library of 118 and connect them. Every wire shows the shape of the data on it, every block shows its parameters, and a mismatch turns red before anything runs.</p>
+    <div class="grid">
+      <figure class="shot"><img src="img/graph.jpg" alt="The graph editor with the reference CNN, the block library, the inspector and live training curves." loading="lazy"><figcaption><b>Build and train.</b> Shapes on every block; loss and accuracy stream in while it learns.</figcaption></figure>
+      <figure class="shot"><img src="img/tabular.jpg" alt="A statistics graph with a hypothesis test's density plot, shaded tail and p-value." loading="lazy"><figcaption><b>Analyse.</b> Tables, classical ML and statistics, with the evidence drawn for you.</figcaption></figure>
+      <figure class="shot"><img src="img/agentroutes.jpg" alt="An agent graph's typed state schema with reducers." loading="lazy"><figcaption><b>Agents.</b> Native LangGraph: typed state, routes, loops, memory and approvals.</figcaption></figure>
+      <figure class="shot"><img src="img/rl.jpg" alt="A CartPole DQN run: episode return over environment steps." loading="lazy"><figcaption><b>Reinforcement learning.</b> Gymnasium environments, every transition kept.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>One canvas. Five kinds of graph.</h2>
+    <p class="sub">Wires of different kinds never mean the same thing, so a tensor can't be plugged into a table by accident. 37 example projects are ready to open.</p>
+    <div class="kinds">
+      <div class="kind"><h3>Model</h3><p>Layers, losses, reusable modules and Python code blocks.</p><div class="on">PyTorch · Keras 3 · JAX</div></div>
+      <div class="kind"><h3>Tabular</h3><p>Data preparation, classical ML, statistics tests, clustering.</p><div class="on">pandas · scikit-learn · SciPy</div></div>
+      <div class="kind"><h3>Agent</h3><p>Typed state, routes, bounded loops, tools and approvals.</p><div class="on">LangGraph · local models</div></div>
+      <div class="kind"><h3>RL</h3><p>Environments, reward components, replay buffers, DQN and TD3.</p><div class="on">Gymnasium</div></div>
+      <div class="kind"><h3>Media</h3><p>Typed vision, NLP and speech workflows with recorded inspection.</p><div class="on">PyTorch</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Everything around the canvas.</h2>
+    <p class="sub">From the first block to a served model, without leaving the app.</p>
+    <ul class="list">
+      <li><b>Check before you run</b>Shapes, types and parameter counts as you edit, with a suggested fix for every problem.</li>
+      <li><b>Run and inspect</b>Live curves, checkpoints, weights and activations, a debugger, attention views and run comparison.</li>
+      <li><b>Switch backends</b>One model graph on PyTorch, Keras 3 or JAX, with a per-block compatibility report.</li>
+      <li><b>Get the code</b>Readable native source for each backend; every line points back to its block.</li>
+      <li><b>Connect real data</b>PostgreSQL with a visual query builder, S3 and DVC, with a snapshot of what every run read.</li>
+      <li><b>Run experiments</b>Grid and random sweeps with seeds and folds, compared trial by trial.</li>
+      <li><b>Ship it</b>A local model registry and serving, with traffic and monitoring views.</li>
+      <li><b>Never lose a run</b>Searchable records with notes and tags, plus backup and restore of the whole workbench.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Measured, not assumed.</h2>
+    <p class="sub">The reference CNN built from its graph against the same network written by hand, one training step on CPU (Apple M4 Pro, batch 16).</p>
+    <table>
+      <thead><tr><th>Train step</th><th>Hand-written</th><th>From the graph</th><th>Ratio</th></tr></thead>
+      <tbody>
+        <tr><td>PyTorch</td><td>17.41 ms</td><td>17.30 ms</td><td>0.994</td></tr>
+        <tr><td>Keras 3</td><td>13.51 ms</td><td>14.09 ms</td><td>1.044</td></tr>
+        <tr><td>JAX</td><td>7.81 ms</td><td>7.90 ms</td><td>1.011</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Median of 5 fresh processes × 50 timed calls each. Raw data and method: <a href="https://github.com/mazenDDr/project-void/blob/master/benchmarks/results/m6a_summary.md">benchmarks/results/m6a_summary.md</a>.</p>
+    <div class="facts">
+      <div class="fact"><b>118</b><span>blocks in the library</span></div>
+      <div class="fact"><b>10M rows</b><span>tabular pipelines, linear time (~3.8 µs/row)</span></div>
+      <div class="fact"><b>909</b><span>Python test functions in CI</span></div>
+      <div class="fact"><b>24</b><span>real-browser journeys on every pull request</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Runs on your machine.</h2>
+    <p class="sub">Python 3.13+, Node.js and pnpm. Nothing is sent anywhere.</p>
+<pre>python3 -m venv .venv
+.venv/bin/pip install -r python/requirements.txt &amp;&amp; .venv/bin/pip install -e .
+pnpm -C apps/editor install
+
+python -m uvicorn control.app:create_app --factory --app-dir services --port 8000
+pnpm -C apps/editor dev        # then open http://127.0.0.1:5173</pre>
+  </section>
+
+  <footer>
+    <span>Blocks · made by Mazen Khaled · MIT licence</span>
+    <a href="https://github.com/mazenDDr/project-void">github.com/mazenDDr/project-void</a>
+  </footer>
+</div>
+</body>
+</html>
