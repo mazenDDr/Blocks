@@ -26,7 +26,7 @@ export function GraphCommandMenu({ commands, context, onRun }: { commands: Graph
   }, [open]);
   const run = (command: GraphCommand) => { if (!command.disabled) { dialog.current?.close();setOpen(false);onRun(command); } };
   return <>
-    <button aria-label="open graph commands" onClick={show}>Commands <small>⌘/Ctrl K</small></button>
+    <button aria-label="open graph commands" className="search-field" onClick={show}><span className="search-text">Search commands</span><kbd>{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"}</kbd></button>
     <dialog ref={dialog} className="command-menu" aria-labelledby="command-menu-title" onClose={() => { if (!dialog.current?.open) setOpen(false); }} onCancel={() => setOpen(false)} onKeyDown={e => {
         if (e.key !== "Tab") return;
         const controls = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled)'));

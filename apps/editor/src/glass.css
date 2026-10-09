@@ -1,0 +1,252 @@
+/* Direction 2 (design/DIRECTION.md): a desktop control plane in the manner of Docker Desktop and the Kubernetes IDEs, with
+   Apple's Liquid Glass as the material of the navigation layer. Loaded after styles.css; it restates the shell at every
+   breakpoint so it wins over the earlier layers by source order alone. */
+
+html, body, #root { background: var(--ground); }
+body { font-family: var(--font); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+:root { font-family: var(--font); }
+code, kbd, .card-id, .vsum small, .mono { font-family: var(--font-mono); }
+
+/* the desktop picture behind the window: what the glass bends */
+.wallpaper { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
+.app { position: relative; isolation: isolate; background: transparent; gap: 8px; padding: 8px; }
+
+/* ------------------------------------------------------------- the materials */
+/* glass: navigation and controls float over content. Translucent, blurred and saturated, a lit rim, a top highlight. */
+.rail, .topbar, .statusbar, .toast, .react-flow__controls, .command-menu, .modal-body,
+.graph-tools > details > summary, .search-field, .graph-tools > details[open] {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid transparent;
+  box-shadow: inset 0 1px 0 var(--glass-spec), inset 0 -1px 0 var(--glass-rim-shade), var(--shadow-float);
+}
+.rail, .topbar, .statusbar, .command-menu, .modal-body, .graph-tools > details > summary, .search-field, .graph-tools > details[open] { position: relative; }
+/* the rim: brightest where the light lands (top left), catching again at the far corner */
+.rail::after, .topbar::after, .statusbar::after, .toast::after, .react-flow__controls::after, .command-menu::after, .modal-body::after,
+.graph-tools > details > summary::before, .search-field::after, .graph-tools > details[open]::after,
+.app > .left::after, .app > .right::after, .app > .bottom::after, .rail .viewtabs button.on::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(140deg, var(--glass-rim) 0%, transparent 32%, transparent 62%, color-mix(in oklch, var(--glass-rim) 60%, transparent) 100%), var(--glass-rim-shade);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+/* lensing: small controls bend the backdrop at their rim (Chromium; other engines drop this line and keep the blur above) */
+.graph-tools > details:not([open]) > summary, .search-field, .rail .viewtabs button.on, .react-flow__controls, .toast {
+  backdrop-filter: url(#liquid-rim) blur(5px) saturate(190%);
+}
+/* frost: the content panels. Denser, so tables and forms read as solid. */
+.app > .left, .app > .right, .app > .bottom, .fullws, .workspace, .domain-workspace {
+  position: relative;
+  background: var(--frost);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid transparent;
+  border-radius: var(--r-panel);
+  box-shadow: inset 0 1px 0 var(--glass-spec), var(--shadow-float);
+}
+.app > .left { mask-image: none; }
+/* the canvas is content: a solid quiet floor */
+.center { background: var(--canvas); border: 1px solid var(--rule); border-radius: var(--r-panel); box-shadow: var(--shadow-card); }
+
+@media (prefers-reduced-transparency: reduce) {
+  .rail, .topbar, .statusbar, .toast, .react-flow__controls, .command-menu, .modal-body, .graph-tools > details > summary, .search-field,
+  .graph-tools > details[open], .app > .left, .app > .right, .app > .bottom, .fullws, .workspace, .domain-workspace {
+    background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+}
+@media (forced-colors: active) {
+  .rail, .topbar, .statusbar, .toast, .app > .left, .app > .right, .app > .bottom, .center, .search-field, .graph-tools > details > summary { border: 1px solid CanvasText; }
+  .wallpaper { display: none; }
+}
+
+/* ------------------------------------------------------------- controls */
+button { border-radius: var(--r-control); border-color: var(--rule-strong); background: var(--surface); color: var(--ink); font-weight: 500; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600;
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.35), 0 4px 12px -6px color-mix(in oklch, var(--accent) 70%, transparent); }
+button.primary:hover:not(:disabled) { background: color-mix(in oklch, var(--accent) 88%, #000); }
+input, select, textarea { background: color-mix(in oklch, var(--surface) 85%, transparent); border-color: var(--rule-strong); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+kbd { font-size: var(--t-min); padding: 1px 6px; border-radius: 6px; border: 1px solid var(--rule-strong); background: color-mix(in oklch, var(--surface) 70%, transparent); color: var(--ink-2); }
+
+/* ------------------------------------------------------------- the window grid */
+.app { grid-template-columns: 212px 264px minmax(0, 1fr) 340px; grid-template-rows: auto minmax(0, 1fr) 230px 30px;
+  grid-template-areas: "rail top top top" "rail left center right" "rail bottom bottom bottom" "status status status status"; }
+.app.keyboard-layout { grid-template-rows: auto auto minmax(0, 1fr) 230px 30px;
+  grid-template-areas: "rail top top top" "rail tools tools tools" "rail left center right" "rail bottom bottom bottom" "status status status status"; }
+.fullws, .workspace, .domain-workspace { grid-column: 2 / -1; grid-row: 2 / -2; }
+
+/* ------------------------------------------------------------- sidebar (Docker Desktop: icon + label rows, in sections) */
+.rail { border-radius: var(--r-panel); padding: 12px 8px 8px; gap: 4px; overflow-x: hidden; }
+.rail .brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px 12px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+.rail .viewtabs { gap: 2px; }
+.rail .viewtabs::before, .rail .viewtabs button.shared-start::before {
+  content: "Build"; content: "Build" / ""; display: block; padding: 4px 10px 6px; font-size: var(--t-min); font-weight: 600; color: var(--ink-2); letter-spacing: 0.01em;
+}
+.rail .viewtabs button { flex-direction: row; justify-content: flex-start; gap: 10px; min-height: 34px; padding: 0 10px; border: 0; border-radius: var(--r-control);
+  background: none; color: var(--ink); font-size: var(--t-body); font-weight: 500; text-align: left; position: relative; }
+.rail .viewtabs button .ws-icon { color: var(--ink-2); flex: none; }
+.rail .viewtabs button:hover:not(:disabled) { background: var(--glass-hover); color: var(--ink); }
+.rail .viewtabs button.on { background: color-mix(in oklch, var(--accent) 18%, transparent); color: var(--accent-text); font-weight: 600;
+  box-shadow: inset 0 1px 0 var(--glass-spec); }
+.rail .viewtabs button.on .ws-icon { color: var(--accent-text); }
+.rail .viewtabs button.shared-start { margin-top: 30px; }
+.rail .viewtabs button.shared-start::before { content: "Ship"; content: "Ship" / ""; position: absolute; top: -28px; left: 0; right: auto; border: 0; padding-left: 10px; }
+.theme-switch { flex-direction: row; justify-content: flex-start; gap: 10px; min-height: 34px; padding: 0 10px; font-size: var(--t-meta); color: var(--ink-2); border-radius: var(--r-control); }
+.theme-switch:hover:not(:disabled) { background: var(--glass-hover); border-color: transparent; }
+
+/* ------------------------------------------------------------- title bar (context left, search centred, the one primary right) */
+.topbar { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 10px 6px; border-radius: var(--r-panel); overflow: visible; }
+.tb-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.tb-row > * { flex: none; }
+.tb-search { flex: 1 1 160px; display: flex; justify-content: center; min-width: 0; }
+.topbar select[aria-label="open project"] { width: 170px; }
+.search-field { width: min(460px, 100%); min-height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 8px 0 34px; border-radius: var(--r-pill);
+  color: var(--ink-2); font-weight: 400; text-align: left; box-shadow: inset 0 1px 0 var(--glass-spec), inset 0 -1px 0 var(--glass-rim-shade); }
+.search-field::before { content: ""; position: absolute; left: 12px; top: 50%; width: 14px; height: 14px; transform: translateY(-50%); background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") center / contain no-repeat; }
+.search-field .search-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-field:hover:not(:disabled) { border-color: transparent; background: var(--glass-hover); color: var(--ink); }
+.topbar label { gap: 6px; color: var(--ink-2); font-size: var(--t-meta); }
+.topbar button, .topbar input, .topbar select { min-height: 32px; }
+.topbar .badge.kind { background: color-mix(in oklch, var(--accent) 14%, transparent); color: var(--accent-text); border: 0; padding: 3px 10px; font-weight: 600; }
+.topbar button.save { min-width: 76px; }
+.tb-create { gap: 2px; padding-top: 4px; border-top: 1px solid color-mix(in oklch, var(--rule) 70%, transparent); }
+.topbar button.quiet { min-height: 28px; padding: 0 10px; border-radius: var(--r-pill); }
+.topbar button.quiet:hover:not(:disabled) { background: var(--glass-hover); }
+
+/* ------------------------------------------------------------- status bar (Docker Desktop's footer) */
+.statusbar { grid-area: status; display: flex; align-items: center; gap: 0; min-width: 0; padding: 0 6px; border-radius: var(--r-pill); font-size: var(--t-min); color: var(--ink-2); overflow: hidden; white-space: nowrap; }
+.sb-item { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border-right: 1px solid color-mix(in oklch, var(--rule) 80%, transparent); line-height: 1; }
+.sb-item b { color: var(--ink); font-weight: 600; }
+.sb-spacer { flex: 1; }
+.statusbar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-2); flex: none; }
+.sb-service.running .dot { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-tint); }
+.sb-service.unreachable { color: var(--bad); } .sb-service.unreachable .dot { background: var(--bad); box-shadow: 0 0 0 3px var(--bad-tint); }
+.statusbar .dot.working { background: var(--accent); animation: sb-pulse 1.6s ease-in-out infinite; }
+@keyframes sb-pulse { 50% { box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 25%, transparent); } }
+.statusbar .vsum { margin: 0; padding: 0 8px; background: none; border-radius: 0; font-size: var(--t-min); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.statusbar .vsum.good { color: var(--ok); } .statusbar .vsum.bad { color: var(--bad); }
+
+/* ------------------------------------------------------------- tool pills over the canvas row */
+.graph-tools { gap: 6px; padding: 0; }
+.graph-tools > details > summary { min-height: 32px; padding: 0 14px; border-radius: var(--r-pill); font-weight: 500; font-size: var(--t-meta); color: var(--ink); }
+.graph-tools > details > summary:hover { background: var(--glass-hover); }
+.graph-tools > details:not([open]) > summary { box-shadow: inset 0 1px 0 var(--glass-spec), inset 0 -1px 0 var(--glass-rim-shade); }
+.graph-tools > details[open] { border-radius: var(--r-panel); }
+.graph-tools > details[open] > summary { background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.graph-tools > details[open] > summary::before { display: none; }
+
+/* ------------------------------------------------------------- panels */
+.app > .left { padding: 12px; }
+.tabs { border-bottom: 1px solid var(--rule); gap: 2px; }
+.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; min-height: 34px; padding: 0 12px; color: var(--ink-2); font-weight: 500; }
+.tabs button:hover:not(:disabled) { color: var(--ink); background: none; }
+.tabs button.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+h3 { font-weight: 700; letter-spacing: -0.01em; }
+.lib-item { border: 0; border-radius: var(--r-control); background: none; padding: 6px 8px; margin: 1px 0; }
+.lib-item:hover:not(:disabled) { background: var(--glass-hover); }
+
+/* tables: Docker's resource lists */
+table { border-collapse: separate; border-spacing: 0; }
+th { background: var(--sunk); color: var(--ink-2); font-weight: 600; font-size: var(--t-min); border-bottom: 1px solid var(--rule); }
+td { border-bottom: 1px solid color-mix(in oklch, var(--rule) 70%, transparent); }
+tbody tr:hover td { background: color-mix(in oklch, var(--accent) 6%, transparent); }
+tr.sel td { background: var(--accent-soft); }
+
+/* status pills (Lens): a word and a dot, hue only for state */
+.runmark, .badge.compat-supported, .badge.compat-unsupported, .badge.compat-converted { display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-pill); }
+.runmark::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ------------------------------------------------------------- nodes: resource cards on the floor */
+.card { border: 1px solid var(--wire); border-radius: var(--r-piece); background: var(--surface); box-shadow: var(--shadow-card); padding: 10px 12px; }
+.card.sel { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 28%, transparent), var(--shadow-card); }
+.card.err { border-color: var(--bad); }
+.card.structural { border-width: 1px; border-color: var(--wire-strong); background: var(--sunk); }
+.card-head { font-size: var(--t-body); font-weight: 700; }
+.card-head b { font-weight: 700; }
+.card-head > b + .badge { font-family: var(--font-mono); font-size: var(--t-min); }
+.card-shapes { border-top: 1px solid var(--rule); }
+.card-id { font-size: var(--t-min); }
+.react-flow__handle { width: 10px; height: 10px; background: var(--surface); border: 2px solid var(--wire-strong); box-shadow: none; }
+.react-flow__handle:hover { border-color: var(--accent); }
+.react-flow__edge-path { stroke: var(--wire); stroke-width: 2px; }
+.react-flow__edge.selected .react-flow__edge-path { stroke: var(--accent); }
+.react-flow__edge.rolling .react-flow__edge-path { stroke: var(--accent); }
+.react-flow__arrowhead polyline { stroke: var(--wire); fill: var(--wire); }
+.react-flow__controls { border-radius: var(--r-piece); overflow: visible; }
+.react-flow__controls-button { background: transparent; border: 0; border-bottom: 1px solid color-mix(in oklch, var(--rule) 70%, transparent); color: var(--ink); fill: var(--ink); width: 30px; height: 30px; }
+.react-flow__controls-button:last-child { border-bottom: 0; }
+.react-flow__controls-button:hover { background: var(--glass-hover); }
+.react-flow__attribution { background: var(--glass); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 0; }
+
+/* the signature: the marble becomes a glass bead */
+.marble-ball { fill: color-mix(in oklch, var(--accent) 70%, transparent); stroke: oklch(100% 0 0 / 0.75); stroke-width: 1.2px; }
+.marble-shine { fill: #fff; opacity: .95; }
+.marble-shadow { fill: color-mix(in oklch, var(--accent) 30%, transparent); }
+
+/* ------------------------------------------------------------- floating things */
+/* the toast rests on the status bar's empty middle, so it never covers a control and can take its own click again */
+.toast { bottom: 8px; min-height: 30px; padding: 3px 4px 3px 14px; font-size: var(--t-meta); color: var(--ink); border-radius: var(--r-pill); font-weight: 500; pointer-events: auto; cursor: pointer; z-index: 25; }
+.toast .toast-x { min-height: 24px; }
+.toast .toast-x { color: var(--ink); border-color: var(--rule-strong); background: var(--glass-hover); }
+.toast .toast-x:hover:not(:disabled) { border-color: var(--accent); }
+.modal { background: var(--scrim); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.modal-body { border-radius: var(--r-panel); color: var(--ink); }
+.command-menu { border-radius: var(--r-panel); color: var(--ink); padding: 18px; }
+.command-menu::backdrop { background: var(--scrim); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.notice { border-radius: var(--r-control); }
+
+/* ------------------------------------------------------------- tablet: the sidebar becomes an icon rail */
+@media (min-width: 761px) and (max-width: 1180px) {
+  .app { grid-template-columns: 68px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(380px, 48vh) 340px auto 30px; height: auto; min-height: 100%;
+    grid-template-areas: "rail top top" "rail center center" "rail left right" "rail bottom bottom" "status status status"; }
+  .app.keyboard-layout { grid-template-rows: auto auto minmax(380px, 48vh) 340px auto 30px;
+    grid-template-areas: "rail top top" "rail tools tools" "rail center center" "rail left right" "rail bottom bottom" "status status status"; }
+  .rail { align-self: start; position: sticky; top: 8px; max-height: calc(100vh - 16px); padding: 10px 6px; }
+  .rail .brand { font-size: 0; justify-content: center; padding: 2px 0 10px; }
+  .rail .viewtabs::before { content: none; }
+  .rail .viewtabs button { justify-content: center; padding: 0; min-height: 44px; }
+  .rail .viewtabs button .ws-label, .theme-switch .theme-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .rail .viewtabs button.shared-start { margin-top: 14px; }
+  .rail .viewtabs button.shared-start::before { content: ""; top: -8px; left: 12px; right: 12px; height: 0; padding: 0; border-top: 1px solid var(--rule); }
+  .theme-switch { justify-content: center; padding: 0; }
+  .tb-search { order: 10; flex-basis: 100%; }
+  .search-field { width: 100%; }
+  .topbar select[aria-label="open project"] { width: 140px; }
+  .topbar select[aria-label="backend"] { width: 130px; }
+}
+
+/* ------------------------------------------------------------- phone: a companion; everything stacks */
+@media (max-width: 760px) {
+  .app, .app.keyboard-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto 46vh auto auto auto auto; height: auto; min-height: 100%;
+    grid-template-areas: "top" "rail" "tools" "center" "right" "left" "bottom" "status"; }
+  .fullws, .workspace, .domain-workspace { grid-column: 1; grid-row: 3 / -2; }
+  .rail { flex-direction: row; align-items: center; overflow-x: auto; scrollbar-width: none; padding: 6px; border-radius: var(--r-piece); }
+  .rail .brand { display: none; }
+  .rail .viewtabs { flex-direction: row; }
+  .rail .viewtabs::before { content: none; }
+  .rail .viewtabs button { flex: none; min-height: 40px; }
+  .rail .viewtabs button.shared-start { margin: 0 0 0 12px; }
+  .rail .viewtabs button.shared-start::before { content: ""; position: absolute; top: 10px; bottom: 10px; left: -7px; width: 0; padding: 0; border-left: 1px solid var(--rule); }
+  .theme-switch { margin: 0 0 0 auto; flex: none; }
+  .topbar { flex-wrap: nowrap; mask-image: none; overflow: visible; }
+  .tb-row { flex-wrap: wrap; }
+  .tb-search { order: 10; flex-basis: 100%; }
+  .search-field { width: 100%; }
+  .tb-create { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .statusbar { border-radius: var(--r-piece); flex-wrap: wrap; white-space: normal; padding: 6px; row-gap: 6px; min-height: 30px; }
+  .sb-spacer { display: none; }
+  .toast { bottom: 14px; pointer-events: none; }
+}
+@media (max-height: 640px) and (min-width: 1181px) {
+  .app { height: auto; min-height: 100%; grid-template-rows: auto minmax(340px, 1fr) 230px 30px; }
+  .app.keyboard-layout { grid-template-rows: auto auto minmax(340px, 1fr) 230px 30px; }
+}
+
+/* a notice in the tool row (synthetic data, unused modules) takes its own full line above the pills, never a narrow column */
+.graph-tools:has(> .notice-inline) { flex-wrap: wrap; mask-image: none; }
+.graph-tools > .notice-inline { order: -1; flex: 1 1 100%; background: var(--frost); }
+.graph-tools > .notice-inline.synthetic { background: color-mix(in oklch, var(--warn-tint) 88%, transparent); color: var(--ink); }

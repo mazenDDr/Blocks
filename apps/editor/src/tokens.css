@@ -1,0 +1,88 @@
+/* Blocks design tokens (design/DIRECTION.md, direction 2). A desktop control plane in the manner of Docker Desktop and the
+   Kubernetes IDEs, with Apple's Liquid Glass as the material of the navigation layer. Components read only these role names. */
+
+:root {
+  color-scheme: light;
+  /* light: a pale steel desktop in daylight */
+  --ground: oklch(95.5% 0.012 245);     /* window ground behind everything (the wallpaper's base) */
+  --surface: oklch(100% 0 0);           /* solid controls and node cards */
+  --sunk: oklch(95.5% 0.01 245);        /* wells, table heads */
+  --canvas: oklch(98.2% 0.006 245);     /* the graph floor: content, never glass */
+  --ink: oklch(23% 0.025 255);
+  --ink-2: oklch(44% 0.025 255);        /* 6:1 on the canvas */
+  --rule: oklch(88% 0.014 250);
+  --rule-strong: oklch(76% 0.02 250);   /* input borders, 3:1 */
+  --wire: oklch(72% 0.03 250);          /* graph wires and node outlines */
+  --wire-strong: oklch(60% 0.04 250);
+  --track: var(--rule); --track-edge: var(--wire); /* direction-1 names, still read by older rules */
+  --accent: #007ACC;
+  --accent-ink: #ffffff;
+  --accent-text: #00639F;
+  --accent-soft: oklch(93% 0.035 240);
+  --accent-rule: oklch(80% 0.07 240);
+  --focus: #007ACC;
+  --ok: oklch(50% 0.13 150);    --ok-tint: oklch(95.5% 0.035 150);  --ok-rule: oklch(84% 0.07 150);
+  --warn: oklch(52% 0.12 65);   --warn-tint: oklch(96% 0.045 85);   --warn-rule: oklch(85% 0.08 80);
+  --bad: oklch(52% 0.18 25);    --bad-tint: oklch(96% 0.03 20);     --bad-rule: oklch(84% 0.07 20);
+  --code-ground: oklch(22% 0.03 255); --code-ink: oklch(92% 0.015 250);
+  --scrim: oklch(25% 0.03 250 / 0.35);
+
+  /* Liquid Glass. glass: the navigation layer (sidebar, title bar, pills, status bar, menus). frost: the content panels. */
+  --glass: oklch(100% 0 0 / 0.5);
+  --glass-hover: oklch(100% 0 0 / 0.72);
+  --glass-rim: oklch(100% 0 0 / 0.75);          /* lit rim */
+  --glass-rim-shade: oklch(40% 0.03 250 / 0.14); /* the rim's unlit side */
+  --glass-spec: oklch(100% 0 0 / 0.95);         /* inner top highlight */
+  --glass-blur: 22px;
+  --frost: oklch(100% 0 0 / 0.8);
+  --shadow-float: 0 12px 32px -16px oklch(30% 0.05 250 / 0.35), 0 1px 2px oklch(30% 0.04 250 / 0.08);
+  --shadow-card: 0 1px 2px oklch(30% 0.04 250 / 0.08), 0 4px 12px -6px oklch(30% 0.04 250 / 0.14);
+  --wall-a: #007ACC; --wall-b: #5B8DEF; --wall-c: #38B2C9; --wall-base: oklch(93% 0.02 245);
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, Cantarell, Ubuntu, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --t-title: 20px; --t-head: 16px; --t-body: 14px; --t-meta: 13px; --t-min: 12px;
+  /* radius family, concentric: window panels hold cards hold controls */
+  --r-panel: 20px; --r-piece: 12px; --r-control: 10px; --r-pill: 999px;
+  --space: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    /* dark: a deep navy desktop at night, as in Docker Desktop's dark theme */
+    --ground: oklch(17% 0.03 255); --surface: oklch(25% 0.03 255); --sunk: oklch(20% 0.03 255); --canvas: oklch(19.5% 0.028 255);
+    --ink: oklch(95% 0.008 250); --ink-2: oklch(77% 0.02 250);
+    --rule: oklch(32% 0.03 255); --rule-strong: oklch(46% 0.035 250);
+    --wire: oklch(48% 0.04 250); --wire-strong: oklch(62% 0.05 250);
+    --accent: #007ACC; --accent-ink: #ffffff; --accent-text: #6CBDF5; --accent-soft: oklch(33% 0.07 245); --accent-rule: oklch(47% 0.09 245); --focus: #3FA3EE;
+    --ok: oklch(78% 0.15 150); --ok-tint: oklch(29% 0.05 150); --ok-rule: oklch(42% 0.07 150);
+    --warn: oklch(82% 0.13 80); --warn-tint: oklch(30% 0.05 75); --warn-rule: oklch(46% 0.08 75);
+    --bad: oklch(75% 0.15 25); --bad-tint: oklch(30% 0.06 20); --bad-rule: oklch(46% 0.09 20);
+    --code-ground: oklch(14% 0.025 255); --scrim: oklch(8% 0.02 255 / 0.55);
+    --glass: oklch(26% 0.035 255 / 0.46); --glass-hover: oklch(34% 0.04 255 / 0.6);
+    --glass-rim: oklch(100% 0 0 / 0.16); --glass-rim-shade: oklch(0% 0 0 / 0.35); --glass-spec: oklch(100% 0 0 / 0.22);
+    --frost: oklch(21% 0.03 255 / 0.84);
+    --shadow-float: 0 16px 40px -18px oklch(0% 0 0 / 0.8), 0 1px 2px oklch(0% 0 0 / 0.4);
+    --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.4), 0 6px 16px -8px oklch(0% 0 0 / 0.6);
+    --wall-a: #0F72C2; --wall-b: #3A5BC9; --wall-c: #158C9E; --wall-base: oklch(15% 0.03 255);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: oklch(17% 0.03 255); --surface: oklch(25% 0.03 255); --sunk: oklch(20% 0.03 255); --canvas: oklch(19.5% 0.028 255);
+  --ink: oklch(95% 0.008 250); --ink-2: oklch(77% 0.02 250);
+  --rule: oklch(32% 0.03 255); --rule-strong: oklch(46% 0.035 250);
+  --wire: oklch(48% 0.04 250); --wire-strong: oklch(62% 0.05 250);
+  --accent: #007ACC; --accent-ink: #ffffff; --accent-text: #6CBDF5; --accent-soft: oklch(33% 0.07 245); --accent-rule: oklch(47% 0.09 245); --focus: #3FA3EE;
+  --ok: oklch(78% 0.15 150); --ok-tint: oklch(29% 0.05 150); --ok-rule: oklch(42% 0.07 150);
+  --warn: oklch(82% 0.13 80); --warn-tint: oklch(30% 0.05 75); --warn-rule: oklch(46% 0.08 75);
+  --bad: oklch(75% 0.15 25); --bad-tint: oklch(30% 0.06 20); --bad-rule: oklch(46% 0.09 20);
+  --code-ground: oklch(14% 0.025 255); --scrim: oklch(8% 0.02 255 / 0.55);
+  --glass: oklch(26% 0.035 255 / 0.46); --glass-hover: oklch(34% 0.04 255 / 0.6);
+  --glass-rim: oklch(100% 0 0 / 0.16); --glass-rim-shade: oklch(0% 0 0 / 0.35); --glass-spec: oklch(100% 0 0 / 0.22);
+  --frost: oklch(21% 0.03 255 / 0.84);
+  --shadow-float: 0 16px 40px -18px oklch(0% 0 0 / 0.8), 0 1px 2px oklch(0% 0 0 / 0.4);
+  --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.4), 0 6px 16px -8px oklch(0% 0 0 / 0.6);
+  --wall-a: #0F72C2; --wall-b: #3A5BC9; --wall-c: #158C9E; --wall-base: oklch(15% 0.03 255);
+}

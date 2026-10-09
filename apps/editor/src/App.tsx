@@ -1,3 +1,5 @@
+import { Marble, flowOrder } from "./components/Marble";
+import { BlocksMark, GlassBackdrop, StatusBar, ThemeSwitch, WorkspaceIcon, useServiceState } from "./components/Shell";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Background, Controls, MarkerType, ReactFlow, ReactFlowProvider, applyEdgeChanges, applyNodeChanges, useReactFlow, useUpdateNodeInternals,
@@ -145,6 +147,7 @@ function Workbench() {
   const v = validation.data;
   const rv = rootValidation.data;
   const backendList = useBackends();
+  const service = useServiceState();
   const compat = useCompat(graph, graph.backend, !tabular && !agent && !rl);
   /** Compatibility verdict for one canvas node: its own flat entry, or (for a module instance) the worst of its expanded children. Shown only when it carries information. */
   const compatFor = useCallback((id: string): CompatNode | undefined => {
@@ -164,6 +167,8 @@ function Workbench() {
   const runs = useMemo(() => allRuns.filter(isModelRun) as RunSummary[], [allRuns]);
   const tabRuns = useMemo(() => allRuns.filter(isTabularRun), [allRuns]);
   const procRuns = useMemo(() => allRuns.filter(isProcedureRun) as ProcedureRunSummary[], [allRuns]);
+  // The signature: the marble rolls while a run of this project is working (or with ?marble, so the state can be shot).
+  const marbleActive = allRuns.some((r) => r.status === "running" || r.status === "preparing") || new URLSearchParams(window.location.search).has("marble");
   const insData = useInspectionData(tabular || rl || agent ? null : ctx.runId);
   const tabRun = tabular ? tabRuns.find((r) => r.id === ctx.runId) : undefined;
 
@@ -227,6 +232,23 @@ function Workbench() {
 
   // show the whole graph after a project is opened or the scope changes (React Flow only fits on its first render)
   useEffect(() => { const t = setTimeout(() => fitView({ padding: 0.12, maxZoom: 1 }), 150); return () => clearTimeout(t); }, [loadToken, scope.length, fitView]);
+  // ...and again if the canvas box is still settling (panels and fonts arriving) in the first two seconds, so the graph
+  // fills the box it ends up in rather than the one it started in; later resizes keep the user's own pan and zoom.
+  const canvasBox = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = canvasBox.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const until = performance.now() + 2000;
+    let last = el.getBoundingClientRect(), t = 0;
+    const ro = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect();
+      if (performance.now() > until) { ro.disconnect(); return; }
+      if (Math.abs(r.height - last.height) < 24 && Math.abs(r.width - last.width) < 24) return;
+      last = r; clearTimeout(t); t = window.setTimeout(() => fitView({ padding: 0.12, maxZoom: 1 }), 120);
+    });
+    ro.observe(el);
+    return () => { ro.disconnect(); clearTimeout(t); };
+  }, [loadToken, scope.length, fitView]);
 
   // default inspection context: newest run, first validation sample
   useEffect(() => {
@@ -506,6 +528,7 @@ function Workbench() {
 
   // Selection changes preserve card data/geometry identities for every other node.
   // Native report, graph, layout and measured-size changes still rebuild their data.
+  const marbleOrder = useMemo(() => flowOrder(cur.nodes, cur.edges), [cur.nodes, cur.edges]);
   const baseRfNodes: AnyNode[] = useMemo(() => {
     const out: AnyNode[] = [];
     cur.nodes.forEach((n, i) => {
@@ -618,8 +641,10 @@ function Workbench() {
       return {
         id: e.id, source: e.from.node, sourceHandle: e.from.port, target: e.to.node, targetHandle: e.to.port, selected: false,
         label: bad ? `${fmtShape(t)} ✖` : fmtShape(t), interactionWidth: 28, markerEnd: { type: MarkerType.ArrowClosed },
-        style: bad ? { stroke: "#c62828", strokeWidth: 2 } : undefined, labelStyle: { fontSize: 10, fill: bad ? "#c62828" : "#444" },
-        labelBgStyle: { fill: "#fff", fillOpacity: 0.85 }, labelBgPadding: [3, 2] as [number, number],
+        // track pieces: square-cornered runs with rounded bends; the shape label shows on a bad or selected wire only
+        type: "smoothstep", pathOptions: { borderRadius: 18 }, className: bad ? "bad" : undefined,
+        style: bad ? { stroke: "var(--bad)", strokeWidth: 2 } : undefined, labelStyle: { fontSize: 12, fill: bad ? "var(--bad)" : "var(--ink-2)" },
+        labelBgStyle: { fill: "var(--surface)", fillOpacity: 0.9 }, labelBgPadding: [3, 2] as [number, number],
       } as Edge;
     });
     for (const g of expandedGroups) {
@@ -646,7 +671,9 @@ function Workbench() {
       const f = frameList.find(x => FRAME + x.id === (c as { id: string }).id);
       if (!f) continue;
       if (c.type === "position" && c.position) {
-        const dx = c.position.x - f.x, dy = c.position.y - f.y;
+        // whole flow units: below zoom 1 the raw offset is a long fraction, and adding it to each member separately would
+        // leave the members a rounding error apart instead of moved by one shared offset
+        const dx = Math.round(c.position.x - f.x), dy = Math.round(c.position.y - f.y);
         if (dx || dy) setUi(u => ({ ...u, positions: { ...u.positions, ...Object.fromEntries(f.members.map(m => {
           const i = cur.nodes.findIndex(n => n.id === m), p = basePos(m, i);
           return [posKey(m), { x: p.x + dx, y: p.y + dy }];
@@ -720,13 +747,19 @@ function Workbench() {
   return (
     <GraphContext.Provider value={graph}>
     <div className={`app${view === "graph" && !agent && !rl ? " keyboard-layout" : ""}`}>
+      <GlassBackdrop />
+      <nav className="rail" aria-label="Workspaces">
+        <b className="brand"><BlocksMark />Blocks</b>
+        <span className="viewtabs" role="tablist" aria-label="workspace" aria-orientation="vertical">
+          {/* Building first; the shared workspaces (Integrations, Production, Records) after a divider. */}
+          {[...workspaceChoices(graph.graphKind).slice(3), ...workspaceChoices(graph.graphKind).slice(0, 3)].map(([k, label], i, all) => (
+            <button key={k} role="tab" aria-selected={view === k} className={`${view === k ? "on" : ""}${i === all.length - 3 ? " shared-start" : ""}`} onClick={() => setView(k)} title={label}><WorkspaceIcon view={k} /><span className="ws-label">{label}</span></button>))}
+        </span>
+        <ThemeSwitch />
+      </nav>
       <header className="topbar">
-        <b className="brand">Project Void</b>
+        <div className="tb-row">
         <label>Project <input value={projectId} onChange={(e) => setProjectId(e.target.value)} aria-label="project id" size={16} /></label>
-        <button onClick={() => save().catch(() => {})}>Save{dirty ? " *" : ""}</button>
-        <button aria-label="undo draft edit" title="Undo graph settings/layout; recorded runs and external actions are retained" disabled={!canUndo} onClick={() => moveHistory("undo")}>Undo</button>
-        <button aria-label="redo draft edit" title="Redo graph settings/layout" disabled={!canRedo} onClick={() => moveHistory("redo")}>Redo</button>
-        <GraphCommandMenu key={`commands:${projectId}:${def ? modKey(def) : "root"}`} commands={commandList} context={`${projectId} · ${def ? `Module ${modKey(def)}` : `${graph.graphKind} root`}`} onRun={runCommand} />
         <label>Open <select value="" onChange={(e) => { const [k, ...r] = e.target.value.split(":"); if (k) load(k as "project" | "example", r.join(":")); }} aria-label="open project">
           <option value="">choose…</option>
           {projects.length > 0 && <optgroup label="Saved projects">{projects.map((p) => <option key={p.id} value={`project:${p.id}`}>{p.id} [{p.graphKind}]</option>)}</optgroup>}
@@ -746,23 +779,23 @@ function Workbench() {
             {compat.data && graph.backend !== "pytorch" && <span className={`badge ${compat.data.ok ? "compat-supported" : "compat-unsupported"}`} title="Backend compatibility of this graph">{compat.data.ok ? "compatible" : `${compat.data.counts.unsupported} unsupported`}</span>}
           </label>
         )}
-        <span className="viewtabs" role="tablist" aria-label="workspace">
-          {workspaceChoices(graph.graphKind).map(([k, label]) => (
-            <button key={k} role="tab" aria-selected={view === k} className={view === k ? "on" : ""} onClick={() => setView(k)}>{label}</button>))}
-        </span>
         <span className="badge kind" title="Graph kind: wires of different kinds never mean the same thing">{graph.graphKind} graph</span>
-        <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled", EMPTY, null, false); }}>New model graph</button>
-        <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled_tabular", EMPTY_TABULAR, null, false); }}>New tabular graph</button>
-        <button onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled_agent", EMPTY_AGENT, null, false); }}>New agent graph</button>
-        <button onClick={() => { if (dirty && !window.confirm("Discard unsaved changes?")) return; api.get<any>("/api/examples/rl_cartpole_dqn").then((ex) => adopt("untitled_rl", ex.graph, ex.ui, false)).catch((e) => setMessage(errorText(e))); }} title="Starts from a complete, valid CartPole DQN graph (all six RL nodes wired); change the environment on the Environment tab">New RL graph</button>
-        {!tabular && !agent && !rl && <button onClick={() => setShowCode(true)} title="Show generated native code for a backend (compatibility is checked first)">Export code</button>}
-        <span className="spacer" />
-        <span className={`vsum ${errCount ? "bad" : "good"}`} aria-live="polite">
-          {rootValidation.error ? `validation unavailable: ${rootValidation.error}` : rootValidation.pending ? "validating…" : rv ? (errCount ? `${errCount} error${errCount > 1 ? "s" : ""}` : ((tabular || agent || rl) ? `valid · ${graph.nodes.length} nodes` : `valid · ${fmtInt(rv.totalParams)} parameters`)) : ""}
-          {rv && <small> · graph {rv.graphHash.slice(0, 8)}</small>}
+        <span className="tb-search">
+          <GraphCommandMenu key={`commands:${projectId}:${def ? modKey(def) : "root"}`} commands={commandList} context={`${projectId} · ${def ? `Module ${modKey(def)}` : `${graph.graphKind} root`}`} onRun={runCommand} />
         </span>
+        <button aria-label="undo draft edit" title="Undo graph settings/layout; recorded runs and external actions are retained" disabled={!canUndo} onClick={() => moveHistory("undo")}>Undo</button>
+        <button aria-label="redo draft edit" title="Redo graph settings/layout" disabled={!canRedo} onClick={() => moveHistory("redo")}>Redo</button>
+        <button className="primary save" onClick={() => save().catch(() => {})}>Save{dirty ? " *" : ""}</button>
+        </div>
+        <div className="tb-row tb-create">
+        <button className="quiet" onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled", EMPTY, null, false); }}>New model graph</button>
+        <button className="quiet" onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled_tabular", EMPTY_TABULAR, null, false); }}>New tabular graph</button>
+        <button className="quiet" onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) adopt("untitled_agent", EMPTY_AGENT, null, false); }}>New agent graph</button>
+        <button className="quiet" onClick={() => { if (dirty && !window.confirm("Discard unsaved changes?")) return; api.get<any>("/api/examples/rl_cartpole_dqn").then((ex) => adopt("untitled_rl", ex.graph, ex.ui, false)).catch((e) => setMessage(errorText(e))); }} title="Starts from a complete, valid CartPole DQN graph (all six RL nodes wired); change the environment on the Environment tab">New RL graph</button>
+        {!tabular && !agent && !rl && <button className="quiet" onClick={() => setShowCode(true)} title="Show generated native code for a backend (compatibility is checked first)">Export code</button>}
+        </div>
       </header>
-      {message && <div className="toast" role="status" onClick={() => setMessage(null)}>{message} <small>(click to dismiss)</small></div>}
+      {message && <div className="toast" role="status" onClick={() => setMessage(null)}>{message} <button className="toast-x" aria-label="Dismiss message">Dismiss</button></div>}
 
       {view === "production" && <ProductionWorkspace onOpenRun={openRun} />}
       {view === "scale" && <ScaleWorkspace graph={graph} ui={ui} projectId={projectId} onImport={(p) => { adopt(p.projectId, p.graph, p.ui, true); refreshLists(); }} onOpenRun={openRun} />}
@@ -841,7 +874,7 @@ function Workbench() {
             onAddCodeNode={addCodeNode} onEditCode={(d) => setCodeEdit({ id: d.id, version: d.version })} onNewCode={createCode} onImportCode={importCode} onRepoImport={() => setRepoImport(true)} usedModules={usedModules(graph)} setMessage={setMessage} />}
       </aside>
 
-      <main className="center">
+      <main className="center" ref={canvasBox}>
         {(scope.length > 0 || expanded.length > 0) && (
           <nav className="crumbs" aria-label="breadcrumb">
             <button className="link" onClick={() => setScope([])}>{projectId}</button>
@@ -857,6 +890,7 @@ function Workbench() {
           <Background gap={20} />
           <Controls showInteractive={false} />
         </ReactFlow>
+        <Marble track={marbleOrder} active={marbleActive} />
         {cur.nodes.length === 0 && <div className="canvas-empty">{tabular ? "Empty tabular graph. Add a CSV or JSONL table source from the library, or open an example." : "Empty graph. Add blocks from the library, or open the reference_cnn example."}</div>}
         {unusedNote && <div className="canvas-hint">This project defines modules; add instances from Modules &amp; code.</div>}
       </main>
@@ -905,6 +939,13 @@ function Workbench() {
       )}
       {repoImport && <RepoImport setMessage={setMessage} onClose={() => setRepoImport(false)} onImport={(d) => { importCode(d); setCodeEdit({ id: d.id, version: d.version }); }} />}
       {showCode && <ExportView projectId={projectId} graph={graph} initialBackend={graph.backend} onClose={() => setShowCode(false)} />}
+      <StatusBar service={service} kind={graph.graphKind} working={allRuns.filter((r) => r.status === "running" || r.status === "preparing").length}
+        backend={!tabular && !agent && !rl ? (backendList.find((b) => b.id === graph.backend)?.title ?? graph.backend) : undefined}>
+          <span className={`vsum ${errCount ? "bad" : "good"}`} aria-live="polite">
+            {rootValidation.error ? `validation unavailable: ${rootValidation.error}` : rootValidation.pending ? "validating…" : rv ? (errCount ? `${errCount} error${errCount > 1 ? "s" : ""}` : ((tabular || agent || rl) ? `valid · ${graph.nodes.length} nodes` : `valid · ${fmtInt(rv.totalParams)} parameters`)) : ""}
+            {rv && <small> · graph {rv.graphHash.slice(0, 8)}</small>}
+          </span>
+      </StatusBar>
     </div>
     </GraphContext.Provider>
   );

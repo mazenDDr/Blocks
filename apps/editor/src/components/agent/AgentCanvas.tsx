@@ -140,12 +140,12 @@ function AgentCanvasInner({ graph, setGraph, ui, setUi, validation, ops, selNode
         const id = `route:${r.id}:${c.id}`;
         const hit = taken.has(id);
         out.push({ id, source: r.from, target: c.to, sourceHandle: "out", targetHandle: "in", markerEnd: arrow, deletable: false, animated: hit,
-          label: `${c.label || c.id}: ${renderPredicate(c.when)}`, labelStyle: { fontSize: 10 }, labelBgStyle: { fill: "#fff", fillOpacity: 0.9 }, labelBgPadding: [3, 2],
+          label: `${c.label || c.id}: ${renderPredicate(c.when)}`, labelStyle: { fontSize: 12, fill: "var(--ink)" }, labelBgStyle: { fill: "var(--surface)", fillOpacity: 0.92 }, labelBgPadding: [3, 2],
           style: { stroke: hit ? "#2a9d4b" : "#7c3aed", strokeDasharray: "6 3", strokeWidth: hit ? 3 : 1.5 } });
       });
       const id = `route:${r.id}:__default__`;
       out.push({ id, source: r.from, target: r.default, sourceHandle: "out", targetHandle: "in", markerEnd: arrow, deletable: false, animated: taken.has(id),
-        label: r.defaultLabel || "otherwise", labelStyle: { fontSize: 10 }, labelBgStyle: { fill: "#fff", fillOpacity: 0.9 }, labelBgPadding: [3, 2],
+        label: r.defaultLabel || "otherwise", labelStyle: { fontSize: 12, fill: "var(--ink)" }, labelBgStyle: { fill: "var(--surface)", fillOpacity: 0.92 }, labelBgPadding: [3, 2],
         style: { stroke: taken.has(id) ? "#2a9d4b" : "#9b7fd1", strokeDasharray: "2 3", strokeWidth: taken.has(id) ? 3 : 1.5 } });
     });
     return out;
